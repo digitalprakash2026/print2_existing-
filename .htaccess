@@ -2,12 +2,16 @@
     RewriteEngine On
     RewriteBase /
 
-    # Serve existing files/folders directly
+    # Always route app endpoints through front controller,
+    # even if physical /admin or /api folders exist.
+    RewriteRule ^(admin|api)(/.*)?$ index.php [L,QSA]
+
+    # Serve real static files/folders directly.
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Send all app routes to front controller
+    # Everything else goes to index.php
     RewriteRule ^ index.php [L,QSA]
 </IfModule>
 
