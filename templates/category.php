@@ -16,8 +16,8 @@ try {
 
 $bizWa = $settingsMap['biz_whatsapp'] ?? '919876543210';
 
-include __DIR__ . '/partials/head.php';
-include __DIR__ . '/partials/header.php';
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
 ?>
 
 <div style="margin-top:var(--hh); padding-bottom:80px; background:var(--bg); min-height:calc(100vh - var(--hh))">
@@ -163,4 +163,4 @@ include __DIR__ . '/partials/header.php';
   </div>
 </div>
 
-<?php include __DIR__ . '/partials/footer.php'; ?>
+<?php include INCLUDE_PATH . '/partials/footer.php'; ?>

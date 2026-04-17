@@ -1,8 +1,8 @@
 <?php
 $pageTitle = 'My Orders — RCS Graphic';
 $currentPage = 'my-orders';
-include __DIR__ . '/partials/head.php';
-include __DIR__ . '/partials/header.php';
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
 // cart-drawer is included by header.php — do not include again
 
 $statusLabels = ['received'=>'Received','processing'=>'Processing','printing'=>'Printing','ready'=>'Ready','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'Pending'];
@@ -80,5 +80,5 @@ $tlSteps = ['received','processing','printing','ready','delivered'];
   <?php endif; ?>
 </div>
 <script>const CSRF = '<?= $csrf ?>';</script>
-<script src="/js/app.js"></script>
+<script src="/assets/js/app.js"></script>
 </body></html>

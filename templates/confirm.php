@@ -1,7 +1,7 @@
 <?php
 $pageTitle = 'Order Confirmed — RCS Graphic';
-include __DIR__ . '/partials/head.php';
-include __DIR__ . '/partials/header.php';
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
 $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
 $bizName = Database::setting('biz_name', 'RCS Graphic');
 ?>
@@ -51,5 +51,5 @@ function shareConfirm() {
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 </script>
-<script src="/js/app.js"></script>
+<script src="/assets/js/app.js"></script>
 </body></html>

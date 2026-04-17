@@ -6,8 +6,8 @@
  */
 $pageTitle = ($settingsMap['biz_name'] ?? 'RCS Graphic') . ' — Premium Print Ordering';
 $pageDesc  = 'Professional printing services in Rajkot — business cards, brochures, banners and more. Fast delivery, GST invoice, secure payment.';
-include __DIR__ . '/partials/head.php';    // outputs <!DOCTYPE><html><head>...</head><body>
-include __DIR__ . '/partials/header.php';  // outputs header + cart drawer + global JS
+include INCLUDE_PATH . '/partials/head.php';    // outputs <!DOCTYPE><html><head>...</head><body>
+include INCLUDE_PATH . '/partials/header.php';  // outputs header + cart drawer + global JS
 
 $bizName  = htmlspecialchars($settingsMap['biz_name']    ?? 'RCS Graphic');
 $bizPhone = htmlspecialchars($settingsMap['biz_phone']   ?? '+91 98765 43210');
@@ -403,4 +403,4 @@ function sendEnquiry() {
 }
 </script>
 
-<?php include __DIR__ . '/partials/footer.php'; ?>
+<?php include INCLUDE_PATH . '/partials/footer.php'; ?>

@@ -1,4 +1,4 @@
-<?php $pageTitle = 'Register — RCS Graphic'; include __DIR__ . '/../partials/head.php'; include __DIR__ . '/../partials/header.php'; ?>
+<?php $pageTitle = 'Register — RCS Graphic'; include INCLUDE_PATH . '/partials/head.php'; include INCLUDE_PATH . '/partials/header.php'; ?>
 <div class="auth-page">
   <div class="auth-card">
     <div class="auth-mark">R</div>

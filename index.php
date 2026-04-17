@@ -6,37 +6,13 @@
 
 declare(strict_types=1);
 
-// ── App files ka path dhundo ───────────────────────────────────
-// public_html ke upar 'rcs_app' folder mein hain saari files
-// Structure:
-//   /home/u123456789/rcs_app/        ← app files
-//   /home/u123456789/domains/print.rcsgraphic.com/public_html/  ← yeh file
+$rootPath = __DIR__;
 
-// dirname(__DIR__) = domains/print.rcsgraphic.com/
-// dirname(dirname(__DIR__)) = user home folder (u123456789/)
-// uske baad rcs_app/ folder
-
-$appRoot = dirname(dirname(__DIR__)) . '/rcs_app';
-
-// Agar rcs_app nahi mila to same folder mein dhundo
-if (!is_dir($appRoot)) {
-    // Maybe same level pe hai
-    $appRoot = dirname(__DIR__) . '/rcs_app';
+if (!is_dir($rootPath . '/config')) {
+    die('\n    <div style="font-family:monospace;padding:30px;background:#1e1e1e;color:#ff6b6b;min-height:100vh">\n    <h2>⚠️ RCS Graphic — Setup Error</h2>\n    <p>Required <code>config/</code> folder not found at: <code>' . htmlspecialchars($rootPath) . '</code></p>\n    </div>\n    ');
 }
 
-// Agar phir bhi nahi mila to error dikhao
-if (!is_dir($appRoot . '/config')) {
-    die('
-    <div style="font-family:monospace;padding:30px;background:#1e1e1e;color:#ff6b6b;min-height:100vh">
-    <h2>⚠️ RCS Graphic — Setup Error</h2>
-    <p>App folder nahi mila. Debug path: <code>' . $appRoot . '</code></p>
-    <p>Please upload <code>debug.php</code> aur check karo.</p>
-    </div>
-    ');
-}
-
-// Config load karo
-require_once $appRoot . '/config/config.php';
+require_once $rootPath . '/config/config.php';
 require_once SRC_PATH . '/Database.php';
 
 // ── Helper Functions ──────────────────────────────────────────
@@ -226,13 +202,13 @@ if (preg_match('#^/invoice/([A-Z0-9]+)$#', $uri, $m) && $method === 'GET') {
 
 // ── API Routes ────────────────────────────────────────────────
 if (str_starts_with($uri, '/api/')) {
-    require_once APP_ROOT . '/api/router.php';
+    require_once APP_PATH . '/api/router.php';
     exit;
 }
 
 // ── Admin Routes ──────────────────────────────────────────────
 if (str_starts_with($uri, '/admin')) {
-    require_once APP_ROOT . '/admin/router.php';
+    require_once ADMIN_PATH . '/router.php';
     exit;
 }
 

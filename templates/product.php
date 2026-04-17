@@ -16,8 +16,8 @@ try {
 // Design fee from admin settings (Admin → Settings → design_fee)
 $designFee = (float)($settingsMap['design_fee'] ?? 0);
 
-include __DIR__ . '/partials/head.php';
-include __DIR__ . '/partials/header.php';
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
 // Note: cart-drawer is already included by header.php — do NOT include again
 
 // Gallery
@@ -628,4 +628,4 @@ function waOrder() {
 reloadQtySlabs();
 </script>
 
-<?php include __DIR__ . '/partials/footer.php'; ?>
+<?php include INCLUDE_PATH . '/partials/footer.php'; ?>

@@ -1,8 +1,8 @@
 <?php
 $pageTitle = 'Checkout — RCS Graphic';
 $loadRazorpay = true;
-include __DIR__ . '/partials/head.php';
-include __DIR__ . '/partials/header.php';
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
 // cart-drawer is included by header.php — do not include again
 $razKeyId = Database::setting('razorpay_key_id', env('RAZORPAY_KEY_ID', ''));
 $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
@@ -109,5 +109,5 @@ async function doWhatsAppOrder() {
   await placeWhatsappOrder(checkoutCoupon, notes);
 }
 </script>
-<script src="/js/app.js"></script>
+<script src="/assets/js/app.js"></script>
 </body></html>
