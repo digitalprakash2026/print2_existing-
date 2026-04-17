@@ -94,7 +94,12 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
     if ($uri === '/admin/api/products' && $method === 'GET') {
-        json(['ok'=>true,'products'=>\Catalog\ProductCatalog::all(false)]);
+        try {
+            json(['ok'=>true,'products'=>\Catalog\ProductCatalog::all(false)]);
+        } catch (\Throwable $e) {
+            error_log('Admin products list failed: ' . $e->getMessage());
+            json(['ok'=>false,'msg'=>'Could not load products. Check DB schema and logs.','products'=>[]], 500);
+        }
     }
     if ($uri === '/admin/api/products' && $method === 'POST') {
         json(\Catalog\ProductCatalog::upsert($body));
@@ -116,7 +121,11 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
     if (preg_match('#^/admin/api/products/(\d+)/tiers$#', $uri, $m) && $method === 'GET') {
-        $tiers = Database::rows("SELECT id, quantity, price FROM product_quantity_tiers WHERE product_id=? ORDER BY quantity ASC", [(int)$m[1]]);
+        try {
+            $tiers = Database::rows("SELECT id, quantity, price FROM product_quantity_tiers WHERE product_id=? ORDER BY quantity ASC", [(int)$m[1]]);
+        } catch (\Throwable) {
+            $tiers = [];
+        }
         json(['ok'=>true,'tiers'=>$tiers]);
     }
     if (preg_match('#^/admin/api/products/(\d+)/tiers$#', $uri, $m) && $method === 'POST') {
@@ -144,6 +153,9 @@ if (str_starts_with($uri, '/admin/api/')) {
         if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
             json(['ok'=>false,'msg'=>'Image file is required'], 400);
         }
+        $pid = (int)$m[1];
+        $isPrimary = (int)($_POST['is_primary'] ?? 0) === 1;
+
         $file = $_FILES['image'];
         if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
         if ((int)$file['size'] > 5 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 5MB'], 400);
@@ -159,25 +171,89 @@ if (str_starts_with($uri, '/admin/api/')) {
         $dir = PUBLIC_PATH . '/uploads/products/';
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
 
-        $name = 'prod_' . (int)$m[1] . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
+        $name = 'prod_' . $pid . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
         $target = $dir . $name;
         if (!move_uploaded_file($file['tmp_name'], $target)) {
             json(['ok'=>false,'msg'=>'Upload failed'], 500);
         }
 
         $publicPath = '/uploads/products/' . $name;
-        Database::query("UPDATE products SET image_path=? WHERE id=?", [$publicPath, (int)$m[1]]);
 
-        Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=?", [(int)$m[1]]);
-        $pid = Database::insert("INSERT INTO product_images (product_id, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?)", [(int)$m[1], $publicPath, 'Product image', 1, 0]);
-        json(['ok'=>true,'path'=>$publicPath,'image_id'=>$pid]);
+        try {
+            if ($isPrimary) Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=?", [$pid]);
+            $imageId = Database::insert(
+                "INSERT INTO product_images (product_id, image_path, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?,?)",
+                [$pid, $publicPath, $publicPath, 'Product image', $isPrimary ? 1 : 0, (int)($_POST['sort_order'] ?? 0)]
+            );
+        } catch (\Throwable) {
+            if ($isPrimary) Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=?", [$pid]);
+            $imageId = Database::insert(
+                "INSERT INTO product_images (product_id, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?)",
+                [$pid, $publicPath, 'Product image', $isPrimary ? 1 : 0, (int)($_POST['sort_order'] ?? 0)]
+            );
+        }
+
+        if ($isPrimary) {
+            try { Database::query("UPDATE products SET image_path=? WHERE id=?", [$publicPath, $pid]); } catch (\Throwable) {}
+        }
+
+        json(['ok'=>true,'path'=>$publicPath,'image_id'=>$imageId]);
+    }
+
+    if (preg_match('#^/admin/api/products/(\d+)/images-upload$#', $uri, $m) && $method === 'POST') {
+        $files = $_FILES['images'] ?? null;
+        if (!$files || !is_array($files['tmp_name'] ?? null)) json(['ok'=>false,'msg'=>'No files uploaded'], 400);
+        $uploaded = [];
+        $pid = (int)$m[1];
+        foreach ($files['tmp_name'] as $i => $tmp) {
+            if (!is_uploaded_file($tmp)) continue;
+            $_FILES['image'] = [
+                'name' => $files['name'][$i] ?? ('image_' . $i),
+                'type' => $files['type'][$i] ?? '',
+                'tmp_name' => $tmp,
+                'error' => $files['error'][$i] ?? 0,
+                'size' => $files['size'][$i] ?? 0,
+            ];
+            $_POST['is_primary'] = (string)(empty($uploaded) ? 1 : 0);
+            $_POST['sort_order'] = (string)$i;
+            // Reuse single upload route by internal call expectations.
+            $file = $_FILES['image'];
+            if ((int)$file['size'] <= 0) continue;
+            if ((int)$file['size'] > 5 * 1024 * 1024) continue;
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) continue;
+            $mime = mime_content_type($file['tmp_name']) ?: '';
+            if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) continue;
+            $dir = PUBLIC_PATH . '/uploads/products/';
+            if (!is_dir($dir)) @mkdir($dir, 0755, true);
+            $name = 'prod_' . $pid . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
+            $target = $dir . $name;
+            if (!move_uploaded_file($file['tmp_name'], $target)) continue;
+            $publicPath = '/uploads/products/' . $name;
+            try {
+                if (empty($uploaded)) Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=?", [$pid]);
+                $imageId = Database::insert("INSERT INTO product_images (product_id, image_path, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?,?)", [$pid, $publicPath, $publicPath, 'Product image', empty($uploaded)?1:0, $i]);
+            } catch (\Throwable) {
+                if (empty($uploaded)) Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=?", [$pid]);
+                $imageId = Database::insert("INSERT INTO product_images (product_id, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?)", [$pid, $publicPath, 'Product image', empty($uploaded)?1:0, $i]);
+            }
+            if (empty($uploaded)) { try { Database::query("UPDATE products SET image_path=? WHERE id=?", [$publicPath, $pid]); } catch (\Throwable) {} }
+            $uploaded[] = ['id'=>$imageId,'path'=>$publicPath];
+        }
+        if (!$uploaded) json(['ok'=>false,'msg'=>'No valid images were uploaded'], 400);
+        json(['ok'=>true,'images'=>$uploaded]);
     }
 
 
     if (preg_match('#^/admin/api/products/(\d+)/images$#', $uri, $m) && $method === 'POST') {
         $pid = (int)$m[1];
-        $id = Database::insert("INSERT INTO product_images (product_id, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?)",
-            [$pid, $body['url'], $body['alt_text']??'', $body['is_primary']??0, $body['sort_order']??0]);
+        try {
+            $id = Database::insert("INSERT INTO product_images (product_id, image_path, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?,?)",
+                [$pid, $body['image_path'] ?? $body['url'] ?? '', $body['image_path'] ?? $body['url'] ?? '', $body['alt_text']??'', $body['is_primary']??0, $body['sort_order']??0]);
+        } catch (\Throwable) {
+            $id = Database::insert("INSERT INTO product_images (product_id, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?)",
+                [$pid, $body['url'] ?? $body['image_path'] ?? '', $body['alt_text']??'', $body['is_primary']??0, $body['sort_order']??0]);
+        }
         if (!empty($body['is_primary'])) Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=? AND id!=?", [$pid,$id]);
         json(['ok'=>true,'id'=>$id]);
     }

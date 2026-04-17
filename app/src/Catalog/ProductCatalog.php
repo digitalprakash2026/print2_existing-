@@ -14,23 +14,45 @@ class ProductCatalog
         return "(SELECT MIN(t.price) FROM product_quantity_tiers t WHERE t.product_id = p.id)";
     }
 
+    private static function legacyMinPriceExpr(): string
+    {
+        return "(SELECT MIN(qs.price) FROM quantity_slabs qs WHERE qs.product_id = p.id)";
+    }
+
     private static function primaryImageExpr(): string
     {
-        return "COALESCE(p.image_path, (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1))";
+        return "COALESCE(p.image_path, (SELECT COALESCE(pi.image_path, pi.url) FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1))";
+    }
+
+    private static function fetchProductRows(string $whereSql, array $params = []): array
+    {
+        try {
+            return \Database::rows(
+                "SELECT p.*, c.name as category_name,
+                        " . self::primaryImageExpr() . " as primary_image,
+                        " . self::minPriceExpr() . " as min_price
+                 FROM products p
+                 LEFT JOIN categories c ON c.id = p.category_id
+                 {$whereSql}",
+                $params
+            );
+        } catch (\Throwable) {
+            return \Database::rows(
+                "SELECT p.*, c.name as category_name,
+                        (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1) as primary_image,
+                        " . self::legacyMinPriceExpr() . " as min_price
+                 FROM products p
+                 LEFT JOIN categories c ON c.id = p.category_id
+                 {$whereSql}",
+                $params
+            );
+        }
     }
 
     public static function all(bool $activeOnly = true): array
     {
         $where = $activeOnly ? 'WHERE p.is_active = 1' : '';
-        return \Database::rows(
-            "SELECT p.*, c.name as category_name,
-                    " . self::primaryImageExpr() . " as primary_image,
-                    " . self::minPriceExpr() . " as min_price
-             FROM products p
-             LEFT JOIN categories c ON c.id = p.category_id
-             {$where}
-             ORDER BY c.sort_order ASC, p.sort_order ASC"
-        );
+        return self::fetchProductRows($where . ' ORDER BY c.sort_order ASC, p.sort_order ASC');
     }
 
     public static function bySlug(string $slug): ?array
@@ -72,14 +94,8 @@ class ProductCatalog
 
     public static function related(int $productId, int $categoryId, int $limit = 4): array
     {
-        return \Database::rows(
-            "SELECT p.*, c.name as category_name,
-                    " . self::primaryImageExpr() . " as primary_image,
-                    " . self::minPriceExpr() . " as min_price
-             FROM products p
-             LEFT JOIN categories c ON c.id = p.category_id
-             WHERE p.is_active = 1 AND p.id != ? AND p.category_id = ?
-             ORDER BY RAND() LIMIT ?",
+        return self::fetchProductRows(
+            'WHERE p.is_active = 1 AND p.id != ? AND p.category_id = ? ORDER BY RAND() LIMIT ?',
             [$productId, $categoryId, $limit]
         );
     }
@@ -87,14 +103,8 @@ class ProductCatalog
     public static function search(string $q): array
     {
         $like = '%' . $q . '%';
-        return \Database::rows(
-            "SELECT p.*, c.name as category_name,
-                    " . self::primaryImageExpr() . " as primary_image,
-                    " . self::minPriceExpr() . " as min_price
-             FROM products p
-             LEFT JOIN categories c ON c.id = p.category_id
-             WHERE p.is_active = 1 AND (p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?)
-             ORDER BY p.sort_order ASC",
+        return self::fetchProductRows(
+            'WHERE p.is_active = 1 AND (p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?) ORDER BY p.sort_order ASC',
             [$like, $like, $like]
         );
     }
@@ -107,16 +117,7 @@ class ProductCatalog
         );
         if (!$category) return null;
 
-        $products = \Database::rows(
-            "SELECT p.*, c.name as category_name,
-                    " . self::primaryImageExpr() . " as primary_image,
-                    " . self::minPriceExpr() . " as min_price
-             FROM products p
-             LEFT JOIN categories c ON c.id = p.category_id
-             WHERE p.is_active = 1 AND p.category_id = ?
-             ORDER BY p.sort_order ASC",
-            [$category['id']]
-        );
+        $products = self::fetchProductRows('WHERE p.is_active = 1 AND p.category_id = ? ORDER BY p.sort_order ASC', [$category['id']]);
 
         return ['category' => $category, 'products' => $products];
     }
@@ -130,15 +131,29 @@ class ProductCatalog
 
     private static function hydrate(array $product): array
     {
-        $product['images'] = \Database::rows(
-            "SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
-            [$product['id']]
-        );
+        try {
+            $product['images'] = \Database::rows(
+                "SELECT id, product_id, COALESCE(image_path, url) as url, COALESCE(image_path, url) as image_path, alt_text, is_primary, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
+                [$product['id']]
+            );
+        } catch (\Throwable) {
+            $product['images'] = \Database::rows(
+                "SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
+                [$product['id']]
+            );
+            foreach ($product['images'] as &$img) {
+                if (!isset($img['url']) && isset($img['image_path'])) $img['url'] = $img['image_path'];
+                if (!isset($img['image_path']) && isset($img['url'])) $img['image_path'] = $img['url'];
+            }
+            unset($img);
+        }
+
         if (empty($product['images']) && !empty($product['image_path'])) {
             $product['images'][] = [
                 'id' => 0,
                 'product_id' => (int)$product['id'],
                 'url' => $product['image_path'],
+                'image_path' => $product['image_path'],
                 'alt_text' => $product['name'] ?? '',
                 'is_primary' => 1,
                 'sort_order' => 0,
@@ -152,7 +167,7 @@ class ProductCatalog
 
         $pricing = \Cart\Pricing::productPricingData((int)$product['id']);
         $product['qualities']      = $pricing['qualities'];
-        $product['attr_groups']    = []; // retired from customer-facing pricing
+        $product['attr_groups']    = [];
         $product['quantity_tiers'] = $pricing['tiers'];
 
         return $product;
@@ -167,44 +182,81 @@ class ProductCatalog
 
         $slug = self::makeSlug($data['name'], $editId);
 
-        if ($editId) {
-            \Database::query(
-                "UPDATE products SET name=?, slug=?, category_id=?, description=?,
-                    meta_title=?, design_fee=?, image_path=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
-                [
-                    $data['name'], $slug, $data['category_id'],
-                    $data['description'] ?? '',
-                    $data['meta_title'] ?? $data['name'],
-                    (float)($data['design_fee'] ?? 0),
-                    $data['image_path'] ?? null,
-                    $data['is_active'] ?? 1,
-                    $data['sort_order'] ?? 0,
-                    $editId,
-                ]
-            );
-            self::syncSpecs($editId, $data['specs'] ?? []);
-            self::syncQuantityTiers($editId, $data['quantity_tiers'] ?? []);
-            \Orders\AdminAudit::log('product_updated', "Product #{$editId}: {$data['name']}");
-            return ['ok' => true, 'id' => $editId];
-        }
+        try {
+            if ($editId) {
+                try {
+                    \Database::query(
+                        "UPDATE products SET name=?, slug=?, category_id=?, description=?,
+                            meta_title=?, design_fee=?, image_path=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
+                        [
+                            $data['name'], $slug, $data['category_id'],
+                            $data['description'] ?? '',
+                            $data['meta_title'] ?? $data['name'],
+                            (float)($data['design_fee'] ?? 0),
+                            $data['image_path'] ?? null,
+                            $data['is_active'] ?? 1,
+                            $data['sort_order'] ?? 0,
+                            $editId,
+                        ]
+                    );
+                } catch (\Throwable) {
+                    \Database::query(
+                        "UPDATE products SET name=?, slug=?, category_id=?, description=?,
+                            meta_title=?, design_fee=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
+                        [
+                            $data['name'], $slug, $data['category_id'],
+                            $data['description'] ?? '',
+                            $data['meta_title'] ?? $data['name'],
+                            (float)($data['design_fee'] ?? 0),
+                            $data['is_active'] ?? 1,
+                            $data['sort_order'] ?? 0,
+                            $editId,
+                        ]
+                    );
+                }
+                self::syncSpecs($editId, $data['specs'] ?? []);
+                self::syncQuantityTiers($editId, $data['quantity_tiers'] ?? []);
+                \Orders\AdminAudit::log('product_updated', "Product #{$editId}: {$data['name']}");
+                return ['ok' => true, 'id' => $editId];
+            }
 
-        $id = \Database::insert(
-            "INSERT INTO products (name, slug, category_id, description, meta_title, design_fee, image_path, is_active, sort_order, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-            [
-                $data['name'], $slug, $data['category_id'],
-                $data['description'] ?? '',
-                $data['meta_title'] ?? $data['name'],
-                (float)($data['design_fee'] ?? 0),
-                $data['image_path'] ?? null,
-                $data['is_active'] ?? 1,
-                $data['sort_order'] ?? 0,
-            ]
-        );
-        self::syncSpecs((int)$id, $data['specs'] ?? []);
-        self::syncQuantityTiers((int)$id, $data['quantity_tiers'] ?? []);
-        \Orders\AdminAudit::log('product_created', "Product #{$id}: {$data['name']}");
-        return ['ok' => true, 'id' => (int)$id];
+            try {
+                $id = \Database::insert(
+                    "INSERT INTO products (name, slug, category_id, description, meta_title, design_fee, image_path, is_active, sort_order, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [
+                        $data['name'], $slug, $data['category_id'],
+                        $data['description'] ?? '',
+                        $data['meta_title'] ?? $data['name'],
+                        (float)($data['design_fee'] ?? 0),
+                        $data['image_path'] ?? null,
+                        $data['is_active'] ?? 1,
+                        $data['sort_order'] ?? 0,
+                    ]
+                );
+            } catch (\Throwable) {
+                $id = \Database::insert(
+                    "INSERT INTO products (name, slug, category_id, description, meta_title, design_fee, is_active, sort_order, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [
+                        $data['name'], $slug, $data['category_id'],
+                        $data['description'] ?? '',
+                        $data['meta_title'] ?? $data['name'],
+                        (float)($data['design_fee'] ?? 0),
+                        $data['is_active'] ?? 1,
+                        $data['sort_order'] ?? 0,
+                    ]
+                );
+            }
+
+            self::syncSpecs((int)$id, $data['specs'] ?? []);
+            self::syncQuantityTiers((int)$id, $data['quantity_tiers'] ?? []);
+            \Orders\AdminAudit::log('product_created', "Product #{$id}: {$data['name']}");
+            return ['ok' => true, 'id' => (int)$id];
+        } catch (\Throwable $e) {
+            error_log('Product upsert failed: ' . $e->getMessage());
+            return ['ok' => false, 'msg' => 'Save failed. Check required DB columns/tables and server logs.'];
+        }
     }
 
     private static function syncSpecs(int $productId, array $specs): void
@@ -222,7 +274,11 @@ class ProductCatalog
 
     private static function syncQuantityTiers(int $productId, array $tiers): void
     {
-        \Database::query("DELETE FROM product_quantity_tiers WHERE product_id = ?", [$productId]);
+        try {
+            \Database::query("DELETE FROM product_quantity_tiers WHERE product_id = ?", [$productId]);
+        } catch (\Throwable) {
+            return;
+        }
 
         $seen = [];
         usort($tiers, fn($a,$b) => ((int)($a['quantity'] ?? 0)) <=> ((int)($b['quantity'] ?? 0)));

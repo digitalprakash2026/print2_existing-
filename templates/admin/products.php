@@ -22,19 +22,29 @@ include __DIR__ . '/layout.php';
 let allProds = [];
 
 async function loadProds() {
-  const res = await fetch('/admin/api/products').then(r=>r.json());
-  allProds = res.products || [];
+  try {
+    const res = await fetch('/admin/api/products', {credentials:'same-origin'}).then(r=>r.json());
+    if (!res.ok && !Array.isArray(res.products)) {
+      throw new Error(res.msg || 'Failed to load products');
+    }
+    allProds = res.products || [];
 
-  const fc = document.getElementById('prodCatFilter');
-  const cats = [...new Set(allProds.map(p=>p.category_name).filter(Boolean))];
-  cats.forEach(c => {
-    const btn = document.createElement('div');
-    btn.className = 'chip'; btn.dataset.cat = c; btn.textContent = c;
-    btn.onclick = () => filterProds(c, btn);
-    fc.appendChild(btn);
-  });
+    const fc = document.getElementById('prodCatFilter');
+    fc.querySelectorAll('.chip:not([data-cat="all"])').forEach(el=>el.remove());
+    const cats = [...new Set(allProds.map(p=>p.category_name).filter(Boolean))];
+    cats.forEach(c => {
+      const btn = document.createElement('div');
+      btn.className = 'chip'; btn.dataset.cat = c; btn.textContent = c;
+      btn.onclick = () => filterProds(c, btn);
+      fc.appendChild(btn);
+    });
 
-  renderProds(allProds);
+    renderProds(allProds);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('prodCount').textContent = '0 products';
+    document.getElementById('prodList').innerHTML = `<div style="text-align:center;padding:44px;color:var(--red)"><div style="font-size:36px;margin-bottom:9px">⚠️</div><div>Could not load products.</div><div style="font-size:12px;color:var(--text2);margin-top:8px">Please check DB schema and try again.</div></div>`;
+  }
 }
 
 function filterProds(cat, btn) {

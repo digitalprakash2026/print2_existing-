@@ -24,9 +24,10 @@ include INCLUDE_PATH . '/partials/header.php';
 $imgs       = $product['images'] ?? [];
 $primaryImg = '';
 foreach ($imgs as $img) {
-    if (!empty($img['is_primary'])) { $primaryImg = $img['url']; break; }
+    $imgUrl = $img['image_path'] ?? ($img['url'] ?? '');
+    if (!empty($img['is_primary']) && $imgUrl) { $primaryImg = $imgUrl; break; }
 }
-if (!$primaryImg && $imgs) $primaryImg = $imgs[0]['url'];
+if (!$primaryImg && $imgs) $primaryImg = ($imgs[0]['image_path'] ?? ($imgs[0]['url'] ?? '')); 
 if (!$primaryImg) $primaryImg = 'https://placehold.co/600x600/EEF3FD/1A56E8?text=' . urlencode($product['name']);
 
 $specs      = $product['specs']      ?? [];
@@ -66,9 +67,9 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <div class="pd-thumbs" id="pdThumbs">
         <?php foreach ($imgs as $i => $img): ?>
         <div class="pd-th <?= $i === 0 ? 'act' : '' ?>"
-             onclick="switchImg('<?= htmlspecialchars($img['url']) ?>',this)"
+             onclick="switchImg('<?= htmlspecialchars($img['image_path'] ?? ($img['url'] ?? '')) ?>',this)"
              title="<?= htmlspecialchars($img['alt_text'] ?: $product['name']) ?>">
-          <img src="<?= htmlspecialchars($img['url']) ?>" loading="lazy"
+          <img src="<?= htmlspecialchars($img['image_path'] ?? ($img['url'] ?? '')) ?>" loading="lazy"
                alt="<?= htmlspecialchars($img['alt_text'] ?: $product['name']) ?>"
                onerror="this.style.opacity=.3">
         </div>
