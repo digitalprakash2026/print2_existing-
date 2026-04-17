@@ -6,44 +6,103 @@ $editId = (int)($_GET['id'] ?? 0);
 ?>
 <div class="adm-pt"><?= $editId ? 'Edit Product' : 'Add Product' ?></div>
 
-<div class="fsec" style="max-width:860px">
+<div class="fsec" style="max-width:900px">
   <input type="hidden" id="ep-id" value="<?= $editId ?>">
+
   <div class="f2">
-    <div class="fg"><label>Product Name *</label><input class="fi" id="ep-name" placeholder="Business Card Printing"></div>
+    <div class="fg"><label>Product Name *</label><input class="fi" id="ep-name"></div>
     <div class="fg"><label>Category *</label><select class="fi fi-sel" id="ep-cat"></select></div>
   </div>
   <div class="f2">
-    <div class="fg"><label>Design Fee (₹)</label><input type="number" min="0" class="fi" id="ep-design-fee" placeholder="0"></div>
+    <div class="fg"><label>Design Fee (₹)</label><input type="number" min="0" class="fi" id="ep-design-fee" value="0"></div>
     <div class="fg"><label>Status</label><select class="fi fi-sel" id="ep-active"><option value="1">Active</option><option value="0">Inactive</option></select></div>
   </div>
-  <div class="fg"><label>Description</label><textarea class="fi" id="ep-desc" style="height:84px" placeholder="Describe the product…"></textarea></div>
-  <div class="fg"><label>Specifications (Label: Value per line)</label><textarea class="fi" id="ep-specs" style="height:96px" placeholder="Size: A4&#10;Paper: 300 GSM&#10;Finishing: Matte"></textarea></div>
+  <div class="fg"><label>Description</label><textarea class="fi" id="ep-desc" style="height:84px"></textarea></div>
+  <div class="fg"><label>Specifications (Label: Value per line)</label><textarea class="fi" id="ep-specs" style="height:96px"></textarea></div>
 
-  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:9px;margin-top:4px">Product Images (URLs)</div>
-  <div class="fg"><label>Main Image URL *</label><input class="fi" id="ep-i1" placeholder="https://..." oninput="previewImg('ep-i1','pv1')"><div id="pv1" style="margin-top:7px"></div></div>
-  <div class="f2">
-    <div class="fg"><label>Image 2</label><input class="fi" id="ep-i2" oninput="previewImg('ep-i2','pv2')"><div id="pv2" style="margin-top:5px"></div></div>
-    <div class="fg"><label>Image 3</label><input class="fi" id="ep-i3" oninput="previewImg('ep-i3','pv3')"><div id="pv3" style="margin-top:5px"></div></div>
+  <div class="fg">
+    <label>Product Image (jpg/png/webp, max 5MB)</label>
+    <input type="file" class="fi" id="ep-image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+    <div id="imagePreview" style="margin-top:10px"></div>
   </div>
-  <div class="fg"><label>Image 4</label><input class="fi" id="ep-i4" oninput="previewImg('ep-i4','pv4')"><div id="pv4" style="margin-top:5px"></div></div>
 
-  <div style="display:flex;gap:9px;flex-wrap:wrap">
+  <div class="fg" style="margin-top:8px">
+    <label>Quantity Tier Pricing *</label>
+    <div style="overflow:auto;border:1px solid var(--border);border-radius:10px">
+      <table class="ptbl" style="margin:0;background:#fff;min-width:420px">
+        <thead><tr><th style="width:40%">Quantity</th><th style="width:40%">Price (₹)</th><th style="width:20%">Remove</th></tr></thead>
+        <tbody id="tierRows"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button type="button" class="btn btn-outline btn-sm" onclick="addTierRow()">+ Add Row</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="sortTierRows()">Sort by Qty</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-top:6px">No duplicate quantities allowed.</div>
+  </div>
+
+  <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px">
     <button class="btn btn-blue" onclick="saveProd()" style="padding:12px 26px;border-radius:10px">Save Product ✓</button>
     <a href="/admin/products" class="btn btn-outline" style="padding:12px 18px;border-radius:10px">Back to All Products</a>
-    <a href="/admin/pricing" class="btn btn-outline" style="padding:12px 18px;border-radius:10px">Go to Pricing</a>
   </div>
 </div>
 
 <script>
 let allCats = [];
+let currentImage = '';
+
+function mkTierRow(quantity='', price='') {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="number" min="1" class="fi tier-qty" value="${quantity}"></td>
+    <td><input type="number" min="0.01" step="0.01" class="fi tier-price" value="${price}"></td>
+    <td><button type="button" class="btn btn-outline btn-sm" onclick="this.closest('tr').remove()">✕</button></td>`;
+  return tr;
+}
+
+function addTierRow(quantity='', price='') {
+  document.getElementById('tierRows').appendChild(mkTierRow(quantity, price));
+}
+
+function sortTierRows() {
+  const tbody = document.getElementById('tierRows');
+  const rows = [...tbody.querySelectorAll('tr')];
+  rows.sort((a,b) => (parseInt(a.querySelector('.tier-qty').value||'0',10)) - (parseInt(b.querySelector('.tier-qty').value||'0',10)));
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+function collectTiers() {
+  const rows = [...document.querySelectorAll('#tierRows tr')];
+  const tiers = rows.map(r => ({
+    quantity: parseInt(r.querySelector('.tier-qty').value || '0', 10),
+    price: parseFloat(r.querySelector('.tier-price').value || '0')
+  }));
+
+  if (!tiers.length) return {ok:false, msg:'Add at least one quantity tier'};
+  const seen = new Set();
+  for (const t of tiers) {
+    if (!t.quantity || !t.price || t.quantity < 1 || t.price <= 0) return {ok:false, msg:'Quantity and price are required'};
+    if (seen.has(t.quantity)) return {ok:false, msg:'Duplicate quantity: ' + t.quantity};
+    seen.add(t.quantity);
+  }
+  tiers.sort((a,b) => a.quantity - b.quantity);
+  return {ok:true, tiers};
+}
 
 async function boot() {
   const catsRes = await fetch('/admin/api/categories').then(r=>r.json());
   allCats = catsRes.categories || [];
   document.getElementById('ep-cat').innerHTML = allCats.map(c=>`<option value="${c.id}">${escH(c.name)}</option>`).join('');
 
+  document.getElementById('ep-image').addEventListener('change', e => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    document.getElementById('imagePreview').innerHTML = `<img src="${url}" style="height:110px;border-radius:10px;border:1px solid var(--border)">`;
+  });
+
   const id = parseInt(document.getElementById('ep-id').value || '0', 10);
-  if (!id) return;
+  if (!id) { addTierRow(1000,''); addTierRow(2000,''); return; }
 
   const res = await fetch(`/admin/api/products/${id}`).then(r=>r.json());
   if (!res.ok || !res.product) return;
@@ -55,12 +114,15 @@ async function boot() {
   document.getElementById('ep-desc').value = p.description || '';
   document.getElementById('ep-specs').value = (p.specs||[]).map(s=>`${s.label}: ${s.value||''}`).join('\n');
 
-  const imgs = p.images || [];
-  ['ep-i1','ep-i2','ep-i3','ep-i4'].forEach((fid,i) => {
-    const val = imgs[i]?.url || '';
-    document.getElementById(fid).value = val;
-    previewImg(fid, 'pv'+(i+1));
-  });
+  currentImage = p.image_path || p.primary_image || '';
+  if (currentImage) {
+    document.getElementById('imagePreview').innerHTML = `<img src="${escAttr(currentImage)}" style="height:110px;border-radius:10px;border:1px solid var(--border)">`;
+  }
+
+  const tiersRes = await fetch(`/admin/api/products/${id}/tiers`).then(r=>r.json());
+  document.getElementById('tierRows').innerHTML = '';
+  (tiersRes.tiers || []).forEach(t => addTierRow(t.quantity, t.price));
+  if (!document.querySelector('#tierRows tr')) addTierRow(1000,'');
 }
 
 async function saveProd() {
@@ -69,21 +131,24 @@ async function saveProd() {
   const catId = parseInt(document.getElementById('ep-cat').value || '0', 10);
   if (!name || !catId) { toast('Name and category required', 'error'); return; }
 
+  const tierCheck = collectTiers();
+  if (!tierCheck.ok) { toast(tierCheck.msg, 'error'); return; }
+
   const specsRaw = document.getElementById('ep-specs').value.trim().split('\n').filter(Boolean);
   const specs = specsRaw.map(s => {
     const [label, ...rest] = s.split(':');
     return { label: label.trim(), value: rest.join(':').trim() };
   }).filter(s=>s.label);
 
-  const imgs = ['ep-i1','ep-i2','ep-i3','ep-i4'].map(id=>document.getElementById(id).value.trim()).filter(Boolean);
-
-  const data = {
+  const payload = {
     name,
     category_id: catId,
     description: document.getElementById('ep-desc').value.trim(),
     design_fee: parseFloat(document.getElementById('ep-design-fee').value || '0') || 0,
     is_active: parseInt(document.getElementById('ep-active').value || '1',10),
-    specs
+    specs,
+    image_path: currentImage || null,
+    quantity_tiers: tierCheck.tiers,
   };
 
   const url = id ? `/admin/api/products/${id}` : '/admin/api/products';
@@ -91,33 +156,39 @@ async function saveProd() {
   const res = await fetch(url, {
     method,
     headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'},
-    body: JSON.stringify(data)
+    body: JSON.stringify(payload)
   }).then(r=>r.json());
 
   if (!res.ok) { toast(res.msg || 'Failed', 'error'); return; }
 
   const prodId = res.id || id;
-  await fetch(`/admin/api/products/${prodId}/images`, { method:'DELETE', headers:{'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'} });
-  for (let i = 0; i < imgs.length; i++) {
-    await fetch(`/admin/api/products/${prodId}/images`, {
+
+  // save tiers explicitly (for edit reliability)
+  const tr = await fetch(`/admin/api/products/${prodId}/tiers`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'},
+    body: JSON.stringify({tiers: tierCheck.tiers})
+  }).then(r=>r.json());
+  if (!tr.ok) { toast(tr.msg || 'Tier save failed', 'error'); return; }
+
+  const file = document.getElementById('ep-image').files?.[0];
+  if (file) {
+    const fd = new FormData();
+    fd.append('image', file);
+    const up = await fetch(`/admin/api/products/${prodId}/image-upload`, {
       method: 'POST',
-      headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'},
-      body: JSON.stringify({ url: imgs[i], is_primary: i===0?1:0, sort_order: i })
-    });
+      headers: {'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'},
+      body: fd
+    }).then(r=>r.json());
+    if (!up.ok) { toast(up.msg || 'Image upload failed', 'error'); return; }
   }
 
   toast(id ? 'Product updated' : 'Product created', 'success');
-  setTimeout(()=>{ window.location.href = '/admin/products'; }, 400);
-}
-
-function previewImg(inputId, previewId) {
-  const url = document.getElementById(inputId)?.value?.trim();
-  const p = document.getElementById(previewId);
-  if (!p) return;
-  p.innerHTML = url ? `<img src="${url}" style="height:${inputId==='ep-i1'?'80':'54'}px;border-radius:8px;border:1px solid var(--border)" onerror="this.style.opacity=.3">` : '';
+  setTimeout(()=>{ window.location.href = '/admin/products'; }, 450);
 }
 
 function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }
+function escAttr(s){return escH(s).replace(/'/g,'&#39;');}
 function toast(msg, type='info') {
   const w=document.getElementById('tw'); const t=document.createElement('div');
   t.className='toast '+type; t.textContent=msg; w.appendChild(t);

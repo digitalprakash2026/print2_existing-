@@ -115,6 +115,65 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true]);
     }
 
+    if (preg_match('#^/admin/api/products/(\d+)/tiers$#', $uri, $m) && $method === 'GET') {
+        $tiers = Database::rows("SELECT id, quantity, price FROM product_quantity_tiers WHERE product_id=? ORDER BY quantity ASC", [(int)$m[1]]);
+        json(['ok'=>true,'tiers'=>$tiers]);
+    }
+    if (preg_match('#^/admin/api/products/(\d+)/tiers$#', $uri, $m) && $method === 'POST') {
+        $tiers = $body['tiers'] ?? [];
+        if (!is_array($tiers)) json(['ok'=>false,'msg'=>'Invalid tiers']);
+
+        $seen = [];
+        usort($tiers, fn($a,$b) => ((int)($a['quantity']??0)) <=> ((int)($b['quantity']??0)));
+        foreach ($tiers as $t) {
+            $q = (int)($t['quantity'] ?? 0);
+            $pr = (float)($t['price'] ?? 0);
+            if ($q <= 0 || $pr <= 0) json(['ok'=>false,'msg'=>'Quantity and price are required']);
+            if (isset($seen[$q])) json(['ok'=>false,'msg'=>'Duplicate quantity: ' . $q]);
+            $seen[$q] = true;
+        }
+
+        Database::query("DELETE FROM product_quantity_tiers WHERE product_id=?", [(int)$m[1]]);
+        foreach ($tiers as $t) {
+            Database::insert("INSERT INTO product_quantity_tiers (product_id, quantity, price, created_at) VALUES (?,?,?,NOW())", [(int)$m[1], (int)$t['quantity'], (float)$t['price']]);
+        }
+        json(['ok'=>true]);
+    }
+
+    if (preg_match('#^/admin/api/products/(\d+)/image-upload$#', $uri, $m) && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 5 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 5MB'], 400);
+
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowedExt = ['jpg','jpeg','png','webp'];
+        if (!in_array($ext, $allowedExt, true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        $allowedMime = ['image/jpeg','image/png','image/webp'];
+        if (!in_array($mime, $allowedMime, true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+
+        $dir = PUBLIC_PATH . '/uploads/products/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+
+        $name = 'prod_' . (int)$m[1] . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) {
+            json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        }
+
+        $publicPath = '/uploads/products/' . $name;
+        Database::query("UPDATE products SET image_path=? WHERE id=?", [$publicPath, (int)$m[1]]);
+
+        Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=?", [(int)$m[1]]);
+        $pid = Database::insert("INSERT INTO product_images (product_id, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?)", [(int)$m[1], $publicPath, 'Product image', 1, 0]);
+        json(['ok'=>true,'path'=>$publicPath,'image_id'=>$pid]);
+    }
+
+
     if (preg_match('#^/admin/api/products/(\d+)/images$#', $uri, $m) && $method === 'POST') {
         $pid = (int)$m[1];
         $id = Database::insert("INSERT INTO product_images (product_id, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?)",

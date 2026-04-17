@@ -28,7 +28,7 @@ class Cart
 
         $item = [
             'product_id'          => (int)$data['product_id'],
-            'quality_id'          => (int)$data['quality_id'],
+            'quality_id'          => (int)($data['quality_id'] ?? 1),
             'quantity'            => (int)$data['quantity'],
             'attribute_selections'=> json_encode($data['attribute_selections'] ?? []),
             'design_choice'       => $data['design_choice'] ?? 'upload',
@@ -113,12 +113,11 @@ class Cart
         if ($userId) {
             return \Database::rows(
                 "SELECT ci.*, p.name as product_name, p.slug,
-                        q.name as quality_name,
+                        'Standard' as quality_name,
                         pi.url as product_image
                  FROM cart_items ci
                  JOIN carts c ON ci.cart_id = c.id
                  JOIN products p ON ci.product_id = p.id
-                 JOIN qualities q ON ci.quality_id = q.id
                  LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
                  LEFT JOIN artwork_files af ON af.cart_item_id = ci.id
                  WHERE c.user_id = ?
@@ -132,12 +131,11 @@ class Cart
         foreach ($items as &$item) {
             $prod = \Database::row(
                 "SELECT p.name as product_name, p.slug, pi.url as product_image,
-                        q.name as quality_name
+                        'Standard' as quality_name
                  FROM products p
-                 JOIN qualities q ON q.id = ?
                  LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
                  WHERE p.id = ?",
-                [$item['quality_id'], $item['product_id']]
+                [$item['product_id']]
             );
             if ($prod) $item = array_merge($item, $prod);
         }
@@ -238,7 +236,6 @@ class Cart
     private static function validateItem(array $d): array
     {
         if (empty($d['product_id'])) return ['ok' => false, 'msg' => 'Product required'];
-        if (empty($d['quality_id'])) return ['ok' => false, 'msg' => 'Quality required'];
         if (empty($d['quantity']))   return ['ok' => false, 'msg' => 'Quantity required'];
         if (empty($d['design_choice'])) return ['ok' => false, 'msg' => 'Design choice required'];
         return ['ok' => true];
