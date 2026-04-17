@@ -11,14 +11,14 @@ START TRANSACTION;
 -- -----------------------------------------------------
 -- Default admin credential after running this SQL:
 -- email: admin@rcsgraphic.in
--- password: admin@123
+-- password: admin123
 UPDATE admin_users
-SET password = '$2y$10$icDaIkokaMPjih/Dfq23uOZZSv4BBv0g9zyzQ5Kcw26xEndqUIM52',
+SET password = '$2y$10$rvLVwBkKU4fLr5Q0QmTrWuUoYs2rtx7OaiwdaOqUkXQD8gigxmfXK',
     is_active = 1
 WHERE email = 'admin@rcsgraphic.in';
 
 INSERT INTO admin_users (name, email, password, role, is_active, created_at)
-SELECT 'Admin', 'admin@rcsgraphic.in', '$2y$10$icDaIkokaMPjih/Dfq23uOZZSv4BBv0g9zyzQ5Kcw26xEndqUIM52', 'super', 1, NOW()
+SELECT 'Admin', 'admin@rcsgraphic.in', '$2y$10$rvLVwBkKU4fLr5Q0QmTrWuUoYs2rtx7OaiwdaOqUkXQD8gigxmfXK', 'super', 1, NOW()
 WHERE NOT EXISTS (SELECT 1 FROM admin_users WHERE email='admin@rcsgraphic.in');
 
 -- -----------------------------------------------------

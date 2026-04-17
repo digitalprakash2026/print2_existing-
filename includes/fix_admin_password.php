@@ -34,7 +34,7 @@ echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Admin Fix</title>
 try {
     $pdo = new PDO("mysql:host={$dbH};dbname={$dbN};charset=utf8mb4", $dbU, $dbP, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
-    $newPass = 'admin@123';
+    $newPass = 'admin123';
     $newHash = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 10]);
 
     $existing = $pdo->query("SELECT id FROM admin_users")->fetchAll(PDO::FETCH_ASSOC);
@@ -47,7 +47,7 @@ try {
             ->execute(['Admin', 'admin@rcsgraphic.in', $newHash, 'super']);
     }
 
-    echo '<div class="card"><h2>✅ Admin reset complete</h2><p>Email: <code>admin@rcsgraphic.in</code><br>Password: <code>admin@123</code></p><a href="/admin/login" class="btn">Go to Admin Login</a></div>';
+    echo '<div class="card"><h2>✅ Admin reset complete</h2><p>Email: <code>admin@rcsgraphic.in</code><br>Password: <code>admin123</code></p><a href="/admin/login" class="btn">Go to Admin Login</a></div>';
 } catch (PDOException $e) {
     echo '<div class="card"><h2 class="err">DB Error</h2><p>' . htmlspecialchars($e->getMessage()) . '</p><p>Check <code>/.env</code> credentials in project root.</p></div>';
 }
