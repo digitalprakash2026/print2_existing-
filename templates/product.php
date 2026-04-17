@@ -330,7 +330,7 @@ const QUALITIES   = <?= json_encode($qualities) ?>;
 const DESIGN_FEE  = <?= (float)$designFee ?>;
 
 // ── State ──────────────────────────────────────────────────────
-let selectedQualityId  = <?= $qualities ? (int)$qualities[0]['id'] : 0 ?>;
+let selectedQualityId  = <?= $qualities ? (int)$qualities[0]['id'] : 1 ?>;
 let selectedQualityIdx = 0;
 // Ensure first quality card is visually selected on load
 document.addEventListener('DOMContentLoaded', () => {
@@ -363,12 +363,14 @@ function selQual(idx, qualId, clickedEl) {
 
 // Quantity Slabs
 async function reloadQtySlabs() {
-  if (!selectedQualityId) return;
+  if (!PRODUCT_ID) return;
   try {
     const resp = await fetch(`/api/products/${PRODUCT_ID}/pricing`);
     const data = await resp.json();
-    const quality = (data.qualities || []).find(q => q.id == selectedQualityId);
-    if (!quality) return;
+    const list = data.qualities || [];
+    if (!list.length) return;
+    const quality = list.find(q => q.id == selectedQualityId) || list[0];
+    selectedQualityId = quality.id;
 
     const sel  = document.getElementById('pdQty');
     const prev = sel.value;
@@ -510,7 +512,7 @@ async function addToCart(opts = {}) {
   const v = validateOrder();
   if (!v.ok) {
     toast(v.msg, 'error');
-    return;
+    return false;
   }
 
   const btn = document.getElementById('addCartBtn');
@@ -543,11 +545,13 @@ async function addToCart(opts = {}) {
       toast('Added to cart! 🛒', 'success');
       updateCartCount();
       if (!opts.silent) openCart();
-    } else {
-      toast(data.msg || 'Could not add to cart', 'error');
+      return true;
     }
+    toast(data.msg || 'Could not add to cart', 'error');
+    return false;
   } catch {
     toast('Error. Please try again.', 'error');
+    return false;
   } finally {
     btn.disabled = false;
     btn.textContent = '🛒 Add to Cart';
@@ -558,10 +562,11 @@ async function buyNow() {
   const v = validateOrder();
   if (!v.ok) {
     toast(v.msg, 'error');
-    return;
+    return false;
   }
 
-  await addToCart({ silent: true });
+  const ok = await addToCart({ silent: true });
+  if (!ok) return;
   closeCart();
   location.href = '/checkout';
 }
@@ -569,10 +574,6 @@ async function buyNow() {
 function validateOrder() {
   if (!selectedQty) {
     return { ok: false, msg: 'Please select a quantity' };
-  }
-
-  if (!selectedQualityId) {
-    return { ok: false, msg: 'Please select a quality option' };
   }
 
   return { ok: true };

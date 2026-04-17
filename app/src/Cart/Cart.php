@@ -18,7 +18,7 @@ class Cart
 
         $priceInfo = Pricing::calculate(
             (int)$data['product_id'],
-            (int)$data['quality_id'],
+            (int)($data['quality_id'] ?? 1),
             (int)$data['quantity'],
             $data['attribute_selections'] ?? [],
             $data['design_choice'] ?? 'upload'
