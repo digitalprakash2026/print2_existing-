@@ -130,18 +130,29 @@ class Auth
             return ['ok' => false, 'msg' => 'Incorrect email or password.'];
         }
 
-        // Verify password with legacy compatibility:
-        // some older dumps have plaintext admin passwords.
-        $storedPassword = (string)($admin['password'] ?? '');
-        $isHash = str_starts_with($storedPassword, '$2y$') || str_starts_with($storedPassword, '$2a$') || str_starts_with($storedPassword, '$2b$');
-        $valid = $isHash ? password_verify($password, $storedPassword) : hash_equals($storedPassword, $password);
+        // Verify password with broad legacy compatibility:
+        // - bcrypt/argon hashes (password_verify)
+        // - plaintext values from old dumps
+        // - md5/sha1 legacy values from older installs
+        $storedPassword = trim((string)($admin['password'] ?? ''));
+        $info = password_get_info($storedPassword);
+        $isPasswordHash = (int)($info['algo'] ?? 0) !== 0;
+
+        $valid = false;
+        if ($isPasswordHash) {
+            $valid = password_verify($password, $storedPassword);
+        } else {
+            $valid = hash_equals($storedPassword, $password)
+                || hash_equals(strtolower($storedPassword), md5($password))
+                || hash_equals(strtolower($storedPassword), sha1($password));
+        }
 
         if (!$valid) {
             return ['ok' => false, 'msg' => 'Incorrect email or password.'];
         }
 
-        // Always move legacy/plaintext password to bcrypt hash after successful login.
-        if (!$isHash || password_needs_rehash($storedPassword, PASSWORD_BCRYPT, ['cost' => 10])) {
+        // Always migrate legacy/plaintext/weak hash values to bcrypt after successful login.
+        if (!$isPasswordHash || password_needs_rehash($storedPassword, PASSWORD_BCRYPT, ['cost' => 10])) {
             $newHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
             try {
                 \Database::query("UPDATE admin_users SET password = ? WHERE id = ?", [$newHash, $admin['id']]);
