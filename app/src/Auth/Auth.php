@@ -130,13 +130,18 @@ class Auth
             return ['ok' => false, 'msg' => 'Incorrect email or password.'];
         }
 
-        // Verify password using PHP's built-in bcrypt verification
-        if (!password_verify($password, $admin['password'])) {
+        // Verify password with legacy compatibility:
+        // some older dumps have plaintext admin passwords.
+        $storedPassword = (string)($admin['password'] ?? '');
+        $isHash = str_starts_with($storedPassword, '$2y$') || str_starts_with($storedPassword, '$2a$') || str_starts_with($storedPassword, '$2b$');
+        $valid = $isHash ? password_verify($password, $storedPassword) : hash_equals($storedPassword, $password);
+
+        if (!$valid) {
             return ['ok' => false, 'msg' => 'Incorrect email or password.'];
         }
 
-        // Rehash if needed (future-proofs cost factor changes)
-        if (password_needs_rehash($admin['password'], PASSWORD_BCRYPT, ['cost' => 10])) {
+        // Always move legacy/plaintext password to bcrypt hash after successful login.
+        if (!$isHash || password_needs_rehash($storedPassword, PASSWORD_BCRYPT, ['cost' => 10])) {
             $newHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
             try {
                 \Database::query("UPDATE admin_users SET password = ? WHERE id = ?", [$newHash, $admin['id']]);
