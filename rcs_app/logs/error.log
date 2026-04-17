@@ -1,0 +1,32 @@
+[06-Apr-2026 11:03:33 UTC] PHP Fatal error:  Uncaught PDOException: There is no active transaction in /home/u330769761/domains/rcsgraphic.com/rcs_app/src/Orders/OrderManager.php:123
+Stack trace:
+#0 /home/u330769761/domains/rcsgraphic.com/rcs_app/src/Orders/OrderManager.php(123): PDO->rollBack()
+#1 /home/u330769761/domains/rcsgraphic.com/rcs_app/api/router.php(229): Orders\OrderManager::place()
+#2 /home/u330769761/domains/rcsgraphic.com/public_html/print/index.php(192): require_once('/home/u33076976...')
+#3 {main}
+  thrown in /home/u330769761/domains/rcsgraphic.com/rcs_app/src/Orders/OrderManager.php on line 123
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $total in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 10
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $search in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 16
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $status in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 18
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $status in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 20
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $status in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 20
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $status in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 20
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $status in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 20
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $status in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 20
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $status in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 20
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $status in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 20
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $search in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 24
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $status in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 24
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $orders in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 29
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $orders in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 33
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  foreach() argument must be of type array|object, null given in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 33
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $perPage in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 106
+[09-Apr-2026 03:23:17 UTC] PHP Warning:  Undefined variable $total in /home/u330769761/domains/rcsgraphic.com/rcs_app/templates/admin/orders.php on line 106
+[09-Apr-2026 03:23:42 UTC] PHP Fatal error:  Uncaught TypeError: number_format(): Argument #1 ($num) must be of type int|float, string given in /home/u330769761/domains/rcsgraphic.com/rcs_app/src/Invoice/InvoiceGenerator.php:80
+Stack trace:
+#0 /home/u330769761/domains/rcsgraphic.com/rcs_app/src/Invoice/InvoiceGenerator.php(80): number_format()
+#1 /home/u330769761/domains/rcsgraphic.com/rcs_app/src/Invoice/InvoiceGenerator.php(182): Invoice\InvoiceGenerator::buildHtml()
+#2 /home/u330769761/domains/rcsgraphic.com/rcs_app/src/Invoice/InvoiceGenerator.php(34): Invoice\InvoiceGenerator::htmlFallback()
+#3 /home/u330769761/domains/rcsgraphic.com/public_html/print/index.php(186): Invoice\InvoiceGenerator::download()
+#4 {main}
+  thrown in /home/u330769761/domains/rcsgraphic.com/rcs_app/src/Invoice/InvoiceGenerator.php on line 80
