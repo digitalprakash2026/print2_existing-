@@ -14,7 +14,7 @@ try {
 } catch (\Throwable) {}
 
 // Design fee from admin settings (Admin → Settings → design_fee)
-$designFee = (float)($settingsMap['design_fee'] ?? 0);
+$designFee = (float)($product['design_fee'] ?? ($settingsMap['design_fee'] ?? 0));
 
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
@@ -31,7 +31,7 @@ if (!$primaryImg) $primaryImg = 'https://placehold.co/600x600/EEF3FD/1A56E8?text
 
 $specs      = $product['specs']      ?? [];
 $qualities  = $product['qualities']  ?? [];
-$attrGroups = $product['attr_groups']?? [];
+$attrGroups = []; // Attribute pricing retired from customer flow
 $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
 ?>
 
@@ -160,26 +160,8 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
         </div>
       </div>
 
-      <!-- ── ATTRIBUTE GROUPS ── -->
-      <?php if ($attrGroups): ?>
-      <div id="pdAttrsWrap">
-        <?php foreach ($attrGroups as $ag): ?>
-        <div class="cfg" data-group-id="<?= (int)$ag['id'] ?>">
-          <div class="cfg-title"><?= htmlspecialchars($ag['name']) ?></div>
-          <div class="attr-opts">
-            <?php foreach ($ag['options'] as $oi => $opt): ?>
-            <div class="attr-opt <?= $oi === 0 ? 'sel' : '' ?>"
-                 onclick="selAttr(<?= (int)$ag['id'] ?>, <?= (int)$opt['id'] ?>, this)"
-                 data-group="<?= (int)$ag['id'] ?>"
-                 data-option="<?= (int)$opt['id'] ?>">
-              <?= htmlspecialchars($opt['label']) ?>
-            </div>
-            <?php endforeach; ?>
-          </div>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
+
+      <!-- Attribute groups hidden in customer flow -->
 
       <!-- ── DESIGN OPTION ── -->
       <div class="cfg">
@@ -344,7 +326,6 @@ const PRODUCT_ID  = <?= (int)$product['id'] ?>;
 const BIZ_WA      = '<?= htmlspecialchars($bizWa) ?>';
 const CSRF        = '<?= htmlspecialchars($csrf ?? '') ?>';
 const QUALITIES   = <?= json_encode($qualities) ?>;
-const ATTR_GROUPS = <?= json_encode($attrGroups) ?>;
 const DESIGN_FEE  = <?= (float)$designFee ?>;
 
 // ── State ──────────────────────────────────────────────────────
@@ -356,16 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (firstQual && !firstQual.classList.contains('sel')) firstQual.classList.add('sel');
 });
 let selectedQty        = null;
-let attrSels           = {};
 let artworkId          = null;
 let uploadedFileName   = null;
 let designChoice       = 'upload';
 let currentBasePrice   = 0;
-
-// Init
-ATTR_GROUPS.forEach(ag => {
-  if (ag.options?.length) attrSels[ag.id] = ag.options[0].id;
-});
 
 // Gallery
 function switchImg(url, el) {
@@ -419,13 +394,6 @@ async function reloadQtySlabs() {
 function onQtyChange() {
   selectedQty = parseInt(document.getElementById('pdQty').value) || null;
   calcPrice();
-}
-
-// Attribute Selection
-function selAttr(groupId, optId, el) {
-  attrSels[groupId] = optId;
-  el.closest('[data-group-id]').querySelectorAll('.attr-opt').forEach(o => o.classList.remove('sel'));
-  el.classList.add('sel');
 }
 
 // Price Calculation
@@ -537,7 +505,7 @@ function removeFile() {
 }
 
 // Add to Cart
-async function addToCart() {
+async function addToCart(opts = {}) {
   const v = validateOrder();
   if (!v.ok) {
     toast(v.msg, 'error');
@@ -560,7 +528,7 @@ async function addToCart() {
         product_id: PRODUCT_ID,
         quality_id: selectedQualityId,
         quantity: selectedQty,
-        attribute_selections: attrSels,
+        attribute_selections: {},
         design_choice: designChoice,
         design_brief: '',
         notes: '',
@@ -573,7 +541,7 @@ async function addToCart() {
     if (data.ok) {
       toast('Added to cart! 🛒', 'success');
       updateCartCount();
-      openCart();
+      if (!opts.silent) openCart();
     } else {
       toast(data.msg || 'Could not add to cart', 'error');
     }
@@ -592,7 +560,7 @@ async function buyNow() {
     return;
   }
 
-  await addToCart();
+  await addToCart({ silent: true });
   closeCart();
   location.href = '/checkout';
 }

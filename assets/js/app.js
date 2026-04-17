@@ -238,6 +238,7 @@ function renderCartDrawer() {
       <div class="cart-sum-row"><span style="color:var(--text2)">Subtotal</span><span>${fmt(totals.subtotal)}</span></div>
       ${disc > 0 ? `<div class="cart-sum-row" style="color:var(--green)"><span>Discount</span><span>-${fmt(disc)}</span></div>` : ''}
       <div class="cart-sum-row"><span style="color:var(--text2)">GST (${totals.gst_pct || APP.gstPercent}%)</span><span>${fmt(totals.gst_amt)}</span></div>
+      <div class="cart-sum-row"><span style="color:var(--text2)">Shipping</span><span>${Number(totals.shipping||0) > 0 ? fmt(totals.shipping) : 'Free'}</span></div>
       <div class="cart-sum-row total"><span>Total</span><span style="color:var(--blue)">${fmt(totals.total)}</span></div>
     </div>
     <a href="/checkout" class="btn btn-blue btn-full" style="border-radius:10px;padding:14px;font-size:15px">Proceed to Checkout →</a>

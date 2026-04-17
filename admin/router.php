@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 if (!str_starts_with($uri, '/admin')) return;
 
-// Admin login (unauthenticated)
 if ($uri === '/admin/login' && $method === 'GET') {
     if (\Auth\Auth::isAdmin()) redirect('/admin');
     view('admin/login');
@@ -15,14 +14,10 @@ if ($uri === '/admin/login' && $method === 'GET') {
 }
 
 if ($uri === '/admin/login' && $method === 'POST') {
-    // NOTE: No CSRF check on login — form is protected by session mechanism
-    $email    = strtolower(trim($_POST['email']    ?? ''));
+    $email    = strtolower(trim($_POST['email'] ?? ''));
     $password = trim($_POST['password'] ?? '');
     $result   = \Auth\Auth::adminLogin($email, $password);
-    if ($result['ok']) {
-        redirect('/admin');
-    }
-    // Re-render login with error (do not redirect — preserve POST data context)
+    if ($result['ok']) redirect('/admin');
     view('admin/login', ['loginError' => $result['msg']]);
     exit;
 }
@@ -32,15 +27,12 @@ if ($uri === '/admin/logout') {
     redirect('/admin/login');
 }
 
-// All other admin routes require auth
 \Auth\Auth::requireAdmin();
 
-// ── Admin API Endpoints ───────────────────────────────────────
 if (str_starts_with($uri, '/admin/api/')) {
     header('Content-Type: application/json');
     $body = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
-    // Dashboard stats
     if ($uri === '/admin/api/dashboard' && $method === 'GET') {
         $stats = [
             'total_orders'    => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
@@ -52,38 +44,64 @@ if (str_starts_with($uri, '/admin/api/')) {
         ];
         $byStatus    = Database::rows("SELECT status, COUNT(*) as count FROM orders GROUP BY status");
         $monthly     = Database::rows("SELECT DATE_FORMAT(created_at,'%b %Y') as month, SUM(total_amount) as revenue, COUNT(*) as orders FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH) GROUP BY YEAR(created_at), MONTH(created_at) ORDER BY created_at ASC");
-        $topProducts = Database::rows("SELECT product_name, COUNT(*) as count, SUM(total_price) as revenue FROM order_items GROUP BY product_name ORDER BY count DESC LIMIT 5");
+        $topProducts = Database::rows("SELECT product_name, COUNT(*) as count, SUM(total_price) as revenue FROM order_items GROUP BY product_name ORDER BY count DESC LIMIT 8");
         $recentOrders= Database::rows("SELECT o.*, COUNT(oi.id) as item_count FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id GROUP BY o.id ORDER BY o.created_at DESC LIMIT 10");
         json(['ok'=>true,'stats'=>$stats,'by_status'=>$byStatus,'monthly'=>$monthly,'top_products'=>$topProducts,'recent_orders'=>$recentOrders]);
     }
 
-    // Orders list
     if ($uri === '/admin/api/orders' && $method === 'GET') {
-        $status = $_GET['status'] ?? '';
+        $status = trim($_GET['status'] ?? '');
+        $q      = trim($_GET['q'] ?? '');
+        $where = [];
         $params = [];
-        $where  = '';
-        if ($status) { $where = 'WHERE o.status = ?'; $params[] = $status; }
-        $orders = Database::rows("SELECT o.*, COUNT(oi.id) as item_count FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id $where GROUP BY o.id ORDER BY o.created_at DESC", $params);
+        if ($status && $status !== 'all') { $where[] = 'o.status = ?'; $params[] = $status; }
+        if ($q) {
+            $where[] = '(o.order_id LIKE ? OR o.customer_name LIKE ? OR o.customer_phone LIKE ? OR o.customer_email LIKE ?)';
+            $like = '%' . $q . '%';
+            array_push($params, $like, $like, $like, $like);
+        }
+        $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $orders = Database::rows("SELECT o.*, COUNT(oi.id) as item_count FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id $whereSql GROUP BY o.id ORDER BY o.created_at DESC", $params);
         json(['ok'=>true,'orders'=>$orders]);
     }
 
-    // Single order
     if (preg_match('#^/admin/api/orders/(\d+)$#', $uri, $m) && $method === 'GET') {
         json(['ok'=>true,'order'=>\Orders\OrderManager::getOrder((int)$m[1])]);
     }
 
-    // Update order status
     if (preg_match('#^/admin/api/orders/(\d+)/status$#', $uri, $m) && $method === 'POST') {
-        $ok = \Orders\OrderManager::updateStatus((int)$m[1], $body['status']??'', $body['note']??'');
+        $ok = \Orders\OrderManager::updateStatus((int)$m[1], $body['status'] ?? '', $body['note'] ?? '');
         json(['ok'=>$ok]);
     }
 
-    // Products
+    if (preg_match('#^/admin/api/orders/(\d+)/shipping$#', $uri, $m) && $method === 'POST') {
+        try {
+            Database::query(
+                "UPDATE orders SET shipping_provider=?, tracking_code=?, shipping_status=?, shipping_notes=?, updated_at=NOW() WHERE id=?",
+                [
+                    trim((string)($body['shipping_provider'] ?? '')),
+                    trim((string)($body['tracking_code'] ?? '')),
+                    trim((string)($body['shipping_status'] ?? '')),
+                    trim((string)($body['shipping_notes'] ?? '')),
+                    (int)$m[1],
+                ]
+            );
+            \Orders\AdminAudit::log('order_shipping_update', 'Order #' . $m[1] . ' shipping updated');
+            json(['ok'=>true]);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Shipping columns missing. Apply SQL migration first.'], 500);
+        }
+    }
+
     if ($uri === '/admin/api/products' && $method === 'GET') {
         json(['ok'=>true,'products'=>\Catalog\ProductCatalog::all(false)]);
     }
     if ($uri === '/admin/api/products' && $method === 'POST') {
         json(\Catalog\ProductCatalog::upsert($body));
+    }
+    if (preg_match('#^/admin/api/products/(\d+)$#', $uri, $m) && $method === 'GET') {
+        $p = \Catalog\ProductCatalog::byId((int)$m[1]);
+        json($p ? ['ok'=>true,'product'=>$p] : ['ok'=>false,'msg'=>'Not found'], $p ? 200 : 404);
     }
     if (preg_match('#^/admin/api/products/(\d+)$#', $uri, $m) && $method === 'PUT') {
         json(\Catalog\ProductCatalog::upsert($body, (int)$m[1]));
@@ -97,7 +115,6 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true]);
     }
 
-    // Product images
     if (preg_match('#^/admin/api/products/(\d+)/images$#', $uri, $m) && $method === 'POST') {
         $pid = (int)$m[1];
         $id = Database::insert("INSERT INTO product_images (product_id, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?)",
@@ -105,12 +122,15 @@ if (str_starts_with($uri, '/admin/api/')) {
         if (!empty($body['is_primary'])) Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=? AND id!=?", [$pid,$id]);
         json(['ok'=>true,'id'=>$id]);
     }
+    if (preg_match('#^/admin/api/products/(\d+)/images$#', $uri, $m) && $method === 'DELETE') {
+        Database::query("DELETE FROM product_images WHERE product_id=?", [$m[1]]);
+        json(['ok'=>true]);
+    }
     if (preg_match('#^/admin/api/images/(\d+)$#', $uri, $m) && $method === 'DELETE') {
         Database::query("DELETE FROM product_images WHERE id=?", [$m[1]]);
         json(['ok'=>true]);
     }
 
-    // Qualities + slabs
     if ($uri === '/admin/api/qualities' && $method === 'GET') {
         json(['ok'=>true,'qualities'=>Database::rows("SELECT * FROM qualities ORDER BY sort_order ASC")]);
     }
@@ -126,13 +146,14 @@ if (str_starts_with($uri, '/admin/api/')) {
     if (preg_match('#^/admin/api/qualities/(\d+)/slabs$#', $uri, $m) && $method === 'POST') {
         $qid = (int)$m[1]; $pid = (int)($body['product_id']??0);
         foreach ($body['slabs']??[] as $qty => $price) {
-            if ((float)$price > 0) Database::query("INSERT INTO quantity_slabs (product_id, quality_id, quantity, price) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE price=VALUES(price)",
-                [$pid, $qid, (int)$qty, (float)$price]);
+            if ((float)$price > 0) {
+                Database::query("INSERT INTO quantity_slabs (product_id, quality_id, quantity, price) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE price=VALUES(price)",
+                    [$pid, $qid, (int)$qty, (float)$price]);
+            }
         }
         json(['ok'=>true]);
     }
 
-    // Attribute groups
     if ($uri === '/admin/api/attribute-groups' && $method === 'GET') {
         $groups = Database::rows("SELECT * FROM attribute_groups ORDER BY sort_order");
         foreach ($groups as &$g) $g['options'] = Database::rows("SELECT * FROM attribute_options WHERE group_id=? ORDER BY sort_order", [$g['id']]);
@@ -160,7 +181,6 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true]);
     }
 
-    // Coupons
     if ($uri === '/admin/api/coupons' && $method === 'GET') {
         json(['ok'=>true,'coupons'=>Database::rows("SELECT * FROM coupons ORDER BY created_at DESC")]);
     }
@@ -182,7 +202,6 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true]);
     }
 
-    // Categories
     if ($uri === '/admin/api/categories' && $method === 'GET') {
         json(['ok'=>true,'categories'=>\Catalog\ProductCatalog::categories()]);
     }
@@ -193,7 +212,6 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true,'id'=>$id]);
     }
 
-    // Settings
     if ($uri === '/admin/api/settings' && $method === 'GET') {
         $rows = Database::rows("SELECT `key`,value FROM settings");
         json(['ok'=>true,'settings'=>array_column($rows,'value','key')]);
@@ -204,56 +222,55 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true]);
     }
 
-    // Customers
     if ($uri === '/admin/api/customers' && $method === 'GET') {
         json(['ok'=>true,'customers'=>Database::rows("SELECT u.*,COUNT(o.id) as order_count, COALESCE(SUM(o.total_amount),0) as total_spent FROM users u LEFT JOIN orders o ON o.user_id=u.id GROUP BY u.id ORDER BY total_spent DESC")]);
     }
-
-    // Audit logs
     if ($uri === '/admin/api/audit-logs' && $method === 'GET') {
         json(['ok'=>true,'logs'=>Database::rows("SELECT * FROM admin_audit_logs ORDER BY created_at DESC LIMIT 200")]);
     }
-
-    // Artwork for admin
     if (preg_match('#^/admin/api/artwork/(\d+)$#', $uri, $m) && $method === 'GET') {
         $file = Database::row("SELECT * FROM artwork_files WHERE id=?",[$m[1]]);
         json($file ? ['ok'=>true,'file'=>$file] : ['ok'=>false,'msg'=>'Not found'],404);
     }
-
-    // Sheets retry
     if ($uri === '/admin/api/sheets/retry' && $method === 'POST') {
         $failed = Database::rows("SELECT * FROM sheets_sync_log WHERE resolved=0 LIMIT 20");
-        foreach ($failed as $row) {
-            Database::query("UPDATE sheets_sync_log SET resolved=1 WHERE id=?",[$row['id']]);
-        }
+        foreach ($failed as $row) Database::query("UPDATE sheets_sync_log SET resolved=1 WHERE id=?",[$row['id']]);
         json(['ok'=>true,'retried'=>count($failed)]);
     }
 
     json(['ok'=>false,'msg'=>'Admin API not found'],404);
 }
 
-// Settings form POST save
 if ($uri === '/admin/settings/save' && $method === 'POST') {
     foreach ($_POST as $k => $v) {
-        if ($k !== '_token') Database::setSetting($k, trim($v));
+        if ($k !== '_token' && $k !== 'new_admin_password') Database::setSetting($k, trim((string)$v));
     }
+
+    $newPass = trim((string)($_POST['new_admin_password'] ?? ''));
+    if ($newPass !== '') {
+        if (strlen($newPass) < 6) {
+            redirect('/admin/settings?saved=0&err=password_min_6');
+        }
+        $hash = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 10]);
+        $admin = \Auth\Auth::admin();
+        if ($admin && !empty($admin['id'])) {
+            Database::query("UPDATE admin_users SET password=? WHERE id=?", [$hash, $admin['id']]);
+        }
+    }
+
     \Orders\AdminAudit::log('settings_updated', 'Settings saved via form');
     redirect('/admin/settings?saved=1');
 }
 
-// CSV export
 if ($uri === '/admin/export/orders') {
     header('Content-Type: text/csv; charset=UTF-8');
     header('Content-Disposition: attachment; filename="orders-' . date('Y-m-d') . '.csv"');
     $orders = Database::rows("SELECT o.order_id,o.created_at,o.customer_name,o.customer_phone,o.customer_email,o.subtotal,o.discount_amount,o.gst_amount,o.total_amount,o.payment_status,o.status,o.coupon_code,o.payment_id FROM orders o ORDER BY o.created_at DESC");
     echo implode(',', ['Order ID','Date','Customer','Phone','Email','Subtotal','Discount','GST','Total','Payment','Status','Coupon','Payment ID']) . "\n";
-    foreach ($orders as $row) {
-        echo implode(',', array_map(fn($v) => '"' . str_replace('"','""',$v??'') . '"', $row)) . "\n";
-    }
+    foreach ($orders as $row) echo implode(',', array_map(fn($v) => '"' . str_replace('"','""',$v??'') . '"', $row)) . "\n";
     exit;
 }
 
-// Invoice download for admin
 if (preg_match('#^/admin/invoice/(.+)$#', $uri, $m)) {
     $order = \Orders\OrderManager::getOrderByOrderId($m[1]);
     if (!$order) { http_response_code(404); exit; }
@@ -261,27 +278,68 @@ if (preg_match('#^/admin/invoice/(.+)$#', $uri, $m)) {
     exit;
 }
 
-// ── Admin HTML Pages ──────────────────────────────────────────
-// Load settings map for settings page
+if (preg_match('#^/admin/artwork/(\d+)/download$#', $uri, $m)) {
+    $file = Database::row("SELECT * FROM artwork_files WHERE id=?", [$m[1]]);
+    if (!$file) { http_response_code(404); exit('Not found'); }
+    $full = PUBLIC_PATH . ($file['file_path'] ?? '');
+    if (!is_file($full)) { http_response_code(404); exit('File missing'); }
+    header('Content-Type: ' . ($file['mime_type'] ?: 'application/octet-stream'));
+    header('Content-Disposition: attachment; filename="' . basename($file['original_name'] ?: $file['filename']) . '"');
+    header('Content-Length: ' . filesize($full));
+    readfile($full);
+    exit;
+}
+
 $settingsMap = [];
-if (str_contains($uri, '/admin/settings')) {
+if (str_contains($uri, '/admin/settings') || str_contains($uri, '/admin/integrations')) {
     $rows = Database::rows("SELECT `key`, value FROM settings");
     foreach ($rows as $r) $settingsMap[$r['key']] = $r['value'];
 }
 
+if ($uri === '/admin/orders') {
+    $search = trim((string)($_GET['search'] ?? ''));
+    $status = trim((string)($_GET['status'] ?? 'all'));
+    $page   = max(1, (int)($_GET['page'] ?? 1));
+    $perPage = 12;
+
+    $where = [];
+    $params = [];
+    if ($status !== 'all' && $status !== '') { $where[] = 'status = ?'; $params[] = $status; }
+    if ($search !== '') {
+        $where[] = '(order_id LIKE ? OR customer_name LIKE ? OR customer_phone LIKE ? OR customer_email LIKE ?)';
+        $like = '%' . $search . '%';
+        array_push($params, $like, $like, $like, $like);
+    }
+    $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+    $countRow = Database::row("SELECT COUNT(*) c FROM orders $whereSql", $params);
+    $total = (int)($countRow['c'] ?? 0);
+    $offset = ($page - 1) * $perPage;
+
+    $orders = Database::rows("SELECT * FROM orders $whereSql ORDER BY created_at DESC LIMIT $perPage OFFSET $offset", $params);
+    foreach ($orders as &$o) {
+        $o['items'] = Database::rows("SELECT * FROM order_items WHERE order_id=?", [$o['id']]);
+    }
+
+    view('admin/orders', compact('orders','total','page','perPage','status','search'));
+    exit;
+}
+
 $adminPage = match(true) {
     $uri === '/admin' || $uri === '/admin/dashboard' => 'admin/dashboard',
-    $uri === '/admin/orders'     => 'admin/orders',
+    $uri === '/admin/analytics'  => 'admin/analytics',
     $uri === '/admin/products'   => 'admin/products',
+    $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/customers'  => 'admin/customers',
     $uri === '/admin/settings'   => 'admin/settings',
+    $uri === '/admin/integrations' => 'admin/integrations',
     $uri === '/admin/audit-logs' => 'admin/audit-logs',
     default                      => null,
 };
 
-if ($adminPage) { view($adminPage); exit; }
+if ($adminPage) { view($adminPage, compact('settingsMap')); exit; }
 
 http_response_code(404);
 view('404');

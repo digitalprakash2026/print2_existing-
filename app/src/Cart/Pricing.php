@@ -52,10 +52,14 @@ class Pricing
         $designFee = 0.0;
         if ($designChoice === 'rcs') {
             try {
-                $feeSetting = \Database::setting('design_fee', '0');
-                $designFee  = (float)$feeSetting;
+                $productFee = \Database::row("SELECT design_fee FROM products WHERE id=?", [$productId]);
+                if ($productFee && $productFee['design_fee'] !== null && $productFee['design_fee'] !== '') {
+                    $designFee = (float)$productFee['design_fee'];
+                } else {
+                    $designFee = (float)\Database::setting('design_fee', '0');
+                }
             } catch (\Throwable) {
-                $designFee = 0.0;
+                $designFee = (float)\Database::setting('design_fee', '0');
             }
         }
 
@@ -175,9 +179,15 @@ class Pricing
         }
         unset($ag);
 
-        // Also return current design fee for display
+        // Design fee is per-product; fallback to global setting
         $designFee = 0.0;
-        try { $designFee = (float)\Database::setting('design_fee', '0'); } catch (\Throwable) {}
+        try {
+            $fee = \Database::row("SELECT design_fee FROM products WHERE id=?", [$productId]);
+            if ($fee && $fee['design_fee'] !== null && $fee['design_fee'] !== '') $designFee = (float)$fee['design_fee'];
+            else $designFee = (float)\Database::setting('design_fee', '0');
+        } catch (\Throwable) {
+            $designFee = (float)\Database::setting('design_fee', '0');
+        }
 
         return [
             'qualities'   => $qualities,

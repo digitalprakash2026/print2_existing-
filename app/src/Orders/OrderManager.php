@@ -120,7 +120,7 @@ class OrderManager
             return ['ok' => true, 'order' => $order, 'order_id' => $orderId];
 
         } catch (\Throwable $e) {
-            $db->rollBack();
+            if ($db->inTransaction()) $db->rollBack();
             error_log('Order placement failed: ' . $e->getMessage());
             return ['ok' => false, 'msg' => 'Order placement failed. Please try again.'];
         }

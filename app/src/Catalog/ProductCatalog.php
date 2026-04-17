@@ -165,11 +165,12 @@ class ProductCatalog
         if ($editId) {
             \Database::query(
                 "UPDATE products SET name=?, slug=?, category_id=?, description=?,
-                    meta_title=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
+                    meta_title=?, design_fee=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
                 [
                     $data['name'], $slug, $data['category_id'],
                     $data['description'] ?? '',
                     $data['meta_title'] ?? $data['name'],
+                    (float)($data['design_fee'] ?? 0),
                     $data['is_active'] ?? 1,
                     $data['sort_order'] ?? 0,
                     $editId,
@@ -181,12 +182,13 @@ class ProductCatalog
         }
 
         $id = \Database::insert(
-            "INSERT INTO products (name, slug, category_id, description, meta_title, is_active, sort_order, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+            "INSERT INTO products (name, slug, category_id, description, meta_title, design_fee, is_active, sort_order, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
             [
                 $data['name'], $slug, $data['category_id'],
                 $data['description'] ?? '',
                 $data['meta_title'] ?? $data['name'],
+                (float)($data['design_fee'] ?? 0),
                 $data['is_active'] ?? 1,
                 $data['sort_order'] ?? 0,
             ]

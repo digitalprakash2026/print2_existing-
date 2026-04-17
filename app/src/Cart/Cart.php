@@ -20,7 +20,8 @@ class Cart
             (int)$data['product_id'],
             (int)$data['quality_id'],
             (int)$data['quantity'],
-            $data['attribute_selections'] ?? []
+            $data['attribute_selections'] ?? [],
+            $data['design_choice'] ?? 'upload'
         );
 
         if (!$priceInfo['ok']) return $priceInfo;
@@ -173,13 +174,28 @@ class Cart
         $gstPct = (float)(\Database::setting('gst_percent', env('GST_PERCENT', '18')));
         $taxable = $subtotal - $discount;
         $gstAmt  = round($taxable * $gstPct / 100);
-        $total   = $taxable + $gstAmt;
+
+        $shippingMode = (string)\Database::setting('shipping_mode', 'flat');
+        $shippingFlat = (float)\Database::setting('shipping_flat_fee', '0');
+        $freeAbove    = (float)\Database::setting('shipping_free_above', '0');
+        $shipping = 0.0;
+        if ($shippingMode === 'flat') {
+            $shipping = $shippingFlat;
+        } elseif ($shippingMode === 'threshold') {
+            $shipping = ($taxable >= $freeAbove && $freeAbove > 0) ? 0.0 : $shippingFlat;
+        } else {
+            $shipping = 0.0;
+        }
+
+        $total   = $taxable + $gstAmt + $shipping;
 
         return [
             'subtotal' => $subtotal,
             'discount' => $discount,
             'gst_pct'  => $gstPct,
             'gst_amt'  => $gstAmt,
+            'shipping' => $shipping,
+            'shipping_mode' => $shippingMode,
             'total'    => $total,
             'coupon'   => $coupon,
         ];
@@ -225,9 +241,6 @@ class Cart
         if (empty($d['quality_id'])) return ['ok' => false, 'msg' => 'Quality required'];
         if (empty($d['quantity']))   return ['ok' => false, 'msg' => 'Quantity required'];
         if (empty($d['design_choice'])) return ['ok' => false, 'msg' => 'Design choice required'];
-        if ($d['design_choice'] === 'rcs' && empty($d['design_brief'])) {
-            return ['ok' => false, 'msg' => 'Design brief required when RCS provides design'];
-        }
         return ['ok' => true];
     }
 }
