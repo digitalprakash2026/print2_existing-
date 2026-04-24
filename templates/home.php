@@ -176,31 +176,27 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
     </div>
     <?php else: ?>
 
-    <div style="display:flex;flex-direction:column;gap:28px">
+    <div class="home-cat-grid">
       <?php foreach ($byCategory as $catId => $catData):
         $catProducts = array_slice($catData['products'], 0, 4);
         $catSlug     = htmlspecialchars($catData['slug']);
         $catName     = htmlspecialchars($catData['name']);
         $catIcon     = htmlspecialchars($catData['icon'] ?? '📦');
-        $totalInCat  = count($catData['products']);
       ?>
-      <div class="cat-box">
+      <div class="cat-box cat-box-square">
 
         <!-- Category header -->
         <div class="cat-box-hdr">
           <div class="cat-box-title">
             <div class="cat-box-icon"><?= $catIcon ?></div>
             <?= $catName ?>
-            <span style="font-size:12px;font-weight:500;color:var(--text3);font-family:var(--fn)">
-              (<?= $totalInCat ?> product<?= $totalInCat !== 1 ? 's' : '' ?>)
-            </span>
           </div>
           <a href="/category/<?= $catSlug ?>" class="cat-box-see">
-            See All <?= $catName ?> →
+            View More →
           </a>
         </div>
 
-        <!-- Products mini grid -->
+        <!-- Products mini grid (4 items preview) -->
         <div class="cat-box-products">
           <?php foreach ($catProducts as $p):
             $img  = $p['primary_image'] ?? '';
@@ -220,18 +216,6 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
             </div>
           </a>
           <?php endforeach; ?>
-
-          <?php if ($totalInCat > 4): ?>
-          <!-- "More" tile -->
-          <a href="/category/<?= $catSlug ?>" class="cat-mini-prod"
-             style="align-items:center;justify-content:center;background:var(--blue-bg);border-radius:0">
-            <div style="font-size:28px;margin-bottom:8px">➕</div>
-            <div style="font-size:13px;font-weight:700;color:var(--blue);text-align:center">
-              +<?= $totalInCat - 4 ?> more<br>
-              <span style="font-size:11px;font-weight:500;color:var(--text2)">View all <?= $catName ?></span>
-            </div>
-          </a>
-          <?php endif; ?>
         </div>
 
       </div>
