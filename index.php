@@ -162,7 +162,6 @@ if ($uri === '/my-orders' && $method === 'GET') {
 
 // Checkout
 if ($uri === '/checkout' && $method === 'GET') {
-    \Auth\Auth::require();
     try {
         $cartItems = \Cart\Cart::get();
         $totals    = \Cart\Cart::totals($cartItems);

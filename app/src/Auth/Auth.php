@@ -103,6 +103,57 @@ class Auth
         }
     }
 
+    /**
+     * Ensure a checkout user exists in session.
+     * - If logged in, returns current user.
+     * - If guest, validates minimal customer fields and creates an account-lite user.
+     */
+    public static function ensureCheckoutUser(array $customer): array
+    {
+        if (self::check()) {
+            return ['ok' => true, 'user' => self::user()];
+        }
+
+        $name  = trim((string)($customer['name'] ?? ''));
+        $email = strtolower(trim((string)($customer['email'] ?? '')));
+        $phone = trim((string)($customer['phone'] ?? ''));
+
+        if ($name === '' || $email === '' || $phone === '') {
+            return ['ok' => false, 'msg' => 'Name, email and phone are required for checkout.'];
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'msg' => 'Please enter a valid email address.'];
+        }
+
+        $existing = \Database::row(
+            "SELECT id FROM users WHERE email = ? OR phone = ? LIMIT 1",
+            [$email, $phone]
+        );
+        if ($existing) {
+            return ['ok' => false, 'msg' => 'Account already exists with this email/phone. Please login to continue.'];
+        }
+
+        $id = \Database::insert(
+            "INSERT INTO users (name, email, phone, company, password, marketing_consent, created_at)
+             VALUES (?, ?, ?, '', ?, 0, NOW())",
+            [
+                $name,
+                $email,
+                $phone,
+                password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT, ['cost' => 10]),
+            ]
+        );
+
+        $user = \Database::row("SELECT * FROM users WHERE id = ?", [$id]);
+        $_SESSION['user'] = self::publicUser($user);
+        $_SESSION['guest_checkout_created'] = 1;
+        session_regenerate_id(true);
+
+        try { \Cart\Cart::mergeGuestCart((int)$id); } catch (\Throwable) {}
+
+        return ['ok' => true, 'user' => self::publicUser($user)];
+    }
+
     // ══════════════════════════════════════════════════════════
     //  ADMIN AUTH
     //  FIX: Removed CSRF check from login form — CSRF is only

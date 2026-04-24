@@ -11,6 +11,19 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
   <div class="container" style="max-width:760px">
     <div style="font-family:var(--fd);font-size:24px;font-weight:700;margin-bottom:22px">Checkout</div>
 
+    <?php if (empty($user['id'])): ?>
+    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">👤 Guest Details</div>
+      <div class="fg"><label>Full Name *</label><input id="g-name" class="fi" placeholder="Your full name"></div>
+      <div class="fg"><label>Email *</label><input id="g-email" type="email" class="fi" placeholder="email@example.com"></div>
+      <div class="fg" style="margin-bottom:0"><label>Phone *</label><input id="g-phone" type="tel" class="fi" placeholder="+91 98765 43210"></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px">
+        Already have account? <a href="/login" style="color:var(--blue);font-weight:600">Login here</a>
+      </div>
+      <div id="guestErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
+    </div>
+    <?php endif; ?>
+
     <!-- Order Summary -->
     <div class="fsec" style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:18px;margin-bottom:16px">
       <div style="font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:14px;color:var(--blue)">📋 Order Summary</div>
@@ -103,12 +116,40 @@ async function applyCouponCheckout() {
 }
 
 function doCheckout() {
-  initiateCheckout(checkoutCoupon);
+  const customer = getCheckoutCustomer();
+  if (customer === false) return;
+  initiateCheckout(checkoutCoupon, customer);
 }
 
 async function doWhatsAppOrder() {
+  const customer = getCheckoutCustomer();
+  if (customer === false) return;
   const notes = '';
-  await placeWhatsappOrder(checkoutCoupon, notes);
+  await placeWhatsappOrder(checkoutCoupon, notes, customer);
+}
+
+function getCheckoutCustomer() {
+  <?php if (!empty($user['id'])): ?>
+  return {};
+  <?php else: ?>
+  const name = document.getElementById('g-name')?.value.trim() || '';
+  const email = document.getElementById('g-email')?.value.trim() || '';
+  const phone = document.getElementById('g-phone')?.value.trim() || '';
+  const err = document.getElementById('guestErr');
+  const emailOk = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+  if (!name || !email || !phone) {
+    err.textContent = 'Please fill name, email and phone to continue checkout.';
+    err.style.display = 'block';
+    return false;
+  }
+  if (!emailOk) {
+    err.textContent = 'Please enter a valid email address.';
+    err.style.display = 'block';
+    return false;
+  }
+  err.style.display = 'none';
+  return { name, email, phone };
+  <?php endif; ?>
 }
 </script>
 <script src="/assets/js/app.js"></script>

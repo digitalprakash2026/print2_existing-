@@ -246,7 +246,7 @@ function renderCartDrawer() {
 }
 
 // ── Razorpay Checkout ─────────────────────────────────────────
-async function initiateCheckout(couponCode = null) {
+async function initiateCheckout(couponCode = null, customer = null) {
   if (!APP.razorpayKey) {
     toast('Payment not configured. Please contact us via WhatsApp.', 'warn'); return;
   }
@@ -256,7 +256,7 @@ async function initiateCheckout(couponCode = null) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
       credentials: 'same-origin',
-      body: JSON.stringify({ coupon_code: couponCode })
+      body: JSON.stringify({ coupon_code: couponCode, customer })
     });
     const oData = await oResp.json();
     if (!oData.ok) { hidePayOv(); toast(oData.msg || 'Payment setup failed', 'error'); return; }
@@ -277,7 +277,7 @@ async function initiateCheckout(couponCode = null) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
           credentials: 'same-origin',
-          body: JSON.stringify({ ...resp, coupon_code: couponCode })
+          body: JSON.stringify({ ...resp, coupon_code: couponCode, customer })
         });
         const vData = await vResp.json();
         hidePayOv();
@@ -293,12 +293,12 @@ async function initiateCheckout(couponCode = null) {
   } catch (e) { hidePayOv(); toast('Payment error. Please try again.', 'error'); }
 }
 
-async function placeWhatsappOrder(couponCode = null, notes = '') {
+async function placeWhatsappOrder(couponCode = null, notes = '', customer = null) {
   const resp = await fetch('/api/orders/whatsapp', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
     credentials: 'same-origin',
-    body: JSON.stringify({ coupon_code: couponCode, notes })
+    body: JSON.stringify({ coupon_code: couponCode, notes, customer })
   });
   const data = await resp.json();
   if (data.ok) {

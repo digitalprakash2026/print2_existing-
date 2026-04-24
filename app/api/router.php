@@ -169,7 +169,8 @@ if ($uri === '/api/upload/artwork' && $method === 'POST') {
 // ── Orders ────────────────────────────────────────────────────
 
 if ($uri === '/api/orders/place' && $method === 'POST') {
-    \Auth\Auth::require();
+    $ensure = \Auth\Auth::ensureCheckoutUser($body['customer'] ?? []);
+    if (!$ensure['ok']) json($ensure, 400);
     json(\Orders\OrderManager::place($body));
 }
 
@@ -183,7 +184,8 @@ if ($uri === '/api/orders' && $method === 'GET') {
 // ── Razorpay ──────────────────────────────────────────────────
 
 if ($uri === '/api/payment/create-order' && $method === 'POST') {
-    \Auth\Auth::require();
+    $ensure = \Auth\Auth::ensureCheckoutUser($body['customer'] ?? []);
+    if (!$ensure['ok']) json($ensure, 400);
     $items  = \Cart\Cart::get();
     $coupon = $body['coupon_code'] ?? null;
     $totals = \Cart\Cart::totals($items, $coupon);
@@ -200,7 +202,8 @@ if ($uri === '/api/payment/create-order' && $method === 'POST') {
 }
 
 if ($uri === '/api/payment/verify' && $method === 'POST') {
-    \Auth\Auth::require();
+    $ensure = \Auth\Auth::ensureCheckoutUser($body['customer'] ?? []);
+    if (!$ensure['ok']) json($ensure, 400);
 
     // 1. Place order first (records in DB)
     $placeResult = \Orders\OrderManager::place([
@@ -225,7 +228,8 @@ if ($uri === '/api/payment/verify' && $method === 'POST') {
 // ── WhatsApp Order (no payment) ───────────────────────────────
 
 if ($uri === '/api/orders/whatsapp' && $method === 'POST') {
-    \Auth\Auth::require();
+    $ensure = \Auth\Auth::ensureCheckoutUser($body['customer'] ?? []);
+    if (!$ensure['ok']) json($ensure, 400);
     $result = \Orders\OrderManager::place([
         'coupon_code'    => $body['coupon_code'] ?? null,
         'payment_method' => 'whatsapp',
