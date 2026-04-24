@@ -96,27 +96,21 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <?php if ($filledSpecs): ?>
       <div class="cfg" style="margin-bottom:20px">
         <div class="cfg-title">📋 Specifications</div>
-        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px">
           <?php foreach ($filledSpecs as $spec): ?>
-          <li style="display:flex;align-items:flex-start;gap:10px;font-size:13px;
-                     padding:7px 0;border-bottom:1px solid var(--border)">
-            <span style="color:var(--blue);flex-shrink:0;margin-top:2px;font-size:11px;font-weight:700">▸</span>
-            <span style="flex:1">
-              <strong style="color:var(--text2);font-size:11px;text-transform:uppercase;
-                             letter-spacing:.05em;font-weight:700">
-                <?= htmlspecialchars($spec['label']) ?>
-              </strong>
-              <span style="display:block;color:var(--ink);font-weight:600;margin-top:2px">
-                <?= htmlspecialchars($spec['value']) ?>
-              </span>
+          <li style="display:flex;align-items:baseline;gap:8px;font-size:13px;
+                     padding:6px 0;border-bottom:1px solid var(--border)">
+            <strong style="color:var(--text2);font-size:11px;text-transform:uppercase;
+                           letter-spacing:.05em;font-weight:700;white-space:nowrap">
+              <?= htmlspecialchars($spec['label']) ?>
+            </strong>
+            <span style="color:var(--text3)">-</span>
+            <span style="color:var(--ink);font-weight:600;line-height:1.4">
+              <?= htmlspecialchars($spec['value']) ?>
             </span>
           </li>
           <?php endforeach; ?>
         </ul>
-        <div style="margin-top:10px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">
-          <span style="color:var(--amber)">ℹ</span>
-          Specifications are fixed for this product and cannot be changed.
-        </div>
       </div>
       <?php endif; ?>
 
