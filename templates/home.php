@@ -131,8 +131,8 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <!-- ═══════════════════════════════════════════════════════════
      PRODUCTS SECTION — Category-based boxes with 4 products each
 ══════════════════════════════════════════════════════════════ -->
-<section class="sec" id="prod-sec" style="background:var(--bg)">
-  <div class="container">
+<section class="sec home-prod-sec" id="prod-sec" style="background:var(--bg)">
+  <div class="home-prod-wrap">
 
     <div class="sec-hdr" style="margin-bottom:32px">
       <div>
