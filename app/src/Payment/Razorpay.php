@@ -114,7 +114,9 @@ class Razorpay
             return ['ok' => true, 'order' => $order];
 
         } catch (\Throwable $e) {
-            $db->rollBack();
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             error_log('Payment recording failed: ' . $e->getMessage());
             return ['ok' => false, 'msg' => 'Payment recorded but order update failed. Contact support with payment ID: ' . $razorpayPaymentId];
         }

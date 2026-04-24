@@ -25,9 +25,11 @@ class OrderManager
         $now = date('Y-m-d H:i:s');
 
         $db = \Database::get();
-        $db->beginTransaction();
+        $dbOrderId = null;
 
         try {
+            $db->beginTransaction();
+
             // Create order
             $dbOrderId = \Database::insert(
                 "INSERT INTO orders (order_id, user_id, customer_name, customer_email, customer_phone,
@@ -108,22 +110,36 @@ class OrderManager
             }
 
             $db->commit();
-
-            // Clear cart
-            \Cart\Cart::clear();
-
-            $order = self::getOrder($dbOrderId);
-
-            // Async tasks (non-blocking)
-            self::afterOrderPlaced($order);
-
-            return ['ok' => true, 'order' => $order, 'order_id' => $orderId];
-
         } catch (\Throwable $e) {
-            if ($db->inTransaction()) $db->rollBack();
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             error_log('Order placement failed: ' . $e->getMessage());
             return ['ok' => false, 'msg' => 'Order placement failed. Please try again.'];
         }
+
+        // Non-critical operations after commit should not fail checkout.
+        try {
+            \Cart\Cart::clear();
+        } catch (\Throwable $e) {
+            error_log('Order placed but cart clear failed: ' . $e->getMessage());
+        }
+
+        $order = null;
+        try {
+            $order = self::getOrder((int)$dbOrderId);
+        } catch (\Throwable $e) {
+            error_log('Order placed but order fetch failed: ' . $e->getMessage());
+        }
+
+        if (!$order) {
+            $order = ['id' => (int)$dbOrderId, 'order_id' => $orderId, 'items' => []];
+        }
+
+        // Async tasks (non-blocking)
+        self::afterOrderPlaced($order);
+
+        return ['ok' => true, 'order' => $order, 'order_id' => $orderId];
     }
 
     public static function updateStatus(int $orderId, string $status, string $note = '', string $actor = 'admin'): bool
