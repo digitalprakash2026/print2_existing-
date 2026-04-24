@@ -6,6 +6,10 @@
     # even if physical /admin or /api folders exist.
     RewriteRule ^(admin|api)(/.*)?$ index.php [L,QSA]
 
+    # Block access to sensitive internals and migration assets.
+    RewriteRule ^(?:app|config|database)/ - [F,L,NC]
+    RewriteRule ^includes/(?:debug|fix_admin_password)\.php$ - [F,L,NC]
+
     # Serve real static files/folders directly.
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
