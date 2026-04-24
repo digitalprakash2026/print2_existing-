@@ -376,6 +376,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 
 <!-- No carousel/filter JS needed with new category layout -->
 
+<script>
 // Enquiry (WhatsApp)
 function sendEnquiry() {
   const n = document.getElementById('ct-name').value.trim();
