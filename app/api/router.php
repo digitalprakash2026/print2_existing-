@@ -263,4 +263,18 @@ if ($uri === '/api/settings/public' && $method === 'GET') {
     json(['ok' => true, 'settings' => $settings]);
 }
 
+
+// ── Chatbot ───────────────────────────────────────────────────
+
+if ($uri === '/api/chat/ask' && $method === 'POST') {
+    $question = trim((string)($body['question'] ?? ''));
+    $history = $body['history'] ?? [];
+    if ($question === '') {
+        json(['ok' => false, 'msg' => 'Question is required'], 422);
+    }
+
+    $result = \Chatbot\SupportBot::ask($question, is_array($history) ? $history : []);
+    json($result, $result['ok'] ? 200 : 400);
+}
+
 json(['ok' => false, 'msg' => 'API endpoint not found'], 404);

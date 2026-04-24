@@ -416,6 +416,90 @@ function _esc(s) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+
+
+// ── Chatbot ───────────────────────────────────────────────────
+const _chatHistory = [];
+
+function toggleChatbot(force = null) {
+  const panel = document.getElementById('chatbotPanel');
+  const toggle = document.getElementById('chatbotToggle');
+  if (!panel || !toggle) return;
+  const willOpen = force === null ? panel.hasAttribute('hidden') : !!force;
+  if (willOpen) {
+    panel.removeAttribute('hidden');
+    toggle.setAttribute('aria-expanded', 'true');
+    document.getElementById('chatbotInput')?.focus();
+  } else {
+    panel.setAttribute('hidden', 'hidden');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function chatbotAppend(text, role = 'bot') {
+  const list = document.getElementById('chatbotMsgs');
+  if (!list) return;
+  const el = document.createElement('div');
+  el.className = `chatbot-msg ${role}`;
+  el.textContent = text;
+  list.appendChild(el);
+  list.scrollTop = list.scrollHeight;
+}
+
+async function chatbotAsk(question) {
+  const resp = await fetch('/api/chat/ask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
+    credentials: 'same-origin',
+    body: JSON.stringify({ question, history: _chatHistory })
+  });
+  return resp.json();
+}
+
+function chatbotHandoff() {
+  const msg = encodeURIComponent('Hi, I need help with my print requirement.');
+  window.open(`https://wa.me/${APP.whatsapp}?text=${msg}`, '_blank');
+}
+
+function initChatbot() {
+  const form = document.getElementById('chatbotForm');
+  const input = document.getElementById('chatbotInput');
+  const toggle = document.getElementById('chatbotToggle');
+  if (!form || !input || !toggle) return;
+
+  toggle.addEventListener('click', () => toggleChatbot());
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = (input.value || '').trim();
+    if (!q) return;
+
+    input.value = '';
+    _chatHistory.push({ role: 'user', content: q });
+    chatbotAppend(q, 'user');
+    chatbotAppend('Typing...', 'bot');
+
+    try {
+      const data = await chatbotAsk(q);
+      const list = document.getElementById('chatbotMsgs');
+      list?.lastElementChild?.remove();
+      if (data.ok) {
+        chatbotAppend(data.answer || 'I could not find that right now.');
+        _chatHistory.push({ role: 'assistant', content: data.answer || '' });
+        if (data.handoff) {
+          chatbotAppend('This looks important. Tap "Talk to Human" for priority help.');
+        }
+      } else {
+        chatbotAppend(data.msg || 'Unable to process your question right now.');
+      }
+    } catch (e2) {
+      const list = document.getElementById('chatbotMsgs');
+      list?.lastElementChild?.remove();
+      chatbotAppend('Network issue. Please try again or contact us on WhatsApp.');
+    }
+  });
+}
+
 // ── DOM Ready ─────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Load cart count silently
@@ -427,4 +511,5 @@ document.addEventListener('DOMContentLoaded', () => {
   // Init sliders if present
   initBannerSlider('bannerSlider');
   initProductCarousel('prodCarousel');
+  initChatbot();
 });
