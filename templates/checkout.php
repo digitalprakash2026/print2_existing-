@@ -136,7 +136,7 @@ function getCheckoutCustomer() {
   const email = document.getElementById('g-email')?.value.trim() || '';
   const phone = document.getElementById('g-phone')?.value.trim() || '';
   const err = document.getElementById('guestErr');
-  const emailOk = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (!name || !email || !phone) {
     err.textContent = 'Please fill name, email and phone to continue checkout.';
     err.style.display = 'block';
