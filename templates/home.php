@@ -191,9 +191,6 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
             <div class="cat-box-icon"><?= $catIcon ?></div>
             <?= $catName ?>
           </div>
-          <a href="/category/<?= $catSlug ?>" class="cat-box-see">
-            View More →
-          </a>
         </div>
 
         <!-- Products mini grid (4 items preview) -->
@@ -216,6 +213,12 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
             </div>
           </a>
           <?php endforeach; ?>
+        </div>
+
+        <div class="cat-box-ft">
+          <a href="/category/<?= $catSlug ?>" class="cat-box-see">
+            See all products
+          </a>
         </div>
 
       </div>
