@@ -109,8 +109,8 @@ if ($uri === '/api/coupon/validate' && $method === 'POST') {
 // ── Artwork Upload ────────────────────────────────────────────
 
 if ($uri === '/api/upload/artwork' && $method === 'POST') {
-    \Auth\Auth::require();
     $user = \Auth\Auth::user();
+    $userId = (int)($user['id'] ?? 0);
 
     if (empty($_FILES['artwork'])) {
         json(['ok' => false, 'msg' => 'No file uploaded'], 400);
@@ -143,7 +143,7 @@ if ($uri === '/api/upload/artwork' && $method === 'POST') {
     // Allow unknown MIME for specialized print files (AI, CDR, PSD)
     if (!in_array($mime, $safeMimes) && !str_starts_with($mime, 'image/')) {
         // Still allow; log it
-        error_log("Unusual MIME type upload: {$mime} from user {$user['id']}");
+        error_log("Unusual MIME type upload: {$mime} from user {$userId}");
     }
 
     $dir = UPLOAD_PATH . '/artwork/' . date('Y/m/');
@@ -157,11 +157,18 @@ if ($uri === '/api/upload/artwork' && $method === 'POST') {
         json(['ok' => false, 'msg' => 'Upload failed'], 500);
     }
 
+    $ownerForInsert = $userId > 0 ? $userId : null;
     $fileId = Database::insert(
         "INSERT INTO artwork_files (uploaded_by, filename, original_name, file_path, mime_type, file_size, created_at)
          VALUES (?, ?, ?, ?, ?, ?, NOW())",
-        [$user['id'], $filename, $file['name'], $publicPath, $mime, $file['size']]
+        [$ownerForInsert, $filename, $file['name'], $publicPath, $mime, $file['size']]
     );
+
+    if ($userId === 0) {
+        $_SESSION['guest_artwork_ids'] = $_SESSION['guest_artwork_ids'] ?? [];
+        $_SESSION['guest_artwork_ids'][] = (int)$fileId;
+        $_SESSION['guest_artwork_ids'] = array_values(array_unique(array_map('intval', $_SESSION['guest_artwork_ids'])));
+    }
 
     json(['ok' => true, 'artwork_id' => $fileId, 'filename' => $file['name'], 'path' => $publicPath]);
 }

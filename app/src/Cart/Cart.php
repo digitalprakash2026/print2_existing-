@@ -65,8 +65,10 @@ class Cart
             // Handle artwork upload reference if provided
             if (!empty($data['artwork_id'])) {
                 \Database::query(
-                    "UPDATE artwork_files SET cart_item_id = ? WHERE id = ? AND uploaded_by = ?",
-                    [$cartItemId, $data['artwork_id'], $userId]
+                    "UPDATE artwork_files
+                     SET cart_item_id = ?, uploaded_by = COALESCE(uploaded_by, ?)
+                     WHERE id = ? AND (uploaded_by IS NULL OR uploaded_by = ?)",
+                    [$cartItemId, $userId, $data['artwork_id'], $userId]
                 );
             }
 
@@ -213,7 +215,7 @@ class Cart
         }
 
         foreach ($guestItems as $item) {
-            \Database::insert(
+            $newCartItemId = \Database::insert(
                 "INSERT INTO cart_items (cart_id, product_id, quality_id, quantity, attribute_selections,
                   design_choice, design_brief, notes, price_breakdown, total_price, created_at)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
@@ -228,6 +230,15 @@ class Cart
                     $item['total_price'] ?? 0,
                 ]
             );
+
+            if (!empty($item['artwork_id'])) {
+                \Database::query(
+                    "UPDATE artwork_files
+                     SET cart_item_id = ?, uploaded_by = COALESCE(uploaded_by, ?)
+                     WHERE id = ? AND (uploaded_by IS NULL OR uploaded_by = ?)",
+                    [$newCartItemId, $userId, (int)$item['artwork_id'], $userId]
+                );
+            }
         }
 
         $_SESSION['cart'] = [];
