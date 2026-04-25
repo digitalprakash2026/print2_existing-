@@ -11,6 +11,7 @@ namespace Auth;
 
 class Auth
 {
+    private static ?bool $hasProfileColumns = null;
     // ══════════════════════════════════════════════════════════
     //  USER AUTH
     // ══════════════════════════════════════════════════════════
@@ -90,6 +91,110 @@ class Auth
     {
         unset($_SESSION['user']);
         session_regenerate_id(true);
+    }
+
+    public static function getProfile(int $userId): ?array
+    {
+        $base = \Database::row(
+            "SELECT id, name, email, phone, company, created_at
+             FROM users WHERE id = ?",
+            [$userId]
+        );
+        if (!$base) return null;
+
+        $profile = [
+            'id'         => (int)$base['id'],
+            'name'       => (string)$base['name'],
+            'email'      => (string)$base['email'],
+            'phone'      => (string)$base['phone'],
+            'company'    => (string)($base['company'] ?? ''),
+            'created_at' => (string)($base['created_at'] ?? ''),
+            'billing'    => null,
+            'migration_required' => false,
+        ];
+
+        if (!self::profileColumnsReady()) {
+            $profile['migration_required'] = true;
+            return $profile;
+        }
+
+        $extended = \Database::row(
+            "SELECT billing_legal_name, gst_no, billing_address_line1, billing_address_line2,
+                    billing_city, billing_state, billing_pincode
+             FROM users WHERE id = ?",
+            [$userId]
+        ) ?? [];
+
+        $billing = [
+            'legal_name'    => trim((string)($extended['billing_legal_name'] ?? '')),
+            'gst_no'        => strtoupper(trim((string)($extended['gst_no'] ?? ''))),
+            'address_line1' => trim((string)($extended['billing_address_line1'] ?? '')),
+            'address_line2' => trim((string)($extended['billing_address_line2'] ?? '')),
+            'city'          => trim((string)($extended['billing_city'] ?? '')),
+            'state'         => trim((string)($extended['billing_state'] ?? '')),
+            'pincode'       => trim((string)($extended['billing_pincode'] ?? '')),
+        ];
+        $hasAnyBilling = implode('', $billing) !== '';
+        $profile['billing'] = $hasAnyBilling ? $billing : null;
+
+        return $profile;
+    }
+
+    public static function updateProfile(int $userId, array $data): array
+    {
+        $name = trim((string)($data['name'] ?? ''));
+        $email = strtolower(trim((string)($data['email'] ?? '')));
+        $phone = trim((string)($data['phone'] ?? ''));
+        $company = trim((string)($data['company'] ?? ''));
+
+        if ($name === '' || $email === '' || $phone === '') {
+            return ['ok' => false, 'msg' => 'Name, email and phone are required.'];
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'msg' => 'Please enter a valid email address.'];
+        }
+
+        $dup = \Database::row(
+            "SELECT id FROM users WHERE (email = ? OR phone = ?) AND id <> ? LIMIT 1",
+            [$email, $phone, $userId]
+        );
+        if ($dup) {
+            return ['ok' => false, 'msg' => 'Email or phone is already used by another account.'];
+        }
+
+        \Database::query(
+            "UPDATE users SET name = ?, email = ?, phone = ?, company = ? WHERE id = ?",
+            [$name, $email, $phone, $company, $userId]
+        );
+
+        if (!self::profileColumnsReady()) {
+            $fresh = \Database::row("SELECT * FROM users WHERE id = ?", [$userId]);
+            if ($fresh) $_SESSION['user'] = self::publicUser($fresh);
+            return ['ok' => true, 'profile' => self::getProfile($userId), 'migration_required' => true];
+        }
+
+        $billing = self::sanitizeBilling($data['billing'] ?? null);
+
+        \Database::query(
+            "UPDATE users SET billing_legal_name = ?, gst_no = ?, billing_address_line1 = ?, billing_address_line2 = ?,
+                billing_city = ?, billing_state = ?, billing_pincode = ?, profile_updated_at = NOW()
+             WHERE id = ?",
+            [
+                $billing['legal_name'] ?? null,
+                $billing['gst_no'] ?? null,
+                $billing['address_line1'] ?? null,
+                $billing['address_line2'] ?? null,
+                $billing['city'] ?? null,
+                $billing['state'] ?? null,
+                $billing['pincode'] ?? null,
+                $userId,
+            ]
+        );
+
+        $fresh = \Database::row("SELECT * FROM users WHERE id = ?", [$userId]);
+        if ($fresh) $_SESSION['user'] = self::publicUser($fresh);
+
+        return ['ok' => true, 'profile' => self::getProfile($userId)];
     }
 
     public static function user(): ?array  { return $_SESSION['user'] ?? null; }
@@ -299,5 +404,54 @@ class Auth
     {
         $uri = $_SERVER['REQUEST_URI'] ?? '';
         return str_starts_with($uri, '/api/') || str_starts_with($uri, '/admin/api/');
+    }
+
+    private static function sanitizeBilling(mixed $billing): ?array
+    {
+        if (!is_array($billing)) return null;
+
+        $clean = [
+            'legal_name'    => trim((string)($billing['legal_name'] ?? '')),
+            'gst_no'        => strtoupper(trim((string)($billing['gst_no'] ?? ''))),
+            'address_line1' => trim((string)($billing['address_line1'] ?? '')),
+            'address_line2' => trim((string)($billing['address_line2'] ?? '')),
+            'city'          => trim((string)($billing['city'] ?? '')),
+            'state'         => trim((string)($billing['state'] ?? '')),
+            'pincode'       => trim((string)($billing['pincode'] ?? '')),
+        ];
+
+        if (implode('', $clean) === '') return null;
+        return $clean;
+    }
+
+    private static function profileColumnsReady(): bool
+    {
+        if (self::$hasProfileColumns !== null) return self::$hasProfileColumns;
+
+        $required = [
+            'billing_legal_name',
+            'gst_no',
+            'billing_address_line1',
+            'billing_address_line2',
+            'billing_city',
+            'billing_state',
+            'billing_pincode',
+            'profile_updated_at',
+        ];
+        $placeholders = implode(',', array_fill(0, count($required), '?'));
+
+        try {
+            $row = \Database::row(
+                "SELECT COUNT(*) AS c
+                 FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME IN ($placeholders)",
+                [DB_NAME, ...$required]
+            );
+            self::$hasProfileColumns = (int)($row['c'] ?? 0) === count($required);
+        } catch (\Throwable) {
+            self::$hasProfileColumns = false;
+        }
+
+        return self::$hasProfileColumns;
     }
 }

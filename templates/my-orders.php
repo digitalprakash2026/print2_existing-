@@ -13,6 +13,9 @@ $tlSteps = ['received','processing','printing','ready','delivered'];
   <div class="container">
     <div class="myord-hdr-t">My Orders</div>
     <div class="myord-hdr-s">Track your print orders in real time</div>
+    <div style="margin-top:10px">
+      <a href="/profile" class="btn btn-outline btn-sm">👤 Manage Profile & Billing</a>
+    </div>
   </div>
 </div>
 <div class="container" style="padding-top:24px;padding-bottom:60px">

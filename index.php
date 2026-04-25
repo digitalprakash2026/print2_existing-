@@ -160,6 +160,15 @@ if ($uri === '/my-orders' && $method === 'GET') {
     exit;
 }
 
+// My Profile
+if ($uri === '/profile' && $method === 'GET') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $profile = \Auth\Auth::getProfile((int)$user['id']);
+    view('profile', compact('user', 'profile'));
+    exit;
+}
+
 // Checkout
 if ($uri === '/checkout' && $method === 'GET') {
     try {

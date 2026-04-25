@@ -101,6 +101,7 @@ $currentUri  = $uri ?? '/';
     <a href="/#contact-sec" class="hn">Contact</a>
     <?php if ($user ?? null): ?>
       <a href="/my-orders" class="hn">My Orders</a>
+      <a href="/profile" class="hn">Profile</a>
     <?php endif; ?>
   </nav>
 
@@ -181,6 +182,7 @@ $currentUri  = $uri ?? '/';
 
     <?php if ($user ?? null): ?>
       <a href="/my-orders" class="md-item">📋 My Orders</a>
+      <a href="/profile" class="md-item">👤 My Profile</a>
       <a href="/logout"    class="md-item">👤 <?= htmlspecialchars($user['name']) ?> (Logout)</a>
     <?php else: ?>
       <a href="/register"  class="md-item md-start" onclick="closeDrawer()">✨ New Customer? Start Here</a>

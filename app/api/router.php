@@ -41,6 +41,20 @@ if ($uri === '/api/auth/me' && $method === 'GET') {
     json(['ok' => true, 'user' => \Auth\Auth::user()]);
 }
 
+if ($uri === '/api/profile' && $method === 'GET') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $profile = \Auth\Auth::getProfile((int)$user['id']);
+    json(['ok' => true, 'profile' => $profile]);
+}
+
+if ($uri === '/api/profile' && in_array($method, ['POST', 'PUT'], true)) {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $result = \Auth\Auth::updateProfile((int)$user['id'], $body);
+    json($result, ($result['ok'] ?? false) ? 200 : 422);
+}
+
 // ── Products ──────────────────────────────────────────────────
 
 if ($uri === '/api/products' && $method === 'GET') {

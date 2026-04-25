@@ -59,6 +59,13 @@ $status = $status ?? 'all';
     </thead>
     <tbody>
       <?php foreach ($orders as $o): ?>
+      <?php
+        $orderNotesRaw = trim((string)($o['notes'] ?? ''));
+        $orderNotesJson = $orderNotesRaw !== '' ? json_decode($orderNotesRaw, true) : null;
+        $orderBilling = (is_array($orderNotesJson) && is_array($orderNotesJson['billing'] ?? null))
+            ? $orderNotesJson['billing']
+            : null;
+      ?>
       <tr id="ord-<?= (int)$o['id'] ?>">
         <td>
           <div class="ord-id">#<?= htmlspecialchars($o['order_id']) ?></div>
@@ -69,6 +76,21 @@ $status = $status ?? 'all';
           <div class="ord-customer"><?= htmlspecialchars($o['customer_name']) ?></div>
           <div class="ord-meta"><?= htmlspecialchars($o['customer_phone']) ?></div>
           <?php if (!empty($o['customer_email'])): ?><div class="ord-meta"><?= htmlspecialchars($o['customer_email']) ?></div><?php endif; ?>
+          <?php if ($orderBilling): ?>
+          <div class="ord-meta" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">
+            <div style="font-weight:700;color:var(--text)">🧾 Billing</div>
+            <div><?= htmlspecialchars($orderBilling['legal_name'] ?? '-') ?></div>
+            <div>GSTIN: <?= htmlspecialchars($orderBilling['gst_no'] ?? '-') ?></div>
+            <div>
+              <?= htmlspecialchars($orderBilling['address_line1'] ?? '') ?>
+              <?php if (!empty($orderBilling['address_line2'])): ?>, <?= htmlspecialchars($orderBilling['address_line2']) ?><?php endif; ?>
+            </div>
+            <div>
+              <?= htmlspecialchars($orderBilling['city'] ?? '') ?>, <?= htmlspecialchars($orderBilling['state'] ?? '') ?>
+              - <?= htmlspecialchars($orderBilling['pincode'] ?? '') ?>
+            </div>
+          </div>
+          <?php endif; ?>
           <div class="ord-cust-actions">
             <a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn">📞 Call</a>
             <button class="aoc-btn" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($o['status']) ?>')">💬 WA</button>

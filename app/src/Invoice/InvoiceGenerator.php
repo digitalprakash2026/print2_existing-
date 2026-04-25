@@ -48,6 +48,7 @@ class InvoiceGenerator
     {
         $s = self::settings();
         $items = $order['items'] ?? [];
+        $billing = self::extractBilling($order);
         $discount = (float)($order['discount_amount'] ?? 0);
         $now = date('d M Y');
         $orderDate = date('d M Y', strtotime($order['created_at']));
@@ -85,6 +86,19 @@ class InvoiceGenerator
         $discRow = $discount > 0
             ? "<tr><td colspan='4' class='tr'>Discount ({$order['coupon_code']})</td><td class='tr' style='color:green'>-₹" . number_format($discount, 2) . "</td></tr>"
             : '';
+
+        $billToHtml = '';
+        if ($billing) {
+            $billToHtml = "<p><strong>{$billing['legal_name']}</strong><br>
+                GSTIN: {$billing['gst_no']}<br>
+                {$billing['address_line1']}" .
+                (!empty($billing['address_line2']) ? "<br>{$billing['address_line2']}" : '') .
+                "<br>{$billing['city']}, {$billing['state']} - {$billing['pincode']}<br>
+                {$order['customer_phone']}" . ($order['customer_email'] ? "<br>{$order['customer_email']}" : '') . "</p>";
+        } else {
+            $billToHtml = "<p><strong>{$order['customer_name']}</strong><br>
+                {$order['customer_phone']}" . ($order['customer_email'] ? "<br>{$order['customer_email']}" : '') . "</p>";
+        }
 
         return "<!DOCTYPE html><html><head><meta charset='UTF-8'>
         <style>
@@ -135,8 +149,7 @@ class InvoiceGenerator
         <div style='display:flex;gap:32px;margin-bottom:16px'>
             <div class='section' style='flex:1'>
                 <div class='section-t'>Bill To</div>
-                <p><strong>{$order['customer_name']}</strong><br>
-                {$order['customer_phone']}" . ($order['customer_email'] ? "<br>{$order['customer_email']}" : '') . "</p>
+                {$billToHtml}
             </div>
             <div class='section' style='flex:1'>
                 <div class='section-t'>Order Info</div>
@@ -195,5 +208,31 @@ class InvoiceGenerator
         } catch (\Throwable) {
             return ['name' => 'RCS Graphic', 'address' => '', 'phone' => '', 'email' => '', 'gst_no' => ''];
         }
+    }
+
+    private static function extractBilling(array $order): ?array
+    {
+        $notesRaw = trim((string)($order['notes'] ?? ''));
+        if ($notesRaw === '') return null;
+
+        $notesJson = json_decode($notesRaw, true);
+        if (!is_array($notesJson) || !is_array($notesJson['billing'] ?? null)) return null;
+
+        $billing = $notesJson['billing'];
+        $clean = [
+            'legal_name'    => trim((string)($billing['legal_name'] ?? '')),
+            'gst_no'        => strtoupper(trim((string)($billing['gst_no'] ?? ''))),
+            'address_line1' => trim((string)($billing['address_line1'] ?? '')),
+            'address_line2' => trim((string)($billing['address_line2'] ?? '')),
+            'city'          => trim((string)($billing['city'] ?? '')),
+            'state'         => trim((string)($billing['state'] ?? '')),
+            'pincode'       => trim((string)($billing['pincode'] ?? '')),
+        ];
+
+        if ($clean['legal_name'] === '' || $clean['gst_no'] === '' || $clean['address_line1'] === '' ||
+            $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
+            return null;
+        }
+        return $clean;
     }
 }
