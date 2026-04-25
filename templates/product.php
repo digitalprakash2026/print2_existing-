@@ -88,6 +88,25 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <h1 class="pd-name"><?= htmlspecialchars($product['name']) ?></h1>
       <p class="pd-desc"><?= htmlspecialchars($product['description'] ?? '') ?></p>
 
+      <!-- ── ORDER STEPS (guided UX) ── -->
+      <div class="cfg" style="margin-bottom:14px">
+        <div class="cfg-title">Order in 3 Simple Steps</div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+          <div class="os-step done" id="stepQual">
+            <div class="os-step-n">1</div>
+            <div class="os-step-l">Quality</div>
+          </div>
+          <div class="os-step" id="stepQty">
+            <div class="os-step-n">2</div>
+            <div class="os-step-l">Quantity</div>
+          </div>
+          <div class="os-step" id="stepDesign">
+            <div class="os-step-n">3</div>
+            <div class="os-step-l">Design</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── SPECIFICATIONS ── -->
       <?php
       // Only show specs that have a value filled in
@@ -242,6 +261,9 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
             WhatsApp
           </button>
         </div>
+        <div id="orderHint" style="font-size:12px;color:var(--text2);line-height:1.5">
+          Select quantity to enable Add to Cart / Buy Now.
+        </div>
       </div>
 
     </div><!-- /pd-info-col -->
@@ -337,6 +359,29 @@ let uploadedFileName   = null;
 let designChoice       = 'upload';
 let currentBasePrice   = 0;
 
+function refreshOrderReadiness() {
+  const hasQty = !!selectedQty;
+  const addBtn = document.getElementById('addCartBtn');
+  const stickyBtns = document.querySelectorAll('#stickyBar .btn.btn-blue, #stickyBar .btn.btn-green');
+  const buyBtn = document.querySelector('.btn.btn-green.btn-full');
+  const hint = document.getElementById('orderHint');
+
+  if (addBtn) addBtn.disabled = !hasQty;
+  if (buyBtn) buyBtn.disabled = !hasQty;
+  stickyBtns.forEach(btn => btn.disabled = !hasQty);
+
+  const stepQty = document.getElementById('stepQty');
+  const stepDesign = document.getElementById('stepDesign');
+  if (stepQty) stepQty.classList.toggle('done', hasQty);
+  if (stepDesign) stepDesign.classList.toggle('done', hasQty && !!designChoice);
+
+  if (hint) {
+    hint.textContent = hasQty
+      ? 'Looks good. You can now add to cart or buy now.'
+      : 'Select quantity to enable Add to Cart / Buy Now.';
+  }
+}
+
 // Gallery
 function switchImg(url, el) {
   const img = document.getElementById('pdMainImg');
@@ -353,6 +398,7 @@ function selQual(idx, qualId, clickedEl) {
   document.querySelectorAll('.qual-opt').forEach(el => el.classList.remove('sel'));
   if (clickedEl) clickedEl.classList.add('sel');
   reloadQtySlabs();
+  refreshOrderReadiness();
 }
 
 // Quantity Slabs
@@ -391,6 +437,7 @@ async function reloadQtySlabs() {
 function onQtyChange() {
   selectedQty = parseInt(document.getElementById('pdQty').value) || null;
   calcPrice();
+  refreshOrderReadiness();
 }
 
 // Price Calculation
@@ -400,6 +447,7 @@ function calcPrice() {
     document.getElementById('ppTotal').textContent = '₹ —';
     document.getElementById('spTotal').textContent = '₹ —';
     currentBasePrice = 0;
+    refreshOrderReadiness();
     return;
   }
 
@@ -428,6 +476,7 @@ function calcPrice() {
     const slab = (q.slabs || []).find(s => parseInt(s.quantity) === selectedQty);
     badge.textContent = slab ? '₹' + Number(slab.price).toLocaleString('en-IN') : '';
   });
+  refreshOrderReadiness();
 }
 
 // Design Option
@@ -438,6 +487,7 @@ function selDesignOpt(choice) {
   document.getElementById('panel-upload').style.display = choice === 'upload' ? 'block' : 'none';
   document.getElementById('panel-rcs').style.display    = choice === 'rcs' ? 'block' : 'none';
   calcPrice();
+  refreshOrderReadiness();
 }
 
 // File Upload
@@ -603,6 +653,33 @@ function waOrder() {
 
 // Init
 reloadQtySlabs();
+refreshOrderReadiness();
 </script>
+
+<style>
+.os-step{
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:#fff;
+  padding:8px 7px;
+  text-align:center;
+}
+.os-step-n{
+  width:22px;height:22px;border-radius:50%;
+  margin:0 auto 4px auto;
+  display:grid;place-items:center;
+  font-size:11px;font-weight:700;
+  background:#EEF3FD;color:var(--blue);
+}
+.os-step-l{font-size:11px;color:var(--text2);font-weight:600}
+.os-step.done{
+  border-color:#CDE2FF;
+  background:#F7FAFF;
+}
+.os-step.done .os-step-n{
+  background:var(--blue);
+  color:#fff;
+}
+</style>
 
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
