@@ -32,7 +32,7 @@
   --r:12px; --rs:8px;
   --tr:.2s cubic-bezier(.4,0,.2,1);
   --fd:'Fraunces',serif; --fn:'Plus Jakarta Sans',sans-serif;
-  --hh:64px;
+  --hh:72px;
 }
 
 /* ── Reset ───────────────────────────────────────────────────── */
@@ -54,12 +54,18 @@ ul  { list-style:none; }
 .header {
   position:fixed; top:0; left:0; right:0; height:var(--hh);
   background:var(--white); z-index:900;
-  display:flex; align-items:center; padding:0 26px; gap:18px;
+  display:flex; align-items:center; padding:0 22px; gap:16px;
   border-bottom:1px solid var(--border);
   box-shadow:0 1px 4px rgba(0,0,0,.06);
 }
 .hdr-logo {
   display:flex; align-items:center; gap:10px; flex-shrink:0; text-decoration:none;
+}
+.hdr-logo-img{
+  height:54px;
+  width:auto;
+  display:block;
+  object-fit:contain;
 }
 .hdr-logo-box {
   width:38px; height:38px;
@@ -1083,6 +1089,7 @@ textarea.fi  { resize:vertical; }
 @media (max-width:768px) {
   .prod-grid { grid-template-columns:repeat(2,1fr); gap:13px; }
   .hdr-nav,.hdr-search { display:none; }
+  .hdr-logo-img { height:46px; }
   .ham { display:flex; }
   .hdr-right { gap:8px; margin-left:auto; }
   .hdr-new-customer { display:none; }

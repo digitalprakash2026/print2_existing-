@@ -44,11 +44,11 @@ $currentUri  = $uri ?? '/';
 
   <!-- Logo -->
   <a href="/" class="hdr-logo">
-    <div class="hdr-logo-box">R</div>
-    <div>
-      <div class="hdr-logo-name"><?= $navBizName ?></div>
-      <div class="hdr-logo-sub">Print Studio · Rajkot</div>
-    </div>
+    <img src="/assets/images/rcs-graphic-logo.png"
+         alt="<?= $navBizName ?> Logo"
+         class="hdr-logo-img"
+         loading="eager"
+         decoding="async">
   </a>
 
   <!-- Desktop Nav -->
