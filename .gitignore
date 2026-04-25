@@ -1,0 +1,6 @@
+# Runtime/log artifacts
+app/logs/*.log
+
+# Environment and local bundles
+.env
+includes/print.zip
