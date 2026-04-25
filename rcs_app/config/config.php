@@ -49,16 +49,24 @@ if (!function_exists('env')) {
 }
 
 // ── Database Config ───────────────────────────────────────────
-define('DB_HOST', env('DB_HOST', 'localhost'));  // Hostinger = localhost
+// Security hardening:
+// - Never keep real DB credentials in source code defaults.
+// - Credentials must come from environment/.env.
+define('DB_HOST', env('DB_HOST', 'localhost'));  // Hostinger usually = localhost
 define('DB_PORT', env('DB_PORT', '3306'));
-define('DB_NAME', env('DB_NAME', 'u330769761_printing'));
-define('DB_USER', env('DB_USER', 'u330769761_printing'));
-define('DB_PASS', env('DB_PASS', 'Printing@2026'));
+define('DB_NAME', env('DB_NAME', ''));
+define('DB_USER', env('DB_USER', ''));
+define('DB_PASS', env('DB_PASS', ''));
 
 // ── App Config ────────────────────────────────────────────────
 define('APP_URL',    rtrim(env('APP_URL', 'https://print.rcsgraphic.com'), '/'));
 define('APP_SECRET', env('APP_SECRET', 'change_me_now_32chars_minimum'));
 define('APP_DEBUG',  env('APP_DEBUG', 'false') === 'true');
+
+// Fail-safe diagnostic for missing DB envs (does not stop app boot):
+if (DB_NAME === '' || DB_USER === '') {
+    error_log('RCS config warning: DB_NAME/DB_USER missing in environment (.env).');
+}
 
 // ── Folders Banao ─────────────────────────────────────────────
 foreach ([
