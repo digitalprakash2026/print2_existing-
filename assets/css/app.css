@@ -819,6 +819,7 @@ textarea.fi  { resize:vertical; }
 .adm-ni svg   { width:15px; height:15px; fill:currentColor; flex-shrink:0; }
 .adm-sb-logout{ padding:12px 8px; margin-top:auto; border-top:1px solid rgba(255,255,255,.07); }
 .adm-main { flex:1; min-width:0; padding:22px; background:var(--bg); overflow-y:auto; }
+.adm-main--orders { padding:14px 14px 20px; }
 .adm-pt   { font-family:var(--fd); font-size:21px; font-weight:700; color:var(--ink); margin-bottom:18px; letter-spacing:-.02em; }
 .adm-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:11px; margin-bottom:20px; }
 .ast      { background:var(--white); border-radius:12px; border:1.5px solid var(--border); padding:16px 18px; }
@@ -848,6 +849,7 @@ textarea.fi  { resize:vertical; }
   margin-bottom:14px;
   flex-wrap:wrap;
 }
+.adm-orders-page { width:100%; max-width:none; margin:0; }
 .adm-orders-sub { font-size:12px; color:var(--text2); margin-top:4px; }
 .adm-orders-filters {
   display:grid;
@@ -859,14 +861,15 @@ textarea.fi  { resize:vertical; }
 .adm-orders-wrap {
   background:var(--white);
   border:1.5px solid var(--border);
-  border-radius:12px;
+  border-radius:14px;
   overflow:auto;
+  box-shadow:0 8px 24px rgba(16,24,40,.05);
 }
 .adm-orders-table {
   width:100%;
   border-collapse:separate;
   border-spacing:0;
-  min-width:1080px;
+  min-width:1240px;
 }
 .adm-orders-table thead th {
   position:sticky;
@@ -890,6 +893,22 @@ textarea.fi  { resize:vertical; }
 .ord-id { font-family:monospace; font-size:12px; font-weight:700; color:var(--blue); }
 .ord-date, .ord-meta { color:var(--text2); font-size:11px; line-height:1.45; }
 .ord-customer { font-weight:700; color:var(--ink); font-size:13px; margin-bottom:2px; }
+.ord-cust-actions { display:flex; gap:6px; margin-top:8px; }
+.ord-items-hdr {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text2);
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:3px 8px;
+  margin-bottom:8px;
+}
 .ord-item-row + .ord-item-row { margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); }
 .ord-item-name { font-weight:700; color:var(--ink); font-size:12px; margin-bottom:1px; }
 .ord-amt { font-family:var(--fd); font-size:16px; font-weight:700; color:var(--blue); }
@@ -945,7 +964,9 @@ textarea.fi  { resize:vertical; }
   .adm-stats { grid-template-columns:repeat(2,1fr); }
 
   .adm-orders-filters { grid-template-columns:1fr 1fr; }
+  .adm-main--orders { padding:12px; }
   .ord-ship-grid { grid-template-columns:1fr 1fr; }
+  .ord-cust-actions { flex-wrap:wrap; }
   .pc-carousel-card { flex:0 0 calc(33.333% - 14px); }
 }
 

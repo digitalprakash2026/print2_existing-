@@ -1,6 +1,7 @@
 <?php
 $pageTitle = 'Orders — RCS Admin';
 $currentAdmPage = 'orders';
+$admMainClass = 'adm-main--orders';
 include __DIR__ . '/layout.php';
 $statusColors = ['received'=>'b-blue','processing'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
 $statusLabels = ['received'=>'Received','processing'=>'Processing','printing'=>'Printing','ready'=>'Ready','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'WA Pending'];
@@ -12,6 +13,7 @@ $search = $search ?? '';
 $status = $status ?? 'all';
 ?>
 
+<div class="adm-orders-page">
 <div class="adm-orders-head">
   <div>
     <div class="adm-pt" style="margin:0">Order Management</div>
@@ -37,6 +39,14 @@ $status = $status ?? 'all';
 <?php else: ?>
 <div class="adm-orders-wrap">
   <table class="adm-orders-table">
+    <colgroup>
+      <col style="width:14%">
+      <col style="width:17%">
+      <col style="width:29%">
+      <col style="width:10%">
+      <col style="width:10%">
+      <col style="width:20%">
+    </colgroup>
     <thead>
       <tr>
         <th>Order</th>
@@ -53,14 +63,20 @@ $status = $status ?? 'all';
         <td>
           <div class="ord-id">#<?= htmlspecialchars($o['order_id']) ?></div>
           <div class="ord-date"><?= date('d M Y, H:i', strtotime($o['created_at'])) ?></div>
+          <div class="ord-meta">Internal ID: <?= (int)$o['id'] ?></div>
         </td>
         <td>
           <div class="ord-customer"><?= htmlspecialchars($o['customer_name']) ?></div>
           <div class="ord-meta"><?= htmlspecialchars($o['customer_phone']) ?></div>
           <?php if (!empty($o['customer_email'])): ?><div class="ord-meta"><?= htmlspecialchars($o['customer_email']) ?></div><?php endif; ?>
+          <div class="ord-cust-actions">
+            <a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn">📞 Call</a>
+            <button class="aoc-btn" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($o['status']) ?>')">💬 WA</button>
+          </div>
         </td>
         <td>
-          <?php foreach ($o['items'] as $item): ?>
+          <div class="ord-items-hdr"><?= count($o['items'] ?? []) ?> item(s)</div>
+          <?php foreach (($o['items'] ?? []) as $item): ?>
           <div class="ord-item-row">
             <div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?></div>
             <div class="ord-meta">
@@ -82,9 +98,8 @@ $status = $status ?? 'all';
         </td>
         <td>
           <div class="ord-actions">
-            <a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn">📞 Call</a>
-            <button class="aoc-btn" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($o['status']) ?>')">💬 WA</button>
             <a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">🧾 Invoice</a>
+            <a href="/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">👁 View</a>
           </div>
 
           <div class="ord-status-row">
@@ -167,5 +182,6 @@ function waCustomer(name, phone, ordId, status) {
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 </script>
+</div>
     </div></div></div>
 </body></html>

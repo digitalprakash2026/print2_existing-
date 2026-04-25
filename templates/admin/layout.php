@@ -56,4 +56,4 @@
     </div>
 
     <!-- Main content -->
-    <div class="adm-main">
+    <div class="adm-main<?= !empty($admMainClass) ? ' ' . htmlspecialchars((string)$admMainClass) : '' ?>">
