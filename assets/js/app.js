@@ -247,7 +247,7 @@ function renderCartDrawer() {
 }
 
 // ── Razorpay Checkout ─────────────────────────────────────────
-async function initiateCheckout(couponCode = null, customer = null) {
+async function initiateCheckout(couponCode = null, customer = null, billing = null) {
   if (!APP.razorpayKey) {
     toast('Payment not configured. Please contact us via WhatsApp.', 'warn'); return;
   }
@@ -257,7 +257,7 @@ async function initiateCheckout(couponCode = null, customer = null) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
       credentials: 'same-origin',
-      body: JSON.stringify({ coupon_code: couponCode, customer })
+      body: JSON.stringify({ coupon_code: couponCode, customer, billing })
     });
     const oData = await oResp.json();
     if (!oData.ok) { hidePayOv(); toast(oData.msg || 'Payment setup failed', 'error'); return; }
@@ -278,7 +278,7 @@ async function initiateCheckout(couponCode = null, customer = null) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
           credentials: 'same-origin',
-          body: JSON.stringify({ ...resp, coupon_code: couponCode, customer })
+          body: JSON.stringify({ ...resp, coupon_code: couponCode, customer, billing })
         });
         const vData = await vResp.json();
         hidePayOv();
@@ -300,7 +300,7 @@ async function initiateCheckout(couponCode = null, customer = null) {
   } catch (e) { hidePayOv(); toast('Payment error. Please try again.', 'error'); }
 }
 
-async function placeWhatsappOrder(couponCode = null, notes = '', customer = null) {
+async function placeWhatsappOrder(couponCode = null, notes = '', customer = null, billing = null) {
   try {
     const url = couponCode ? `/api/cart?coupon=${encodeURIComponent(couponCode)}` : '/api/cart';
     const resp = await fetch(url, { credentials: 'same-origin' });
@@ -329,6 +329,14 @@ async function placeWhatsappOrder(couponCode = null, notes = '', customer = null
       `• Name: ${customer?.name || APP.user?.name || 'Guest'}`,
       `• Phone: ${customer?.phone || APP.user?.phone || 'Not provided'}`,
       `• Email: ${customer?.email || APP.user?.email || 'Not provided'}`,
+      '',
+      ...(billing && billing.required ? [
+        '*Billing Details*',
+        `• Legal Name: ${billing.legal_name || 'Not provided'}`,
+        `• GSTIN: ${billing.gst_no || 'Not provided'}`,
+        `• Address: ${billing.address_line1 || ''}${billing.address_line2 ? ', ' + billing.address_line2 : ''}, ${billing.city || ''}, ${billing.state || ''} - ${billing.pincode || ''}`,
+        '',
+      ] : []),
       '',
       '*Order Items*'
     ];

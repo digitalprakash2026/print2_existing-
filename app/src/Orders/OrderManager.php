@@ -19,6 +19,15 @@ class OrderManager
 
         $couponCode = $params['coupon_code'] ?? null;
         $totals = \Cart\Cart::totals($cartItems, $couponCode);
+        $billing = self::sanitizeBilling($params['billing'] ?? null);
+        $plainNotes = trim((string)($params['notes'] ?? ''));
+        $storedNotes = $plainNotes;
+        if ($billing !== null) {
+            $storedNotes = json_encode([
+                'note'    => $plainNotes,
+                'billing' => $billing,
+            ], JSON_UNESCAPED_UNICODE);
+        }
 
         // Generate readable order ID
         $orderId = self::generateOrderId();
@@ -50,7 +59,7 @@ class OrderManager
                     $couponCode,
                     $params['payment_method'] ?? 'razorpay',
                     $params['payment_status'] ?? 'pending',
-                    $params['notes'] ?? '',
+                    $storedNotes,
                     $now,
                 ]
             );
@@ -234,5 +243,26 @@ class OrderManager
     {
         $count = \Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0;
         return 'RCS' . str_pad((string)((int)$count + 1001), 5, '0', STR_PAD_LEFT);
+    }
+
+    private static function sanitizeBilling(mixed $billing): ?array
+    {
+        if (!is_array($billing) || empty($billing['required'])) return null;
+
+        $clean = [
+            'legal_name'    => trim((string)($billing['legal_name'] ?? '')),
+            'gst_no'        => strtoupper(trim((string)($billing['gst_no'] ?? ''))),
+            'address_line1' => trim((string)($billing['address_line1'] ?? '')),
+            'address_line2' => trim((string)($billing['address_line2'] ?? '')),
+            'city'          => trim((string)($billing['city'] ?? '')),
+            'state'         => trim((string)($billing['state'] ?? '')),
+            'pincode'       => trim((string)($billing['pincode'] ?? '')),
+        ];
+
+        if ($clean['legal_name'] === '' || $clean['gst_no'] === '' || $clean['address_line1'] === '' ||
+            $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
+            return null;
+        }
+        return $clean;
     }
 }

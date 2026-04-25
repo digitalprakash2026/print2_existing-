@@ -245,6 +245,7 @@ if ($uri === '/api/payment/verify' && $method === 'POST') {
         'coupon_code'    => $body['coupon_code'] ?? null,
         'payment_method' => 'razorpay',
         'payment_status' => 'pending',
+        'billing'        => $body['billing'] ?? null,
     ]);
 
     if (!$placeResult['ok']) json($placeResult);
@@ -275,6 +276,7 @@ if ($uri === '/api/orders/whatsapp' && $method === 'POST') {
         'payment_method' => 'whatsapp',
         'payment_status' => 'pending',
         'notes'          => $body['notes'] ?? '',
+        'billing'        => $body['billing'] ?? null,
     ]);
 
     if ($result['ok']) {
