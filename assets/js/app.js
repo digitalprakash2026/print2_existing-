@@ -124,6 +124,7 @@ function hidePayOv() {
 let _cartData = { items: [], totals: {} };
 let _couponCode     = null;
 let _couponApplied  = null;
+const MOTION_MODE_KEY = 'rcs_motion_mode';
 
 async function loadCart() {
   try {
@@ -489,6 +490,37 @@ function initRevealAnimations() {
   nodes.forEach(el => io.observe(el));
 }
 
+// ── Motion Mode Toggle (Luxury / Minimal) ─────────────────────
+function applyMotionMode(mode = 'luxury') {
+  const safeMode = mode === 'minimal' ? 'minimal' : 'luxury';
+  document.documentElement.setAttribute('data-motion', safeMode);
+
+  document.querySelectorAll('[data-motion-toggle]').forEach(btn => {
+    btn.textContent = safeMode === 'minimal' ? '🍃 Minimal' : '✨ Luxury';
+    btn.setAttribute(
+      'aria-label',
+      safeMode === 'minimal'
+        ? 'Switch to luxury motion effects'
+        : 'Switch to minimal motion effects'
+    );
+  });
+}
+
+function initMotionModeToggle() {
+  const saved = localStorage.getItem(MOTION_MODE_KEY);
+  applyMotionMode(saved === 'minimal' ? 'minimal' : 'luxury');
+
+  document.querySelectorAll('[data-motion-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-motion') === 'minimal' ? 'minimal' : 'luxury';
+      const next = current === 'minimal' ? 'luxury' : 'minimal';
+      localStorage.setItem(MOTION_MODE_KEY, next);
+      applyMotionMode(next);
+      toast(next === 'minimal' ? 'Minimal motion enabled' : 'Luxury motion enabled', 'info');
+    });
+  });
+}
+
 // ── Utility ───────────────────────────────────────────────────
 function _esc(s) {
   return String(s || '')
@@ -597,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch(() => {});
 
   // Init sliders if present
+  initMotionModeToggle();
   initBannerSlider('bannerSlider');
   initProductCarousel('prodCarousel');
   initRevealAnimations();
