@@ -32,7 +32,7 @@
   --r:12px; --rs:8px;
   --tr:.2s cubic-bezier(.4,0,.2,1);
   --fd:'Fraunces',serif; --fn:'Plus Jakarta Sans',sans-serif;
-  --hh:72px;
+  --hh:66px;
 }
 
 /* ── Reset ───────────────────────────────────────────────────── */
@@ -62,7 +62,7 @@ ul  { list-style:none; }
   display:flex; align-items:center; gap:10px; flex-shrink:0; text-decoration:none;
 }
 .hdr-logo-img{
-  height:54px;
+  height:42px;
   width:auto;
   display:block;
   object-fit:contain;
@@ -1089,7 +1089,7 @@ textarea.fi  { resize:vertical; }
 @media (max-width:768px) {
   .prod-grid { grid-template-columns:repeat(2,1fr); gap:13px; }
   .hdr-nav,.hdr-search { display:none; }
-  .hdr-logo-img { height:46px; }
+  .hdr-logo-img { height:36px; }
   .ham { display:flex; }
   .hdr-right { gap:8px; margin-left:auto; }
   .hdr-new-customer { display:none; }
