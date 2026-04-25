@@ -407,9 +407,15 @@ if ($uri === '/admin/export/orders') {
 }
 
 if (preg_match('#^/admin/invoice/(.+)$#', $uri, $m)) {
-    $order = \Orders\OrderManager::getOrderByOrderId($m[1]);
-    if (!$order) { http_response_code(404); exit; }
-    \Invoice\InvoiceGenerator::download($order);
+    try {
+        $order = \Orders\OrderManager::getOrderByOrderId($m[1]);
+        if (!$order) { http_response_code(404); exit; }
+        \Invoice\InvoiceGenerator::download($order);
+    } catch (\Throwable $e) {
+        error_log('Admin invoice failed for ' . $m[1] . ': ' . $e->getMessage());
+        http_response_code(500);
+        echo 'Invoice generation failed. Please check logs.';
+    }
     exit;
 }
 

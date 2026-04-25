@@ -21,18 +21,23 @@ class InvoiceGenerator
 
     public static function download(array $order): void
     {
-        if (class_exists('\Dompdf\Dompdf')) {
-            $dompdf = new \Dompdf\Dompdf(['enable_remote' => false, 'default_font' => 'helvetica']);
-            $dompdf->loadHtml(self::buildHtml($order));
-            $dompdf->setPaper('A4', 'portrait');
-            $dompdf->render();
-            $filename = 'Invoice-' . $order['order_id'] . '.pdf';
-            $dompdf->stream($filename, ['Attachment' => true]);
-        } else {
-            // HTML print fallback
-            header('Content-Type: text/html; charset=UTF-8');
-            echo self::htmlFallback($order);
+        try {
+            if (class_exists('\Dompdf\Dompdf')) {
+                $dompdf = new \Dompdf\Dompdf(['enable_remote' => false, 'default_font' => 'helvetica']);
+                $dompdf->loadHtml(self::buildHtml($order));
+                $dompdf->setPaper('A4', 'portrait');
+                $dompdf->render();
+                $filename = 'Invoice-' . (string)($order['order_id'] ?? 'order') . '.pdf';
+                $dompdf->stream($filename, ['Attachment' => true]);
+                return;
+            }
+        } catch (\Throwable $e) {
+            error_log('Invoice PDF render failed: ' . $e->getMessage());
         }
+
+        // HTML print fallback (also used when Dompdf render fails)
+        header('Content-Type: text/html; charset=UTF-8');
+        echo self::htmlFallback($order);
     }
 
     private static function withDompdf(array $order): string
@@ -46,12 +51,26 @@ class InvoiceGenerator
 
     public static function buildHtml(array $order): string
     {
+        $orderId = self::e($order['order_id'] ?? 'N/A');
+        $createdAt = (string)($order['created_at'] ?? '');
+        $orderDate = $createdAt !== '' ? date('d M Y', strtotime($createdAt)) : date('d M Y');
+        $paymentId = self::e($order['payment_id'] ?? '');
+        $customerName = self::e($order['customer_name'] ?? 'Customer');
+        $customerPhone = self::e($order['customer_phone'] ?? '-');
+        $customerEmail = self::e($order['customer_email'] ?? '');
+        $status = self::e(ucfirst((string)($order['status'] ?? 'received')));
+        $paymentStatus = self::e(ucfirst((string)($order['payment_status'] ?? 'pending')));
+        $gstPercent = (float)($order['gst_percent'] ?? 0);
+        $subtotal = (float)($order['subtotal'] ?? 0);
+        $gstAmount = (float)($order['gst_amount'] ?? 0);
+        $totalAmount = (float)($order['total_amount'] ?? 0);
+        $couponCode = self::e($order['coupon_code'] ?? '');
+
         $s = self::settings();
         $items = $order['items'] ?? [];
         $billing = self::extractBilling($order);
         $discount = (float)($order['discount_amount'] ?? 0);
         $now = date('d M Y');
-        $orderDate = date('d M Y', strtotime($order['created_at']));
 
         $itemRows = '';
         foreach ($items as $i => $item) {
@@ -69,35 +88,39 @@ class InvoiceGenerator
                 $attrText = rtrim($attrText, ', ');
             }
 
-            $desc = $item['quality_name'];
+            $desc = (string)($item['quality_name'] ?? 'Standard');
             if ($attrText) $desc .= ' | ' . $attrText;
-            if ($item['design_choice'] === 'rcs') $desc .= ' | Design by RCS Graphic';
+            if (($item['design_choice'] ?? '') === 'rcs') $desc .= ' | Design by RCS Graphic';
+            $productName = self::e($item['product_name'] ?? 'Product');
+            $descEsc = self::e($desc);
+            $qty = self::e((string)($item['quantity'] ?? '0'));
+            $lineTotal = (float)($item['total_price'] ?? 0);
 
             $itemRows .= "
             <tr>
                 <td class='tc'>" . ($i + 1) . "</td>
-                <td>{$item['product_name']}<br><small style='color:#666'>{$desc}</small></td>
-                <td class='tc'>{$item['quantity']} pcs</td>
-                <td class='tr'>₹" . number_format($item['total_price'], 2) . "</td>
-                <td class='tr'>₹" . number_format($item['total_price'], 2) . "</td>
+                <td>{$productName}<br><small style='color:#666'>{$descEsc}</small></td>
+                <td class='tc'>{$qty} pcs</td>
+                <td class='tr'>₹" . number_format($lineTotal, 2) . "</td>
+                <td class='tr'>₹" . number_format($lineTotal, 2) . "</td>
             </tr>";
         }
 
         $discRow = $discount > 0
-            ? "<tr><td colspan='4' class='tr'>Discount ({$order['coupon_code']})</td><td class='tr' style='color:green'>-₹" . number_format($discount, 2) . "</td></tr>"
+            ? "<tr><td colspan='4' class='tr'>Discount ({$couponCode})</td><td class='tr' style='color:green'>-₹" . number_format($discount, 2) . "</td></tr>"
             : '';
 
         $billToHtml = '';
         if ($billing) {
-            $billToHtml = "<p><strong>{$billing['legal_name']}</strong><br>
-                GSTIN: {$billing['gst_no']}<br>
-                {$billing['address_line1']}" .
-                (!empty($billing['address_line2']) ? "<br>{$billing['address_line2']}" : '') .
-                "<br>{$billing['city']}, {$billing['state']} - {$billing['pincode']}<br>
-                {$order['customer_phone']}" . ($order['customer_email'] ? "<br>{$order['customer_email']}" : '') . "</p>";
+            $billToHtml = "<p><strong>" . self::e($billing['legal_name']) . "</strong><br>
+                GSTIN: " . self::e($billing['gst_no']) . "<br>
+                " . self::e($billing['address_line1']) .
+                (!empty($billing['address_line2']) ? "<br>" . self::e($billing['address_line2']) : '') .
+                "<br>" . self::e($billing['city']) . ", " . self::e($billing['state']) . " - " . self::e($billing['pincode']) . "<br>
+                {$customerPhone}" . ($customerEmail !== '' ? "<br>{$customerEmail}" : '') . "</p>";
         } else {
-            $billToHtml = "<p><strong>{$order['customer_name']}</strong><br>
-                {$order['customer_phone']}" . ($order['customer_email'] ? "<br>{$order['customer_email']}" : '') . "</p>";
+            $billToHtml = "<p><strong>{$customerName}</strong><br>
+                {$customerPhone}" . ($customerEmail !== '' ? "<br>{$customerEmail}" : '') . "</p>";
         }
 
         return "<!DOCTYPE html><html><head><meta charset='UTF-8'>
@@ -128,21 +151,21 @@ class InvoiceGenerator
 
         <div class='header'>
             <div>
-                <div class='biz-name'>{$s['name']}</div>
+                <div class='biz-name'>" . self::e($s['name']) . "</div>
                 <div class='biz-sub'>
-                    {$s['address']}<br>
-                    📞 {$s['phone']} · ✉ {$s['email']}<br>
-                    GSTIN: {$s['gst_no']}
+                    " . self::e($s['address']) . "<br>
+                    📞 " . self::e($s['phone']) . " · ✉ " . self::e($s['email']) . "<br>
+                    GSTIN: " . self::e($s['gst_no']) . "
                 </div>
             </div>
             <div class='inv-title'>
                 <h2>TAX INVOICE</h2>
                 <div class='inv-meta'>
-                    Invoice No: <strong>{$order['order_id']}</strong><br>
+                    Invoice No: <strong>{$orderId}</strong><br>
                     Date: {$orderDate}<br>
-                    " . ($order['payment_id'] ? "Payment ID: {$order['payment_id']}" : '') . "
+                    " . ($paymentId !== '' ? "Payment ID: {$paymentId}" : '') . "
                 </div>
-                <div style='margin-top:8px'><span class='badge'>" . ucfirst($order['payment_status'] ?? 'pending') . "</span></div>
+                <div style='margin-top:8px'><span class='badge'>{$paymentStatus}</span></div>
             </div>
         </div>
 
@@ -153,9 +176,9 @@ class InvoiceGenerator
             </div>
             <div class='section' style='flex:1'>
                 <div class='section-t'>Order Info</div>
-                <p>Order ID: <strong>{$order['order_id']}</strong><br>
+                <p>Order ID: <strong>{$orderId}</strong><br>
                 Order Date: {$orderDate}<br>
-                Status: <strong>" . ucfirst($order['status']) . "</strong></p>
+                Status: <strong>{$status}</strong></p>
             </div>
         </div>
 
@@ -175,15 +198,15 @@ class InvoiceGenerator
         </table>
 
         <table class='totals'>
-            <tr><td>Subtotal</td><td class='tr'>₹" . number_format($order['subtotal'], 2) . "</td></tr>
+            <tr><td>Subtotal</td><td class='tr'>₹" . number_format($subtotal, 2) . "</td></tr>
             {$discRow}
-            <tr><td>CGST ({$order['gst_percent']}%/2)</td><td class='tr'>₹" . number_format($order['gst_amount'] / 2, 2) . "</td></tr>
-            <tr><td>SGST ({$order['gst_percent']}%/2)</td><td class='tr'>₹" . number_format($order['gst_amount'] / 2, 2) . "</td></tr>
-            <tr class='tot-total'><td><strong>Total</strong></td><td class='tr'><strong>₹" . number_format($order['total_amount'], 2) . "</strong></td></tr>
+            <tr><td>CGST ({$gstPercent}%/2)</td><td class='tr'>₹" . number_format($gstAmount / 2, 2) . "</td></tr>
+            <tr><td>SGST ({$gstPercent}%/2)</td><td class='tr'>₹" . number_format($gstAmount / 2, 2) . "</td></tr>
+            <tr class='tot-total'><td><strong>Total</strong></td><td class='tr'><strong>₹" . number_format($totalAmount, 2) . "</strong></td></tr>
         </table>
 
         <div class='footer'>
-            Thank you for your business! · {$s['name']} · {$s['address']}<br>
+            Thank you for your business! · " . self::e($s['name']) . " · " . self::e($s['address']) . "<br>
             This is a computer-generated invoice. Generated on {$now}.
         </div>
 
@@ -234,5 +257,10 @@ class InvoiceGenerator
             return null;
         }
         return $clean;
+    }
+
+    private static function e(mixed $value): string
+    {
+        return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
     }
 }
