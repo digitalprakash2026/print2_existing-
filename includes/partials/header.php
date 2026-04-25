@@ -191,9 +191,6 @@ $currentUri  = $uri ?? '/';
 
     <!-- WhatsApp quick action in drawer -->
     <div style="padding:14px 18px;border-top:1px solid var(--border);margin-top:4px">
-      <button type="button" data-motion-toggle class="btn btn-outline btn-full" style="border-radius:10px;margin-bottom:8px">
-        ✨ Luxury Motion
-      </button>
       <button onclick="window.open('https://wa.me/<?= $navWa ?>','_blank');closeDrawer()"
               class="btn btn-green btn-full" style="border-radius:10px">
         💬 WhatsApp Us
