@@ -300,17 +300,67 @@ async function initiateCheckout(couponCode = null, customer = null) {
 }
 
 async function placeWhatsappOrder(couponCode = null, notes = '', customer = null) {
-  const resp = await fetch('/api/orders/whatsapp', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
-    credentials: 'same-origin',
-    body: JSON.stringify({ coupon_code: couponCode, notes, customer })
-  });
-  const data = await resp.json();
-  if (data.ok) {
-    window.location.href = '/order/confirm/' + data.order.order_id;
-  } else {
-    toast(data.msg || 'Error placing order', 'error');
+  try {
+    const url = couponCode ? `/api/cart?coupon=${encodeURIComponent(couponCode)}` : '/api/cart';
+    const resp = await fetch(url, { credentials: 'same-origin' });
+    const data = await resp.json();
+
+    if (!data.ok) {
+      toast(data.msg || 'Could not load cart details for WhatsApp', 'error');
+      return;
+    }
+
+    const items = data.items || [];
+    const totals = data.totals || {};
+    if (!items.length) {
+      toast('Your cart is empty', 'warn');
+      return;
+    }
+
+    const fmt = n => '₹' + Number(n || 0).toLocaleString('en-IN');
+    const now = new Date().toLocaleString('en-IN');
+
+    const lines = [
+      '🧾 *New Order Enquiry*',
+      `🕒 ${now}`,
+      '',
+      '*Customer Details*',
+      `• Name: ${customer?.name || APP.user?.name || 'Guest'}`,
+      `• Phone: ${customer?.phone || APP.user?.phone || 'Not provided'}`,
+      `• Email: ${customer?.email || APP.user?.email || 'Not provided'}`,
+      '',
+      '*Order Items*'
+    ];
+
+    items.forEach((item, idx) => {
+      const design = item.design_choice === 'rcs' ? 'Design by RCS' : 'Customer Upload';
+      lines.push(`${idx + 1}) ${item.product_name || 'Product'}`);
+      lines.push(`   • Qty: ${Number(item.quantity || 0).toLocaleString('en-IN')} pcs`);
+      lines.push(`   • Quality: ${item.quality_name || 'Standard'}`);
+      lines.push(`   • Design: ${design}`);
+      if (item.design_brief) lines.push(`   • Design Brief: ${item.design_brief}`);
+      if (item.notes) lines.push(`   • Notes: ${item.notes}`);
+      lines.push(`   • Line Total: ${fmt(item.total_price)}`);
+      lines.push('');
+    });
+
+    lines.push('*Summary*');
+    lines.push(`• Subtotal: ${fmt(totals.subtotal)}`);
+    if (Number(totals.discount || 0) > 0) lines.push(`• Discount: -${fmt(totals.discount)}`);
+    lines.push(`• GST (${totals.gst_pct || APP.gstPercent}%): ${fmt(totals.gst_amt)}`);
+    lines.push(`• Shipping: ${Number(totals.shipping || 0) > 0 ? fmt(totals.shipping) : 'Free'}`);
+    lines.push(`• *Grand Total: ${fmt(totals.total)}*`);
+
+    if (couponCode) lines.push(`• Coupon: ${couponCode}`);
+    if (notes) lines.push(`• Extra Note: ${notes}`);
+    lines.push('');
+    lines.push(`Source: Checkout (${window.location.href})`);
+
+    const waUrl = `https://wa.me/${APP.whatsapp}?text=${encodeURIComponent(lines.join('\n'))}`;
+    window.open(waUrl, '_blank');
+    toast('Opening WhatsApp with full order details…', 'success');
+  } catch (e) {
+    toast('Could not prepare WhatsApp message. Please try again.', 'error');
   }
 }
 

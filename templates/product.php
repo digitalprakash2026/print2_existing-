@@ -575,17 +575,30 @@ function validateOrder() {
 
 // WhatsApp Quick Order
 function waOrder() {
-  const totalEl = document.getElementById('ppTotal').textContent;
-  const qname   = QUALITIES[selectedQualityIdx]?.name || '—';
-  const qtyText = selectedQty ? Number(selectedQty).toLocaleString('en-IN') + ' pcs' : '—';
+  const totalEl = document.getElementById('ppTotal').textContent || '₹ —';
+  const qname   = QUALITIES[selectedQualityIdx]?.name || 'Standard';
+  const qtyText = selectedQty ? Number(selectedQty).toLocaleString('en-IN') + ' pcs' : 'Not selected';
   const dOpt    = designChoice === 'rcs' ? 'Design by RCS Graphic' : 'Customer Upload';
+  const now     = new Date().toLocaleString('en-IN');
+  const pageUrl = window.location.href;
 
-  window.open(
-    `https://wa.me/${BIZ_WA}?text=${encodeURIComponent(
-      `Hi! I'd like to order:\n🖨️ <?= addslashes(htmlspecialchars($product['name'])) ?>\n📦 ${qtyText}\n⭐ ${qname}\n🎨 Design: ${dOpt}\n💰 ${totalEl}\nPlease confirm.`
-    )}`,
-    '_blank'
-  );
+  const msg = [
+    '🧾 *Product Enquiry*',
+    `🕒 ${now}`,
+    '',
+    '*Product Details*',
+    `• Product: <?= addslashes(htmlspecialchars($product['name'])) ?>`,
+    `• Quantity: ${qtyText}`,
+    `• Quality: ${qname}`,
+    `• Design: ${dOpt}`,
+    `• Estimated Total: ${totalEl}`,
+    '',
+    `Source: Product Page (${pageUrl})`,
+    '',
+    'Please confirm final costing and next steps.'
+  ].join('\n');
+
+  window.open(`https://wa.me/${BIZ_WA}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 // Init

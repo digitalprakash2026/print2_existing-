@@ -73,7 +73,7 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
     </div>
     <?php endif; ?>
     <button class="btn btn-outline btn-full" onclick="doWhatsAppOrder()" style="padding:14px;font-size:14px;border-radius:12px">
-      💬 Place Order via WhatsApp
+      💬 Share Order on WhatsApp
     </button>
     <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--text3)">
       🔒 Secured by Razorpay · GST Invoice included · Your data is safe
