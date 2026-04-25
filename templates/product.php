@@ -53,7 +53,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
   <div class="pd-grid">
 
     <!-- ════ LEFT — GALLERY ════ -->
-    <div class="pd-gallery">
+    <div class="pd-gallery" data-reveal>
 
       <!-- Square main image -->
       <div class="pd-main" id="pdMainWrap">
@@ -80,7 +80,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
     </div><!-- /pd-gallery -->
 
     <!-- ════ RIGHT — INFO + CONFIGURATOR ════ -->
-    <div class="pd-info-col">
+    <div class="pd-info-col" data-reveal data-reveal-delay="80">
 
       <!-- Category tag -->
       <div class="pd-cat"><?= htmlspecialchars($product['category_name'] ?? '') ?></div>
@@ -266,7 +266,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
         $rimg = $rp['primary_image'] ?? '';
         $rmin = (float)($rp['min_price'] ?? 0);
       ?>
-      <div class="pc" style="cursor:default">
+      <div class="pc" style="cursor:default" data-reveal data-reveal-delay="<?= ((int)($rp['id'] ?? 0) % 3) * 60 ?>">
         <a href="/product/<?= htmlspecialchars($rp['slug']) ?>" style="display:contents;text-decoration:none">
           <div class="pc-img">
             <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" loading="lazy"
@@ -439,6 +439,14 @@ function calcPrice() {
   document.getElementById('ppBase').textContent  = fmt(base);
   document.getElementById('ppTotal').textContent = fmt(total);
   document.getElementById('spTotal').textContent = fmt(total);
+  const panel = document.getElementById('pricePanel');
+  if (panel) {
+    panel.classList.remove('flash');
+    requestAnimationFrame(() => {
+      panel.classList.add('flash');
+      setTimeout(() => panel.classList.remove('flash'), 320);
+    });
+  }
 
   const feeRow = document.getElementById('ppDesignRow');
   if (feeRow) feeRow.style.display = fee > 0 ? '' : 'none';

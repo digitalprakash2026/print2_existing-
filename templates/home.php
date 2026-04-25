@@ -115,14 +115,14 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <!-- ═══════════════════════════════════════════════════════════
      TRUST BAR
 ══════════════════════════════════════════════════════════════ -->
-<div class="trust">
+<div class="trust" data-reveal>
   <div class="container">
     <div class="trust-inner">
-      <div class="trust-i"><div class="trust-ic" style="background:#ECFDF5">✅</div>GST Invoice Included</div>
-      <div class="trust-i"><div class="trust-ic" style="background:#EEF3FD">🔒</div>Secure Razorpay Payment</div>
-      <div class="trust-i"><div class="trust-ic" style="background:#FFF4ED">⚡</div>24–48hr Fast Delivery</div>
-      <div class="trust-i"><div class="trust-ic" style="background:#FEF9C3">🎨</div>Free Design Support</div>
-      <div class="trust-i"><div class="trust-ic" style="background:#F0FDF4">💯</div>Quality Guaranteed</div>
+      <div class="trust-i" data-reveal data-reveal-delay="40"><div class="trust-ic" style="background:#ECFDF5">✅</div>GST Invoice Included</div>
+      <div class="trust-i" data-reveal data-reveal-delay="80"><div class="trust-ic" style="background:#EEF3FD">🔒</div>Secure Razorpay Payment</div>
+      <div class="trust-i" data-reveal data-reveal-delay="120"><div class="trust-ic" style="background:#FFF4ED">⚡</div>24–48hr Fast Delivery</div>
+      <div class="trust-i" data-reveal data-reveal-delay="160"><div class="trust-ic" style="background:#FEF9C3">🎨</div>Free Design Support</div>
+      <div class="trust-i" data-reveal data-reveal-delay="200"><div class="trust-ic" style="background:#F0FDF4">💯</div>Quality Guaranteed</div>
     </div>
   </div>
 </div>
@@ -134,7 +134,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <section class="sec home-prod-sec" id="prod-sec" style="background:var(--bg)">
   <div class="home-prod-wrap">
 
-    <div class="sec-hdr" style="margin-bottom:32px">
+    <div class="sec-hdr" style="margin-bottom:32px" data-reveal>
       <div>
         <div class="sec-ey">Our Products</div>
         <div class="sec-t">Everything You Need to Print</div>
@@ -183,7 +183,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
         $catName     = htmlspecialchars($catData['name']);
         $catIcon     = htmlspecialchars($catData['icon'] ?? '📦');
       ?>
-      <div class="cat-box cat-box-square">
+      <div class="cat-box cat-box-square" data-reveal data-reveal-delay="<?= ((int)$catId % 5) * 40 ?>">
 
         <!-- Category header -->
         <div class="cat-box-hdr">
@@ -239,7 +239,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 
 
 <!-- WHY US -->
-<section class="sec" id="why-sec" style="background:var(--white)">
+<section class="sec" id="why-sec" style="background:var(--white)" data-reveal>
   <div class="container">
     <div class="sec-hdr" style="margin-bottom:28px">
       <div>
@@ -253,37 +253,37 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
     </div>
     <div class="why-grid">
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="30">
         <div class="why-ic" style="background:#EEF3FD">🖨️</div>
         <div class="why-t">Premium Print Quality</div>
         <div class="why-d">State-of-the-art printing technology ensuring sharp, vibrant and consistent results every time.</div>
       </div>
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="60">
         <div class="why-ic" style="background:#ECFDF5">⚡</div>
         <div class="why-t">Fast Turnaround</div>
         <div class="why-d">Same-day and next-day options available. We know deadlines matter for your business.</div>
       </div>
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="90">
         <div class="why-ic" style="background:#FFF4ED">💰</div>
         <div class="why-t">Best Bulk Prices</div>
         <div class="why-d">Competitive pricing with bulk discounts. The more you print, the more you save.</div>
       </div>
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="120">
         <div class="why-ic" style="background:#FEF9C3">🎨</div>
         <div class="why-t">Free Design Help</div>
         <div class="why-d">Our creative team helps you get the perfect design ready for print at no extra cost.</div>
       </div>
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="150">
         <div class="why-ic" style="background:#F0F9FF">📦</div>
         <div class="why-t">Safe Packaging</div>
         <div class="why-d">Every order is carefully packed to ensure your prints arrive in perfect condition.</div>
       </div>
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="180">
         <div class="why-ic" style="background:#FDF4FF">🤝</div>
         <div class="why-t">Dedicated Support</div>
         <div class="why-d">Personal support via WhatsApp and phone. We're here at every step of your order.</div>
@@ -296,7 +296,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <!-- CTA BAND -->
 <section class="sec">
   <div class="container">
-    <div class="cta">
+    <div class="cta" data-reveal>
       <div style="position:relative;z-index:1">
         <div class="cta-h">Ready to Print Something Amazing?</div>
         <div class="cta-s">Place your order in minutes. We'll take care of the rest.</div>
@@ -311,7 +311,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 </section>
 
 <!-- CONTACT -->
-<section class="sec" id="contact-sec" style="background:var(--white)">
+<section class="sec" id="contact-sec" style="background:var(--white)" data-reveal>
   <div class="container">
     <div class="contact-grid">
       <div>

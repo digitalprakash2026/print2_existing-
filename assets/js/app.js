@@ -465,6 +465,30 @@ function initProductCarousel(id = 'prodCarousel') {
   }, { passive: true });
 }
 
+// ── Scroll Reveal Animations ───────────────────────────────────
+function initRevealAnimations() {
+  const nodes = document.querySelectorAll('[data-reveal]');
+  if (!nodes.length) return;
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) {
+    nodes.forEach(el => el.classList.add('is-visible'));
+    return;
+  }
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const delay = parseInt(el.getAttribute('data-reveal-delay') || '0', 10);
+      setTimeout(() => el.classList.add('is-visible'), Math.max(0, delay));
+      io.unobserve(el);
+    });
+  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
+
+  nodes.forEach(el => io.observe(el));
+}
+
 // ── Utility ───────────────────────────────────────────────────
 function _esc(s) {
   return String(s || '')
@@ -575,5 +599,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Init sliders if present
   initBannerSlider('bannerSlider');
   initProductCarousel('prodCarousel');
+  initRevealAnimations();
   initChatbot();
 });
