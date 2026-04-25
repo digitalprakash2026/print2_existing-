@@ -1106,10 +1106,14 @@ textarea.fi  { resize:vertical; }
   background: #fff;
   border-radius: 14px;
   box-shadow: var(--sh-lg);
-  display: flex;
+  display: none;
   flex-direction: column;
   overflow: hidden;
 }
+.chatbot-widget.open .chatbot-panel {
+  display: flex;
+}
+.chatbot-panel[hidden] { display: none !important; }
 .chatbot-head {
   padding: 10px 12px;
   display: flex;

@@ -428,17 +428,21 @@ function _esc(s) {
 const _chatHistory = [];
 
 function toggleChatbot(force = null) {
+  const widget = document.getElementById('chatbotWidget');
   const panel = document.getElementById('chatbotPanel');
   const toggle = document.getElementById('chatbotToggle');
-  if (!panel || !toggle) return;
-  const willOpen = force === null ? panel.hasAttribute('hidden') : !!force;
+  if (!widget || !panel || !toggle) return;
+
+  const isOpen = widget.classList.contains('open');
+  const willOpen = force === null ? !isOpen : !!force;
+
+  widget.classList.toggle('open', willOpen);
+  widget.dataset.open = willOpen ? '1' : '0';
+  toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  panel.setAttribute('aria-hidden', willOpen ? 'false' : 'true');
+
   if (willOpen) {
-    panel.removeAttribute('hidden');
-    toggle.setAttribute('aria-expanded', 'true');
     document.getElementById('chatbotInput')?.focus();
-  } else {
-    panel.setAttribute('hidden', 'hidden');
-    toggle.setAttribute('aria-expanded', 'false');
   }
 }
 
@@ -468,10 +472,14 @@ function chatbotHandoff() {
 }
 
 function initChatbot() {
+  const widget = document.getElementById('chatbotWidget');
   const form = document.getElementById('chatbotForm');
   const input = document.getElementById('chatbotInput');
   const toggle = document.getElementById('chatbotToggle');
-  if (!form || !input || !toggle) return;
+  if (!widget || !form || !input || !toggle) return;
+
+  // Always start minimized.
+  toggleChatbot(false);
 
   toggle.addEventListener('click', () => toggleChatbot());
 

@@ -1,9 +1,9 @@
-<div id="chatbotWidget" class="chatbot-widget" aria-live="polite">
+<div id="chatbotWidget" class="chatbot-widget" aria-live="polite" data-open="0">
   <button id="chatbotToggle" class="chatbot-toggle" type="button" aria-expanded="false" aria-controls="chatbotPanel">
     💬 Ask us
   </button>
 
-  <section id="chatbotPanel" class="chatbot-panel" hidden>
+  <section id="chatbotPanel" class="chatbot-panel" aria-hidden="true">
     <header class="chatbot-head">
       <strong>RCS Assistant</strong>
       <button type="button" onclick="toggleChatbot(false)" aria-label="Close chatbot">✕</button>
