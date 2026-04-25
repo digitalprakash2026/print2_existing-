@@ -158,11 +158,25 @@ if ($uri === '/api/upload/artwork' && $method === 'POST') {
     }
 
     $ownerForInsert = $userId > 0 ? $userId : null;
-    $fileId = Database::insert(
-        "INSERT INTO artwork_files (uploaded_by, filename, original_name, file_path, mime_type, file_size, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())",
-        [$ownerForInsert, $filename, $file['name'], $publicPath, $mime, $file['size']]
-    );
+    try {
+        $fileId = Database::insert(
+            "INSERT INTO artwork_files (uploaded_by, filename, original_name, file_path, mime_type, file_size, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW())",
+            [$ownerForInsert, $filename, $file['name'], $publicPath, $mime, $file['size']]
+        );
+    } catch (\Throwable $e) {
+        // Some schemas may have `uploaded_by` as NOT NULL.
+        // Fallback to 0 for guests and keep flow working.
+        if ($userId === 0) {
+            $fileId = Database::insert(
+                "INSERT INTO artwork_files (uploaded_by, filename, original_name, file_path, mime_type, file_size, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, NOW())",
+                [0, $filename, $file['name'], $publicPath, $mime, $file['size']]
+            );
+        } else {
+            throw $e;
+        }
+    }
 
     if ($userId === 0) {
         $_SESSION['guest_artwork_ids'] = $_SESSION['guest_artwork_ids'] ?? [];
