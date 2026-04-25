@@ -212,7 +212,21 @@ if ($uri === '/api/payment/verify' && $method === 'POST') {
     $ensure = \Auth\Auth::ensureCheckoutUser($body['customer'] ?? []);
     if (!$ensure['ok']) json($ensure, 400);
 
-    // 1. Place order first (records in DB)
+    $razorpayOrderId = trim((string)($body['razorpay_order_id'] ?? ''));
+    $razorpayPaymentId = trim((string)($body['razorpay_payment_id'] ?? ''));
+    $razorpaySignature = trim((string)($body['razorpay_signature'] ?? ''));
+
+    if ($razorpayOrderId === '' || $razorpayPaymentId === '' || $razorpaySignature === '') {
+        json(['ok' => false, 'msg' => 'Missing payment verification fields'], 422);
+    }
+
+    // Idempotency: if this payment ID is already recorded, return existing order directly.
+    $existingOrder = \Payment\Razorpay::findOrderByPaymentId($razorpayPaymentId);
+    if ($existingOrder) {
+        json(['ok' => true, 'already_processed' => true, 'order' => $existingOrder]);
+    }
+
+    // 1) Place order first (records in DB)
     $placeResult = \Orders\OrderManager::place([
         'coupon_code'    => $body['coupon_code'] ?? null,
         'payment_method' => 'razorpay',
@@ -221,13 +235,18 @@ if ($uri === '/api/payment/verify' && $method === 'POST') {
 
     if (!$placeResult['ok']) json($placeResult);
 
-    // 2. Verify Razorpay signature (server-side)
+    // 2) Verify signature + mark payment success
     $verifyResult = \Payment\Razorpay::handleSuccess(
         (int)$placeResult['order']['id'],
-        $body['razorpay_order_id'] ?? '',
-        $body['razorpay_payment_id'] ?? '',
-        $body['razorpay_signature'] ?? ''
+        $razorpayOrderId,
+        $razorpayPaymentId,
+        $razorpaySignature
     );
+
+    // Defensive: always try to return order object so frontend can redirect reliably.
+    if (($verifyResult['ok'] ?? false) && empty($verifyResult['order'])) {
+        $verifyResult['order'] = \Orders\OrderManager::getOrder((int)$placeResult['order']['id']);
+    }
 
     json($verifyResult);
 }

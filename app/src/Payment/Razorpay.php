@@ -81,7 +81,8 @@ class Razorpay
             [$razorpayPaymentId]
         );
         if ($existing) {
-            return ['ok' => true, 'already_processed' => true];
+            $order = self::findOrderByPaymentId($razorpayPaymentId);
+            return ['ok' => true, 'already_processed' => true, 'order' => $order];
         }
 
         $db = \Database::get();
@@ -120,6 +121,23 @@ class Razorpay
             error_log('Payment recording failed: ' . $e->getMessage());
             return ['ok' => false, 'msg' => 'Payment recorded but order update failed. Contact support with payment ID: ' . $razorpayPaymentId];
         }
+    }
+
+    public static function findOrderByPaymentId(string $razorpayPaymentId): ?array
+    {
+        if ($razorpayPaymentId === '') return null;
+
+        $row = \Database::row(
+            "SELECT o.id
+             FROM payments p
+             JOIN orders o ON o.id = p.order_id
+             WHERE p.razorpay_payment_id = ?
+             ORDER BY p.id DESC
+             LIMIT 1",
+            [$razorpayPaymentId]
+        );
+
+        return $row ? \Orders\OrderManager::getOrder((int)$row['id']) : null;
     }
 
     // ── Internal ──────────────────────────────────────────────

@@ -282,7 +282,13 @@ async function initiateCheckout(couponCode = null, customer = null) {
         const vData = await vResp.json();
         hidePayOv();
         if (vData.ok) {
-          window.location.href = '/order/confirm/' + vData.order.order_id;
+          const oid = vData?.order?.order_id;
+          if (oid) {
+            window.location.href = '/order/confirm/' + oid;
+            return;
+          }
+          toast('Payment captured, but confirmation is loading. Opening My Orders…', 'warn');
+          setTimeout(() => { window.location.href = '/my-orders'; }, 900);
         } else {
           toast(vData.msg || 'Verification failed. Contact support.', 'error');
         }
