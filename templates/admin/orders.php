@@ -83,6 +83,14 @@ $status = $status ?? 'all';
               <?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?>
               <?= $item['design_choice'] === 'rcs' ? ' · 🎨 RCS Design' : ' · 📁 Upload' ?>
             </div>
+            <?php if (!empty($item['artwork_file_id'])): ?>
+            <div class="ord-artwork">
+              <span>📎 <?= htmlspecialchars($item['artwork_original_name'] ?: $item['artwork_filename'] ?: 'Artwork File') ?></span>
+              <a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/download" class="ord-artwork-link">Download</a>
+            </div>
+            <?php elseif (($item['design_choice'] ?? '') !== 'rcs'): ?>
+            <div class="ord-artwork ord-artwork-empty">No artwork uploaded</div>
+            <?php endif; ?>
           </div>
           <?php endforeach; ?>
         </td>

@@ -453,7 +453,18 @@ if ($uri === '/admin/orders') {
 
     $orders = Database::rows("SELECT * FROM orders $whereSql ORDER BY created_at DESC LIMIT $perPage OFFSET $offset", $params);
     foreach ($orders as &$o) {
-        $o['items'] = Database::rows("SELECT * FROM order_items WHERE order_id=?", [$o['id']]);
+        $o['items'] = Database::rows(
+            "SELECT oi.*,
+                    af.id AS artwork_file_id,
+                    af.original_name AS artwork_original_name,
+                    af.filename AS artwork_filename,
+                    af.file_path AS artwork_file_path
+             FROM order_items oi
+             LEFT JOIN artwork_files af ON af.order_item_id = oi.id
+             WHERE oi.order_id=?
+             ORDER BY oi.id ASC",
+            [$o['id']]
+        );
     }
 
     view('admin/orders', compact('orders','total','page','perPage','status','search'));
