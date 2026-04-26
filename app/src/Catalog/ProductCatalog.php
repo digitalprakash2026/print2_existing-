@@ -352,7 +352,14 @@ class ProductCatalog
             }
         }
         $next = $max + 1;
-        return $prefix . '-' . str_pad((string)$next, 2, '0', STR_PAD_LEFT);
+        return $prefix . '-' . str_pad((string)$next, 3, '0', STR_PAD_LEFT);
+    }
+
+    public static function nextProductCodePreview(int $categoryId, ?int $editId = null): ?string
+    {
+        if ($categoryId <= 0) return null;
+        if (!self::productCodeColumnReady()) return null;
+        return self::generateProductCode($categoryId, $editId);
     }
 
     private static function productCodeColumnReady(): bool

@@ -340,6 +340,12 @@ if (str_starts_with($uri, '/admin/api/')) {
     if ($uri === '/admin/api/categories' && $method === 'GET') {
         json(['ok'=>true,'categories'=>\Catalog\ProductCatalog::categories()]);
     }
+    if (preg_match('#^/admin/api/categories/(\d+)/next-product-code$#', $uri, $m) && $method === 'GET') {
+        $categoryId = (int)$m[1];
+        $editId = (int)($_GET['edit_id'] ?? 0);
+        $code = \Catalog\ProductCatalog::nextProductCodePreview($categoryId, $editId > 0 ? $editId : null);
+        json(['ok' => true, 'code' => $code]);
+    }
     if ($uri === '/admin/api/categories' && $method === 'POST') {
         $slug = strtolower(preg_replace('/[^a-z0-9]+/','-',$body['name']??''));
         $prefix = strtoupper(trim((string)($body['code_prefix'] ?? '')));
