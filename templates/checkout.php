@@ -51,10 +51,6 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
       <div id="billingFields">
         <div class="fg"><label>Legal Business Name *</label><input id="b-legal" class="fi" placeholder="ABC Pvt Ltd"></div>
         <div class="fg"><label>GSTIN *</label><input id="b-gst" class="fi" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-        <div class="f2">
-          <div class="fg"><label>Billing Phone *</label><input id="b-phone" type="tel" class="fi" placeholder="+91 98765 43210"></div>
-          <div class="fg"><label>Billing Email *</label><input id="b-email" type="email" class="fi" placeholder="billing@example.com"></div>
-        </div>
         <div class="fg"><label>Billing Address Line 1 *</label><input id="b-add1" class="fi" placeholder="Street / Building"></div>
         <div class="fg"><label>Billing Address Line 2 (optional)</label><input id="b-add2" class="fi" placeholder="Area / Landmark"></div>
         <div class="f2">
@@ -114,6 +110,13 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
         <span>Shipping charges <strong>will</strong> apply based on total package weight and delivery location. Final shipping details will be shared with you via call or message before dispatch.</span>
       </label>
       <div id="shipConsentErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
+    </div>
+    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:14px 16px;margin-bottom:14px">
+      <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2);line-height:1.55">
+        <input type="checkbox" id="terms-consent" style="accent-color:var(--blue);margin-top:2px">
+        <span>I have read and agree to the <a href="/terms-and-conditions" target="_blank" style="color:var(--blue);font-weight:700">Terms &amp; Conditions</a>.</span>
+      </label>
+      <div id="termsConsentErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
     </div>
 
     <!-- Payment Buttons -->
@@ -179,6 +182,15 @@ function doCheckout() {
     return;
   }
   if (consentErr) consentErr.style.display = 'none';
+  const termsErr = document.getElementById('termsConsentErr');
+  if (!document.getElementById('terms-consent')?.checked) {
+    if (termsErr) {
+      termsErr.textContent = 'Please accept Terms & Conditions to continue.';
+      termsErr.style.display = 'block';
+    }
+    return;
+  }
+  if (termsErr) termsErr.style.display = 'none';
   const customer = getCheckoutCustomer();
   if (customer === false) return;
   const shipping = getCheckoutShipping();
@@ -198,6 +210,15 @@ async function doWhatsAppOrder() {
     return;
   }
   if (consentErr) consentErr.style.display = 'none';
+  const termsErr = document.getElementById('termsConsentErr');
+  if (!document.getElementById('terms-consent')?.checked) {
+    if (termsErr) {
+      termsErr.textContent = 'Please accept Terms & Conditions to continue.';
+      termsErr.style.display = 'block';
+    }
+    return;
+  }
+  if (termsErr) termsErr.style.display = 'none';
   const customer = getCheckoutCustomer();
   if (customer === false) return;
   const shipping = getCheckoutShipping();
@@ -276,8 +297,6 @@ function getCheckoutCustomer() {
 function getCheckoutBilling() {
   const legal = document.getElementById('b-legal')?.value.trim() || '';
   const gst = (document.getElementById('b-gst')?.value || '').trim().toUpperCase();
-  const phone = document.getElementById('b-phone')?.value.trim() || '';
-  const email = document.getElementById('b-email')?.value.trim() || '';
   const add1 = document.getElementById('b-add1')?.value.trim() || '';
   const add2 = document.getElementById('b-add2')?.value.trim() || '';
   const city = document.getElementById('b-city')?.value.trim() || '';
@@ -287,9 +306,8 @@ function getCheckoutBilling() {
   const err = document.getElementById('billErr');
   const gstOk = /^[0-9]{2}[A-Z0-9]{10}[0-9A-Z]{3}$/.test(gst);
   const pinOk = /^[1-9][0-9]{5}$/.test(pin);
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  if (!legal || !gst || !phone || !email || !add1 || !city || !state || !pin) {
+  if (!legal || !gst || !add1 || !city || !state || !pin) {
     if (err) { err.textContent = 'Please fill all required billing fields for GST invoice.'; err.style.display = 'block'; }
     return false;
   }
@@ -301,18 +319,12 @@ function getCheckoutBilling() {
     if (err) { err.textContent = 'Please enter a valid 6-digit pincode.'; err.style.display = 'block'; }
     return false;
   }
-  if (!emailOk) {
-    if (err) { err.textContent = 'Please enter a valid billing email address.'; err.style.display = 'block'; }
-    return false;
-  }
   if (err) err.style.display = 'none';
 
   return {
     required: true,
     legal_name: legal,
     gst_no: gst,
-    phone,
-    email,
     address_line1: add1,
     address_line2: add2,
     city,

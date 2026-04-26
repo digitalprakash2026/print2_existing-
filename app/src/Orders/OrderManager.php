@@ -266,8 +266,11 @@ class OrderManager
             'pincode'       => trim((string)($billing['pincode'] ?? '')),
         ];
 
-        if ($clean['legal_name'] === '' || $clean['gst_no'] === '' || $clean['phone'] === '' || $clean['email'] === '' ||
-            !filter_var($clean['email'], FILTER_VALIDATE_EMAIL) || $clean['address_line1'] === '' ||
+        if ($clean['email'] !== '' && !filter_var($clean['email'], FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+
+        if ($clean['legal_name'] === '' || $clean['gst_no'] === '' || $clean['address_line1'] === '' ||
             $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
             return null;
         }

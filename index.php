@@ -169,6 +169,12 @@ if ($uri === '/profile' && $method === 'GET') {
     exit;
 }
 
+// Terms & Conditions
+if ($uri === '/terms-and-conditions' && $method === 'GET') {
+    view('terms-and-conditions');
+    exit;
+}
+
 // Checkout
 if ($uri === '/checkout' && $method === 'GET') {
     try {
