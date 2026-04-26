@@ -81,7 +81,12 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
           <div style="font-size:11px;color:var(--blue)">🎨 Design by RCS Graphic</div>
           <?php endif; ?>
         </div>
-        <div style="font-family:var(--fd);font-size:15px;font-weight:700;color:var(--blue)">₹<?= number_format($item['total_price']) ?></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <div style="font-family:var(--fd);font-size:15px;font-weight:700;color:var(--blue)">₹<?= number_format($item['total_price']) ?></div>
+          <?php if (!empty($item['id'])): ?>
+          <button type="button" class="btn btn-outline btn-sm" onclick="removeCheckoutItem('<?= htmlspecialchars((string)$item['id'], ENT_QUOTES) ?>')" style="padding:5px 10px;font-size:11px">✕ Remove</button>
+          <?php endif; ?>
+        </div>
       </div>
       <?php endforeach; ?>
     </div>
@@ -203,6 +208,25 @@ async function doWhatsAppOrder() {
   if (billing === false) return;
   const notes = '';
   await placeWhatsappOrder(checkoutCoupon, notes, customer, billing, shipping);
+}
+
+async function removeCheckoutItem(itemId) {
+  if (!itemId) return;
+  try {
+    const resp = await fetch(`/api/cart/remove/${encodeURIComponent(itemId)}`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-TOKEN': CSRF },
+      credentials: 'same-origin'
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      alert(data.msg || 'Could not remove item.');
+      return;
+    }
+    window.location.reload();
+  } catch (e) {
+    alert('Could not remove item right now.');
+  }
 }
 
 function toggleBillingFields() {
