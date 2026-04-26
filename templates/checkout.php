@@ -17,8 +17,8 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
       <div class="fg"><label>Full Name *</label><input id="g-name" class="fi" placeholder="Your full name"></div>
       <div class="fg"><label>Email *</label><input id="g-email" type="email" class="fi" placeholder="email@example.com"></div>
       <div class="fg" style="margin-bottom:0"><label>Phone *</label><input id="g-phone" type="tel" class="fi" placeholder="+91 98765 43210"></div>
-      <div style="font-size:12px;color:var(--text3);margin-top:8px">
-        Already have account? <a href="/login" style="color:var(--blue);font-weight:600">Login here</a>
+      <div style="font-size:14px;color:var(--text2);margin-top:10px;font-weight:600">
+        Already have account? <a href="/login?next=/checkout" style="color:var(--blue);font-weight:800;text-decoration:underline">Login here</a>
       </div>
       <div id="guestErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
     </div>
@@ -172,7 +172,7 @@ async function applyCouponCheckout() {
   }
 }
 
-function doCheckout() {
+async function doCheckout() {
   const consentErr = document.getElementById('shipConsentErr');
   if (!document.getElementById('ship-consent')?.checked) {
     if (consentErr) {
@@ -193,6 +193,7 @@ function doCheckout() {
   if (termsErr) termsErr.style.display = 'none';
   const customer = getCheckoutCustomer();
   if (customer === false) return;
+  if (!(await validateGuestAccountForCheckout(customer))) return;
   const shipping = getCheckoutShipping();
   if (shipping === false) return;
   const billing = getCheckoutBilling();
@@ -221,6 +222,7 @@ async function doWhatsAppOrder() {
   if (termsErr) termsErr.style.display = 'none';
   const customer = getCheckoutCustomer();
   if (customer === false) return;
+  if (!(await validateGuestAccountForCheckout(customer))) return;
   const shipping = getCheckoutShipping();
   if (shipping === false) return;
   const billing = getCheckoutBilling();
@@ -291,6 +293,45 @@ function getCheckoutCustomer() {
   }
   err.style.display = 'none';
   return { name, email, phone };
+  <?php endif; ?>
+}
+
+async function validateGuestAccountForCheckout(customer) {
+  <?php if (!empty($user['id'])): ?>
+  return true;
+  <?php else: ?>
+  const err = document.getElementById('guestErr');
+  try {
+    const resp = await fetch('/api/auth/account-exists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ email: customer.email, phone: customer.phone }),
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      if (err) {
+        err.textContent = data.msg || 'Could not validate account details.';
+        err.style.display = 'block';
+      }
+      return false;
+    }
+    if (data.exists) {
+      if (err) {
+        err.innerHTML = `An account already exists with this email/phone. Please <a href="/login?next=/checkout" style="color:var(--blue);font-weight:700">login to continue checkout</a>.`;
+        err.style.display = 'block';
+      }
+      return false;
+    }
+    if (err) err.style.display = 'none';
+    return true;
+  } catch (e) {
+    if (err) {
+      err.textContent = 'Could not validate account details right now.';
+      err.style.display = 'block';
+    }
+    return false;
+  }
   <?php endif; ?>
 }
 

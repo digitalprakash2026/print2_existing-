@@ -41,6 +41,19 @@ if ($uri === '/api/auth/me' && $method === 'GET') {
     json(['ok' => true, 'user' => \Auth\Auth::user()]);
 }
 
+if ($uri === '/api/auth/account-exists' && $method === 'POST') {
+    $email = strtolower(trim((string)($body['email'] ?? '')));
+    $phone = trim((string)($body['phone'] ?? ''));
+    if ($email === '' || $phone === '') {
+        json(['ok' => false, 'msg' => 'Email and phone are required.'], 422);
+    }
+    $row = \Database::row(
+        "SELECT id FROM users WHERE is_active = 1 AND (email = ? OR phone = ?) LIMIT 1",
+        [$email, $phone]
+    );
+    json(['ok' => true, 'exists' => !empty($row)]);
+}
+
 if ($uri === '/api/profile' && $method === 'GET') {
     \Auth\Auth::require();
     $user = \Auth\Auth::user();
