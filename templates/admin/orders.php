@@ -177,11 +177,17 @@ $status = $status ?? 'all';
     </div>
     <div class="f2" style="grid-template-columns:1fr 1fr;gap:12px">
       <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
-        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Delivery Address</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">Delivery Address</div>
+          <button class="btn btn-outline btn-sm" type="button" onclick="copyAddress('shipping')">Copy</button>
+        </div>
         <div id="addrShipBox" style="font-size:13px;line-height:1.6"></div>
       </div>
       <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
-        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Billing Address</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">Billing Address</div>
+          <button class="btn btn-outline btn-sm" type="button" onclick="copyAddress('billing')">Copy</button>
+        </div>
         <div id="addrBillBox" style="font-size:13px;line-height:1.6"></div>
       </div>
     </div>
@@ -253,12 +259,49 @@ function fmtAddr(a, kind = 'shipping') {
     <div>${a.city || ''}, ${a.state || ''} - ${a.pincode || ''}</div>`;
 }
 
+function addrText(a, kind = 'shipping') {
+  if (!a || typeof a !== 'object') return '';
+  if (kind === 'billing') {
+    return [
+      a.legal_name || '',
+      a.gst_no ? `GSTIN: ${a.gst_no}` : '',
+      [a.address_line1 || '', a.address_line2 || ''].filter(Boolean).join(', '),
+      [a.city || '', a.state || ''].filter(Boolean).join(', ') + ((a.pincode || '') ? ` - ${a.pincode}` : ''),
+    ].filter(Boolean).join('\n');
+  }
+  return [
+    [a.address_line1 || '', a.address_line2 || ''].filter(Boolean).join(', '),
+    [a.city || '', a.state || ''].filter(Boolean).join(', ') + ((a.pincode || '') ? ` - ${a.pincode}` : ''),
+  ].filter(Boolean).join('\n');
+}
+
 function openAddrModal(orderId, shipping, billing) {
   document.getElementById('addrOrdLabel').textContent = `Order #${orderId}`;
   document.getElementById('addrShipBox').innerHTML = fmtAddr(shipping, 'shipping');
   document.getElementById('addrBillBox').innerHTML = fmtAddr(billing, 'billing');
   const modal = document.getElementById('addrModal');
-  if (modal) modal.style.display = 'flex';
+  if (modal) {
+    modal.dataset.shipAddr = addrText(shipping, 'shipping');
+    modal.dataset.billAddr = addrText(billing, 'billing');
+  }
+  if (!modal) return;
+  modal.style.display = 'flex';
+}
+
+async function copyAddress(kind = 'shipping') {
+  const modal = document.getElementById('addrModal');
+  if (!modal) return;
+  const text = kind === 'billing' ? (modal.dataset.billAddr || '') : (modal.dataset.shipAddr || '');
+  if (!text) {
+    toast('Address not available to copy', 'error');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Address copied to clipboard', 'success');
+  } catch (e) {
+    toast('Could not copy address', 'error');
+  }
 }
 
 function closeAddrModal() {
