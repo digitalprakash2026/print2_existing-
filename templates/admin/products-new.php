@@ -14,6 +14,10 @@ $editId = (int)($_GET['id'] ?? 0);
     <div class="fg"><label>Category *</label><select class="fi fi-sel" id="ep-cat"></select></div>
   </div>
   <div class="f2">
+    <div class="fg"><label>Product Code</label><input class="fi" id="ep-code" placeholder="Auto: PREFIX-01"></div>
+    <div class="fg"><label>Code Prefix (from category)</label><input class="fi" id="ep-prefix" disabled></div>
+  </div>
+  <div class="f2">
     <div class="fg"><label>Design Fee (₹)</label><input type="number" min="0" class="fi" id="ep-design-fee" value="0"></div>
     <div class="fg"><label>Status</label><select class="fi fi-sel" id="ep-active"><option value="1">Active</option><option value="0">Inactive</option></select></div>
   </div>
@@ -78,6 +82,8 @@ async function boot() {
   const catsRes = await fetch('/admin/api/categories').then(r=>r.json());
   allCats = catsRes.categories || [];
   document.getElementById('ep-cat').innerHTML = allCats.map(c=>`<option value="${c.id}">${escH(c.name)}</option>`).join('');
+  document.getElementById('ep-cat').addEventListener('change', updateCatPrefixHint);
+  updateCatPrefixHint();
 
   document.getElementById('ep-images').addEventListener('change', e => {
     const files = [...(e.target.files || [])];
@@ -94,6 +100,7 @@ async function boot() {
   const p = res.product;
   document.getElementById('ep-name').value = p.name || '';
   document.getElementById('ep-cat').value = p.category_id || '';
+  document.getElementById('ep-code').value = p.product_code || '';
   document.getElementById('ep-design-fee').value = p.design_fee || 0;
   document.getElementById('ep-active').value = p.is_active ? '1' : '0';
   document.getElementById('ep-desc').value = p.description || '';
@@ -109,6 +116,15 @@ async function boot() {
     const qty = parseInt(input.dataset.qty || '0', 10);
     input.value = map[qty] ? String(map[qty]) : '';
   });
+  updateCatPrefixHint();
+}
+
+function updateCatPrefixHint() {
+  const catId = parseInt(document.getElementById('ep-cat')?.value || '0', 10);
+  const cat = allCats.find(c => Number(c.id) === catId);
+  const prefix = (cat?.code_prefix || '').toUpperCase();
+  const box = document.getElementById('ep-prefix');
+  if (box) box.value = prefix || 'Not set';
 }
 
 async function saveProd() {
@@ -129,6 +145,7 @@ async function saveProd() {
   const payload = {
     name,
     category_id: catId,
+    product_code: document.getElementById('ep-code').value.trim().toUpperCase(),
     description: document.getElementById('ep-desc').value.trim(),
     design_fee: parseFloat(document.getElementById('ep-design-fee').value || '0') || 0,
     is_active: parseInt(document.getElementById('ep-active').value || '1',10),

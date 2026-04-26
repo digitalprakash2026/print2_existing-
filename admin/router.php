@@ -342,8 +342,15 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
     if ($uri === '/admin/api/categories' && $method === 'POST') {
         $slug = strtolower(preg_replace('/[^a-z0-9]+/','-',$body['name']??''));
-        $id = Database::insert("INSERT INTO categories (name,slug,icon,sort_order,is_active) VALUES (?,?,?,?,1)",
-            [$body['name'],$slug,$body['icon']??'🖨️',$body['sort_order']??0]);
+        $prefix = strtoupper(trim((string)($body['code_prefix'] ?? '')));
+        $prefix = preg_replace('/[^A-Z0-9]/', '', $prefix) ?: null;
+        try {
+            $id = Database::insert("INSERT INTO categories (name,slug,code_prefix,icon,sort_order,is_active) VALUES (?,?,?,?,?,1)",
+                [$body['name'],$slug,$prefix,$body['icon']??'🖨️',$body['sort_order']??0]);
+        } catch (\Throwable) {
+            $id = Database::insert("INSERT INTO categories (name,slug,icon,sort_order,is_active) VALUES (?,?,?,?,1)",
+                [$body['name'],$slug,$body['icon']??'🖨️',$body['sort_order']??0]);
+        }
         json(['ok'=>true,'id'=>$id]);
     }
 

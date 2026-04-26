@@ -9,6 +9,9 @@ namespace Catalog;
 
 class ProductCatalog
 {
+    private static ?bool $hasProductCodeColumn = null;
+    private static ?bool $hasCategoryCodePrefixColumn = null;
+
     private static function minPriceExpr(): string
     {
         return "(SELECT MIN(t.price) FROM product_quantity_tiers t WHERE t.product_id = p.id)";
@@ -181,73 +184,18 @@ class ProductCatalog
         if ($errors) return ['ok' => false, 'msg' => implode(', ', $errors)];
 
         $slug = self::makeSlug($data['name'], $editId);
+        $productCode = self::resolveProductCode($data, $editId);
 
         try {
             if ($editId) {
-                try {
-                    \Database::query(
-                        "UPDATE products SET name=?, slug=?, category_id=?, description=?,
-                            meta_title=?, design_fee=?, image_path=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
-                        [
-                            $data['name'], $slug, $data['category_id'],
-                            $data['description'] ?? '',
-                            $data['meta_title'] ?? $data['name'],
-                            (float)($data['design_fee'] ?? 0),
-                            $data['image_path'] ?? null,
-                            $data['is_active'] ?? 1,
-                            $data['sort_order'] ?? 0,
-                            $editId,
-                        ]
-                    );
-                } catch (\Throwable) {
-                    \Database::query(
-                        "UPDATE products SET name=?, slug=?, category_id=?, description=?,
-                            meta_title=?, design_fee=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
-                        [
-                            $data['name'], $slug, $data['category_id'],
-                            $data['description'] ?? '',
-                            $data['meta_title'] ?? $data['name'],
-                            (float)($data['design_fee'] ?? 0),
-                            $data['is_active'] ?? 1,
-                            $data['sort_order'] ?? 0,
-                            $editId,
-                        ]
-                    );
-                }
+                self::updateProduct((int)$editId, $data, $slug, $productCode);
                 self::syncSpecs($editId, $data['specs'] ?? []);
                 self::syncQuantityTiers($editId, $data['quantity_tiers'] ?? []);
                 \Orders\AdminAudit::log('product_updated', "Product #{$editId}: {$data['name']}");
                 return ['ok' => true, 'id' => $editId];
             }
 
-            try {
-                $id = \Database::insert(
-                    "INSERT INTO products (name, slug, category_id, description, meta_title, design_fee, image_path, is_active, sort_order, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-                    [
-                        $data['name'], $slug, $data['category_id'],
-                        $data['description'] ?? '',
-                        $data['meta_title'] ?? $data['name'],
-                        (float)($data['design_fee'] ?? 0),
-                        $data['image_path'] ?? null,
-                        $data['is_active'] ?? 1,
-                        $data['sort_order'] ?? 0,
-                    ]
-                );
-            } catch (\Throwable) {
-                $id = \Database::insert(
-                    "INSERT INTO products (name, slug, category_id, description, meta_title, design_fee, is_active, sort_order, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-                    [
-                        $data['name'], $slug, $data['category_id'],
-                        $data['description'] ?? '',
-                        $data['meta_title'] ?? $data['name'],
-                        (float)($data['design_fee'] ?? 0),
-                        $data['is_active'] ?? 1,
-                        $data['sort_order'] ?? 0,
-                    ]
-                );
-            }
+            $id = self::insertProduct($data, $slug, $productCode);
 
             self::syncSpecs((int)$id, $data['specs'] ?? []);
             self::syncQuantityTiers((int)$id, $data['quantity_tiers'] ?? []);
@@ -257,6 +205,184 @@ class ProductCatalog
             error_log('Product upsert failed: ' . $e->getMessage());
             return ['ok' => false, 'msg' => 'Save failed. Check required DB columns/tables and server logs.'];
         }
+    }
+
+    private static function updateProduct(int $editId, array $data, string $slug, ?string $productCode): void
+    {
+        if (self::productCodeColumnReady()) {
+            try {
+                \Database::query(
+                    "UPDATE products SET name=?, slug=?, category_id=?, product_code=?, description=?,
+                        meta_title=?, design_fee=?, image_path=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
+                    [
+                        $data['name'], $slug, $data['category_id'], $productCode,
+                        $data['description'] ?? '',
+                        $data['meta_title'] ?? $data['name'],
+                        (float)($data['design_fee'] ?? 0),
+                        $data['image_path'] ?? null,
+                        $data['is_active'] ?? 1,
+                        $data['sort_order'] ?? 0,
+                        $editId,
+                    ]
+                );
+                return;
+            } catch (\Throwable) {}
+        }
+
+        try {
+            \Database::query(
+                "UPDATE products SET name=?, slug=?, category_id=?, description=?,
+                    meta_title=?, design_fee=?, image_path=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
+                [
+                    $data['name'], $slug, $data['category_id'],
+                    $data['description'] ?? '',
+                    $data['meta_title'] ?? $data['name'],
+                    (float)($data['design_fee'] ?? 0),
+                    $data['image_path'] ?? null,
+                    $data['is_active'] ?? 1,
+                    $data['sort_order'] ?? 0,
+                    $editId,
+                ]
+            );
+        } catch (\Throwable) {
+            \Database::query(
+                "UPDATE products SET name=?, slug=?, category_id=?, description=?,
+                    meta_title=?, design_fee=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
+                [
+                    $data['name'], $slug, $data['category_id'],
+                    $data['description'] ?? '',
+                    $data['meta_title'] ?? $data['name'],
+                    (float)($data['design_fee'] ?? 0),
+                    $data['is_active'] ?? 1,
+                    $data['sort_order'] ?? 0,
+                    $editId,
+                ]
+            );
+        }
+    }
+
+    private static function insertProduct(array $data, string $slug, ?string $productCode): int
+    {
+        if (self::productCodeColumnReady()) {
+            try {
+                return (int)\Database::insert(
+                    "INSERT INTO products (name, slug, category_id, product_code, description, meta_title, design_fee, image_path, is_active, sort_order, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [
+                        $data['name'], $slug, $data['category_id'], $productCode,
+                        $data['description'] ?? '',
+                        $data['meta_title'] ?? $data['name'],
+                        (float)($data['design_fee'] ?? 0),
+                        $data['image_path'] ?? null,
+                        $data['is_active'] ?? 1,
+                        $data['sort_order'] ?? 0,
+                    ]
+                );
+            } catch (\Throwable) {}
+        }
+
+        try {
+            return (int)\Database::insert(
+                "INSERT INTO products (name, slug, category_id, description, meta_title, design_fee, image_path, is_active, sort_order, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                [
+                    $data['name'], $slug, $data['category_id'],
+                    $data['description'] ?? '',
+                    $data['meta_title'] ?? $data['name'],
+                    (float)($data['design_fee'] ?? 0),
+                    $data['image_path'] ?? null,
+                    $data['is_active'] ?? 1,
+                    $data['sort_order'] ?? 0,
+                ]
+            );
+        } catch (\Throwable) {
+            return (int)\Database::insert(
+                "INSERT INTO products (name, slug, category_id, description, meta_title, design_fee, is_active, sort_order, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                [
+                    $data['name'], $slug, $data['category_id'],
+                    $data['description'] ?? '',
+                    $data['meta_title'] ?? $data['name'],
+                    (float)($data['design_fee'] ?? 0),
+                    $data['is_active'] ?? 1,
+                    $data['sort_order'] ?? 0,
+                ]
+            );
+        }
+    }
+
+    private static function resolveProductCode(array $data, ?int $editId = null): ?string
+    {
+        if (!self::productCodeColumnReady()) return null;
+
+        $manual = strtoupper(trim((string)($data['product_code'] ?? '')));
+        $manual = preg_replace('/[^A-Z0-9\-]/', '', $manual) ?: '';
+        if ($manual !== '') return $manual;
+
+        $categoryId = (int)($data['category_id'] ?? 0);
+        if ($categoryId <= 0) return null;
+        return self::generateProductCode($categoryId, $editId);
+    }
+
+    private static function generateProductCode(int $categoryId, ?int $editId = null): ?string
+    {
+        $prefix = 'RCSPRD';
+        if (self::categoryCodePrefixColumnReady()) {
+            $cat = \Database::row("SELECT code_prefix FROM categories WHERE id = ? LIMIT 1", [$categoryId]);
+            $fromDb = strtoupper(trim((string)($cat['code_prefix'] ?? '')));
+            if ($fromDb !== '') {
+                $prefix = preg_replace('/[^A-Z0-9]/', '', $fromDb) ?: $prefix;
+            }
+        }
+
+        $like = $prefix . '-%';
+        $params = [$categoryId, $like];
+        $sql = "SELECT product_code FROM products WHERE category_id = ? AND product_code LIKE ?";
+        if ($editId) {
+            $sql .= " AND id <> ?";
+            $params[] = $editId;
+        }
+        $rows = \Database::rows($sql, $params);
+
+        $max = 0;
+        foreach ($rows as $r) {
+            $code = (string)($r['product_code'] ?? '');
+            if (preg_match('/-(\d+)$/', $code, $m)) {
+                $max = max($max, (int)$m[1]);
+            }
+        }
+        $next = $max + 1;
+        return $prefix . '-' . str_pad((string)$next, 2, '0', STR_PAD_LEFT);
+    }
+
+    private static function productCodeColumnReady(): bool
+    {
+        if (self::$hasProductCodeColumn !== null) return self::$hasProductCodeColumn;
+        try {
+            $row = \Database::row(
+                "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'products' AND COLUMN_NAME = 'product_code'",
+                [DB_NAME]
+            );
+            self::$hasProductCodeColumn = (int)($row['c'] ?? 0) === 1;
+        } catch (\Throwable) {
+            self::$hasProductCodeColumn = false;
+        }
+        return self::$hasProductCodeColumn;
+    }
+
+    private static function categoryCodePrefixColumnReady(): bool
+    {
+        if (self::$hasCategoryCodePrefixColumn !== null) return self::$hasCategoryCodePrefixColumn;
+        try {
+            $row = \Database::row(
+                "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'categories' AND COLUMN_NAME = 'code_prefix'",
+                [DB_NAME]
+            );
+            self::$hasCategoryCodePrefixColumn = (int)($row['c'] ?? 0) === 1;
+        } catch (\Throwable) {
+            self::$hasCategoryCodePrefixColumn = false;
+        }
+        return self::$hasCategoryCodePrefixColumn;
     }
 
     private static function syncSpecs(int $productId, array $specs): void
