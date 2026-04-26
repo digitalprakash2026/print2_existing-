@@ -65,6 +65,9 @@ $status = $status ?? 'all';
         $orderBilling = (is_array($orderNotesJson) && is_array($orderNotesJson['billing'] ?? null))
             ? $orderNotesJson['billing']
             : null;
+        $orderShipping = (is_array($orderNotesJson) && is_array($orderNotesJson['shipping'] ?? null))
+            ? $orderNotesJson['shipping']
+            : null;
       ?>
       <tr id="ord-<?= (int)$o['id'] ?>">
         <td>
@@ -130,6 +133,10 @@ $status = $status ?? 'all';
           <div class="ord-actions">
             <a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">🧾 Invoice</a>
             <a href="/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">👁 View</a>
+            <button
+              class="aoc-btn"
+              onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'
+            >📍 Addresses</button>
           </div>
 
           <div class="ord-status-row">
@@ -158,6 +165,28 @@ $status = $status ?? 'all';
   </table>
 </div>
 <?php endif; ?>
+
+<div id="addrModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:1200;align-items:center;justify-content:center;padding:18px">
+  <div style="width:min(620px,100%);max-height:86vh;overflow:auto;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--sh-lg);padding:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+      <div>
+        <div style="font-family:var(--fd);font-size:16px;font-weight:700">Address Details</div>
+        <div id="addrOrdLabel" style="font-size:12px;color:var(--text2)"></div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="closeAddrModal()">Close ✕</button>
+    </div>
+    <div class="f2" style="grid-template-columns:1fr 1fr;gap:12px">
+      <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Delivery Address</div>
+        <div id="addrShipBox" style="font-size:13px;line-height:1.6"></div>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Billing Address</div>
+        <div id="addrBillBox" style="font-size:13px;line-height:1.6"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <?php if ($total > $perPage): ?>
 <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap">
@@ -210,6 +239,31 @@ function waCustomer(name, phone, ordId, status) {
   const msg = `Hi ${name}! 👋\nOrder ID: #${ordId}\nCurrent status: ${status.toUpperCase()}\nIf you need help, reply to this message.`;
   const cleanPhone = (phone || '').replace(/\D/g,'');
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function fmtAddr(a, kind = 'shipping') {
+  if (!a || typeof a !== 'object') return '<span style="color:var(--text3)">Not available</span>';
+  if (kind === 'billing') {
+    return `<div><b>${a.legal_name || '-'}</b></div>
+      <div>GSTIN: ${a.gst_no || '-'}</div>
+      <div>${a.address_line1 || ''}${a.address_line2 ? ', ' + a.address_line2 : ''}</div>
+      <div>${a.city || ''}, ${a.state || ''} - ${a.pincode || ''}</div>`;
+  }
+  return `<div>${a.address_line1 || ''}${a.address_line2 ? ', ' + a.address_line2 : ''}</div>
+    <div>${a.city || ''}, ${a.state || ''} - ${a.pincode || ''}</div>`;
+}
+
+function openAddrModal(orderId, shipping, billing) {
+  document.getElementById('addrOrdLabel').textContent = `Order #${orderId}`;
+  document.getElementById('addrShipBox').innerHTML = fmtAddr(shipping, 'shipping');
+  document.getElementById('addrBillBox').innerHTML = fmtAddr(billing, 'billing');
+  const modal = document.getElementById('addrModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeAddrModal() {
+  const modal = document.getElementById('addrModal');
+  if (modal) modal.style.display = 'none';
 }
 </script>
 </div>

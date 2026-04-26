@@ -21,6 +21,7 @@ class OrderManager
         $totals = \Cart\Cart::totals($cartItems, $couponCode);
         $billing = self::sanitizeBilling($params['billing'] ?? null);
         $shipping = self::sanitizeShipping($params['shipping'] ?? null);
+        $saveShippingDefault = !empty($shipping['save_as_default']);
         $plainNotes = trim((string)($params['notes'] ?? ''));
         $meta = [];
         if ($plainNotes !== '') $meta['note'] = $plainNotes;
@@ -150,6 +151,7 @@ class OrderManager
 
         // Async tasks (non-blocking)
         self::afterOrderPlaced($order);
+        self::saveUserShippingDefault((int)$user['id'], $shipping, $saveShippingDefault);
 
         return ['ok' => true, 'order' => $order, 'order_id' => $orderId];
     }
@@ -279,11 +281,34 @@ class OrderManager
             'city'          => trim((string)($shipping['city'] ?? '')),
             'state'         => trim((string)($shipping['state'] ?? '')),
             'pincode'       => trim((string)($shipping['pincode'] ?? '')),
+            'save_as_default' => !empty($shipping['save_as_default']),
         ];
 
         if ($clean['address_line1'] === '' || $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
             return null;
         }
         return $clean;
+    }
+
+    private static function saveUserShippingDefault(int $userId, ?array $shipping, bool $save): void
+    {
+        if (!$save || !$shipping || $userId <= 0) return;
+        try {
+            \Database::query(
+                "UPDATE users
+                 SET shipping_address_line1 = ?, shipping_address_line2 = ?, shipping_city = ?, shipping_state = ?, shipping_pincode = ?, profile_updated_at = NOW()
+                 WHERE id = ?",
+                [
+                    $shipping['address_line1'] ?? null,
+                    $shipping['address_line2'] ?? null,
+                    $shipping['city'] ?? null,
+                    $shipping['state'] ?? null,
+                    $shipping['pincode'] ?? null,
+                    $userId,
+                ]
+            );
+        } catch (\Throwable $e) {
+            error_log('Could not save default shipping from checkout: ' . $e->getMessage());
+        }
     }
 }

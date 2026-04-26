@@ -69,6 +69,7 @@ class InvoiceGenerator
         $s = self::settings();
         $items = $order['items'] ?? [];
         $billing = self::extractBilling($order);
+        $shipping = self::extractShipping($order);
         $discount = (float)($order['discount_amount'] ?? 0);
         $now = date('d M Y');
 
@@ -121,6 +122,16 @@ class InvoiceGenerator
         } else {
             $billToHtml = "<p><strong>{$customerName}</strong><br>
                 {$customerPhone}" . ($customerEmail !== '' ? "<br>{$customerEmail}" : '') . "</p>";
+        }
+
+        $shipToHtml = '';
+        if ($shipping) {
+            $shipToHtml = "<div class='section' style='flex:1'>
+                <div class='section-t'>Ship To</div>
+                <p>" . self::e($shipping['address_line1']) .
+                (!empty($shipping['address_line2']) ? "<br>" . self::e($shipping['address_line2']) : '') .
+                "<br>" . self::e($shipping['city']) . ", " . self::e($shipping['state']) . " - " . self::e($shipping['pincode']) . "</p>
+            </div>";
         }
 
         return "<!DOCTYPE html><html><head><meta charset='UTF-8'>
@@ -180,6 +191,7 @@ class InvoiceGenerator
                 Order Date: {$orderDate}<br>
                 Status: <strong>{$status}</strong></p>
             </div>
+            {$shipToHtml}
         </div>
 
         <table>
@@ -254,6 +266,29 @@ class InvoiceGenerator
 
         if ($clean['legal_name'] === '' || $clean['gst_no'] === '' || $clean['address_line1'] === '' ||
             $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
+            return null;
+        }
+        return $clean;
+    }
+
+    private static function extractShipping(array $order): ?array
+    {
+        $notesRaw = trim((string)($order['notes'] ?? ''));
+        if ($notesRaw === '') return null;
+
+        $notesJson = json_decode($notesRaw, true);
+        if (!is_array($notesJson) || !is_array($notesJson['shipping'] ?? null)) return null;
+
+        $shipping = $notesJson['shipping'];
+        $clean = [
+            'address_line1' => trim((string)($shipping['address_line1'] ?? '')),
+            'address_line2' => trim((string)($shipping['address_line2'] ?? '')),
+            'city'          => trim((string)($shipping['city'] ?? '')),
+            'state'         => trim((string)($shipping['state'] ?? '')),
+            'pincode'       => trim((string)($shipping['pincode'] ?? '')),
+        ];
+
+        if ($clean['address_line1'] === '' || $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
             return null;
         }
         return $clean;

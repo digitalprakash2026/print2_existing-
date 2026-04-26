@@ -26,6 +26,13 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
 
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
       <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">📦 Delivery Address</div>
+      <?php if (!empty($user['id'])): ?>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:10px">
+        <input type="checkbox" id="ship-use-other" style="accent-color:var(--blue)" onchange="toggleShippingFields()">
+        Use another delivery address for this order
+      </label>
+      <?php endif; ?>
+      <div id="shippingFields">
       <div class="fg"><label>Address Line 1 *</label><input id="s-add1" class="fi" placeholder="House / Building / Street"></div>
       <div class="fg"><label>Address Line 2 (optional)</label><input id="s-add2" class="fi" placeholder="Area / Landmark"></div>
       <div class="f2">
@@ -33,6 +40,13 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
         <div class="fg"><label>State *</label><input id="s-state" class="fi" placeholder="Gujarat"></div>
       </div>
       <div class="fg" style="margin-bottom:0"><label>Pincode *</label><input id="s-pin" class="fi" placeholder="360001"></div>
+      <?php if (!empty($user['id'])): ?>
+      <label id="ship-save-wrap" style="display:none;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-top:10px">
+        <input type="checkbox" id="ship-save-default" style="accent-color:var(--blue)">
+        Save this as my default delivery address
+      </label>
+      <?php endif; ?>
+      </div>
       <div id="shipErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
     </div>
 
@@ -117,6 +131,7 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
 const CSRF = '<?= $csrf ?>';
 const BIZ_WA = '<?= htmlspecialchars($bizWa) ?>';
 let checkoutCoupon = null;
+let checkoutProfile = { shipping: null, billing: null };
 
 async function applyCouponCheckout() {
   const code = document.getElementById('couponInp').value.trim().toUpperCase();
@@ -173,6 +188,18 @@ function toggleBillingFields() {
   const el = document.getElementById('billingFields');
   if (el) el.style.display = on ? 'block' : 'none';
   const err = document.getElementById('billErr');
+  if (err) err.style.display = 'none';
+}
+
+function toggleShippingFields() {
+  const fields = document.getElementById('shippingFields');
+  const err = document.getElementById('shipErr');
+  const useOther = !!document.getElementById('ship-use-other')?.checked;
+  const hasDefault = !!checkoutProfile?.shipping;
+  const shouldShow = <?= !empty($user['id']) ? '(!hasDefault || useOther)' : 'true' ?>;
+  if (fields) fields.style.display = shouldShow ? 'block' : 'none';
+  const saveWrap = document.getElementById('ship-save-wrap');
+  if (saveWrap) saveWrap.style.display = shouldShow ? 'flex' : 'none';
   if (err) err.style.display = 'none';
 }
 
@@ -243,6 +270,14 @@ function getCheckoutBilling() {
 }
 
 function getCheckoutShipping() {
+  const useOther = !!document.getElementById('ship-use-other')?.checked;
+  const hasDefault = !!checkoutProfile?.shipping;
+  <?php if (!empty($user['id'])): ?>
+  if (!useOther && hasDefault) {
+    return { ...checkoutProfile.shipping, save_as_default: false };
+  }
+  <?php endif; ?>
+
   const add1 = document.getElementById('s-add1')?.value.trim() || '';
   const add2 = document.getElementById('s-add2')?.value.trim() || '';
   const city = document.getElementById('s-city')?.value.trim() || '';
@@ -267,8 +302,56 @@ function getCheckoutShipping() {
     city,
     state,
     pincode: pin,
+    save_as_default: !!document.getElementById('ship-save-default')?.checked,
   };
 }
+
+function setField(id, val = '') {
+  const el = document.getElementById(id);
+  if (el) el.value = val || '';
+}
+
+async function prefillCheckoutFromProfile() {
+  <?php if (empty($user['id'])): ?>
+  return;
+  <?php else: ?>
+  try {
+    const resp = await fetch('/api/profile', { credentials: 'same-origin' });
+    const data = await resp.json();
+    if (!data.ok || !data.profile) return;
+
+    checkoutProfile.shipping = data.profile.shipping || null;
+    checkoutProfile.billing = data.profile.billing || null;
+
+    if (checkoutProfile.shipping) {
+      setField('s-add1', checkoutProfile.shipping.address_line1);
+      setField('s-add2', checkoutProfile.shipping.address_line2);
+      setField('s-city', checkoutProfile.shipping.city);
+      setField('s-state', checkoutProfile.shipping.state);
+      setField('s-pin', checkoutProfile.shipping.pincode);
+    }
+
+    if (checkoutProfile.billing) {
+      const billReq = document.getElementById('bill-required');
+      if (billReq) billReq.checked = true;
+      setField('b-legal', checkoutProfile.billing.legal_name);
+      setField('b-gst', checkoutProfile.billing.gst_no);
+      setField('b-add1', checkoutProfile.billing.address_line1);
+      setField('b-add2', checkoutProfile.billing.address_line2);
+      setField('b-city', checkoutProfile.billing.city);
+      setField('b-state', checkoutProfile.billing.state);
+      setField('b-pin', checkoutProfile.billing.pincode);
+      toggleBillingFields();
+    }
+
+    toggleShippingFields();
+  } catch (e) { /* ignore prefill failures */ }
+  <?php endif; ?>
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  prefillCheckoutFromProfile();
+});
 </script>
 <script src="/assets/js/app.js"></script>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
