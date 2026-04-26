@@ -360,6 +360,99 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true,'id'=>$id]);
     }
 
+    if ($uri === '/admin/api/banners' && $method === 'GET') {
+        try {
+            $rows = Database::rows("SELECT * FROM home_banners ORDER BY sort_order ASC, id DESC");
+            json(['ok'=>true,'banners'=>$rows]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'home_banners table missing. Run SQL migration first.','banners'=>[]], 500);
+        }
+    }
+    if ($uri === '/admin/api/banners' && $method === 'POST') {
+        try {
+            $id = Database::insert(
+                "INSERT INTO home_banners (eyebrow,title,subtitle,image_path,image_alt,cta_primary_text,cta_primary_url,cta_secondary_text,cta_secondary_type,cta_secondary_url,sort_order,is_active,created_at,updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",
+                [
+                    trim((string)($body['eyebrow'] ?? '')),
+                    trim((string)($body['title'] ?? '')),
+                    trim((string)($body['subtitle'] ?? '')),
+                    trim((string)($body['image_path'] ?? '')),
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['cta_primary_text'] ?? 'View Products →')),
+                    trim((string)($body['cta_primary_url'] ?? '#')),
+                    trim((string)($body['cta_secondary_text'] ?? '💬 WhatsApp')),
+                    trim((string)($body['cta_secondary_type'] ?? 'whatsapp')),
+                    trim((string)($body['cta_secondary_url'] ?? '')),
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_active'] ?? 1),
+                ]
+            );
+            json(['ok'=>true,'id'=>$id]);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Could not create banner. Run migration first.'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/banners/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        try {
+            Database::query(
+                "UPDATE home_banners
+                 SET eyebrow=?, title=?, subtitle=?, image_path=?, image_alt=?, cta_primary_text=?, cta_primary_url=?, cta_secondary_text=?, cta_secondary_type=?, cta_secondary_url=?, sort_order=?, is_active=?, updated_at=NOW()
+                 WHERE id=?",
+                [
+                    trim((string)($body['eyebrow'] ?? '')),
+                    trim((string)($body['title'] ?? '')),
+                    trim((string)($body['subtitle'] ?? '')),
+                    trim((string)($body['image_path'] ?? '')),
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['cta_primary_text'] ?? 'View Products →')),
+                    trim((string)($body['cta_primary_url'] ?? '#')),
+                    trim((string)($body['cta_secondary_text'] ?? '💬 WhatsApp')),
+                    trim((string)($body['cta_secondary_type'] ?? 'whatsapp')),
+                    trim((string)($body['cta_secondary_url'] ?? '')),
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_active'] ?? 1),
+                    (int)$m[1],
+                ]
+            );
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not update banner'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/banners/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        try {
+            Database::query("DELETE FROM home_banners WHERE id=?", [(int)$m[1]]);
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not delete banner'], 500);
+        }
+    }
+    if ($uri === '/admin/api/banners/reorder' && $method === 'POST') {
+        foreach (($body['items'] ?? []) as $item) {
+            Database::query("UPDATE home_banners SET sort_order=?, updated_at=NOW() WHERE id=?", [(int)($item['sort_order'] ?? 0), (int)($item['id'] ?? 0)]);
+        }
+        json(['ok'=>true]);
+    }
+    if ($uri === '/admin/api/banners/upload' && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 6 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 6MB'], 400);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $dir = PUBLIC_PATH . '/uploads/banners/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'banner_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        json(['ok'=>true,'path'=>'/uploads/banners/' . $name]);
+    }
+
     if ($uri === '/admin/api/settings' && $method === 'GET') {
         $rows = Database::rows("SELECT `key`,value FROM settings");
         json(['ok'=>true,'settings'=>array_column($rows,'value','key')]);
@@ -495,6 +588,7 @@ $adminPage = match(true) {
     $uri === '/admin/analytics'  => 'admin/analytics',
     $uri === '/admin/products'   => 'admin/products',
     $uri === '/admin/products/new' => 'admin/products-new',
+    $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/customers'  => 'admin/customers',

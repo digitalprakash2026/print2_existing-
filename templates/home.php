@@ -27,72 +27,88 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
        • Auto-advance interval: edit `10000` in app.js → initBannerSlider()
 ═══════════════════════════════════════════════════════════════ -->
 <div class="banner-slider" id="bannerSlider">
-
-  <!-- ── SLIDE 1 ─────────────────────────────────────────── -->
+  <?php
+  $fallbackBanners = [
+    [
+      'eyebrow' => 'New Arrivals',
+      'title' => 'Premium Business<br>Cards That Impress',
+      'subtitle' => '400 GSM thick stock, UV coating, matte finish.<br>Make every handshake count.',
+      'image_path' => 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=1400&q=85&fit=crop',
+      'image_alt' => 'Premium Business Card Printing',
+      'cta_primary_text' => 'View Products →',
+      'cta_primary_url' => '/category/cards',
+      'cta_secondary_text' => '💬 WhatsApp',
+      'cta_secondary_type' => 'whatsapp',
+      'cta_secondary_url' => '',
+    ],
+    [
+      'eyebrow' => 'Best Seller',
+      'title' => 'Brochures That<br>Tell Your Story',
+      'subtitle' => 'Tri-fold, bi-fold, A4 or custom sizes.<br>Full colour, gloss or matte finish.',
+      'image_path' => 'https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=1400&q=85&fit=crop',
+      'image_alt' => 'Brochure Printing',
+      'cta_primary_text' => 'View Products →',
+      'cta_primary_url' => '/category/brochures',
+      'cta_secondary_text' => '💬 WhatsApp',
+      'cta_secondary_type' => 'whatsapp',
+      'cta_secondary_url' => '',
+    ],
+    [
+      'eyebrow' => 'Large Format',
+      'title' => 'Banners &amp; Posters<br>That Grab Attention',
+      'subtitle' => 'Weather-resistant flex banners, standees,<br>hoarding prints — any size.',
+      'image_path' => 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1400&q=85&fit=crop',
+      'image_alt' => 'Banner Printing',
+      'cta_primary_text' => 'View Products →',
+      'cta_primary_url' => '/category/banners',
+      'cta_secondary_text' => '💬 WhatsApp',
+      'cta_secondary_type' => 'whatsapp',
+      'cta_secondary_url' => '',
+    ],
+    [
+      'eyebrow' => 'Fast Turnaround',
+      'title' => 'Flyers &amp; Pamphlets<br>Delivered in 24 hrs',
+      'subtitle' => 'High-volume offset printing, vibrant colours,<br>bulk discounts available.',
+      'image_path' => 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1400&q=85&fit=crop',
+      'image_alt' => 'Flyer Printing',
+      'cta_primary_text' => 'View Products →',
+      'cta_primary_url' => '/category/flyers',
+      'cta_secondary_text' => '💬 WhatsApp',
+      'cta_secondary_type' => 'whatsapp',
+      'cta_secondary_url' => '',
+    ],
+  ];
+  $bannerSlides = !empty($homeBanners ?? []) ? $homeBanners : $fallbackBanners;
+  foreach ($bannerSlides as $i => $slide):
+    $img = htmlspecialchars((string)($slide['image_path'] ?? ''));
+    $alt = htmlspecialchars((string)($slide['image_alt'] ?? ('Slide ' . ($i + 1))));
+    $eyebrow = (string)($slide['eyebrow'] ?? '');
+    $title = strip_tags((string)($slide['title'] ?? ''), '<br><br/>');
+    $subtitle = strip_tags((string)($slide['subtitle'] ?? ''), '<br><br/>');
+    $ctaPrimaryText = htmlspecialchars((string)($slide['cta_primary_text'] ?? 'View Products →'));
+    $ctaPrimaryUrl = htmlspecialchars((string)($slide['cta_primary_url'] ?? '#'));
+    $ctaSecondaryText = htmlspecialchars((string)($slide['cta_secondary_text'] ?? '💬 WhatsApp'));
+    $ctaSecondaryType = strtolower(trim((string)($slide['cta_secondary_type'] ?? 'whatsapp')));
+    $ctaSecondaryUrl = trim((string)($slide['cta_secondary_url'] ?? ''));
+  ?>
   <div class="bs-slide">
-    <!-- CHANGE IMAGE: replace src below -->
-    <img src="https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=1400&q=85&fit=crop"
-         alt="Premium Business Card Printing">
+    <img src="<?= $img ?>" alt="<?= $alt ?>">
     <div class="bs-overlay"></div>
     <div class="bs-content">
-      <div class="bs-eyebrow">New Arrivals</div>
-      <div class="bs-title">Premium Business<br>Cards That Impress</div>
-      <div class="bs-sub">400 GSM thick stock, UV coating, matte finish.<br>Make every handshake count.</div>
+      <div class="bs-eyebrow"><?= htmlspecialchars($eyebrow) ?></div>
+      <div class="bs-title"><?= $title ?></div>
+      <div class="bs-sub"><?= $subtitle ?></div>
       <div class="bs-actions">
-        <!-- CHANGE LINK: update href to your product URL -->
-        <a href="/category/cards" class="bs-cta-primary">View Products →</a>
-        <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
+        <a href="<?= $ctaPrimaryUrl ?>" class="bs-cta-primary"><?= $ctaPrimaryText ?></a>
+        <?php if ($ctaSecondaryType === 'url' && $ctaSecondaryUrl !== ''): ?>
+          <a href="<?= htmlspecialchars($ctaSecondaryUrl) ?>" class="bs-cta-wa"><?= $ctaSecondaryText ?></a>
+        <?php else: ?>
+          <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')"><?= $ctaSecondaryText ?></button>
+        <?php endif; ?>
       </div>
     </div>
   </div>
-
-  <!-- ── SLIDE 2 ─────────────────────────────────────────── -->
-  <div class="bs-slide">
-    <img src="https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=1400&q=85&fit=crop"
-         alt="Brochure Printing">
-    <div class="bs-overlay"></div>
-    <div class="bs-content">
-      <div class="bs-eyebrow">Best Seller</div>
-      <div class="bs-title">Brochures That<br>Tell Your Story</div>
-      <div class="bs-sub">Tri-fold, bi-fold, A4 or custom sizes.<br>Full colour, gloss or matte finish.</div>
-      <div class="bs-actions">
-        <a href="/category/brochures" class="bs-cta-primary">View Products →</a>
-        <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── SLIDE 3 ─────────────────────────────────────────── -->
-  <div class="bs-slide">
-    <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1400&q=85&fit=crop"
-         alt="Banner Printing">
-    <div class="bs-overlay"></div>
-    <div class="bs-content">
-      <div class="bs-eyebrow">Large Format</div>
-      <div class="bs-title">Banners &amp; Posters<br>That Grab Attention</div>
-      <div class="bs-sub">Weather-resistant flex banners, standees,<br>hoarding prints — any size.</div>
-      <div class="bs-actions">
-        <a href="/category/banners" class="bs-cta-primary">View Products →</a>
-        <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── SLIDE 4 ─────────────────────────────────────────── -->
-  <div class="bs-slide">
-    <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1400&q=85&fit=crop"
-         alt="Flyer Printing">
-    <div class="bs-overlay"></div>
-    <div class="bs-content">
-      <div class="bs-eyebrow">Fast Turnaround</div>
-      <div class="bs-title">Flyers &amp; Pamphlets<br>Delivered in 24 hrs</div>
-      <div class="bs-sub">High-volume offset printing, vibrant colours,<br>bulk discounts available.</div>
-      <div class="bs-actions">
-        <a href="/category/flyers" class="bs-cta-primary">View Products →</a>
-        <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
-      </div>
-    </div>
-  </div>
+  <?php endforeach; ?>
 
   <!-- Prev / Next arrows -->
   <button class="bs-prev" onclick="document.getElementById('bannerSlider')._sliderPrev()" aria-label="Previous slide">
@@ -104,10 +120,9 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 
   <!-- Dot indicators -->
   <div class="bs-dots">
-    <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(0)" aria-label="Slide 1"></button>
-    <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(1)" aria-label="Slide 2"></button>
-    <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(2)" aria-label="Slide 3"></button>
-    <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(3)" aria-label="Slide 4"></button>
+    <?php foreach ($bannerSlides as $i => $_): ?>
+      <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(<?= (int)$i ?>)" aria-label="Slide <?= (int)$i + 1 ?>"></button>
+    <?php endforeach; ?>
   </div>
 </div>
 
