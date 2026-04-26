@@ -104,6 +104,14 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
       <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding-top:8px;border-top:1px solid var(--border)"><span>Total</span><span style="color:var(--blue);font-family:var(--fd)">₹<?= number_format($totals['total']) ?></span></div>
     </div>
 
+    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:14px 16px;margin-bottom:14px">
+      <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2);line-height:1.55">
+        <input type="checkbox" id="ship-consent" style="accent-color:var(--blue);margin-top:2px">
+        <span>Shipping charges <strong>will</strong> apply based on total package weight and delivery location. Final shipping details will be shared with you via call or message before dispatch.</span>
+      </label>
+      <div id="shipConsentErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
+    </div>
+
     <!-- Payment Buttons -->
     <?php if ($razKeyId): ?>
     <button class="btn btn-blue btn-full" onclick="doCheckout()" style="padding:16px;font-size:16px;border-radius:12px;margin-bottom:10px">
@@ -159,6 +167,15 @@ async function applyCouponCheckout() {
 }
 
 function doCheckout() {
+  const consentErr = document.getElementById('shipConsentErr');
+  if (!document.getElementById('ship-consent')?.checked) {
+    if (consentErr) {
+      consentErr.textContent = 'Please confirm shipping charge acknowledgement to continue.';
+      consentErr.style.display = 'block';
+    }
+    return;
+  }
+  if (consentErr) consentErr.style.display = 'none';
   const customer = getCheckoutCustomer();
   if (customer === false) return;
   const shipping = getCheckoutShipping();
@@ -169,6 +186,15 @@ function doCheckout() {
 }
 
 async function doWhatsAppOrder() {
+  const consentErr = document.getElementById('shipConsentErr');
+  if (!document.getElementById('ship-consent')?.checked) {
+    if (consentErr) {
+      consentErr.textContent = 'Please confirm shipping charge acknowledgement to continue.';
+      consentErr.style.display = 'block';
+    }
+    return;
+  }
+  if (consentErr) consentErr.style.display = 'none';
   const customer = getCheckoutCustomer();
   if (customer === false) return;
   const shipping = getCheckoutShipping();
