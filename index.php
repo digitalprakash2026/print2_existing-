@@ -169,6 +169,12 @@ if ($uri === '/profile' && $method === 'GET') {
     exit;
 }
 
+if ($uri === '/profile/security' && $method === 'GET') {
+    \Auth\Auth::require();
+    view('profile-security');
+    exit;
+}
+
 // Terms & Conditions
 if ($uri === '/terms-and-conditions' && $method === 'GET') {
     view('terms-and-conditions');
