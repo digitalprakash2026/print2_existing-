@@ -246,7 +246,7 @@ function renderCartDrawer() {
 }
 
 // ── Razorpay Checkout ─────────────────────────────────────────
-async function initiateCheckout(couponCode = null, customer = null, billing = null) {
+async function initiateCheckout(couponCode = null, customer = null, billing = null, shipping = null) {
   if (!APP.razorpayKey) {
     toast('Payment not configured. Please contact us via WhatsApp.', 'warn'); return;
   }
@@ -256,7 +256,7 @@ async function initiateCheckout(couponCode = null, customer = null, billing = nu
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
       credentials: 'same-origin',
-      body: JSON.stringify({ coupon_code: couponCode, customer, billing })
+      body: JSON.stringify({ coupon_code: couponCode, customer, billing, shipping })
     });
     const oData = await oResp.json();
     if (!oData.ok) { hidePayOv(); toast(oData.msg || 'Payment setup failed', 'error'); return; }
@@ -277,7 +277,7 @@ async function initiateCheckout(couponCode = null, customer = null, billing = nu
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
           credentials: 'same-origin',
-          body: JSON.stringify({ ...resp, coupon_code: couponCode, customer, billing })
+          body: JSON.stringify({ ...resp, coupon_code: couponCode, customer, billing, shipping })
         });
         const vData = await vResp.json();
         hidePayOv();
@@ -299,7 +299,7 @@ async function initiateCheckout(couponCode = null, customer = null, billing = nu
   } catch (e) { hidePayOv(); toast('Payment error. Please try again.', 'error'); }
 }
 
-async function placeWhatsappOrder(couponCode = null, notes = '', customer = null, billing = null) {
+async function placeWhatsappOrder(couponCode = null, notes = '', customer = null, billing = null, shipping = null) {
   try {
     const url = couponCode ? `/api/cart?coupon=${encodeURIComponent(couponCode)}` : '/api/cart';
     const resp = await fetch(url, { credentials: 'same-origin' });
@@ -329,6 +329,12 @@ async function placeWhatsappOrder(couponCode = null, notes = '', customer = null
       `• Phone: ${customer?.phone || APP.user?.phone || 'Not provided'}`,
       `• Email: ${customer?.email || APP.user?.email || 'Not provided'}`,
       '',
+      ...(shipping ? [
+        '*Delivery Address*',
+        `• ${shipping.address_line1 || ''}${shipping.address_line2 ? ', ' + shipping.address_line2 : ''}`,
+        `• ${shipping.city || ''}, ${shipping.state || ''} - ${shipping.pincode || ''}`,
+        '',
+      ] : []),
       ...(billing && billing.required ? [
         '*Billing Details*',
         `• Legal Name: ${billing.legal_name || 'Not provided'}`,

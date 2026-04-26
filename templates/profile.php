@@ -6,6 +6,7 @@ include INCLUDE_PATH . '/partials/header.php';
 
 $profile = $profile ?? [];
 $billing = $profile['billing'] ?? [];
+$shipping = $profile['shipping'] ?? [];
 ?>
 <div style="margin-top:var(--hh);min-height:calc(100vh - var(--hh));background:var(--bg);padding:32px 0 80px">
   <div class="container" style="max-width:760px">
@@ -25,6 +26,17 @@ $billing = $profile['billing'] ?? [];
         <div class="fg"><label>Phone *</label><input id="p-phone" type="tel" class="fi" value="<?= htmlspecialchars($profile['phone'] ?? $user['phone'] ?? '') ?>"></div>
       </div>
       <div class="fg" style="margin-bottom:0"><label>Company (optional)</label><input id="p-company" class="fi" value="<?= htmlspecialchars($profile['company'] ?? $user['company'] ?? '') ?>"></div>
+    </div>
+
+    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">📦 Default Delivery Address</div>
+      <div class="fg"><label>Address Line 1</label><input id="ps-add1" class="fi" value="<?= htmlspecialchars($shipping['address_line1'] ?? '') ?>"></div>
+      <div class="fg"><label>Address Line 2</label><input id="ps-add2" class="fi" value="<?= htmlspecialchars($shipping['address_line2'] ?? '') ?>"></div>
+      <div class="f2">
+        <div class="fg"><label>City</label><input id="ps-city" class="fi" value="<?= htmlspecialchars($shipping['city'] ?? '') ?>"></div>
+        <div class="fg"><label>State</label><input id="ps-state" class="fi" value="<?= htmlspecialchars($shipping['state'] ?? '') ?>"></div>
+      </div>
+      <div class="fg" style="margin-bottom:0"><label>Pincode</label><input id="ps-pin" class="fi" value="<?= htmlspecialchars($shipping['pincode'] ?? '') ?>"></div>
     </div>
 
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
@@ -63,6 +75,13 @@ async function saveProfile() {
     email: document.getElementById('p-email')?.value.trim() || '',
     phone: document.getElementById('p-phone')?.value.trim() || '',
     company: document.getElementById('p-company')?.value.trim() || '',
+    shipping: {
+      address_line1: document.getElementById('ps-add1')?.value.trim() || '',
+      address_line2: document.getElementById('ps-add2')?.value.trim() || '',
+      city: document.getElementById('ps-city')?.value.trim() || '',
+      state: document.getElementById('ps-state')?.value.trim() || '',
+      pincode: document.getElementById('ps-pin')?.value.trim() || '',
+    },
     billing: {
       legal_name: document.getElementById('pb-legal')?.value.trim() || '',
       gst_no: (document.getElementById('pb-gst')?.value || '').trim().toUpperCase(),

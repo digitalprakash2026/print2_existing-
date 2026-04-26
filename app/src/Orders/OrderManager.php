@@ -20,13 +20,16 @@ class OrderManager
         $couponCode = $params['coupon_code'] ?? null;
         $totals = \Cart\Cart::totals($cartItems, $couponCode);
         $billing = self::sanitizeBilling($params['billing'] ?? null);
+        $shipping = self::sanitizeShipping($params['shipping'] ?? null);
         $plainNotes = trim((string)($params['notes'] ?? ''));
+        $meta = [];
+        if ($plainNotes !== '') $meta['note'] = $plainNotes;
+        if ($billing !== null) $meta['billing'] = $billing;
+        if ($shipping !== null) $meta['shipping'] = $shipping;
+
         $storedNotes = $plainNotes;
-        if ($billing !== null) {
-            $storedNotes = json_encode([
-                'note'    => $plainNotes,
-                'billing' => $billing,
-            ], JSON_UNESCAPED_UNICODE);
+        if (!empty($meta)) {
+            $storedNotes = json_encode($meta, JSON_UNESCAPED_UNICODE);
         }
 
         // Generate readable order ID
@@ -261,6 +264,24 @@ class OrderManager
 
         if ($clean['legal_name'] === '' || $clean['gst_no'] === '' || $clean['address_line1'] === '' ||
             $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
+            return null;
+        }
+        return $clean;
+    }
+
+    private static function sanitizeShipping(mixed $shipping): ?array
+    {
+        if (!is_array($shipping)) return null;
+
+        $clean = [
+            'address_line1' => trim((string)($shipping['address_line1'] ?? '')),
+            'address_line2' => trim((string)($shipping['address_line2'] ?? '')),
+            'city'          => trim((string)($shipping['city'] ?? '')),
+            'state'         => trim((string)($shipping['state'] ?? '')),
+            'pincode'       => trim((string)($shipping['pincode'] ?? '')),
+        ];
+
+        if ($clean['address_line1'] === '' || $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
             return null;
         }
         return $clean;

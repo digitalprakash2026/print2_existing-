@@ -25,6 +25,18 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
     <?php endif; ?>
 
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">📦 Delivery Address</div>
+      <div class="fg"><label>Address Line 1 *</label><input id="s-add1" class="fi" placeholder="House / Building / Street"></div>
+      <div class="fg"><label>Address Line 2 (optional)</label><input id="s-add2" class="fi" placeholder="Area / Landmark"></div>
+      <div class="f2">
+        <div class="fg"><label>City *</label><input id="s-city" class="fi" placeholder="Rajkot"></div>
+        <div class="fg"><label>State *</label><input id="s-state" class="fi" placeholder="Gujarat"></div>
+      </div>
+      <div class="fg" style="margin-bottom:0"><label>Pincode *</label><input id="s-pin" class="fi" placeholder="360001"></div>
+      <div id="shipErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
+    </div>
+
+    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
       <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">🧾 Billing Details (Tax Invoice)</div>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:10px">
         <input type="checkbox" id="bill-required" style="accent-color:var(--blue)" onchange="toggleBillingFields()">
@@ -138,18 +150,22 @@ async function applyCouponCheckout() {
 function doCheckout() {
   const customer = getCheckoutCustomer();
   if (customer === false) return;
+  const shipping = getCheckoutShipping();
+  if (shipping === false) return;
   const billing = getCheckoutBilling();
   if (billing === false) return;
-  initiateCheckout(checkoutCoupon, customer, billing);
+  initiateCheckout(checkoutCoupon, customer, billing, shipping);
 }
 
 async function doWhatsAppOrder() {
   const customer = getCheckoutCustomer();
   if (customer === false) return;
+  const shipping = getCheckoutShipping();
+  if (shipping === false) return;
   const billing = getCheckoutBilling();
   if (billing === false) return;
   const notes = '';
-  await placeWhatsappOrder(checkoutCoupon, notes, customer, billing);
+  await placeWhatsappOrder(checkoutCoupon, notes, customer, billing, shipping);
 }
 
 function toggleBillingFields() {
@@ -218,6 +234,34 @@ function getCheckoutBilling() {
     required: true,
     legal_name: legal,
     gst_no: gst,
+    address_line1: add1,
+    address_line2: add2,
+    city,
+    state,
+    pincode: pin,
+  };
+}
+
+function getCheckoutShipping() {
+  const add1 = document.getElementById('s-add1')?.value.trim() || '';
+  const add2 = document.getElementById('s-add2')?.value.trim() || '';
+  const city = document.getElementById('s-city')?.value.trim() || '';
+  const state = document.getElementById('s-state')?.value.trim() || '';
+  const pin = document.getElementById('s-pin')?.value.trim() || '';
+  const err = document.getElementById('shipErr');
+  const pinOk = /^[1-9][0-9]{5}$/.test(pin);
+
+  if (!add1 || !city || !state || !pin) {
+    if (err) { err.textContent = 'Please fill delivery address details to continue.'; err.style.display = 'block'; }
+    return false;
+  }
+  if (!pinOk) {
+    if (err) { err.textContent = 'Please enter a valid 6-digit delivery pincode.'; err.style.display = 'block'; }
+    return false;
+  }
+  if (err) err.style.display = 'none';
+
+  return {
     address_line1: add1,
     address_line2: add2,
     city,

@@ -206,7 +206,10 @@ if ($uri === '/api/upload/artwork' && $method === 'POST') {
 if ($uri === '/api/orders/place' && $method === 'POST') {
     $ensure = \Auth\Auth::ensureCheckoutUser($body['customer'] ?? []);
     if (!$ensure['ok']) json($ensure, 400);
-    json(\Orders\OrderManager::place($body));
+    json(\Orders\OrderManager::place([
+        ...$body,
+        'shipping' => $body['shipping'] ?? null,
+    ]));
 }
 
 if ($uri === '/api/orders' && $method === 'GET') {
@@ -260,6 +263,7 @@ if ($uri === '/api/payment/verify' && $method === 'POST') {
         'payment_method' => 'razorpay',
         'payment_status' => 'pending',
         'billing'        => $body['billing'] ?? null,
+        'shipping'       => $body['shipping'] ?? null,
     ]);
 
     if (!$placeResult['ok']) json($placeResult);
@@ -291,6 +295,7 @@ if ($uri === '/api/orders/whatsapp' && $method === 'POST') {
         'payment_status' => 'pending',
         'notes'          => $body['notes'] ?? '',
         'billing'        => $body['billing'] ?? null,
+        'shipping'       => $body['shipping'] ?? null,
     ]);
 
     if ($result['ok']) {
