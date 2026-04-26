@@ -175,19 +175,11 @@ class Cart
         $taxable = $subtotal - $discount;
         $gstAmt  = round($taxable * $gstPct / 100);
 
-        $shippingMode = (string)\Database::setting('shipping_mode', 'flat');
-        $shippingFlat = (float)\Database::setting('shipping_flat_fee', '0');
-        $freeAbove    = (float)\Database::setting('shipping_free_above', '0');
+        // Shipping is collected manually before dispatch.
+        // Keep checkout/order totals exclusive of shipping for now.
+        $shippingMode = 'manual';
         $shipping = 0.0;
-        if ($shippingMode === 'flat') {
-            $shipping = $shippingFlat;
-        } elseif ($shippingMode === 'threshold') {
-            $shipping = ($taxable >= $freeAbove && $freeAbove > 0) ? 0.0 : $shippingFlat;
-        } else {
-            $shipping = 0.0;
-        }
-
-        $total   = $taxable + $gstAmt + $shipping;
+        $total   = $taxable + $gstAmt;
 
         return [
             'subtotal' => $subtotal,
