@@ -175,24 +175,6 @@ ul  { list-style:none; }
 .btn-auth-ghost:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-bg); }
 .btn-auth-solid { background:var(--blue); color:#fff; border:none; }
 .btn-auth-solid:hover { background:var(--blue2); }
-.motion-toggle{
-  padding:9px 12px;
-  border-radius:10px;
-  border:1.5px solid var(--border2);
-  background:var(--white);
-  color:var(--text2);
-  font-size:12px;
-  font-weight:700;
-  line-height:1;
-  transition:var(--tr);
-  white-space:nowrap;
-}
-.motion-toggle:hover{
-  border-color:var(--blue-mid);
-  color:var(--blue);
-  background:var(--blue-bg);
-}
-
 /* Cart button */
 .cart-btn {
   position:relative; width:38px; height:38px; border-radius:9px;
@@ -1090,8 +1072,9 @@ textarea.fi  { resize:vertical; }
   .prod-grid { grid-template-columns:repeat(2,1fr); gap:13px; }
   .hdr-nav,.hdr-search { display:none; }
   .hdr-logo-img { height:36px; }
-  .ham { display:flex; }
+  .ham { display:flex !important; }
   .hdr-right { gap:8px; margin-left:auto; }
+  .hdr-user-name { display:none; }
   .hdr-new-customer { display:none; }
   .hdr-right .btn-auth-ghost { display:none; }
   .cta { flex-direction:column; padding:28px 22px; }
