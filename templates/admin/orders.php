@@ -84,6 +84,8 @@ $status = $status ?? 'all';
             <div style="font-weight:700;color:var(--text)">🧾 Billing</div>
             <div><?= htmlspecialchars($orderBilling['legal_name'] ?? '-') ?></div>
             <div>GSTIN: <?= htmlspecialchars($orderBilling['gst_no'] ?? '-') ?></div>
+            <?php if (!empty($orderBilling['phone'])): ?><div>Phone: <?= htmlspecialchars($orderBilling['phone']) ?></div><?php endif; ?>
+            <?php if (!empty($orderBilling['email'])): ?><div>Email: <?= htmlspecialchars($orderBilling['email']) ?></div><?php endif; ?>
             <div>
               <?= htmlspecialchars($orderBilling['address_line1'] ?? '') ?>
               <?php if (!empty($orderBilling['address_line2'])): ?>, <?= htmlspecialchars($orderBilling['address_line2']) ?><?php endif; ?>
@@ -252,6 +254,8 @@ function fmtAddr(a, kind = 'shipping') {
   if (kind === 'billing') {
     return `<div><b>${a.legal_name || '-'}</b></div>
       <div>GSTIN: ${a.gst_no || '-'}</div>
+      ${a.phone ? `<div>Phone: ${a.phone}</div>` : ''}
+      ${a.email ? `<div>Email: ${a.email}</div>` : ''}
       <div>${a.address_line1 || ''}${a.address_line2 ? ', ' + a.address_line2 : ''}</div>
       <div>${a.city || ''}, ${a.state || ''} - ${a.pincode || ''}</div>`;
   }
@@ -265,6 +269,8 @@ function addrText(a, kind = 'shipping') {
     return [
       a.legal_name || '',
       a.gst_no ? `GSTIN: ${a.gst_no}` : '',
+      a.phone ? `Phone: ${a.phone}` : '',
+      a.email ? `Email: ${a.email}` : '',
       [a.address_line1 || '', a.address_line2 || ''].filter(Boolean).join(', '),
       [a.city || '', a.state || ''].filter(Boolean).join(', ') + ((a.pincode || '') ? ` - ${a.pincode}` : ''),
     ].filter(Boolean).join('\n');

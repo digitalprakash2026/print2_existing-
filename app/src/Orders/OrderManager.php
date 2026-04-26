@@ -257,6 +257,8 @@ class OrderManager
         $clean = [
             'legal_name'    => trim((string)($billing['legal_name'] ?? '')),
             'gst_no'        => strtoupper(trim((string)($billing['gst_no'] ?? ''))),
+            'phone'         => trim((string)($billing['phone'] ?? '')),
+            'email'         => strtolower(trim((string)($billing['email'] ?? ''))),
             'address_line1' => trim((string)($billing['address_line1'] ?? '')),
             'address_line2' => trim((string)($billing['address_line2'] ?? '')),
             'city'          => trim((string)($billing['city'] ?? '')),
@@ -264,7 +266,8 @@ class OrderManager
             'pincode'       => trim((string)($billing['pincode'] ?? '')),
         ];
 
-        if ($clean['legal_name'] === '' || $clean['gst_no'] === '' || $clean['address_line1'] === '' ||
+        if ($clean['legal_name'] === '' || $clean['gst_no'] === '' || $clean['phone'] === '' || $clean['email'] === '' ||
+            !filter_var($clean['email'], FILTER_VALIDATE_EMAIL) || $clean['address_line1'] === '' ||
             $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
             return null;
         }

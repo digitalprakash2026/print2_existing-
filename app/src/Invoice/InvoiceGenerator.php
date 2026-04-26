@@ -115,6 +115,8 @@ class InvoiceGenerator
         if ($billing) {
             $billToHtml = "<p><strong>" . self::e($billing['legal_name']) . "</strong><br>
                 GSTIN: " . self::e($billing['gst_no']) . "<br>
+                " . (!empty($billing['phone']) ? "Phone: " . self::e($billing['phone']) . "<br>" : '') . "
+                " . (!empty($billing['email']) ? "Email: " . self::e($billing['email']) . "<br>" : '') . "
                 " . self::e($billing['address_line1']) .
                 (!empty($billing['address_line2']) ? "<br>" . self::e($billing['address_line2']) : '') .
                 "<br>" . self::e($billing['city']) . ", " . self::e($billing['state']) . " - " . self::e($billing['pincode']) . "<br>
@@ -257,6 +259,8 @@ class InvoiceGenerator
         $clean = [
             'legal_name'    => trim((string)($billing['legal_name'] ?? '')),
             'gst_no'        => strtoupper(trim((string)($billing['gst_no'] ?? ''))),
+            'phone'         => trim((string)($billing['phone'] ?? '')),
+            'email'         => strtolower(trim((string)($billing['email'] ?? ''))),
             'address_line1' => trim((string)($billing['address_line1'] ?? '')),
             'address_line2' => trim((string)($billing['address_line2'] ?? '')),
             'city'          => trim((string)($billing['city'] ?? '')),

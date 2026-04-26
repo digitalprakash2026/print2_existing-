@@ -26,13 +26,6 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
 
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
       <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">📦 Delivery Address</div>
-      <?php if (!empty($user['id'])): ?>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:10px">
-        <input type="checkbox" id="ship-use-other" style="accent-color:var(--blue)" onchange="toggleShippingFields()">
-        Use another delivery address for this order
-      </label>
-      <?php endif; ?>
-      <div id="shippingFields">
       <div class="fg"><label>Address Line 1 *</label><input id="s-add1" class="fi" placeholder="House / Building / Street"></div>
       <div class="fg"><label>Address Line 2 (optional)</label><input id="s-add2" class="fi" placeholder="Area / Landmark"></div>
       <div class="f2">
@@ -46,19 +39,22 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
         Save this as my default delivery address
       </label>
       <?php endif; ?>
-      </div>
       <div id="shipErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
     </div>
 
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
       <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">🧾 Billing Details (Tax Invoice)</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:10px">
-        <input type="checkbox" id="bill-required" style="accent-color:var(--blue)" onchange="toggleBillingFields()">
-        I need GST / Tax invoice with business billing details
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:12px">
+        <input type="checkbox" id="bill-same-ship" style="accent-color:var(--blue)" onchange="syncBillingFromShipping()">
+        Same as Delivery Address
       </label>
-      <div id="billingFields" style="display:none">
+      <div id="billingFields">
         <div class="fg"><label>Legal Business Name *</label><input id="b-legal" class="fi" placeholder="ABC Pvt Ltd"></div>
         <div class="fg"><label>GSTIN *</label><input id="b-gst" class="fi" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="f2">
+          <div class="fg"><label>Billing Phone *</label><input id="b-phone" type="tel" class="fi" placeholder="+91 98765 43210"></div>
+          <div class="fg"><label>Billing Email *</label><input id="b-email" type="email" class="fi" placeholder="billing@example.com"></div>
+        </div>
         <div class="fg"><label>Billing Address Line 1 *</label><input id="b-add1" class="fi" placeholder="Street / Building"></div>
         <div class="fg"><label>Billing Address Line 2 (optional)</label><input id="b-add2" class="fi" placeholder="Area / Landmark"></div>
         <div class="f2">
@@ -184,23 +180,25 @@ async function doWhatsAppOrder() {
 }
 
 function toggleBillingFields() {
-  const on = !!document.getElementById('bill-required')?.checked;
-  const el = document.getElementById('billingFields');
-  if (el) el.style.display = on ? 'block' : 'none';
   const err = document.getElementById('billErr');
   if (err) err.style.display = 'none';
 }
 
 function toggleShippingFields() {
-  const fields = document.getElementById('shippingFields');
   const err = document.getElementById('shipErr');
-  const useOther = !!document.getElementById('ship-use-other')?.checked;
-  const hasDefault = !!checkoutProfile?.shipping;
-  const shouldShow = <?= !empty($user['id']) ? '(!hasDefault || useOther)' : 'true' ?>;
-  if (fields) fields.style.display = shouldShow ? 'block' : 'none';
   const saveWrap = document.getElementById('ship-save-wrap');
-  if (saveWrap) saveWrap.style.display = shouldShow ? 'flex' : 'none';
+  if (saveWrap) saveWrap.style.display = 'flex';
   if (err) err.style.display = 'none';
+}
+
+function syncBillingFromShipping() {
+  const same = !!document.getElementById('bill-same-ship')?.checked;
+  if (!same) return;
+  setField('b-add1', document.getElementById('s-add1')?.value || '');
+  setField('b-add2', document.getElementById('s-add2')?.value || '');
+  setField('b-city', document.getElementById('s-city')?.value || '');
+  setField('b-state', document.getElementById('s-state')?.value || '');
+  setField('b-pin', document.getElementById('s-pin')?.value || '');
 }
 
 function getCheckoutCustomer() {
@@ -228,11 +226,10 @@ function getCheckoutCustomer() {
 }
 
 function getCheckoutBilling() {
-  const required = !!document.getElementById('bill-required')?.checked;
-  if (!required) return { required: false };
-
   const legal = document.getElementById('b-legal')?.value.trim() || '';
   const gst = (document.getElementById('b-gst')?.value || '').trim().toUpperCase();
+  const phone = document.getElementById('b-phone')?.value.trim() || '';
+  const email = document.getElementById('b-email')?.value.trim() || '';
   const add1 = document.getElementById('b-add1')?.value.trim() || '';
   const add2 = document.getElementById('b-add2')?.value.trim() || '';
   const city = document.getElementById('b-city')?.value.trim() || '';
@@ -242,8 +239,9 @@ function getCheckoutBilling() {
   const err = document.getElementById('billErr');
   const gstOk = /^[0-9]{2}[A-Z0-9]{10}[0-9A-Z]{3}$/.test(gst);
   const pinOk = /^[1-9][0-9]{5}$/.test(pin);
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  if (!legal || !gst || !add1 || !city || !state || !pin) {
+  if (!legal || !gst || !phone || !email || !add1 || !city || !state || !pin) {
     if (err) { err.textContent = 'Please fill all required billing fields for GST invoice.'; err.style.display = 'block'; }
     return false;
   }
@@ -255,12 +253,18 @@ function getCheckoutBilling() {
     if (err) { err.textContent = 'Please enter a valid 6-digit pincode.'; err.style.display = 'block'; }
     return false;
   }
+  if (!emailOk) {
+    if (err) { err.textContent = 'Please enter a valid billing email address.'; err.style.display = 'block'; }
+    return false;
+  }
   if (err) err.style.display = 'none';
 
   return {
     required: true,
     legal_name: legal,
     gst_no: gst,
+    phone,
+    email,
     address_line1: add1,
     address_line2: add2,
     city,
@@ -270,14 +274,6 @@ function getCheckoutBilling() {
 }
 
 function getCheckoutShipping() {
-  const useOther = !!document.getElementById('ship-use-other')?.checked;
-  const hasDefault = !!checkoutProfile?.shipping;
-  <?php if (!empty($user['id'])): ?>
-  if (!useOther && hasDefault) {
-    return { ...checkoutProfile.shipping, save_as_default: false };
-  }
-  <?php endif; ?>
-
   const add1 = document.getElementById('s-add1')?.value.trim() || '';
   const add2 = document.getElementById('s-add2')?.value.trim() || '';
   const city = document.getElementById('s-city')?.value.trim() || '';
@@ -332,8 +328,6 @@ async function prefillCheckoutFromProfile() {
     }
 
     if (checkoutProfile.billing) {
-      const billReq = document.getElementById('bill-required');
-      if (billReq) billReq.checked = true;
       setField('b-legal', checkoutProfile.billing.legal_name);
       setField('b-gst', checkoutProfile.billing.gst_no);
       setField('b-add1', checkoutProfile.billing.address_line1);
@@ -350,6 +344,10 @@ async function prefillCheckoutFromProfile() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  ['s-add1','s-add2','s-city','s-state','s-pin'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', syncBillingFromShipping);
+  });
   prefillCheckoutFromProfile();
 });
 </script>
