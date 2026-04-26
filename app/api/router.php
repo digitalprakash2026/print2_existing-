@@ -68,6 +68,13 @@ if ($uri === '/api/profile' && in_array($method, ['POST', 'PUT'], true)) {
     json($result, ($result['ok'] ?? false) ? 200 : 422);
 }
 
+if ($uri === '/api/profile/password' && $method === 'POST') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $result = \Auth\Auth::changePassword((int)$user['id'], $body);
+    json($result, ($result['ok'] ?? false) ? 200 : 422);
+}
+
 // ── Products ──────────────────────────────────────────────────
 
 if ($uri === '/api/products' && $method === 'GET') {

@@ -252,6 +252,38 @@ class Auth
         return ['ok' => true, 'profile' => self::getProfile($userId)];
     }
 
+    public static function changePassword(int $userId, array $data): array
+    {
+        $current = (string)($data['current_password'] ?? '');
+        $next = (string)($data['new_password'] ?? '');
+        $confirm = (string)($data['confirm_password'] ?? '');
+
+        if ($current === '' || $next === '' || $confirm === '') {
+            return ['ok' => false, 'msg' => 'Current, new and confirm password are required.'];
+        }
+        if ($next !== $confirm) {
+            return ['ok' => false, 'msg' => 'New password and confirm password must match.'];
+        }
+        if (strlen($next) < 6) {
+            return ['ok' => false, 'msg' => 'New password must be at least 6 characters.'];
+        }
+
+        $user = \Database::row("SELECT id, password FROM users WHERE id = ? LIMIT 1", [$userId]);
+        if (!$user) {
+            return ['ok' => false, 'msg' => 'User not found.'];
+        }
+        if (!password_verify($current, (string)($user['password'] ?? ''))) {
+            return ['ok' => false, 'msg' => 'Current password is incorrect.'];
+        }
+
+        \Database::query(
+            "UPDATE users SET password = ?, profile_updated_at = NOW() WHERE id = ?",
+            [password_hash($next, PASSWORD_BCRYPT, ['cost' => 10]), $userId]
+        );
+
+        return ['ok' => true];
+    }
+
     public static function user(): ?array  { return $_SESSION['user'] ?? null; }
     public static function check(): bool   { return !empty($_SESSION['user']['id']); }
 
