@@ -66,14 +66,16 @@ if ($uri === '/' && $method === 'GET') {
     try {
         $categories  = \Catalog\ProductCatalog::categories();
         $products    = \Catalog\ProductCatalog::all();
+        $homeBanners = Database::rows("SELECT * FROM home_banners WHERE is_active=1 ORDER BY sort_order ASC, id DESC");
         $settings    = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {
         error_log('Home error: ' . $e->getMessage());
         $categories = $products = [];
+        $homeBanners = [];
         $settingsMap = [];
     }
-    view('home', compact('categories', 'products', 'settingsMap'));
+    view('home', compact('categories', 'products', 'settingsMap', 'homeBanners'));
     exit;
 }
 
@@ -157,6 +159,27 @@ if ($uri === '/my-orders' && $method === 'GET') {
     try { $orders = \Orders\OrderManager::getUserOrders((int)$user['id']); }
     catch (\Throwable) { $orders = []; }
     view('my-orders', compact('orders', 'user'));
+    exit;
+}
+
+// My Profile
+if ($uri === '/profile' && $method === 'GET') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $profile = \Auth\Auth::getProfile((int)$user['id']);
+    view('profile', compact('user', 'profile'));
+    exit;
+}
+
+if ($uri === '/profile/security' && $method === 'GET') {
+    \Auth\Auth::require();
+    view('profile-security');
+    exit;
+}
+
+// Terms & Conditions
+if ($uri === '/terms-and-conditions' && $method === 'GET') {
+    view('terms-and-conditions');
     exit;
 }
 
