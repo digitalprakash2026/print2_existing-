@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body style="background:var(--bg)">
+<input type="checkbox" id="adm-nav-toggle" class="adm-nav-toggle" aria-hidden="true">
 <div class="toast-wrap" id="tw"></div>
 
 <!-- Admin Header -->
@@ -18,6 +19,7 @@
   </div>
   <div class="hdr-space"></div>
   <div style="display:flex;align-items:center;gap:10px">
+    <label for="adm-nav-toggle" class="adm-nav-btn" aria-label="Toggle admin menu" title="Menu">☰</label>
     <?php $admin = \Auth\Auth::admin(); ?>
     <span style="font-size:13px;color:var(--text2)"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
     <a href="/" class="btn-auth btn-auth-ghost" style="font-size:12px">🌐 Site</a>
@@ -25,7 +27,9 @@
   </div>
 </header>
 
-<div style="margin-top:var(--hh)">
+<label for="adm-nav-toggle" class="adm-nav-backdrop" aria-hidden="true"></label>
+
+<div class="adm-shell" style="margin-top:var(--hh)">
   <div class="adm-lay">
     <!-- Sidebar -->
     <div class="adm-sb">
