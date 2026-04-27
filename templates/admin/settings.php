@@ -61,28 +61,6 @@ $saved = isset($_GET['saved']) && $_GET['saved'] === '1';
   </div>
 
   <div class="fsec">
-    <div class="fsec-t">📲 Fast2SMS (Order Confirmation SMS)</div>
-    <div class="f2">
-      <div class="fg">
-        <label>Enable Fast2SMS</label>
-        <?php $f2 = strtolower((string)($settingsMap['fast2sms_enabled'] ?? '0')); ?>
-        <select name="fast2sms_enabled" class="fi fi-sel">
-          <option value="1" <?= in_array($f2, ['1','true','yes','on'], true) ? 'selected' : '' ?>>Enabled</option>
-          <option value="0" <?= !in_array($f2, ['1','true','yes','on'], true) ? 'selected' : '' ?>>Disabled</option>
-        </select>
-      </div>
-      <div class="fg"><label>Fast2SMS API Key</label><input type="password" name="fast2sms_api_key" class="fi" value="<?= htmlspecialchars($settingsMap['fast2sms_api_key'] ?? '') ?>" placeholder="Enter Fast2SMS API key"></div>
-    </div>
-    <div class="fg">
-      <label>Order Confirmation SMS Template</label>
-      <textarea name="fast2sms_order_confirmation_template" class="fi" style="height:78px" placeholder="Hi {name}, your order {order_id} is confirmed. Amount: Rs {amount}."><?= htmlspecialchars($settingsMap['fast2sms_order_confirmation_template'] ?? 'Hi {name}, your order {order_id} is confirmed. Amount: Rs {amount}. Thank you for choosing RCS Graphic.') ?></textarea>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px">
-        Available placeholders: <code>{name}</code>, <code>{order_id}</code>, <code>{amount}</code>
-      </div>
-    </div>
-  </div>
-
-  <div class="fsec">
     <div class="fsec-t">📁 File Upload Settings</div>
     <div class="f2">
       <div class="fg"><label>Max Upload Size (MB)</label><input type="number" name="upload_max_mb" class="fi" value="<?= htmlspecialchars($settingsMap['upload_max_mb'] ?? '50') ?>"></div>
