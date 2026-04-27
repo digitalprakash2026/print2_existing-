@@ -11,6 +11,8 @@ namespace Auth;
 
 class Auth
 {
+    private static ?bool $hasProfileColumns = null;
+    private static ?bool $hasShippingColumns = null;
     // ══════════════════════════════════════════════════════════
     //  USER AUTH
     // ══════════════════════════════════════════════════════════
@@ -79,6 +81,25 @@ class Auth
         $_SESSION['user'] = self::publicUser($user);
         session_regenerate_id(true);
 
+        if (self::shippingColumnsReady()) {
+            $shipping = self::sanitizeShipping($data['shipping'] ?? null);
+            if ($shipping !== null) {
+                \Database::query(
+                    "UPDATE users
+                     SET shipping_address_line1 = ?, shipping_address_line2 = ?, shipping_city = ?, shipping_state = ?, shipping_pincode = ?, profile_updated_at = NOW()
+                     WHERE id = ?",
+                    [
+                        $shipping['address_line1'],
+                        $shipping['address_line2'],
+                        $shipping['city'],
+                        $shipping['state'],
+                        $shipping['pincode'],
+                        $id,
+                    ]
+                );
+            }
+        }
+
         try { \Cart\Cart::mergeGuestCart((int)$id); } catch (\Throwable) {}
         try { \Email\Mailer::sendWelcome($user); }        catch (\Throwable) {}
         try { if (!empty($data['marketing_consent'])) \Email\Mailer::marketingOptIn($user); } catch (\Throwable) {}
@@ -90,6 +111,177 @@ class Auth
     {
         unset($_SESSION['user']);
         session_regenerate_id(true);
+    }
+
+    public static function getProfile(int $userId): ?array
+    {
+        $base = \Database::row(
+            "SELECT id, name, email, phone, company, created_at
+             FROM users WHERE id = ?",
+            [$userId]
+        );
+        if (!$base) return null;
+
+        $profile = [
+            'id'         => (int)$base['id'],
+            'name'       => (string)$base['name'],
+            'email'      => (string)$base['email'],
+            'phone'      => (string)$base['phone'],
+            'company'    => (string)($base['company'] ?? ''),
+            'created_at' => (string)($base['created_at'] ?? ''),
+            'billing'    => null,
+            'shipping'   => null,
+            'migration_required' => false,
+        ];
+
+        if (!self::profileColumnsReady()) {
+            $profile['migration_required'] = true;
+            return $profile;
+        }
+
+        $extended = \Database::row(
+            "SELECT billing_legal_name, gst_no, billing_address_line1, billing_address_line2,
+                    billing_city, billing_state, billing_pincode
+             FROM users WHERE id = ?",
+            [$userId]
+        ) ?? [];
+
+        $billing = [
+            'legal_name'    => trim((string)($extended['billing_legal_name'] ?? '')),
+            'gst_no'        => strtoupper(trim((string)($extended['gst_no'] ?? ''))),
+            'address_line1' => trim((string)($extended['billing_address_line1'] ?? '')),
+            'address_line2' => trim((string)($extended['billing_address_line2'] ?? '')),
+            'city'          => trim((string)($extended['billing_city'] ?? '')),
+            'state'         => trim((string)($extended['billing_state'] ?? '')),
+            'pincode'       => trim((string)($extended['billing_pincode'] ?? '')),
+        ];
+        $hasAnyBilling = implode('', $billing) !== '';
+        $profile['billing'] = $hasAnyBilling ? $billing : null;
+
+        if (self::shippingColumnsReady()) {
+            $shipping = \Database::row(
+                "SELECT shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_pincode
+                 FROM users WHERE id = ?",
+                [$userId]
+            ) ?? [];
+            $cleanShipping = [
+                'address_line1' => trim((string)($shipping['shipping_address_line1'] ?? '')),
+                'address_line2' => trim((string)($shipping['shipping_address_line2'] ?? '')),
+                'city'          => trim((string)($shipping['shipping_city'] ?? '')),
+                'state'         => trim((string)($shipping['shipping_state'] ?? '')),
+                'pincode'       => trim((string)($shipping['shipping_pincode'] ?? '')),
+            ];
+            if (implode('', $cleanShipping) !== '') {
+                $profile['shipping'] = $cleanShipping;
+            }
+        }
+
+        return $profile;
+    }
+
+    public static function updateProfile(int $userId, array $data): array
+    {
+        $name = trim((string)($data['name'] ?? ''));
+        $email = strtolower(trim((string)($data['email'] ?? '')));
+        $phone = trim((string)($data['phone'] ?? ''));
+        $company = trim((string)($data['company'] ?? ''));
+
+        if ($name === '' || $email === '' || $phone === '') {
+            return ['ok' => false, 'msg' => 'Name, email and phone are required.'];
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'msg' => 'Please enter a valid email address.'];
+        }
+
+        $dup = \Database::row(
+            "SELECT id FROM users WHERE (email = ? OR phone = ?) AND id <> ? LIMIT 1",
+            [$email, $phone, $userId]
+        );
+        if ($dup) {
+            return ['ok' => false, 'msg' => 'Email or phone is already used by another account.'];
+        }
+
+        \Database::query(
+            "UPDATE users SET name = ?, email = ?, phone = ?, company = ? WHERE id = ?",
+            [$name, $email, $phone, $company, $userId]
+        );
+
+        if (!self::profileColumnsReady()) {
+            $fresh = \Database::row("SELECT * FROM users WHERE id = ?", [$userId]);
+            if ($fresh) $_SESSION['user'] = self::publicUser($fresh);
+            return ['ok' => true, 'profile' => self::getProfile($userId), 'migration_required' => true];
+        }
+
+        $billing = self::sanitizeBilling($data['billing'] ?? null);
+        $shipping = self::sanitizeShipping($data['shipping'] ?? null);
+
+        \Database::query(
+            "UPDATE users SET billing_legal_name = ?, gst_no = ?, billing_address_line1 = ?, billing_address_line2 = ?,
+                billing_city = ?, billing_state = ?, billing_pincode = ?, profile_updated_at = NOW()
+             WHERE id = ?",
+            [
+                $billing['legal_name'] ?? null,
+                $billing['gst_no'] ?? null,
+                $billing['address_line1'] ?? null,
+                $billing['address_line2'] ?? null,
+                $billing['city'] ?? null,
+                $billing['state'] ?? null,
+                $billing['pincode'] ?? null,
+                $userId,
+            ]
+        );
+
+        if (self::shippingColumnsReady() && array_key_exists('shipping', $data)) {
+            \Database::query(
+                "UPDATE users SET shipping_address_line1 = ?, shipping_address_line2 = ?, shipping_city = ?, shipping_state = ?, shipping_pincode = ?
+                 WHERE id = ?",
+                [
+                    $shipping['address_line1'] ?? null,
+                    $shipping['address_line2'] ?? null,
+                    $shipping['city'] ?? null,
+                    $shipping['state'] ?? null,
+                    $shipping['pincode'] ?? null,
+                    $userId,
+                ]
+            );
+        }
+
+        $fresh = \Database::row("SELECT * FROM users WHERE id = ?", [$userId]);
+        if ($fresh) $_SESSION['user'] = self::publicUser($fresh);
+
+        return ['ok' => true, 'profile' => self::getProfile($userId)];
+    }
+
+    public static function changePassword(int $userId, array $data): array
+    {
+        $current = (string)($data['current_password'] ?? '');
+        $next = (string)($data['new_password'] ?? '');
+        $confirm = (string)($data['confirm_password'] ?? '');
+
+        if ($current === '' || $next === '' || $confirm === '') {
+            return ['ok' => false, 'msg' => 'Current, new and confirm password are required.'];
+        }
+        if ($next !== $confirm) {
+            return ['ok' => false, 'msg' => 'New password and confirm password must match.'];
+        }
+        if (strlen($next) < 6) {
+            return ['ok' => false, 'msg' => 'New password must be at least 6 characters.'];
+        }
+
+        $user = \Database::row("SELECT id, password FROM users WHERE id = ? LIMIT 1", [$userId]);
+        if (!$user) {
+            return ['ok' => false, 'msg' => 'User not found.'];
+        }
+        if (!password_verify($current, (string)($user['password'] ?? ''))) {
+            return ['ok' => false, 'msg' => 'Current password is incorrect.'];
+        }
+
+        \Database::query(
+            "UPDATE users SET password = ?, profile_updated_at = NOW() WHERE id = ?",
+            [password_hash($next, PASSWORD_BCRYPT, ['cost' => 10]), $userId]
+        );
+
+        return ['ok' => true];
     }
 
     public static function user(): ?array  { return $_SESSION['user'] ?? null; }
@@ -299,5 +491,97 @@ class Auth
     {
         $uri = $_SERVER['REQUEST_URI'] ?? '';
         return str_starts_with($uri, '/api/') || str_starts_with($uri, '/admin/api/');
+    }
+
+    private static function sanitizeBilling(mixed $billing): ?array
+    {
+        if (!is_array($billing)) return null;
+
+        $clean = [
+            'legal_name'    => trim((string)($billing['legal_name'] ?? '')),
+            'gst_no'        => strtoupper(trim((string)($billing['gst_no'] ?? ''))),
+            'address_line1' => trim((string)($billing['address_line1'] ?? '')),
+            'address_line2' => trim((string)($billing['address_line2'] ?? '')),
+            'city'          => trim((string)($billing['city'] ?? '')),
+            'state'         => trim((string)($billing['state'] ?? '')),
+            'pincode'       => trim((string)($billing['pincode'] ?? '')),
+        ];
+
+        if (implode('', $clean) === '') return null;
+        return $clean;
+    }
+
+    private static function sanitizeShipping(mixed $shipping): ?array
+    {
+        if (!is_array($shipping)) return null;
+
+        $clean = [
+            'address_line1' => trim((string)($shipping['address_line1'] ?? '')),
+            'address_line2' => trim((string)($shipping['address_line2'] ?? '')),
+            'city'          => trim((string)($shipping['city'] ?? '')),
+            'state'         => trim((string)($shipping['state'] ?? '')),
+            'pincode'       => trim((string)($shipping['pincode'] ?? '')),
+        ];
+        if (implode('', $clean) === '') return null;
+        return $clean;
+    }
+
+    private static function profileColumnsReady(): bool
+    {
+        if (self::$hasProfileColumns !== null) return self::$hasProfileColumns;
+
+        $required = [
+            'billing_legal_name',
+            'gst_no',
+            'billing_address_line1',
+            'billing_address_line2',
+            'billing_city',
+            'billing_state',
+            'billing_pincode',
+            'profile_updated_at',
+        ];
+        $placeholders = implode(',', array_fill(0, count($required), '?'));
+
+        try {
+            $row = \Database::row(
+                "SELECT COUNT(*) AS c
+                 FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME IN ($placeholders)",
+                [DB_NAME, ...$required]
+            );
+            self::$hasProfileColumns = (int)($row['c'] ?? 0) === count($required);
+        } catch (\Throwable) {
+            self::$hasProfileColumns = false;
+        }
+
+        return self::$hasProfileColumns;
+    }
+
+    private static function shippingColumnsReady(): bool
+    {
+        if (self::$hasShippingColumns !== null) return self::$hasShippingColumns;
+
+        $required = [
+            'shipping_address_line1',
+            'shipping_address_line2',
+            'shipping_city',
+            'shipping_state',
+            'shipping_pincode',
+        ];
+        $placeholders = implode(',', array_fill(0, count($required), '?'));
+
+        try {
+            $row = \Database::row(
+                "SELECT COUNT(*) AS c
+                 FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME IN ($placeholders)",
+                [DB_NAME, ...$required]
+            );
+            self::$hasShippingColumns = (int)($row['c'] ?? 0) === count($required);
+        } catch (\Throwable) {
+            self::$hasShippingColumns = false;
+        }
+
+        return self::$hasShippingColumns;
     }
 }

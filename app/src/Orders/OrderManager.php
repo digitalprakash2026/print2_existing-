@@ -19,6 +19,19 @@ class OrderManager
 
         $couponCode = $params['coupon_code'] ?? null;
         $totals = \Cart\Cart::totals($cartItems, $couponCode);
+        $billing = self::sanitizeBilling($params['billing'] ?? null);
+        $shipping = self::sanitizeShipping($params['shipping'] ?? null);
+        $saveShippingDefault = !empty($shipping['save_as_default']);
+        $plainNotes = trim((string)($params['notes'] ?? ''));
+        $meta = [];
+        if ($plainNotes !== '') $meta['note'] = $plainNotes;
+        if ($billing !== null) $meta['billing'] = $billing;
+        if ($shipping !== null) $meta['shipping'] = $shipping;
+
+        $storedNotes = $plainNotes;
+        if (!empty($meta)) {
+            $storedNotes = json_encode($meta, JSON_UNESCAPED_UNICODE);
+        }
 
         // Generate readable order ID
         $orderId = self::generateOrderId();
@@ -50,7 +63,7 @@ class OrderManager
                     $couponCode,
                     $params['payment_method'] ?? 'razorpay',
                     $params['payment_status'] ?? 'pending',
-                    $params['notes'] ?? '',
+                    $storedNotes,
                     $now,
                 ]
             );
@@ -138,6 +151,7 @@ class OrderManager
 
         // Async tasks (non-blocking)
         self::afterOrderPlaced($order);
+        self::saveUserShippingDefault((int)$user['id'], $shipping, $saveShippingDefault);
 
         return ['ok' => true, 'order' => $order, 'order_id' => $orderId];
     }
@@ -234,5 +248,74 @@ class OrderManager
     {
         $count = \Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0;
         return 'RCS' . str_pad((string)((int)$count + 1001), 5, '0', STR_PAD_LEFT);
+    }
+
+    private static function sanitizeBilling(mixed $billing): ?array
+    {
+        if (!is_array($billing) || empty($billing['required'])) return null;
+
+        $clean = [
+            'legal_name'    => trim((string)($billing['legal_name'] ?? '')),
+            'gst_no'        => strtoupper(trim((string)($billing['gst_no'] ?? ''))),
+            'phone'         => trim((string)($billing['phone'] ?? '')),
+            'email'         => strtolower(trim((string)($billing['email'] ?? ''))),
+            'address_line1' => trim((string)($billing['address_line1'] ?? '')),
+            'address_line2' => trim((string)($billing['address_line2'] ?? '')),
+            'city'          => trim((string)($billing['city'] ?? '')),
+            'state'         => trim((string)($billing['state'] ?? '')),
+            'pincode'       => trim((string)($billing['pincode'] ?? '')),
+        ];
+
+        if ($clean['email'] !== '' && !filter_var($clean['email'], FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+
+        if ($clean['legal_name'] === '' || $clean['gst_no'] === '' || $clean['address_line1'] === '' ||
+            $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
+            return null;
+        }
+        return $clean;
+    }
+
+    private static function sanitizeShipping(mixed $shipping): ?array
+    {
+        if (!is_array($shipping)) return null;
+
+        $clean = [
+            'business_name' => trim((string)($shipping['business_name'] ?? '')),
+            'address_line1' => trim((string)($shipping['address_line1'] ?? '')),
+            'address_line2' => trim((string)($shipping['address_line2'] ?? '')),
+            'city'          => trim((string)($shipping['city'] ?? '')),
+            'state'         => trim((string)($shipping['state'] ?? '')),
+            'pincode'       => trim((string)($shipping['pincode'] ?? '')),
+            'save_as_default' => !empty($shipping['save_as_default']),
+        ];
+
+        if ($clean['address_line1'] === '' || $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
+            return null;
+        }
+        return $clean;
+    }
+
+    private static function saveUserShippingDefault(int $userId, ?array $shipping, bool $save): void
+    {
+        if (!$save || !$shipping || $userId <= 0) return;
+        try {
+            \Database::query(
+                "UPDATE users
+                 SET shipping_address_line1 = ?, shipping_address_line2 = ?, shipping_city = ?, shipping_state = ?, shipping_pincode = ?, profile_updated_at = NOW()
+                 WHERE id = ?",
+                [
+                    $shipping['address_line1'] ?? null,
+                    $shipping['address_line2'] ?? null,
+                    $shipping['city'] ?? null,
+                    $shipping['state'] ?? null,
+                    $shipping['pincode'] ?? null,
+                    $userId,
+                ]
+            );
+        } catch (\Throwable $e) {
+            error_log('Could not save default shipping from checkout: ' . $e->getMessage());
+        }
     }
 }

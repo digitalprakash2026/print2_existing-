@@ -17,6 +17,7 @@
 </div>
 <script>
 const CSRF = '<?= $csrf ?>';
+const LOGIN_NEXT = new URLSearchParams(window.location.search).get('next') || '/';
 async function doLogin() {
   const id = document.getElementById('l-id').value.trim();
   const pw = document.getElementById('l-pw').value;
@@ -29,7 +30,7 @@ async function doLogin() {
   });
   const data = await resp.json();
   btn.disabled = false; btn.textContent = 'Sign In →';
-  if (data.ok) { window.location.href = '/'; }
+  if (data.ok) { window.location.href = LOGIN_NEXT; }
   else showErr(data.msg || 'Invalid credentials');
 }
 function showErr(msg) {
