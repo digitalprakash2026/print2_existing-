@@ -239,6 +239,7 @@ class OrderManager
     private static function afterOrderPlaced(array $order): void
     {
         try { \Email\Mailer::sendOrderConfirmation($order); } catch (\Throwable) {}
+        try { \SMS\Fast2Sms::sendOrderConfirmation($order); } catch (\Throwable $e) { error_log('Fast2SMS hook failed: ' . $e->getMessage()); }
         try { \Sheets\SheetsSync::syncOrder($order); } catch (\Throwable) {}
     }
 
