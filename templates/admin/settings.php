@@ -90,7 +90,31 @@ $saved = isset($_GET['saved']) && $_GET['saved'] === '1';
       <div class="fg"><label>Brevo API Key</label><input type="password" name="brevo_api_key" class="fi" value="<?= htmlspecialchars($settingsMap['brevo_api_key'] ?? '') ?>" placeholder="xkeysib-..."></div>
       <div class="fg"><label>Brevo List ID (marketing)</label><input name="brevo_list_id" class="fi" value="<?= htmlspecialchars($settingsMap['brevo_list_id'] ?? '') ?>" placeholder="1"></div>
     </div>
-    <div class="fg"><label>SMTP Host (toggle/fallback)</label><input name="smtp_host" class="fi" value="<?= htmlspecialchars($settingsMap['smtp_host'] ?? '') ?>" placeholder="smtp.host.com"></div>
+    <div class="f2">
+      <div class="fg"><label>SMTP Host</label><input name="smtp_host" class="fi" value="<?= htmlspecialchars($settingsMap['smtp_host'] ?? '') ?>" placeholder="smtp.host.com"></div>
+      <div class="fg"><label>SMTP Port</label><input name="smtp_port" class="fi" value="<?= htmlspecialchars($settingsMap['smtp_port'] ?? '587') ?>" placeholder="587"></div>
+    </div>
+    <div class="f2">
+      <?php $smtpSecure = strtolower((string)($settingsMap['smtp_secure'] ?? 'tls')); ?>
+      <div class="fg">
+        <label>SMTP Security</label>
+        <select name="smtp_secure" class="fi fi-sel">
+          <option value="tls" <?= $smtpSecure === 'tls' ? 'selected' : '' ?>>TLS (STARTTLS)</option>
+          <option value="ssl" <?= $smtpSecure === 'ssl' ? 'selected' : '' ?>>SSL</option>
+          <option value="none" <?= $smtpSecure === 'none' ? 'selected' : '' ?>>None</option>
+        </select>
+      </div>
+      <div class="fg"><label>SMTP Username</label><input name="smtp_user" class="fi" value="<?= htmlspecialchars($settingsMap['smtp_user'] ?? '') ?>" placeholder="username"></div>
+    </div>
+    <div class="fg"><label>SMTP Password</label><input type="password" name="smtp_pass" class="fi" value="<?= htmlspecialchars($settingsMap['smtp_pass'] ?? '') ?>" placeholder="password"></div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:8px">
+      <div class="fg" style="margin:0;min-width:260px;flex:1">
+        <label>Test Email</label>
+        <input id="test-email-to" class="fi" placeholder="you@example.com" value="<?= htmlspecialchars($settingsMap['smtp_from_email'] ?? '') ?>">
+      </div>
+      <button type="button" class="btn btn-outline btn-sm" onclick="sendTestEmail()">Send Test Email</button>
+    </div>
+    <div id="test-email-msg" style="display:none;font-size:12px;margin-top:8px"></div>
   </div>
 
   <div class="fsec">
@@ -108,5 +132,27 @@ $saved = isset($_GET['saved']) && $_GET['saved'] === '1';
 
   <button type="submit" class="btn btn-blue" style="padding:13px 28px;border-radius:10px">Save All Settings ✓</button>
 </form>
+<script>
+async function sendTestEmail() {
+  const email = document.getElementById('test-email-to')?.value.trim() || '';
+  const msg = document.getElementById('test-email-msg');
+  if (!email) {
+    msg.style.display = 'block';
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Please enter test email address.';
+    return;
+  }
+  msg.style.display = 'block';
+  msg.style.color = 'var(--text2)';
+  msg.textContent = 'Sending test email...';
+  const res = await fetch('/admin/api/email/test', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'},
+    body: JSON.stringify({email})
+  }).then(r=>r.json()).catch(()=>({ok:false,msg:'Request failed'}));
+  msg.style.color = res.ok ? 'var(--green)' : 'var(--red)';
+  msg.textContent = res.ok ? 'Test email sent successfully.' : (res.msg || 'Could not send test email.');
+}
+</script>
     </div></div></div>
 </body></html>

@@ -181,19 +181,121 @@ class Mailer
             $biz      = self::bizInfo();
             $fromName = self::cfg('smtp_from_name', 'SMTP_FROM_NAME', $biz['name']);
             $fromAddr = self::cfg('smtp_from_email', 'SMTP_FROM_EMAIL', $biz['email']);
+            $host = trim((string)self::cfg('smtp_host', 'SMTP_HOST', ''));
+            $port = (int)self::cfg('smtp_port', 'SMTP_PORT', '587');
+            $user = trim((string)self::cfg('smtp_user', 'SMTP_USER', ''));
+            $pass = (string)self::cfg('smtp_pass', 'SMTP_PASS', '');
+            $secure = strtolower(trim((string)self::cfg('smtp_secure', 'SMTP_SECURE', 'tls')));
 
-            $headers  = implode("\r\n", [
-                "MIME-Version: 1.0",
-                "Content-Type: text/html; charset=UTF-8",
-                "From: =?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromAddr}>",
-                "Reply-To: {$fromAddr}",
-            ]);
+            // Backward-compatible fallback if explicit SMTP credentials are not configured.
+            if ($host === '' || $user === '' || $pass === '') {
+                $headers  = implode("\r\n", [
+                    "MIME-Version: 1.0",
+                    "Content-Type: text/html; charset=UTF-8",
+                    "From: =?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromAddr}>",
+                    "Reply-To: {$fromAddr}",
+                ]);
+                return mail($toEmail, $subject, $html, $headers);
+            }
 
-            return mail($toEmail, $subject, $html, $headers);
+            return self::sendViaSmtpSocket([
+                'host' => $host,
+                'port' => $port > 0 ? $port : 587,
+                'user' => $user,
+                'pass' => $pass,
+                'secure' => in_array($secure, ['tls', 'ssl', 'none'], true) ? $secure : 'tls',
+                'from_name' => $fromName,
+                'from_email' => $fromAddr,
+            ], $toEmail, $toName, $subject, $html);
         } catch (\Throwable $e) {
             error_log('SMTP send failed: ' . $e->getMessage());
             return false;
         }
+    }
+
+    private static function sendViaSmtpSocket(array $cfg, string $toEmail, string $toName, string $subject, string $html): bool
+    {
+        $host = (string)$cfg['host'];
+        $port = (int)$cfg['port'];
+        $secure = (string)$cfg['secure'];
+        $timeout = 15;
+        $remote = $secure === 'ssl' ? "ssl://{$host}:{$port}" : "{$host}:{$port}";
+
+        $fp = @fsockopen($remote, $port, $errno, $errstr, $timeout);
+        if (!$fp) throw new \RuntimeException("SMTP connect failed: {$errno} {$errstr}");
+        stream_set_timeout($fp, $timeout);
+
+        self::smtpExpect($fp, [220]);
+        self::smtpCmd($fp, 'EHLO ' . self::localHostname(), [250]);
+
+        if ($secure === 'tls') {
+            self::smtpCmd($fp, 'STARTTLS', [220]);
+            if (!@stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new \RuntimeException('STARTTLS negotiation failed');
+            }
+            self::smtpCmd($fp, 'EHLO ' . self::localHostname(), [250]);
+        }
+
+        self::smtpCmd($fp, 'AUTH LOGIN', [334]);
+        self::smtpCmd($fp, base64_encode((string)$cfg['user']), [334]);
+        self::smtpCmd($fp, base64_encode((string)$cfg['pass']), [235]);
+
+        $fromEmail = (string)$cfg['from_email'];
+        self::smtpCmd($fp, 'MAIL FROM:<' . $fromEmail . '>', [250]);
+        self::smtpCmd($fp, 'RCPT TO:<' . $toEmail . '>', [250, 251]);
+        self::smtpCmd($fp, 'DATA', [354]);
+
+        $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+        $encodedToName = trim($toName) !== '' ? '=?UTF-8?B?' . base64_encode($toName) . '?= ' : '';
+        $encodedFromName = trim((string)$cfg['from_name']) !== '' ? '=?UTF-8?B?' . base64_encode((string)$cfg['from_name']) . '?= ' : '';
+
+        $headers = [
+            'Date: ' . date(DATE_RFC2822),
+            'From: ' . $encodedFromName . '<' . $fromEmail . '>',
+            'To: ' . $encodedToName . '<' . $toEmail . '>',
+            'Reply-To: <' . $fromEmail . '>',
+            'Subject: ' . $encodedSubject,
+            'MIME-Version: 1.0',
+            'Content-Type: text/html; charset=UTF-8',
+            'Content-Transfer-Encoding: 8bit',
+        ];
+
+        $payload = implode("\r\n", $headers) . "\r\n\r\n" . $html;
+        // SMTP dot-stuffing
+        $payload = preg_replace('/^\./m', '..', $payload) ?? $payload;
+        fwrite($fp, $payload . "\r\n.\r\n");
+        self::smtpExpect($fp, [250]);
+        self::smtpCmd($fp, 'QUIT', [221]);
+        fclose($fp);
+        return true;
+    }
+
+    private static function smtpCmd($fp, string $cmd, array $expect): void
+    {
+        fwrite($fp, $cmd . "\r\n");
+        self::smtpExpect($fp, $expect);
+    }
+
+    private static function smtpExpect($fp, array $expect): void
+    {
+        $resp = '';
+        while (!feof($fp)) {
+            $line = fgets($fp, 515);
+            if ($line === false) break;
+            $resp .= $line;
+            if (preg_match('/^\d{3}\s/', $line)) break;
+        }
+        $code = (int)substr(trim($resp), 0, 3);
+        if (!in_array($code, $expect, true)) {
+            throw new \RuntimeException('SMTP unexpected response: ' . trim($resp));
+        }
+    }
+
+    private static function localHostname(): string
+    {
+        $h = gethostname();
+        if (!$h || $h === '') return 'localhost';
+        return $h;
     }
 
     private static function brevoApiCall(string $method, string $path, array $data): array

@@ -480,6 +480,19 @@ if (str_starts_with($uri, '/admin/api/')) {
         \Orders\AdminAudit::log('settings_updated','Settings saved');
         json(['ok'=>true]);
     }
+    if ($uri === '/admin/api/email/test' && $method === 'POST') {
+        $to = trim((string)($body['email'] ?? ''));
+        if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            json(['ok'=>false,'msg'=>'Valid email required'], 422);
+        }
+        $ok = \Email\Mailer::send(
+            $to,
+            'Test User',
+            'Test Email — RCS Graphic',
+            '<h2>Test email successful ✅</h2><p>Email configuration is working from Admin Panel settings.</p>'
+        );
+        json($ok ? ['ok'=>true] : ['ok'=>false,'msg'=>'Send failed. Check provider credentials and logs.']);
+    }
 
     if ($uri === '/admin/api/customers' && $method === 'GET') {
         json(['ok'=>true,'customers'=>Database::rows("SELECT u.*,COUNT(o.id) as order_count, COALESCE(SUM(o.total_amount),0) as total_spent FROM users u LEFT JOIN orders o ON o.user_id=u.id GROUP BY u.id ORDER BY total_spent DESC")]);
