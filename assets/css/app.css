@@ -855,7 +855,9 @@ textarea.fi  { resize:vertical; }
 /* ═══════════════════════════════════════════════════════════════
    ADMIN
 ═══════════════════════════════════════════════════════════════ */
-.adm-nav-toggle { position:fixed; opacity:0; pointer-events:none; }
+.adm-head-actions { display:flex; align-items:center; gap:10px; }
+.adm-admin-name { font-size:13px; color:var(--text2); }
+.adm-site-btn,.adm-logout-btn { font-size:12px; }
 .adm-nav-btn {
   display:none;
   width:36px;
@@ -871,6 +873,7 @@ textarea.fi  { resize:vertical; }
   justify-content:center;
   cursor:pointer;
   box-shadow:0 4px 14px rgba(16,24,40,.08);
+  font-family:var(--fn);
 }
 .adm-nav-backdrop {
   display:none;
@@ -1102,9 +1105,11 @@ textarea.fi  { resize:vertical; }
     transition:transform .22s ease;
     box-shadow:0 18px 36px rgba(2,6,23,.28);
   }
-  #adm-nav-toggle:checked ~ .adm-shell .adm-sb { transform:translateX(0); }
-  #adm-nav-toggle:checked ~ .adm-nav-backdrop { opacity:1; pointer-events:auto; }
+  body.adm-nav-open .adm-sb { transform:translateX(0); }
+  body.adm-nav-open .adm-nav-backdrop { opacity:1; pointer-events:auto; }
   .adm-nav-backdrop { display:block; }
+  .adm-admin-name { display:none; }
+  .adm-head-actions { gap:6px; }
   .anl-grid{ grid-template-columns:1fr; }
   .pc-carousel-card { flex:0 0 calc(50% - 10px); }
 }

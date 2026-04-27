@@ -8,7 +8,6 @@
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body style="background:var(--bg)">
-<input type="checkbox" id="adm-nav-toggle" class="adm-nav-toggle" aria-hidden="true">
 <div class="toast-wrap" id="tw"></div>
 
 <!-- Admin Header -->
@@ -18,21 +17,21 @@
     <div><div class="hdr-logo-name">RCS Admin</div><div class="hdr-logo-sub">Print Order System</div></div>
   </div>
   <div class="hdr-space"></div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <label for="adm-nav-toggle" class="adm-nav-btn" aria-label="Toggle admin menu" title="Menu">☰</label>
+  <div class="adm-head-actions">
+    <button type="button" id="admNavToggle" class="adm-nav-btn" aria-label="Toggle admin menu" aria-expanded="false" title="Menu">☰</button>
     <?php $admin = \Auth\Auth::admin(); ?>
-    <span style="font-size:13px;color:var(--text2)"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
-    <a href="/" class="btn-auth btn-auth-ghost" style="font-size:12px">🌐 Site</a>
-    <a href="/admin/logout" class="btn-auth btn-auth-ghost" style="font-size:12px">Logout</a>
+    <span class="adm-admin-name"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
+    <a href="/" class="btn-auth btn-auth-ghost adm-site-btn">🌐 Site</a>
+    <a href="/admin/logout" class="btn-auth btn-auth-ghost adm-logout-btn">Logout</a>
   </div>
 </header>
 
-<label for="adm-nav-toggle" class="adm-nav-backdrop" aria-hidden="true"></label>
+<div id="admNavBackdrop" class="adm-nav-backdrop" aria-hidden="true"></div>
 
 <div class="adm-shell" style="margin-top:var(--hh)">
   <div class="adm-lay">
     <!-- Sidebar -->
-    <div class="adm-sb">
+    <div class="adm-sb" id="admSidebar">
       <div class="adm-sb-logo">
         <div class="adm-sb-t">RCS Graphic</div>
         <div class="adm-sb-s">Admin Panel</div>
@@ -63,3 +62,28 @@
 
     <!-- Main content -->
     <div class="adm-main<?= !empty($admMainClass) ? ' ' . htmlspecialchars((string)$admMainClass) : '' ?>">
+<script>
+(() => {
+  const btn = document.getElementById('admNavToggle');
+  const backdrop = document.getElementById('admNavBackdrop');
+  const sidebar = document.getElementById('admSidebar');
+  if (!btn || !backdrop || !sidebar) return;
+  const mq = window.matchMedia('(max-width: 900px)');
+  const setOpen = (open) => {
+    document.body.classList.toggle('adm-nav-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+  btn.addEventListener('click', () => {
+    if (!mq.matches) return;
+    setOpen(!document.body.classList.contains('adm-nav-open'));
+  });
+  backdrop.addEventListener('click', () => setOpen(false));
+  sidebar.addEventListener('click', (event) => {
+    const link = event.target.closest('a');
+    if (link && mq.matches) setOpen(false);
+  });
+  window.addEventListener('resize', () => {
+    if (!mq.matches) setOpen(false);
+  });
+})();
+</script>
