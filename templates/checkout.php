@@ -26,7 +26,7 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
 
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
       <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">📦 Delivery Address</div>
-      <div class="fg"><label>Business Name (optional)</label><input id="s-business" class="fi" placeholder="ABC Pvt Ltd"></div>
+      <div class="fg"><label>Business Name *</label><input id="s-business" class="fi" placeholder="ABC Pvt Ltd"></div>
       <div class="fg"><label>Address Line 1 *</label><input id="s-add1" class="fi" placeholder="House / Building / Street"></div>
       <div class="fg"><label>Address Line 2 (optional)</label><input id="s-add2" class="fi" placeholder="Area / Landmark"></div>
       <div class="f2">
@@ -385,7 +385,7 @@ function getCheckoutShipping() {
   const err = document.getElementById('shipErr');
   const pinOk = /^[1-9][0-9]{5}$/.test(pin);
 
-  if (!add1 || !city || !state || !pin) {
+  if (!business || !add1 || !city || !state || !pin) {
     if (err) { err.textContent = 'Please fill delivery address details to continue.'; err.style.display = 'block'; }
     return false;
   }

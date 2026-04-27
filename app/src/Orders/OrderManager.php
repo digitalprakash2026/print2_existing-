@@ -291,7 +291,7 @@ class OrderManager
             'save_as_default' => !empty($shipping['save_as_default']),
         ];
 
-        if ($clean['address_line1'] === '' || $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
+        if ($clean['business_name'] === '' || $clean['address_line1'] === '' || $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
             return null;
         }
         return $clean;

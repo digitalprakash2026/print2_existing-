@@ -294,7 +294,7 @@ $toPublicImagePath = static function (mixed $path): string {
 
       <div class="why-c" data-reveal data-reveal-delay="120">
         <div class="why-ic" style="background:#FEF9C3">🎨</div>
-        <div class="why-t">Free Design Help</div>
+        <div class="why-t">Free Design Support</div>
         <div class="why-d">Our creative team support you get the perfect design ready for print for bulk Orders...</div>
       </div>
 
@@ -370,8 +370,17 @@ $toPublicImagePath = static function (mixed $path): string {
       </div>
       <div>
         <div class="f-lbl">Products</div>
-        <?php foreach (array_slice($products, 0, 7) as $p): ?>
-        <a class="f-link" href="/product/<?= htmlspecialchars($p['slug']) ?>"><?= htmlspecialchars($p['name']) ?></a>
+        <?php
+          $footerCategories = [
+            ['name' => 'Brochure', 'url' => '/category/brochures'],
+            ['name' => 'Business Card', 'url' => '/category/cards'],
+            ['name' => 'Calendars', 'url' => '/category/calendars'],
+            ['name' => 'Flyer', 'url' => '/category/flyers'],
+            ['name' => 'Posters', 'url' => '/category/posters'],
+          ];
+        ?>
+        <?php foreach ($footerCategories as $cat): ?>
+        <a class="f-link" href="<?= htmlspecialchars($cat['url']) ?>"><?= htmlspecialchars($cat['name']) ?></a>
         <?php endforeach; ?>
       </div>
       <div>
@@ -390,7 +399,7 @@ $toPublicImagePath = static function (mixed $path): string {
     </div>
     <div class="f-bot">
       <div>© <?= date('Y') ?> <?= $bizName ?>. All rights reserved.</div>
-      <div>Made with ❤️ in Rajkot, Gujarat</div>
+      <div>👨‍💻 Developed By Prakash Karena</div>
     </div>
   </div>
 </footer>
