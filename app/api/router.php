@@ -41,6 +41,40 @@ if ($uri === '/api/auth/me' && $method === 'GET') {
     json(['ok' => true, 'user' => \Auth\Auth::user()]);
 }
 
+if ($uri === '/api/auth/account-exists' && $method === 'POST') {
+    $email = strtolower(trim((string)($body['email'] ?? '')));
+    $phone = trim((string)($body['phone'] ?? ''));
+    if ($email === '' || $phone === '') {
+        json(['ok' => false, 'msg' => 'Email and phone are required.'], 422);
+    }
+    $row = \Database::row(
+        "SELECT id FROM users WHERE is_active = 1 AND (email = ? OR phone = ?) LIMIT 1",
+        [$email, $phone]
+    );
+    json(['ok' => true, 'exists' => !empty($row)]);
+}
+
+if ($uri === '/api/profile' && $method === 'GET') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $profile = \Auth\Auth::getProfile((int)$user['id']);
+    json(['ok' => true, 'profile' => $profile]);
+}
+
+if ($uri === '/api/profile' && in_array($method, ['POST', 'PUT'], true)) {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $result = \Auth\Auth::updateProfile((int)$user['id'], $body);
+    json($result, ($result['ok'] ?? false) ? 200 : 422);
+}
+
+if ($uri === '/api/profile/password' && $method === 'POST') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $result = \Auth\Auth::changePassword((int)$user['id'], $body);
+    json($result, ($result['ok'] ?? false) ? 200 : 422);
+}
+
 // ── Products ──────────────────────────────────────────────────
 
 if ($uri === '/api/products' && $method === 'GET') {
@@ -158,11 +192,25 @@ if ($uri === '/api/upload/artwork' && $method === 'POST') {
     }
 
     $ownerForInsert = $userId > 0 ? $userId : null;
-    $fileId = Database::insert(
-        "INSERT INTO artwork_files (uploaded_by, filename, original_name, file_path, mime_type, file_size, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())",
-        [$ownerForInsert, $filename, $file['name'], $publicPath, $mime, $file['size']]
-    );
+    try {
+        $fileId = Database::insert(
+            "INSERT INTO artwork_files (uploaded_by, filename, original_name, file_path, mime_type, file_size, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW())",
+            [$ownerForInsert, $filename, $file['name'], $publicPath, $mime, $file['size']]
+        );
+    } catch (\Throwable $e) {
+        // Some schemas may have `uploaded_by` as NOT NULL.
+        // Fallback to 0 for guests and keep flow working.
+        if ($userId === 0) {
+            $fileId = Database::insert(
+                "INSERT INTO artwork_files (uploaded_by, filename, original_name, file_path, mime_type, file_size, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, NOW())",
+                [0, $filename, $file['name'], $publicPath, $mime, $file['size']]
+            );
+        } else {
+            throw $e;
+        }
+    }
 
     if ($userId === 0) {
         $_SESSION['guest_artwork_ids'] = $_SESSION['guest_artwork_ids'] ?? [];
@@ -178,7 +226,10 @@ if ($uri === '/api/upload/artwork' && $method === 'POST') {
 if ($uri === '/api/orders/place' && $method === 'POST') {
     $ensure = \Auth\Auth::ensureCheckoutUser($body['customer'] ?? []);
     if (!$ensure['ok']) json($ensure, 400);
-    json(\Orders\OrderManager::place($body));
+    json(\Orders\OrderManager::place([
+        ...$body,
+        'shipping' => $body['shipping'] ?? null,
+    ]));
 }
 
 if ($uri === '/api/orders' && $method === 'GET') {
@@ -231,6 +282,8 @@ if ($uri === '/api/payment/verify' && $method === 'POST') {
         'coupon_code'    => $body['coupon_code'] ?? null,
         'payment_method' => 'razorpay',
         'payment_status' => 'pending',
+        'billing'        => $body['billing'] ?? null,
+        'shipping'       => $body['shipping'] ?? null,
     ]);
 
     if (!$placeResult['ok']) json($placeResult);
@@ -261,6 +314,8 @@ if ($uri === '/api/orders/whatsapp' && $method === 'POST') {
         'payment_method' => 'whatsapp',
         'payment_status' => 'pending',
         'notes'          => $body['notes'] ?? '',
+        'billing'        => $body['billing'] ?? null,
+        'shipping'       => $body['shipping'] ?? null,
     ]);
 
     if ($result['ok']) {

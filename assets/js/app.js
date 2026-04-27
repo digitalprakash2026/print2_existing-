@@ -246,7 +246,7 @@ function renderCartDrawer() {
 }
 
 // ── Razorpay Checkout ─────────────────────────────────────────
-async function initiateCheckout(couponCode = null, customer = null) {
+async function initiateCheckout(couponCode = null, customer = null, billing = null, shipping = null) {
   if (!APP.razorpayKey) {
     toast('Payment not configured. Please contact us via WhatsApp.', 'warn'); return;
   }
@@ -256,7 +256,7 @@ async function initiateCheckout(couponCode = null, customer = null) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
       credentials: 'same-origin',
-      body: JSON.stringify({ coupon_code: couponCode, customer })
+      body: JSON.stringify({ coupon_code: couponCode, customer, billing, shipping })
     });
     const oData = await oResp.json();
     if (!oData.ok) { hidePayOv(); toast(oData.msg || 'Payment setup failed', 'error'); return; }
@@ -277,7 +277,7 @@ async function initiateCheckout(couponCode = null, customer = null) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
           credentials: 'same-origin',
-          body: JSON.stringify({ ...resp, coupon_code: couponCode, customer })
+          body: JSON.stringify({ ...resp, coupon_code: couponCode, customer, billing, shipping })
         });
         const vData = await vResp.json();
         hidePayOv();
@@ -299,7 +299,7 @@ async function initiateCheckout(couponCode = null, customer = null) {
   } catch (e) { hidePayOv(); toast('Payment error. Please try again.', 'error'); }
 }
 
-async function placeWhatsappOrder(couponCode = null, notes = '', customer = null) {
+async function placeWhatsappOrder(couponCode = null, notes = '', customer = null, billing = null, shipping = null) {
   try {
     const url = couponCode ? `/api/cart?coupon=${encodeURIComponent(couponCode)}` : '/api/cart';
     const resp = await fetch(url, { credentials: 'same-origin' });
@@ -328,6 +328,21 @@ async function placeWhatsappOrder(couponCode = null, notes = '', customer = null
       `• Name: ${customer?.name || APP.user?.name || 'Guest'}`,
       `• Phone: ${customer?.phone || APP.user?.phone || 'Not provided'}`,
       `• Email: ${customer?.email || APP.user?.email || 'Not provided'}`,
+      '',
+      ...(shipping ? [
+        '*Delivery Address*',
+        ...(shipping.business_name ? [`• Business: ${shipping.business_name}`] : []),
+        `• ${shipping.address_line1 || ''}${shipping.address_line2 ? ', ' + shipping.address_line2 : ''}`,
+        `• ${shipping.city || ''}, ${shipping.state || ''} - ${shipping.pincode || ''}`,
+        '',
+      ] : []),
+      ...(billing && billing.required ? [
+        '*Billing Details*',
+        `• Legal Name: ${billing.legal_name || 'Not provided'}`,
+        `• GSTIN: ${billing.gst_no || 'Not provided'}`,
+        `• Address: ${billing.address_line1 || ''}${billing.address_line2 ? ', ' + billing.address_line2 : ''}, ${billing.city || ''}, ${billing.state || ''} - ${billing.pincode || ''}`,
+        '',
+      ] : []),
       '',
       '*Order Items*'
     ];
@@ -465,6 +480,30 @@ function initProductCarousel(id = 'prodCarousel') {
   }, { passive: true });
 }
 
+// ── Scroll Reveal Animations ───────────────────────────────────
+function initRevealAnimations() {
+  const nodes = document.querySelectorAll('[data-reveal]');
+  if (!nodes.length) return;
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) {
+    nodes.forEach(el => el.classList.add('is-visible'));
+    return;
+  }
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const delay = parseInt(el.getAttribute('data-reveal-delay') || '0', 10);
+      setTimeout(() => el.classList.add('is-visible'), Math.max(0, delay));
+      io.unobserve(el);
+    });
+  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
+
+  nodes.forEach(el => io.observe(el));
+}
+
 // ── Utility ───────────────────────────────────────────────────
 function _esc(s) {
   return String(s || '')
@@ -575,5 +614,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Init sliders if present
   initBannerSlider('bannerSlider');
   initProductCarousel('prodCarousel');
+  initRevealAnimations();
   initChatbot();
 });

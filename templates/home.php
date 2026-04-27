@@ -27,72 +27,88 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
        • Auto-advance interval: edit `10000` in app.js → initBannerSlider()
 ═══════════════════════════════════════════════════════════════ -->
 <div class="banner-slider" id="bannerSlider">
-
-  <!-- ── SLIDE 1 ─────────────────────────────────────────── -->
+  <?php
+  $fallbackBanners = [
+    [
+      'eyebrow' => 'New Arrivals',
+      'title' => 'Premium Business<br>Cards That Impress',
+      'subtitle' => '400 GSM thick stock, UV coating, matte finish.<br>Make every handshake count.',
+      'image_path' => 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=1400&q=85&fit=crop',
+      'image_alt' => 'Premium Business Card Printing',
+      'cta_primary_text' => 'View Products →',
+      'cta_primary_url' => '/category/cards',
+      'cta_secondary_text' => '💬 WhatsApp',
+      'cta_secondary_type' => 'whatsapp',
+      'cta_secondary_url' => '',
+    ],
+    [
+      'eyebrow' => 'Best Seller',
+      'title' => 'Brochures That<br>Tell Your Story',
+      'subtitle' => 'Tri-fold, bi-fold, A4 or custom sizes.<br>Full colour, gloss or matte finish.',
+      'image_path' => 'https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=1400&q=85&fit=crop',
+      'image_alt' => 'Brochure Printing',
+      'cta_primary_text' => 'View Products →',
+      'cta_primary_url' => '/category/brochures',
+      'cta_secondary_text' => '💬 WhatsApp',
+      'cta_secondary_type' => 'whatsapp',
+      'cta_secondary_url' => '',
+    ],
+    [
+      'eyebrow' => 'Large Format',
+      'title' => 'Banners &amp; Posters<br>That Grab Attention',
+      'subtitle' => 'Weather-resistant flex banners, standees,<br>hoarding prints — any size.',
+      'image_path' => 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1400&q=85&fit=crop',
+      'image_alt' => 'Banner Printing',
+      'cta_primary_text' => 'View Products →',
+      'cta_primary_url' => '/category/banners',
+      'cta_secondary_text' => '💬 WhatsApp',
+      'cta_secondary_type' => 'whatsapp',
+      'cta_secondary_url' => '',
+    ],
+    [
+      'eyebrow' => 'Fast Turnaround',
+      'title' => 'Flyers &amp; Pamphlets<br>Delivered in 24 hrs',
+      'subtitle' => 'High-volume offset printing, vibrant colours,<br>bulk discounts available.',
+      'image_path' => 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1400&q=85&fit=crop',
+      'image_alt' => 'Flyer Printing',
+      'cta_primary_text' => 'View Products →',
+      'cta_primary_url' => '/category/flyers',
+      'cta_secondary_text' => '💬 WhatsApp',
+      'cta_secondary_type' => 'whatsapp',
+      'cta_secondary_url' => '',
+    ],
+  ];
+  $bannerSlides = !empty($homeBanners ?? []) ? $homeBanners : $fallbackBanners;
+  foreach ($bannerSlides as $i => $slide):
+    $img = htmlspecialchars((string)($slide['image_path'] ?? ''));
+    $alt = htmlspecialchars((string)($slide['image_alt'] ?? ('Slide ' . ($i + 1))));
+    $eyebrow = (string)($slide['eyebrow'] ?? '');
+    $title = strip_tags((string)($slide['title'] ?? ''), '<br><br/>');
+    $subtitle = strip_tags((string)($slide['subtitle'] ?? ''), '<br><br/>');
+    $ctaPrimaryText = htmlspecialchars((string)($slide['cta_primary_text'] ?? 'View Products →'));
+    $ctaPrimaryUrl = htmlspecialchars((string)($slide['cta_primary_url'] ?? '#'));
+    $ctaSecondaryText = htmlspecialchars((string)($slide['cta_secondary_text'] ?? '💬 WhatsApp'));
+    $ctaSecondaryType = strtolower(trim((string)($slide['cta_secondary_type'] ?? 'whatsapp')));
+    $ctaSecondaryUrl = trim((string)($slide['cta_secondary_url'] ?? ''));
+  ?>
   <div class="bs-slide">
-    <!-- CHANGE IMAGE: replace src below -->
-    <img src="https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=1400&q=85&fit=crop"
-         alt="Premium Business Card Printing">
+    <img src="<?= $img ?>" alt="<?= $alt ?>">
     <div class="bs-overlay"></div>
     <div class="bs-content">
-      <div class="bs-eyebrow">New Arrivals</div>
-      <div class="bs-title">Premium Business<br>Cards That Impress</div>
-      <div class="bs-sub">400 GSM thick stock, UV coating, matte finish.<br>Make every handshake count.</div>
+      <div class="bs-eyebrow"><?= htmlspecialchars($eyebrow) ?></div>
+      <div class="bs-title"><?= $title ?></div>
+      <div class="bs-sub"><?= $subtitle ?></div>
       <div class="bs-actions">
-        <!-- CHANGE LINK: update href to your product URL -->
-        <a href="/category/cards" class="bs-cta-primary">View Products →</a>
-        <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
+        <a href="<?= $ctaPrimaryUrl ?>" class="bs-cta-primary"><?= $ctaPrimaryText ?></a>
+        <?php if ($ctaSecondaryType === 'url' && $ctaSecondaryUrl !== ''): ?>
+          <a href="<?= htmlspecialchars($ctaSecondaryUrl) ?>" class="bs-cta-wa"><?= $ctaSecondaryText ?></a>
+        <?php else: ?>
+          <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')"><?= $ctaSecondaryText ?></button>
+        <?php endif; ?>
       </div>
     </div>
   </div>
-
-  <!-- ── SLIDE 2 ─────────────────────────────────────────── -->
-  <div class="bs-slide">
-    <img src="https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=1400&q=85&fit=crop"
-         alt="Brochure Printing">
-    <div class="bs-overlay"></div>
-    <div class="bs-content">
-      <div class="bs-eyebrow">Best Seller</div>
-      <div class="bs-title">Brochures That<br>Tell Your Story</div>
-      <div class="bs-sub">Tri-fold, bi-fold, A4 or custom sizes.<br>Full colour, gloss or matte finish.</div>
-      <div class="bs-actions">
-        <a href="/category/brochures" class="bs-cta-primary">View Products →</a>
-        <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── SLIDE 3 ─────────────────────────────────────────── -->
-  <div class="bs-slide">
-    <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1400&q=85&fit=crop"
-         alt="Banner Printing">
-    <div class="bs-overlay"></div>
-    <div class="bs-content">
-      <div class="bs-eyebrow">Large Format</div>
-      <div class="bs-title">Banners &amp; Posters<br>That Grab Attention</div>
-      <div class="bs-sub">Weather-resistant flex banners, standees,<br>hoarding prints — any size.</div>
-      <div class="bs-actions">
-        <a href="/category/banners" class="bs-cta-primary">View Products →</a>
-        <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── SLIDE 4 ─────────────────────────────────────────── -->
-  <div class="bs-slide">
-    <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1400&q=85&fit=crop"
-         alt="Flyer Printing">
-    <div class="bs-overlay"></div>
-    <div class="bs-content">
-      <div class="bs-eyebrow">Fast Turnaround</div>
-      <div class="bs-title">Flyers &amp; Pamphlets<br>Delivered in 24 hrs</div>
-      <div class="bs-sub">High-volume offset printing, vibrant colours,<br>bulk discounts available.</div>
-      <div class="bs-actions">
-        <a href="/category/flyers" class="bs-cta-primary">View Products →</a>
-        <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
-      </div>
-    </div>
-  </div>
+  <?php endforeach; ?>
 
   <!-- Prev / Next arrows -->
   <button class="bs-prev" onclick="document.getElementById('bannerSlider')._sliderPrev()" aria-label="Previous slide">
@@ -104,10 +120,9 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 
   <!-- Dot indicators -->
   <div class="bs-dots">
-    <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(0)" aria-label="Slide 1"></button>
-    <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(1)" aria-label="Slide 2"></button>
-    <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(2)" aria-label="Slide 3"></button>
-    <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(3)" aria-label="Slide 4"></button>
+    <?php foreach ($bannerSlides as $i => $_): ?>
+      <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(<?= (int)$i ?>)" aria-label="Slide <?= (int)$i + 1 ?>"></button>
+    <?php endforeach; ?>
   </div>
 </div>
 
@@ -115,14 +130,14 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <!-- ═══════════════════════════════════════════════════════════
      TRUST BAR
 ══════════════════════════════════════════════════════════════ -->
-<div class="trust">
+<div class="trust" data-reveal>
   <div class="container">
     <div class="trust-inner">
-      <div class="trust-i"><div class="trust-ic" style="background:#ECFDF5">✅</div>GST Invoice Included</div>
-      <div class="trust-i"><div class="trust-ic" style="background:#EEF3FD">🔒</div>Secure Razorpay Payment</div>
-      <div class="trust-i"><div class="trust-ic" style="background:#FFF4ED">⚡</div>24–48hr Fast Delivery</div>
-      <div class="trust-i"><div class="trust-ic" style="background:#FEF9C3">🎨</div>Free Design Support</div>
-      <div class="trust-i"><div class="trust-ic" style="background:#F0FDF4">💯</div>Quality Guaranteed</div>
+      <div class="trust-i" data-reveal data-reveal-delay="40"><div class="trust-ic" style="background:#ECFDF5">✅</div>GST Invoice Included</div>
+      <div class="trust-i" data-reveal data-reveal-delay="80"><div class="trust-ic" style="background:#EEF3FD">🔒</div>Secure Razorpay Payment</div>
+      <div class="trust-i" data-reveal data-reveal-delay="120"><div class="trust-ic" style="background:#FFF4ED">⚡</div>24–48hr Fast Delivery</div>
+      <div class="trust-i" data-reveal data-reveal-delay="160"><div class="trust-ic" style="background:#FEF9C3">🎨</div>Free Design Support</div>
+      <div class="trust-i" data-reveal data-reveal-delay="200"><div class="trust-ic" style="background:#F0FDF4">💯</div>Quality Guaranteed</div>
     </div>
   </div>
 </div>
@@ -134,7 +149,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <section class="sec home-prod-sec" id="prod-sec" style="background:var(--bg)">
   <div class="home-prod-wrap">
 
-    <div class="sec-hdr" style="margin-bottom:32px">
+    <div class="sec-hdr" style="margin-bottom:32px" data-reveal>
       <div>
         <div class="sec-ey">Our Products</div>
         <div class="sec-t">Everything You Need to Print</div>
@@ -183,7 +198,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
         $catName     = htmlspecialchars($catData['name']);
         $catIcon     = htmlspecialchars($catData['icon'] ?? '📦');
       ?>
-      <div class="cat-box cat-box-square">
+      <div class="cat-box cat-box-square" data-reveal data-reveal-delay="<?= ((int)$catId % 5) * 40 ?>">
 
         <!-- Category header -->
         <div class="cat-box-hdr">
@@ -239,7 +254,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 
 
 <!-- WHY US -->
-<section class="sec" id="why-sec" style="background:var(--white)">
+<section class="sec" id="why-sec" style="background:var(--white)" data-reveal>
   <div class="container">
     <div class="sec-hdr" style="margin-bottom:28px">
       <div>
@@ -253,37 +268,37 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
     </div>
     <div class="why-grid">
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="30">
         <div class="why-ic" style="background:#EEF3FD">🖨️</div>
         <div class="why-t">Premium Print Quality</div>
         <div class="why-d">State-of-the-art printing technology ensuring sharp, vibrant and consistent results every time.</div>
       </div>
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="60">
         <div class="why-ic" style="background:#ECFDF5">⚡</div>
         <div class="why-t">Fast Turnaround</div>
         <div class="why-d">Same-day and next-day options available. We know deadlines matter for your business.</div>
       </div>
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="90">
         <div class="why-ic" style="background:#FFF4ED">💰</div>
         <div class="why-t">Best Bulk Prices</div>
         <div class="why-d">Competitive pricing with bulk discounts. The more you print, the more you save.</div>
       </div>
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="120">
         <div class="why-ic" style="background:#FEF9C3">🎨</div>
         <div class="why-t">Free Design Help</div>
         <div class="why-d">Our creative team helps you get the perfect design ready for print at no extra cost.</div>
       </div>
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="150">
         <div class="why-ic" style="background:#F0F9FF">📦</div>
         <div class="why-t">Safe Packaging</div>
         <div class="why-d">Every order is carefully packed to ensure your prints arrive in perfect condition.</div>
       </div>
 
-      <div class="why-c">
+      <div class="why-c" data-reveal data-reveal-delay="180">
         <div class="why-ic" style="background:#FDF4FF">🤝</div>
         <div class="why-t">Dedicated Support</div>
         <div class="why-d">Personal support via WhatsApp and phone. We're here at every step of your order.</div>
@@ -296,7 +311,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <!-- CTA BAND -->
 <section class="sec">
   <div class="container">
-    <div class="cta">
+    <div class="cta" data-reveal>
       <div style="position:relative;z-index:1">
         <div class="cta-h">Ready to Print Something Amazing?</div>
         <div class="cta-s">Place your order in minutes. We'll take care of the rest.</div>
@@ -311,7 +326,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 </section>
 
 <!-- CONTACT -->
-<section class="sec" id="contact-sec" style="background:var(--white)">
+<section class="sec" id="contact-sec" style="background:var(--white)" data-reveal>
   <div class="container">
     <div class="contact-grid">
       <div>

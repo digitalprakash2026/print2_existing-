@@ -53,7 +53,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
   <div class="pd-grid">
 
     <!-- ════ LEFT — GALLERY ════ -->
-    <div class="pd-gallery">
+    <div class="pd-gallery" data-reveal>
 
       <!-- Square main image -->
       <div class="pd-main" id="pdMainWrap">
@@ -80,7 +80,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
     </div><!-- /pd-gallery -->
 
     <!-- ════ RIGHT — INFO + CONFIGURATOR ════ -->
-    <div class="pd-info-col">
+    <div class="pd-info-col" data-reveal data-reveal-delay="80">
 
       <!-- Category tag -->
       <div class="pd-cat"><?= htmlspecialchars($product['category_name'] ?? '') ?></div>
@@ -242,6 +242,9 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
             WhatsApp
           </button>
         </div>
+        <div id="orderHint" style="font-size:12px;color:var(--text2);line-height:1.5">
+          Select quantity to enable Add to Cart / Buy Now.
+        </div>
       </div>
 
     </div><!-- /pd-info-col -->
@@ -263,7 +266,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
         $rimg = $rp['primary_image'] ?? '';
         $rmin = (float)($rp['min_price'] ?? 0);
       ?>
-      <div class="pc" style="cursor:default">
+      <div class="pc" style="cursor:default" data-reveal data-reveal-delay="<?= ((int)($rp['id'] ?? 0) % 3) * 60 ?>">
         <a href="/product/<?= htmlspecialchars($rp['slug']) ?>" style="display:contents;text-decoration:none">
           <div class="pc-img">
             <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" loading="lazy"
@@ -337,6 +340,24 @@ let uploadedFileName   = null;
 let designChoice       = 'upload';
 let currentBasePrice   = 0;
 
+function refreshOrderReadiness() {
+  const hasQty = !!selectedQty;
+  const addBtn = document.getElementById('addCartBtn');
+  const stickyBtns = document.querySelectorAll('#stickyBar .btn.btn-blue, #stickyBar .btn.btn-green');
+  const buyBtn = document.querySelector('.btn.btn-green.btn-full');
+  const hint = document.getElementById('orderHint');
+
+  if (addBtn) addBtn.disabled = !hasQty;
+  if (buyBtn) buyBtn.disabled = !hasQty;
+  stickyBtns.forEach(btn => btn.disabled = !hasQty);
+
+  if (hint) {
+    hint.textContent = hasQty
+      ? 'Looks good. You can now add to cart or buy now.'
+      : 'Select quantity to enable Add to Cart / Buy Now.';
+  }
+}
+
 // Gallery
 function switchImg(url, el) {
   const img = document.getElementById('pdMainImg');
@@ -353,6 +374,7 @@ function selQual(idx, qualId, clickedEl) {
   document.querySelectorAll('.qual-opt').forEach(el => el.classList.remove('sel'));
   if (clickedEl) clickedEl.classList.add('sel');
   reloadQtySlabs();
+  refreshOrderReadiness();
 }
 
 // Quantity Slabs
@@ -391,6 +413,7 @@ async function reloadQtySlabs() {
 function onQtyChange() {
   selectedQty = parseInt(document.getElementById('pdQty').value) || null;
   calcPrice();
+  refreshOrderReadiness();
 }
 
 // Price Calculation
@@ -400,6 +423,7 @@ function calcPrice() {
     document.getElementById('ppTotal').textContent = '₹ —';
     document.getElementById('spTotal').textContent = '₹ —';
     currentBasePrice = 0;
+    refreshOrderReadiness();
     return;
   }
 
@@ -415,6 +439,14 @@ function calcPrice() {
   document.getElementById('ppBase').textContent  = fmt(base);
   document.getElementById('ppTotal').textContent = fmt(total);
   document.getElementById('spTotal').textContent = fmt(total);
+  const panel = document.getElementById('pricePanel');
+  if (panel) {
+    panel.classList.remove('flash');
+    requestAnimationFrame(() => {
+      panel.classList.add('flash');
+      setTimeout(() => panel.classList.remove('flash'), 320);
+    });
+  }
 
   const feeRow = document.getElementById('ppDesignRow');
   if (feeRow) feeRow.style.display = fee > 0 ? '' : 'none';
@@ -428,6 +460,7 @@ function calcPrice() {
     const slab = (q.slabs || []).find(s => parseInt(s.quantity) === selectedQty);
     badge.textContent = slab ? '₹' + Number(slab.price).toLocaleString('en-IN') : '';
   });
+  refreshOrderReadiness();
 }
 
 // Design Option
@@ -438,6 +471,7 @@ function selDesignOpt(choice) {
   document.getElementById('panel-upload').style.display = choice === 'upload' ? 'block' : 'none';
   document.getElementById('panel-rcs').style.display    = choice === 'rcs' ? 'block' : 'none';
   calcPrice();
+  refreshOrderReadiness();
 }
 
 // File Upload
@@ -603,6 +637,7 @@ function waOrder() {
 
 // Init
 reloadQtySlabs();
+refreshOrderReadiness();
 </script>
 
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>

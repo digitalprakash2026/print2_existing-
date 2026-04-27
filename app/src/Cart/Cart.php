@@ -67,7 +67,7 @@ class Cart
                 \Database::query(
                     "UPDATE artwork_files
                      SET cart_item_id = ?, uploaded_by = COALESCE(uploaded_by, ?)
-                     WHERE id = ? AND (uploaded_by IS NULL OR uploaded_by = ?)",
+                     WHERE id = ? AND (uploaded_by IS NULL OR uploaded_by = 0 OR uploaded_by = ?)",
                     [$cartItemId, $userId, $data['artwork_id'], $userId]
                 );
             }
@@ -175,19 +175,11 @@ class Cart
         $taxable = $subtotal - $discount;
         $gstAmt  = round($taxable * $gstPct / 100);
 
-        $shippingMode = (string)\Database::setting('shipping_mode', 'flat');
-        $shippingFlat = (float)\Database::setting('shipping_flat_fee', '0');
-        $freeAbove    = (float)\Database::setting('shipping_free_above', '0');
+        // Shipping is collected manually before dispatch.
+        // Keep checkout/order totals exclusive of shipping for now.
+        $shippingMode = 'manual';
         $shipping = 0.0;
-        if ($shippingMode === 'flat') {
-            $shipping = $shippingFlat;
-        } elseif ($shippingMode === 'threshold') {
-            $shipping = ($taxable >= $freeAbove && $freeAbove > 0) ? 0.0 : $shippingFlat;
-        } else {
-            $shipping = 0.0;
-        }
-
-        $total   = $taxable + $gstAmt + $shipping;
+        $total   = $taxable + $gstAmt;
 
         return [
             'subtotal' => $subtotal,
@@ -235,7 +227,7 @@ class Cart
                 \Database::query(
                     "UPDATE artwork_files
                      SET cart_item_id = ?, uploaded_by = COALESCE(uploaded_by, ?)
-                     WHERE id = ? AND (uploaded_by IS NULL OR uploaded_by = ?)",
+                     WHERE id = ? AND (uploaded_by IS NULL OR uploaded_by = 0 OR uploaded_by = ?)",
                     [$newCartItemId, $userId, (int)$item['artwork_id'], $userId]
                 );
             }
