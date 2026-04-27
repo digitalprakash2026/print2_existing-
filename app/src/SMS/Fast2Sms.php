@@ -49,40 +49,70 @@ class Fast2Sms
 
     private static function sendQuickSms(string $apiKey, string $phone, string $message): void
     {
-        $ch = curl_init('https://www.fast2sms.com/dev/bulkV2');
-        if (!$ch) return;
-
-        $payload = json_encode([
-            'route' => 'q',
+        $payload = http_build_query([
+            'route' => trim((string)\Database::setting('fast2sms_route', 'q')) ?: 'q',
             'message' => $message,
             'numbers' => $phone,
-        ], JSON_UNESCAPED_UNICODE);
-        if ($payload === false) return;
-
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 12,
-            CURLOPT_HTTPHEADER => [
-                'authorization: ' . $apiKey,
-                'Content-Type: application/json',
-                'Accept: application/json',
-            ],
-            CURLOPT_POSTFIELDS => $payload,
+            'language' => trim((string)\Database::setting('fast2sms_language', 'english')) ?: 'english',
+            'flash' => 0,
         ]);
 
-        $resp = curl_exec($ch);
-        $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err = curl_error($ch);
-        curl_close($ch);
+        if (function_exists('curl_init')) {
+            $ch = curl_init('https://www.fast2sms.com/dev/bulkV2');
+            if (!$ch) return;
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 12,
+                CURLOPT_HTTPHEADER => [
+                    'authorization: ' . $apiKey,
+                    'Content-Type: application/x-www-form-urlencoded',
+                    'Accept: application/json',
+                ],
+                CURLOPT_POSTFIELDS => $payload,
+            ]);
+            $resp = curl_exec($ch);
+            $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $err = curl_error($ch);
+            curl_close($ch);
 
-        if ($resp === false || $err !== '') {
-            error_log('Fast2SMS order SMS failed: ' . $err);
+            if ($resp === false || $err !== '') {
+                error_log('Fast2SMS order SMS failed: ' . $err);
+                return;
+            }
+            self::inspectResponse($http, (string)$resp);
             return;
         }
 
+        $ctx = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'timeout' => 12,
+                'ignore_errors' => true,
+                'header' => implode("\r\n", [
+                    'authorization: ' . $apiKey,
+                    'Content-Type: application/x-www-form-urlencoded',
+                    'Accept: application/json',
+                ]),
+                'content' => $payload,
+            ],
+        ]);
+        $resp = @file_get_contents('https://www.fast2sms.com/dev/bulkV2', false, $ctx);
+        $statusLine = (string)($http_response_header[0] ?? '');
+        preg_match('/\s(\d{3})\s/', $statusLine, $m);
+        $http = isset($m[1]) ? (int)$m[1] : 0;
+        self::inspectResponse($http, (string)($resp ?: ''));
+    }
+
+    private static function inspectResponse(int $http, string $resp): void
+    {
         if ($http < 200 || $http >= 300) {
-            error_log('Fast2SMS order SMS HTTP ' . $http . ': ' . substr((string)$resp, 0, 400));
+            error_log('Fast2SMS order SMS HTTP ' . $http . ': ' . substr($resp, 0, 400));
+            return;
+        }
+        $json = json_decode($resp, true);
+        if (is_array($json) && isset($json['return']) && !$json['return']) {
+            error_log('Fast2SMS order SMS rejected: ' . substr($resp, 0, 400));
         }
     }
 
@@ -95,4 +125,3 @@ class Fast2Sms
         return '';
     }
 }
-
