@@ -14,6 +14,12 @@ $bizPhone = htmlspecialchars($settingsMap['biz_phone']   ?? '+91 98765 43210');
 $bizWa    = htmlspecialchars($settingsMap['biz_whatsapp']?? '919876543210');
 $bizEmail = htmlspecialchars($settingsMap['biz_email']   ?? 'hello@rcsgraphic.in');
 $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
+$toPublicImagePath = static function (mixed $path): string {
+    $p = trim((string)$path);
+    if ($p === '') return '';
+    if (preg_match('#^https?://#i', $p)) return $p;
+    return '/' . ltrim($p, '/');
+};
 ?>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -80,7 +86,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
   ];
   $bannerSlides = !empty($homeBanners ?? []) ? $homeBanners : $fallbackBanners;
   foreach ($bannerSlides as $i => $slide):
-    $img = htmlspecialchars((string)($slide['image_path'] ?? ''));
+    $img = htmlspecialchars($toPublicImagePath($slide['image_path'] ?? ''));
     $alt = htmlspecialchars((string)($slide['image_alt'] ?? ('Slide ' . ($i + 1))));
     $eyebrow = (string)($slide['eyebrow'] ?? '');
     $title = strip_tags((string)($slide['title'] ?? ''), '<br><br/>');

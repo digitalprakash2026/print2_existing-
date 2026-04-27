@@ -69,6 +69,12 @@ let banners = [];
 let editId = 0;
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function resolveImagePath(path){
+  const p = String(path || '').trim();
+  if (!p) return '';
+  if (/^https?:\/\//i.test(p)) return p;
+  return '/' + p.replace(/^\/+/, '');
+}
 function toastMsg(msg,type='info'){ const w=document.getElementById('tw'); const t=document.createElement('div'); t.className='toast '+type; t.textContent=msg; w.appendChild(t); requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show'))); setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(),300);},2600); }
 function showErr(msg=''){ const e=document.getElementById('bnErr'); if(!e) return; if(!msg){e.style.display='none';return;} e.textContent=msg; e.style.display='block'; }
 
@@ -88,7 +94,7 @@ function renderBanners() {
   }
   box.innerHTML = banners.map((b,idx)=>`
     <div style="display:grid;grid-template-columns:100px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:#fff">
-      <img src="${esc(b.image_path)}" style="width:100px;height:58px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+      <img src="${esc(resolveImagePath(b.image_path))}" style="width:100px;height:58px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
       <div>
         <div style="font-weight:700;font-size:13px">${esc(b.title || '(No title)')}</div>
         <div style="font-size:11px;color:var(--text2)">Order: ${Number(b.sort_order||0)} · ${b.is_active ? 'Active' : 'Inactive'}</div>
@@ -125,7 +131,7 @@ function collectForm() {
     eyebrow: document.getElementById('bn-eyebrow').value.trim(),
     title: document.getElementById('bn-title').value.trim(),
     subtitle: document.getElementById('bn-subtitle').value.trim(),
-    image_path: document.getElementById('bn-image-path').value.trim(),
+    image_path: resolveImagePath(document.getElementById('bn-image-path').value),
     image_alt: document.getElementById('bn-alt').value.trim(),
     cta_primary_text: document.getElementById('bn-ptext').value.trim(),
     cta_primary_url: document.getElementById('bn-purl').value.trim(),
