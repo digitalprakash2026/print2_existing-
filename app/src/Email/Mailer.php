@@ -24,10 +24,10 @@ class Mailer
 
     // ── Transactional Emails ──────────────────────────────────
 
-    public static function sendWelcome(array $user): void
+    public static function sendWelcome(array $user): bool
     {
         $biz = self::bizInfo();
-        self::send(
+        $ok = self::send(
             $user['email'],
             $user['name'],
             "Welcome to {$biz['name']}!",
@@ -38,14 +38,16 @@ class Mailer
                 <a href='{$biz['url']}' class='btn'>Start Ordering →</a>
             ")
         );
+        self::trace('welcome', (string)($user['email'] ?? ''), $ok);
+        return $ok;
     }
 
-    public static function sendOrderConfirmation(array $order): void
+    public static function sendOrderConfirmation(array $order): bool
     {
         $biz = self::bizInfo();
         $itemsHtml = self::renderOrderItems($order['items'] ?? []);
 
-        self::send(
+        $ok = self::send(
             $order['customer_email'],
             $order['customer_name'],
             "Order Confirmed #{$order['order_id']} — {$biz['name']}",
@@ -58,12 +60,14 @@ class Mailer
                 <a href='{$biz['url']}/my-orders' class='btn'>Track Order →</a>
             ")
         );
+        self::trace('order_confirmation', (string)($order['customer_email'] ?? ''), $ok, (string)($order['order_id'] ?? ''));
+        return $ok;
     }
 
-    public static function sendPaymentSuccess(array $order): void
+    public static function sendPaymentSuccess(array $order): bool
     {
         $biz = self::bizInfo();
-        self::send(
+        $ok = self::send(
             $order['customer_email'],
             $order['customer_name'],
             "Payment Confirmed ✅ — #{$order['order_id']}",
@@ -75,9 +79,11 @@ class Mailer
                 <a href='{$biz['url']}/my-orders' class='btn'>Track Your Order →</a>
             ")
         );
+        self::trace('payment_success', (string)($order['customer_email'] ?? ''), $ok, (string)($order['order_id'] ?? ''));
+        return $ok;
     }
 
-    public static function sendStatusUpdate(array $order): void
+    public static function sendStatusUpdate(array $order): bool
     {
         $biz = self::bizInfo();
         $statusMessages = [
@@ -90,7 +96,7 @@ class Mailer
 
         $msg = $statusMessages[$order['status']] ?? 'Your order status has been updated.';
 
-        self::send(
+        $ok = self::send(
             $order['customer_email'],
             $order['customer_name'],
             "Order Update #{$order['order_id']}: " . ucfirst($order['status']),
@@ -103,6 +109,8 @@ class Mailer
                 <a href='{$biz['url']}/my-orders' class='btn'>View Order →</a>
             ")
         );
+        self::trace('status_update', (string)($order['customer_email'] ?? ''), $ok, (string)($order['order_id'] ?? ''));
+        return $ok;
     }
 
     // ── Email Marketing (Brevo) ───────────────────────────────
@@ -314,6 +322,20 @@ class Mailer
         $h = gethostname();
         if (!$h || $h === '') return 'localhost';
         return $h;
+    }
+
+    private static function trace(string $event, string $to, bool $ok, string $orderId = ''): void
+    {
+        $logDir = BASE_PATH . '/logs';
+        if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+        $line = date('Y-m-d H:i:s')
+            . " EVENT={$event}"
+            . " ORDER={$orderId}"
+            . " TO={$to}"
+            . " RESULT=" . ($ok ? 'OK' : 'FAIL')
+            . ($ok ? '' : " ERROR=" . self::lastError())
+            . "\n";
+        @file_put_contents($logDir . '/email-events.log', $line, FILE_APPEND);
     }
 
     private static function brevoApiCall(string $method, string $path, array $data): array
