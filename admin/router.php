@@ -491,7 +491,7 @@ if (str_starts_with($uri, '/admin/api/')) {
             'Test Email — RCS Graphic',
             '<h2>Test email successful ✅</h2><p>Email configuration is working from Admin Panel settings.</p>'
         );
-        json($ok ? ['ok'=>true] : ['ok'=>false,'msg'=>'Send failed. Check provider credentials and logs.']);
+        json($ok ? ['ok'=>true] : ['ok'=>false,'msg'=>(\Email\Mailer::lastError() ?: 'Send failed. Check provider credentials and logs.')]);
     }
 
     if ($uri === '/admin/api/customers' && $method === 'GET') {

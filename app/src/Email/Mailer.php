@@ -9,6 +9,19 @@ namespace Email;
 
 class Mailer
 {
+    private static string $lastError = '';
+
+    public static function lastError(): string
+    {
+        return self::$lastError;
+    }
+
+    private static function setLastError(string $msg): void
+    {
+        self::$lastError = trim($msg);
+        if (self::$lastError !== '') error_log('Mailer: ' . self::$lastError);
+    }
+
     // ── Transactional Emails ──────────────────────────────────
 
     public static function sendWelcome(array $user): void
@@ -121,8 +134,12 @@ class Mailer
 
     public static function send(string $toEmail, string $toName, string $subject, string $htmlBody): bool
     {
+        self::$lastError = '';
         $enabled = strtolower(self::cfg('email_enabled', 'EMAIL_ENABLED', '1'));
-        if (in_array($enabled, ['0','false','off','no'], true)) return false;
+        if (in_array($enabled, ['0','false','off','no'], true)) {
+            self::setLastError('Email sending disabled in settings.');
+            return false;
+        }
 
         $host     = self::cfg('smtp_host', 'SMTP_HOST', '');
         $apiKey   = self::cfg('brevo_api_key', 'BREVO_API_KEY', '');
@@ -135,6 +152,7 @@ class Mailer
             return self::sendViaSmtp($toEmail, $toName, $subject, $htmlBody);
         }
         if ($provider === 'log') {
+            self::setLastError('Provider is set to log mode.');
             return self::logOnly($toEmail, $subject);
         }
         // auto mode: prefer Brevo -> SMTP -> log
@@ -170,7 +188,7 @@ class Mailer
             ]);
             return true;
         } catch (\Throwable $e) {
-            error_log('Brevo send failed: ' . $e->getMessage());
+            self::setLastError('Brevo send failed: ' . $e->getMessage());
             return false;
         }
     }
@@ -208,7 +226,7 @@ class Mailer
                 'from_email' => $fromAddr,
             ], $toEmail, $toName, $subject, $html);
         } catch (\Throwable $e) {
-            error_log('SMTP send failed: ' . $e->getMessage());
+            self::setLastError('SMTP send failed: ' . $e->getMessage());
             return false;
         }
     }
@@ -219,7 +237,7 @@ class Mailer
         $port = (int)$cfg['port'];
         $secure = (string)$cfg['secure'];
         $timeout = 15;
-        $remote = $secure === 'ssl' ? "ssl://{$host}:{$port}" : "{$host}:{$port}";
+        $remote = ($secure === 'ssl' ? 'ssl://' : '') . $host;
 
         $fp = @fsockopen($remote, $port, $errno, $errstr, $timeout);
         if (!$fp) throw new \RuntimeException("SMTP connect failed: {$errno} {$errstr}");
