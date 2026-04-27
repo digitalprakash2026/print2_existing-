@@ -569,7 +569,7 @@ if (preg_match('#^/admin/artwork/(\d+)/download$#', $uri, $m)) {
 }
 
 $settingsMap = [];
-if (str_contains($uri, '/admin/settings') || str_contains($uri, '/admin/integrations')) {
+if (str_contains($uri, '/admin/settings') || str_contains($uri, '/admin/integrations') || str_contains($uri, '/admin/email-settings')) {
     $rows = Database::rows("SELECT `key`, value FROM settings");
     foreach ($rows as $r) $settingsMap[$r['key']] = $r['value'];
 }
@@ -624,6 +624,7 @@ $adminPage = match(true) {
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/customers'  => 'admin/customers',
     $uri === '/admin/settings'   => 'admin/settings',
+    $uri === '/admin/email-settings' => 'admin/email-settings',
     $uri === '/admin/integrations' => 'admin/integrations',
     $uri === '/admin/audit-logs' => 'admin/audit-logs',
     default                      => null,
