@@ -96,8 +96,8 @@ class Mailer
 
     public static function marketingOptIn(array $user): void
     {
-        $apiKey = env('BREVO_API_KEY', '');
-        $listId = (int)env('BREVO_LIST_ID', '1');
+        $apiKey = self::cfg('brevo_api_key', 'BREVO_API_KEY', '');
+        $listId = (int)self::cfg('brevo_list_id', 'BREVO_LIST_ID', '1');
 
         if (!$apiKey) return;
 
@@ -121,20 +121,30 @@ class Mailer
 
     public static function send(string $toEmail, string $toName, string $subject, string $htmlBody): bool
     {
-        $host     = env('SMTP_HOST', '');
-        $apiKey   = env('BREVO_API_KEY', '');
+        $enabled = strtolower(self::cfg('email_enabled', 'EMAIL_ENABLED', '1'));
+        if (in_array($enabled, ['0','false','off','no'], true)) return false;
 
-        // Prefer Brevo transactional if configured
-        if ($apiKey) {
+        $host     = self::cfg('smtp_host', 'SMTP_HOST', '');
+        $apiKey   = self::cfg('brevo_api_key', 'BREVO_API_KEY', '');
+        $provider = strtolower(self::cfg('email_provider', 'EMAIL_PROVIDER', 'auto'));
+
+        if ($provider === 'brevo' && $apiKey !== '') {
             return self::sendViaBrevo($toEmail, $toName, $subject, $htmlBody);
         }
-
-        // Fallback to raw SMTP via socket
-        if ($host) {
+        if ($provider === 'smtp' && $host !== '') {
             return self::sendViaSmtp($toEmail, $toName, $subject, $htmlBody);
         }
+        if ($provider === 'log') {
+            return self::logOnly($toEmail, $subject);
+        }
+        // auto mode: prefer Brevo -> SMTP -> log
+        if ($apiKey !== '') return self::sendViaBrevo($toEmail, $toName, $subject, $htmlBody);
+        if ($host !== '') return self::sendViaSmtp($toEmail, $toName, $subject, $htmlBody);
+        return self::logOnly($toEmail, $subject);
+    }
 
-        // Log to file if neither configured
+    private static function logOnly(string $toEmail, string $subject): bool
+    {
         $logDir = BASE_PATH . '/logs';
         if (!is_dir($logDir)) mkdir($logDir, 0755, true);
         file_put_contents(
@@ -150,7 +160,10 @@ class Mailer
         try {
             $biz = self::bizInfo();
             self::brevoApiCall('POST', '/smtp/email', [
-                'sender'     => ['name' => $biz['name'], 'email' => env('SMTP_FROM_EMAIL', $biz['email'])],
+                'sender'     => [
+                    'name' => self::cfg('smtp_from_name', 'SMTP_FROM_NAME', $biz['name']),
+                    'email' => self::cfg('smtp_from_email', 'SMTP_FROM_EMAIL', $biz['email'])
+                ],
                 'to'         => [['email' => $toEmail, 'name' => $toName]],
                 'subject'    => $subject,
                 'htmlContent'=> $html,
@@ -166,8 +179,8 @@ class Mailer
     {
         try {
             $biz      = self::bizInfo();
-            $fromName = env('SMTP_FROM_NAME', $biz['name']);
-            $fromAddr = env('SMTP_FROM_EMAIL', $biz['email']);
+            $fromName = self::cfg('smtp_from_name', 'SMTP_FROM_NAME', $biz['name']);
+            $fromAddr = self::cfg('smtp_from_email', 'SMTP_FROM_EMAIL', $biz['email']);
 
             $headers  = implode("\r\n", [
                 "MIME-Version: 1.0",
@@ -185,7 +198,8 @@ class Mailer
 
     private static function brevoApiCall(string $method, string $path, array $data): array
     {
-        $apiKey = env('BREVO_API_KEY', '');
+        $apiKey = self::cfg('brevo_api_key', 'BREVO_API_KEY', '');
+        if ($apiKey === '') return [];
         $ch = curl_init('https://api.brevo.com/v3' . $path);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -218,6 +232,15 @@ class Mailer
         } catch (\Throwable) {
             return ['name' => 'RCS Graphic', 'email' => '', 'phone' => '', 'whatsapp' => '', 'url' => '/'];
         }
+    }
+
+    private static function cfg(string $settingKey, string $envKey, mixed $default = ''): mixed
+    {
+        try {
+            $v = \Database::setting($settingKey, null);
+            if ($v !== null && $v !== '') return $v;
+        } catch (\Throwable) {}
+        return env($envKey, $default);
     }
 
     private static function renderOrderItems(array $items): string

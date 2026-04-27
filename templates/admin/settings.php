@@ -61,6 +61,39 @@ $saved = isset($_GET['saved']) && $_GET['saved'] === '1';
   </div>
 
   <div class="fsec">
+    <div class="fsec-t">📧 Email Communication Setup</div>
+    <div class="f2">
+      <div class="fg">
+        <label>Email Enabled</label>
+        <?php $emailEnabled = strtolower((string)($settingsMap['email_enabled'] ?? '1')); ?>
+        <select name="email_enabled" class="fi fi-sel">
+          <option value="1" <?= in_array($emailEnabled, ['1','true','yes','on'], true) ? 'selected' : '' ?>>Enabled</option>
+          <option value="0" <?= !in_array($emailEnabled, ['1','true','yes','on'], true) ? 'selected' : '' ?>>Disabled</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Email Provider</label>
+        <?php $provider = strtolower((string)($settingsMap['email_provider'] ?? 'auto')); ?>
+        <select name="email_provider" class="fi fi-sel">
+          <option value="auto" <?= $provider === 'auto' ? 'selected' : '' ?>>Auto (Brevo → SMTP → Log)</option>
+          <option value="brevo" <?= $provider === 'brevo' ? 'selected' : '' ?>>Brevo API</option>
+          <option value="smtp" <?= $provider === 'smtp' ? 'selected' : '' ?>>SMTP (PHP mail fallback)</option>
+          <option value="log" <?= $provider === 'log' ? 'selected' : '' ?>>Log only (no send)</option>
+        </select>
+      </div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>From Name</label><input name="smtp_from_name" class="fi" value="<?= htmlspecialchars($settingsMap['smtp_from_name'] ?? '') ?>" placeholder="RCS Graphic"></div>
+      <div class="fg"><label>From Email</label><input name="smtp_from_email" class="fi" value="<?= htmlspecialchars($settingsMap['smtp_from_email'] ?? '') ?>" placeholder="noreply@yourdomain.com"></div>
+    </div>
+    <div class="f2">
+      <div class="fg"><label>Brevo API Key</label><input type="password" name="brevo_api_key" class="fi" value="<?= htmlspecialchars($settingsMap['brevo_api_key'] ?? '') ?>" placeholder="xkeysib-..."></div>
+      <div class="fg"><label>Brevo List ID (marketing)</label><input name="brevo_list_id" class="fi" value="<?= htmlspecialchars($settingsMap['brevo_list_id'] ?? '') ?>" placeholder="1"></div>
+    </div>
+    <div class="fg"><label>SMTP Host (toggle/fallback)</label><input name="smtp_host" class="fi" value="<?= htmlspecialchars($settingsMap['smtp_host'] ?? '') ?>" placeholder="smtp.host.com"></div>
+  </div>
+
+  <div class="fsec">
     <div class="fsec-t">📁 File Upload Settings</div>
     <div class="f2">
       <div class="fg"><label>Max Upload Size (MB)</label><input type="number" name="upload_max_mb" class="fi" value="<?= htmlspecialchars($settingsMap['upload_max_mb'] ?? '50') ?>"></div>
