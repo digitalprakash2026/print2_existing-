@@ -1117,8 +1117,11 @@ textarea.fi  { resize:vertical; }
     transition:transform .24s cubic-bezier(.4,0,.2,1);
     box-shadow:8px 0 28px rgba(2,6,23,.35);
   }
-  .adm-sb.open { transform:translateX(0); }
-  .adm-sb-backdrop.show { display:block; }
+  body.adm-sb-open {
+    overflow:hidden;
+  }
+  body.adm-sb-open .adm-sb { transform:translateX(0); }
+  body.adm-sb-open .adm-sb-backdrop { display:block; }
   .anl-grid{ grid-template-columns:1fr; }
   .pc-carousel-card { flex:0 0 calc(50% - 10px); }
 }

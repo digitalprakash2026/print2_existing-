@@ -12,7 +12,7 @@
 
 <!-- Admin Header -->
 <header class="header" style="z-index:950">
-  <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false">
+  <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false" onclick="document.body.classList.toggle('adm-sb-open');this.setAttribute('aria-expanded',document.body.classList.contains('adm-sb-open')?'true':'false');">
     <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
   </button>
   <div class="hdr-logo" onclick="location.href='/admin'">
@@ -58,47 +58,32 @@
         <a href="/admin/logout" style="display:block;padding:9px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;text-align:center;text-decoration:none">← Logout</a>
       </div>
     </div>
-    <button class="adm-sb-backdrop" id="admSidebarBack" type="button" aria-label="Close admin menu"></button>
+    <button class="adm-sb-backdrop" id="admSidebarBack" type="button" aria-label="Close admin menu" onclick="document.body.classList.remove('adm-sb-open');document.getElementById('admMobToggle')?.setAttribute('aria-expanded','false');"></button>
 
     <script>
-    function initAdminSidebar() {
+    (function(){
       const sb = document.getElementById('admSidebar');
-      const back = document.getElementById('admSidebarBack');
-      const toggle = document.getElementById('admMobToggle');
-      if (!sb || !back || !toggle) return;
-      if (sb.dataset.mobileReady === '1') return;
-      sb.dataset.mobileReady = '1';
-      let open = false;
-
-      function setState(nextOpen) {
-        open = nextOpen;
-        sb.classList.toggle('open', open);
-        back.classList.toggle('show', open);
-        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        document.body.classList.toggle('drawer-open', open);
-      }
-
-      window.openAdminSidebar = function () { setState(true); };
-      window.closeAdminSidebar = function () { setState(false); };
-      window.toggleAdminSidebar = function () { setState(!open); };
-      toggle.addEventListener('click', window.toggleAdminSidebar);
-      back.addEventListener('click', window.closeAdminSidebar);
-
-      window.addEventListener('resize', function () {
-        if (window.innerWidth > 900 && open) setState(false);
+      const t = document.getElementById('admMobToggle');
+      if (!sb || !t) return;
+      sb.addEventListener('click', function (e) {
+        if (window.innerWidth <= 900 && e.target.closest('.adm-ni')) {
+          document.body.classList.remove('adm-sb-open');
+          t.setAttribute('aria-expanded', 'false');
+        }
       });
       document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && open) setState(false);
+        if (e.key === 'Escape') {
+          document.body.classList.remove('adm-sb-open');
+          t.setAttribute('aria-expanded', 'false');
+        }
       });
-      sb.addEventListener('click', function (e) {
-        if (window.innerWidth <= 900 && e.target.closest('.adm-ni')) setState(false);
+      window.addEventListener('resize', function () {
+        if (window.innerWidth > 900) {
+          document.body.classList.remove('adm-sb-open');
+          t.setAttribute('aria-expanded', 'false');
+        }
       });
-    }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initAdminSidebar);
-    } else {
-      initAdminSidebar();
-    }
+    })();
     </script>
 
     <!-- Main content -->
