@@ -108,7 +108,7 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:14px 16px;margin-bottom:14px">
       <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2);line-height:1.55">
         <input type="checkbox" id="ship-consent" style="accent-color:var(--blue);margin-top:2px">
-        <span><strong>Shipping charges are extra<br>and will be calculated based on package weight and delivery location. Final charges will be shared before dispatch.<br>Customer needs to collect the parcel from the transport office.</strong></span>
+        <span><b>Shipping charges are extra</b> and will be calculated based on package weight and delivery location. Final charges will be shared before dispatch. <b>Customer needs to collect the parcel from the transport office.</b></span>
       </label>
       <div id="shipConsentErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
     </div>
