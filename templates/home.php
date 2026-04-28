@@ -146,7 +146,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <!-- ═══════════════════════════════════════════════════════════
      PRODUCTS SECTION — Category-based boxes with 4 products each
 ══════════════════════════════════════════════════════════════ -->
-<section class="sec home-prod-sec" id="prod-sec" style="background:var(--bg)">
+<section class="sec home-prod-sec sec-tint-blue" id="prod-sec">
   <div class="home-prod-wrap">
 
     <div class="sec-hdr" style="margin-bottom:32px" data-reveal>
@@ -254,7 +254,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 
 
 <!-- WHY US -->
-<section class="sec" id="why-sec" style="background:var(--white)" data-reveal>
+<section class="sec sec-tint-warm" id="why-sec" data-reveal>
   <div class="container">
     <div class="sec-hdr" style="margin-bottom:28px">
       <div>
@@ -326,7 +326,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 </section>
 
 <!-- CONTACT -->
-<section class="sec" id="contact-sec" style="background:var(--white)" data-reveal>
+<section class="sec sec-tint-blue" id="contact-sec" data-reveal>
   <div class="container">
     <div class="contact-grid">
       <div>
