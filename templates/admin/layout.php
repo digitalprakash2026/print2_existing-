@@ -11,11 +11,13 @@
 <div class="toast-wrap" id="tw"></div>
 
 <!-- Admin Header -->
-<header class="header" style="z-index:950">
+<header class="header adm-header" style="z-index:950">
   <div class="adm-hdr-left">
     <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false" onclick="document.body.classList.toggle('adm-sb-open');this.setAttribute('aria-expanded',document.body.classList.contains('adm-sb-open')?'true':'false');">
       <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
     </button>
+  </div>
+  <div class="adm-hdr-center">
     <div class="hdr-logo" onclick="location.href='/admin'">
       <div class="hdr-logo-box">R</div>
       <div><div class="hdr-logo-name">RCS Admin</div><div class="hdr-logo-sub">Print Order System</div></div>
@@ -23,9 +25,21 @@
   </div>
   <div class="adm-hdr-right">
     <?php $admin = \Auth\Auth::admin(); ?>
-    <span class="adm-hdr-name"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
-    <a href="/" class="btn-auth btn-auth-ghost adm-hdr-link">🌐 Site</a>
-    <a href="/admin/logout" class="btn-auth btn-auth-ghost adm-hdr-link">Logout</a>
+    <div class="adm-hdr-actions">
+      <span class="adm-hdr-name"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
+      <a href="/" class="btn-auth btn-auth-ghost adm-hdr-link">🌐 Site</a>
+      <a href="/admin/logout" class="btn-auth btn-auth-ghost adm-hdr-link">Logout</a>
+    </div>
+    <div class="adm-user-menu" id="admUserMenu">
+      <button class="adm-user-btn" id="admUserBtn" type="button" aria-expanded="false" aria-label="Admin actions">
+        ☰
+      </button>
+      <div class="adm-user-panel" id="admUserPanel">
+        <div class="adm-user-name"><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></div>
+        <a href="/" class="adm-user-link">🌐 Site</a>
+        <a href="/admin/logout" class="adm-user-link">Logout</a>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -85,6 +99,22 @@
           t.setAttribute('aria-expanded', 'false');
         }
       });
+
+      const userBtn = document.getElementById('admUserBtn');
+      const userMenu = document.getElementById('admUserMenu');
+      if (userBtn && userMenu) {
+        userBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const open = userMenu.classList.toggle('open');
+          userBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        document.addEventListener('click', function (e) {
+          if (!userMenu.contains(e.target)) {
+            userMenu.classList.remove('open');
+            userBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
     })();
     </script>
 

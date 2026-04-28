@@ -857,11 +857,19 @@ textarea.fi  { resize:vertical; }
 ═══════════════════════════════════════════════════════════════ */
 .adm-lay  { display:flex; min-height:calc(100vh - var(--hh)); }
 .adm-sb   { width:224px; background:var(--ink2); flex-shrink:0; padding:14px 0; position:sticky; top:var(--hh); height:calc(100vh - var(--hh)); overflow-y:auto; display:flex; flex-direction:column; }
+.adm-header { position:fixed; }
 .adm-hdr-left {
   display:flex;
   align-items:center;
   gap:10px;
   min-width:0;
+}
+.adm-hdr-center {
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
 }
 .adm-hdr-right {
   display:flex;
@@ -871,8 +879,24 @@ textarea.fi  { resize:vertical; }
   justify-content:flex-end;
   flex-shrink:0;
 }
+.adm-hdr-actions { display:flex; align-items:center; gap:10px; }
 .adm-hdr-name { font-size:13px; color:var(--text2); }
 .adm-hdr-link { font-size:12px; }
+.adm-user-menu { display:none; position:relative; }
+.adm-user-btn {
+  width:36px; height:36px; border-radius:10px;
+  border:1.5px solid var(--border2); background:var(--white);
+  color:var(--text2); font-weight:700; font-size:16px;
+}
+.adm-user-panel {
+  position:absolute; right:0; top:calc(100% + 8px); min-width:170px;
+  background:var(--white); border:1px solid var(--border); border-radius:10px;
+  box-shadow:var(--sh-lg); padding:6px; display:none; z-index:980;
+}
+.adm-user-menu.open .adm-user-panel { display:block; }
+.adm-user-name { font-size:12px; color:var(--text2); padding:8px 9px; border-bottom:1px solid var(--border); margin-bottom:4px; }
+.adm-user-link { display:block; padding:8px 9px; border-radius:8px; font-size:13px; color:var(--text2); }
+.adm-user-link:hover { background:var(--blue-bg); color:var(--blue); }
 .adm-mob-toggle {
   display:none;
   width:38px;
@@ -1106,15 +1130,14 @@ textarea.fi  { resize:vertical; }
     display:inline-flex;
   }
   .adm-hdr-name,
-  .adm-hdr-link:first-of-type { display:none; }
+  .adm-hdr-actions { display:none; }
+  .adm-user-menu { display:block; }
   .adm-hdr-right {
     gap:0;
   }
-  .adm-hdr-right .adm-hdr-link {
-    padding:8px 10px;
-    font-size:11px;
-  }
   .adm-hdr-left { gap:8px; }
+  .adm-hdr-center .hdr-logo-name { font-size:16px; }
+  .adm-hdr-center .hdr-logo-sub { display:none; }
   .adm-sb  {
     display:flex;
     position:fixed;
