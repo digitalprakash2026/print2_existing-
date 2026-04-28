@@ -576,6 +576,40 @@ if (str_starts_with($uri, '/admin/api/')) {
         \Orders\AdminAudit::log('admin_user_created', "Admin user #{$id} created ({$email})");
         json(['ok' => true, 'id' => $id]);
     }
+    if (preg_match('#^/admin/api/admin-users/(\d+)/password$#', $uri, $m) && $method === 'POST') {
+        $adminId = (int)$m[1];
+        $newPassword = (string)($body['new_password'] ?? '');
+        if (strlen($newPassword) < 6) {
+            json(['ok' => false, 'msg' => 'Password must be at least 6 characters.'], 422);
+        }
+        $target = Database::row("SELECT id, email FROM admin_users WHERE id = ? LIMIT 1", [$adminId]);
+        if (!$target) json(['ok' => false, 'msg' => 'Admin user not found.'], 404);
+        $hash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 10]);
+        Database::query("UPDATE admin_users SET password = ? WHERE id = ?", [$hash, $adminId]);
+        \Orders\AdminAudit::log('admin_user_password_changed', "Password changed for admin #{$adminId} ({$target['email']})");
+        json(['ok' => true]);
+    }
+    if (preg_match('#^/admin/api/admin-users/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        $targetId = (int)$m[1];
+        $current = \Auth\Auth::admin();
+        $currentId = (int)($current['id'] ?? 0);
+        if ($targetId === $currentId) {
+            json(['ok' => false, 'msg' => 'You cannot remove your own admin account.'], 422);
+        }
+
+        $target = Database::row("SELECT id, email, is_active FROM admin_users WHERE id = ? LIMIT 1", [$targetId]);
+        if (!$target) json(['ok' => false, 'msg' => 'Admin user not found.'], 404);
+        if ((int)$target['is_active'] !== 1) json(['ok' => false, 'msg' => 'Admin is already inactive.'], 422);
+
+        $activeCount = (int)(Database::row("SELECT COUNT(*) AS c FROM admin_users WHERE is_active = 1")['c'] ?? 0);
+        if ($activeCount <= 1) {
+            json(['ok' => false, 'msg' => 'At least one active admin is required.'], 422);
+        }
+
+        Database::query("UPDATE admin_users SET is_active = 0 WHERE id = ?", [$targetId]);
+        \Orders\AdminAudit::log('admin_user_removed', "Admin #{$targetId} deactivated ({$target['email']})");
+        json(['ok' => true]);
+    }
     if ($uri === '/admin/api/audit-logs' && $method === 'GET') {
         json(['ok'=>true,'logs'=>Database::rows("SELECT * FROM admin_audit_logs ORDER BY created_at DESC LIMIT 200")]);
     }

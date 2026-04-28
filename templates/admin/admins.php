@@ -2,6 +2,7 @@
 $pageTitle = 'Admins — RCS Admin';
 $currentAdmPage = 'admins';
 include __DIR__ . '/layout.php';
+$currentAdmin = \Auth\Auth::admin();
 ?>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">
   <div>
@@ -33,8 +34,32 @@ include __DIR__ . '/layout.php';
   <div id="adminsWrap"><div style="text-align:center;padding:30px;color:var(--text2)">Loading…</div></div>
 </div>
 
+<div class="modal-bg" id="m-adm-pass">
+  <div class="modal-box">
+    <div class="modal-pill"></div>
+    <div class="modal-hdr"><div class="modal-ttl">Change Admin Password</div><button class="modal-cls" onclick="closePassModal()">✕</button></div>
+    <div class="modal-bdy">
+      <div id="passTarget" style="font-size:12px;color:var(--text2);margin-bottom:8px"></div>
+      <div class="fg" style="position:relative">
+        <label>New Password *</label>
+        <input class="fi" id="adm-pass-new" type="password" placeholder="Minimum 6 characters" style="padding-right:42px">
+        <button type="button" onclick="togglePass('adm-pass-new', this)" aria-label="Show password" style="position:absolute;right:8px;top:34px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:16px">👁️</button>
+      </div>
+      <div class="fg" style="position:relative">
+        <label>Confirm Password *</label>
+        <input class="fi" id="adm-pass-confirm" type="password" placeholder="Retype password" style="padding-right:42px">
+        <button type="button" onclick="togglePass('adm-pass-confirm', this)" aria-label="Show password" style="position:absolute;right:8px;top:34px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:16px">👁️</button>
+      </div>
+      <button class="btn btn-blue btn-full" onclick="saveAdminPassword()" style="border-radius:10px">Update Password</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const CSRF = '<?= htmlspecialchars($csrf ?? '') ?>';
+const CURRENT_ADMIN_ID = Number('<?= (int)($currentAdmin['id'] ?? 0) ?>');
+let passAdminId = 0;
+let passAdminName = '';
 
 function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDate(s){ if(!s) return '—'; const d=new Date(s); return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
@@ -64,6 +89,10 @@ async function loadAdmins() {
           <div style="font-size:11px;color:var(--text3)">Last login: ${fmtDate(a.last_login)}</div>
         </div>
       </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-xs" onclick="openPasswordModal(${Number(a.id)}, ${JSON.stringify(String(a.name || 'Admin'))})">🔑 Change Password</button>
+        <button class="btn btn-red btn-xs" ${Number(a.id)===CURRENT_ADMIN_ID ? 'disabled title=\"Cannot remove current login\"' : ''} onclick="removeAdmin(${Number(a.id)}, ${JSON.stringify(String(a.name || 'Admin'))})">🗑️ Remove</button>
+      </div>
     </div>
   `).join('');
 }
@@ -86,6 +115,56 @@ async function createAdmin() {
   toast('Admin user created successfully', 'success');
   ['adm-name','adm-email','adm-mobile','adm-password'].forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
   document.getElementById('adm-password').type = 'password';
+  loadAdmins();
+}
+
+function openPasswordModal(id, name) {
+  passAdminId = Number(id || 0);
+  passAdminName = String(name || 'Admin');
+  document.getElementById('passTarget').textContent = `Updating password for: ${passAdminName}`;
+  document.getElementById('adm-pass-new').value = '';
+  document.getElementById('adm-pass-confirm').value = '';
+  document.getElementById('m-adm-pass').classList.add('show');
+}
+
+function closePassModal() {
+  document.getElementById('m-adm-pass').classList.remove('show');
+}
+
+async function saveAdminPassword() {
+  const p1 = document.getElementById('adm-pass-new').value;
+  const p2 = document.getElementById('adm-pass-confirm').value;
+  if (!passAdminId) { toast('Select admin first', 'error'); return; }
+  if (!p1 || !p2) { toast('Please fill password fields', 'error'); return; }
+  if (p1 !== p2) { toast('Passwords do not match', 'error'); return; }
+  if (p1.length < 6) { toast('Password must be at least 6 chars', 'error'); return; }
+
+  const res = await fetch(`/admin/api/admin-users/${passAdminId}/password`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},
+    credentials:'same-origin',
+    body: JSON.stringify({ new_password: p1 })
+  }).then(r=>r.json());
+  if (!res.ok) { toast(res.msg || 'Could not update password', 'error'); return; }
+  toast(`Password updated for ${passAdminName}`, 'success');
+  closePassModal();
+}
+
+async function removeAdmin(id, name) {
+  const adminId = Number(id || 0);
+  if (!adminId) return;
+  if (adminId === CURRENT_ADMIN_ID) {
+    toast('You cannot remove your own admin account', 'error');
+    return;
+  }
+  if (!confirm(`Are you sure you want to remove admin \"${name}\"?`)) return;
+  const res = await fetch(`/admin/api/admin-users/${adminId}`, {
+    method:'DELETE',
+    headers:{'X-CSRF-TOKEN':CSRF},
+    credentials:'same-origin'
+  }).then(r=>r.json());
+  if (!res.ok) { toast(res.msg || 'Could not remove admin', 'error'); return; }
+  toast('Admin removed successfully', 'success');
   loadAdmins();
 }
 
