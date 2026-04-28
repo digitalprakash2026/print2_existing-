@@ -12,7 +12,7 @@
 
 <!-- Admin Header -->
 <header class="header" style="z-index:950">
-  <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false" onclick="toggleAdminSidebar()">
+  <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false">
     <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
   </button>
   <div class="hdr-logo" onclick="location.href='/admin'">
@@ -20,11 +20,11 @@
     <div><div class="hdr-logo-name">RCS Admin</div><div class="hdr-logo-sub">Print Order System</div></div>
   </div>
   <div class="hdr-space"></div>
-  <div style="display:flex;align-items:center;gap:10px">
+  <div class="adm-hdr-right">
     <?php $admin = \Auth\Auth::admin(); ?>
-    <span style="font-size:13px;color:var(--text2)"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
-    <a href="/" class="btn-auth btn-auth-ghost" style="font-size:12px">🌐 Site</a>
-    <a href="/admin/logout" class="btn-auth btn-auth-ghost" style="font-size:12px">Logout</a>
+    <span class="adm-hdr-name"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
+    <a href="/" class="btn-auth btn-auth-ghost adm-hdr-link">🌐 Site</a>
+    <a href="/admin/logout" class="btn-auth btn-auth-ghost adm-hdr-link">Logout</a>
   </div>
 </header>
 
@@ -58,14 +58,16 @@
         <a href="/admin/logout" style="display:block;padding:9px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;text-align:center;text-decoration:none">← Logout</a>
       </div>
     </div>
-    <button class="adm-sb-backdrop" id="admSidebarBack" type="button" aria-label="Close admin menu" onclick="closeAdminSidebar()"></button>
+    <button class="adm-sb-backdrop" id="admSidebarBack" type="button" aria-label="Close admin menu"></button>
 
     <script>
-    (function () {
+    function initAdminSidebar() {
       const sb = document.getElementById('admSidebar');
       const back = document.getElementById('admSidebarBack');
       const toggle = document.getElementById('admMobToggle');
       if (!sb || !back || !toggle) return;
+      if (sb.dataset.mobileReady === '1') return;
+      sb.dataset.mobileReady = '1';
       let open = false;
 
       function setState(nextOpen) {
@@ -79,6 +81,8 @@
       window.openAdminSidebar = function () { setState(true); };
       window.closeAdminSidebar = function () { setState(false); };
       window.toggleAdminSidebar = function () { setState(!open); };
+      toggle.addEventListener('click', window.toggleAdminSidebar);
+      back.addEventListener('click', window.closeAdminSidebar);
 
       window.addEventListener('resize', function () {
         if (window.innerWidth > 900 && open) setState(false);
@@ -89,7 +93,12 @@
       sb.addEventListener('click', function (e) {
         if (window.innerWidth <= 900 && e.target.closest('.adm-ni')) setState(false);
       });
-    })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAdminSidebar);
+    } else {
+      initAdminSidebar();
+    }
     </script>
 
     <!-- Main content -->
