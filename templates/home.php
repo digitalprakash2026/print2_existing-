@@ -288,8 +288,8 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 
       <div class="why-c" data-reveal data-reveal-delay="120">
         <div class="why-ic" style="background:#FEF9C3">🎨</div>
-        <div class="why-t">Free Design Help</div>
-        <div class="why-d">Our creative team helps you get the perfect design ready for print at no extra cost.</div>
+        <div class="why-t">Free Design Support</div>
+        <div class="why-d">Our creative team helps you get the perfect design ready for print for Your Bulk Orders.</div>
       </div>
 
       <div class="why-c" data-reveal data-reveal-delay="150">
