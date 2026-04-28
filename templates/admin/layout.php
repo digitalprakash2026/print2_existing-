@@ -12,6 +12,9 @@
 
 <!-- Admin Header -->
 <header class="header" style="z-index:950">
+  <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false" onclick="toggleAdminSidebar()">
+    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+  </button>
   <div class="hdr-logo" onclick="location.href='/admin'">
     <div class="hdr-logo-box">R</div>
     <div><div class="hdr-logo-name">RCS Admin</div><div class="hdr-logo-sub">Print Order System</div></div>
@@ -28,7 +31,7 @@
 <div style="margin-top:var(--hh)">
   <div class="adm-lay">
     <!-- Sidebar -->
-    <div class="adm-sb">
+    <div class="adm-sb" id="admSidebar">
       <div class="adm-sb-logo">
         <div class="adm-sb-t">RCS Graphic</div>
         <div class="adm-sb-s">Admin Panel</div>
@@ -55,6 +58,39 @@
         <a href="/admin/logout" style="display:block;padding:9px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;text-align:center;text-decoration:none">← Logout</a>
       </div>
     </div>
+    <button class="adm-sb-backdrop" id="admSidebarBack" type="button" aria-label="Close admin menu" onclick="closeAdminSidebar()"></button>
+
+    <script>
+    (function () {
+      const sb = document.getElementById('admSidebar');
+      const back = document.getElementById('admSidebarBack');
+      const toggle = document.getElementById('admMobToggle');
+      if (!sb || !back || !toggle) return;
+      let open = false;
+
+      function setState(nextOpen) {
+        open = nextOpen;
+        sb.classList.toggle('open', open);
+        back.classList.toggle('show', open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.classList.toggle('drawer-open', open);
+      }
+
+      window.openAdminSidebar = function () { setState(true); };
+      window.closeAdminSidebar = function () { setState(false); };
+      window.toggleAdminSidebar = function () { setState(!open); };
+
+      window.addEventListener('resize', function () {
+        if (window.innerWidth > 900 && open) setState(false);
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && open) setState(false);
+      });
+      sb.addEventListener('click', function (e) {
+        if (window.innerWidth <= 900 && e.target.closest('.adm-ni')) setState(false);
+      });
+    })();
+    </script>
 
     <!-- Main content -->
     <div class="adm-main<?= !empty($admMainClass) ? ' ' . htmlspecialchars((string)$admMainClass) : '' ?>">
