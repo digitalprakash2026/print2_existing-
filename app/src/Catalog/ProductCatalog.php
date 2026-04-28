@@ -68,6 +68,7 @@ class ProductCatalog
             [$slug]
         );
         if (!$product) return null;
+        $product = self::ensureProductCode($product);
         return self::hydrate($product);
     }
 
@@ -81,6 +82,7 @@ class ProductCatalog
             [$id]
         );
         if (!$product) return null;
+        $product = self::ensureProductCode($product);
         return self::hydrate($product);
     }
 
@@ -360,6 +362,28 @@ class ProductCatalog
         if ($categoryId <= 0) return null;
         if (!self::productCodeColumnReady()) return null;
         return self::generateProductCode($categoryId, $editId);
+    }
+
+    private static function ensureProductCode(array $product): array
+    {
+        if (!self::productCodeColumnReady()) return $product;
+        if (!empty($product['product_code'])) return $product;
+
+        $categoryId = (int)($product['category_id'] ?? 0);
+        $productId = (int)($product['id'] ?? 0);
+        if ($categoryId <= 0 || $productId <= 0) return $product;
+
+        $code = self::generateProductCode($categoryId, $productId);
+        if (!$code) return $product;
+
+        try {
+            \Database::query("UPDATE products SET product_code=? WHERE id=? AND (product_code IS NULL OR product_code='')", [$code, $productId]);
+            $product['product_code'] = $code;
+        } catch (\Throwable) {
+            // keep response backward-compatible even if DB update fails
+        }
+
+        return $product;
     }
 
     private static function productCodeColumnReady(): bool
