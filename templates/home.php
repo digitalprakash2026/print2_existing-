@@ -133,11 +133,11 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <div class="trust" data-reveal>
   <div class="container">
     <div class="trust-inner">
-      <div class="trust-i" data-reveal data-reveal-delay="40"><div class="trust-ic" style="background:#ECFDF5">✅</div>GST Invoice Included</div>
-      <div class="trust-i" data-reveal data-reveal-delay="80"><div class="trust-ic" style="background:#EEF3FD">🔒</div>Secure Razorpay Payment</div>
-      <div class="trust-i" data-reveal data-reveal-delay="120"><div class="trust-ic" style="background:#FFF4ED">⚡</div>24–48hr Fast Delivery</div>
-      <div class="trust-i" data-reveal data-reveal-delay="160"><div class="trust-ic" style="background:#FEF9C3">🎨</div>Free Design Support</div>
-      <div class="trust-i" data-reveal data-reveal-delay="200"><div class="trust-ic" style="background:#F0FDF4">💯</div>Quality Guaranteed</div>
+      <div class="trust-i" data-reveal data-reveal-delay="40"><div class="trust-ic" style="background:#FEF9C3">🎨</div>Free Design Support</div>
+      <div class="trust-i" data-reveal data-reveal-delay="80"><div class="trust-ic" style="background:#ECFDF5">🖨️</div>Best Print Quality</div>
+      <div class="trust-i" data-reveal data-reveal-delay="120"><div class="trust-ic" style="background:#EEF3FD">💸</div>Affordable Pricing</div>
+      <div class="trust-i" data-reveal data-reveal-delay="160"><div class="trust-ic" style="background:#FFF4ED">⏱️</div>On-Time Delivery</div>
+      <div class="trust-i" data-reveal data-reveal-delay="200"><div class="trust-ic" style="background:#F0FDF4">💯</div>100% Satisfaction</div>
     </div>
   </div>
 </div>
