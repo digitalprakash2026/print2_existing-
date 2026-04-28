@@ -12,7 +12,7 @@ include __DIR__ . '/layout.php';
   <div class="ast"><div class="ast-v" style="color:var(--amber)" id="ds-pending">—</div><div class="ast-l">In Progress</div></div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px" id="dash-charts">
+<div class="adm-dash-charts" id="dash-charts">
   <div class="anl-card">
     <div class="anl-t">Revenue (6 months)</div>
     <div class="rev-chart" id="revChart"><div style="color:var(--text3);font-size:12px;margin:auto">Loading…</div></div>

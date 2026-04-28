@@ -898,6 +898,7 @@ textarea.fi  { resize:vertical; }
 .adm-sb-logout{ padding:12px 8px; margin-top:auto; border-top:1px solid rgba(255,255,255,.07); }
 .adm-main { flex:1; min-width:0; padding:22px; background:var(--bg); overflow-y:auto; }
 .adm-main--orders { padding:14px 14px 20px; }
+.adm-dash-charts { display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-bottom:13px; }
 .adm-pt   { font-family:var(--fd); font-size:21px; font-weight:700; color:var(--ink); margin-bottom:18px; letter-spacing:-.02em; }
 .adm-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:11px; margin-bottom:20px; }
 .ast      { background:var(--white); border-radius:12px; border:1.5px solid var(--border); padding:16px 18px; }
@@ -1163,7 +1164,8 @@ textarea.fi  { resize:vertical; }
   .footer-grid { grid-template-columns:1fr; }
   .f2 { grid-template-columns:1fr; }
   .hero-btns .btn { flex:1; justify-content:center; }
-  .adm-stats { grid-template-columns:1fr 1fr; }
+  .adm-stats,
+  .adm-dash-charts { grid-template-columns:1fr; }
   .pc-carousel-card { flex:0 0 calc(100% - 0px); }
   .pc-prev { left:-14px; } .pc-next { right:-14px; }
   /* Trust bar wraps nicely on tiny screens */
