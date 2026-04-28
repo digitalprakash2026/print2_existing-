@@ -12,14 +12,15 @@
 
 <!-- Admin Header -->
 <header class="header" style="z-index:950">
-  <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false" onclick="document.body.classList.toggle('adm-sb-open');this.setAttribute('aria-expanded',document.body.classList.contains('adm-sb-open')?'true':'false');">
-    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-  </button>
-  <div class="hdr-logo" onclick="location.href='/admin'">
-    <div class="hdr-logo-box">R</div>
-    <div><div class="hdr-logo-name">RCS Admin</div><div class="hdr-logo-sub">Print Order System</div></div>
+  <div class="adm-hdr-left">
+    <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false" onclick="document.body.classList.toggle('adm-sb-open');this.setAttribute('aria-expanded',document.body.classList.contains('adm-sb-open')?'true':'false');">
+      <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    </button>
+    <div class="hdr-logo" onclick="location.href='/admin'">
+      <div class="hdr-logo-box">R</div>
+      <div><div class="hdr-logo-name">RCS Admin</div><div class="hdr-logo-sub">Print Order System</div></div>
+    </div>
   </div>
-  <div class="hdr-space"></div>
   <div class="adm-hdr-right">
     <?php $admin = \Auth\Auth::admin(); ?>
     <span class="adm-hdr-name"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
