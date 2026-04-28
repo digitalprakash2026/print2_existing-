@@ -354,18 +354,17 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <footer class="footer">
   <div class="container">
     <div class="footer-grid">
-      <div>
+      <div class="f-col-brand">
         <div class="f-brand"><?= $bizName ?></div>
         <div class="f-desc">Premium printing services for businesses. Quality that speaks for itself.</div>
-        <div style="margin-top:13px">
-          <button onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')"
-                  style="padding:7px 13px;border-radius:8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.65);font-size:12px;cursor:pointer;font-family:var(--fn)">💬 WhatsApp</button>
+        <div class="f-brand-cta">
+          <button class="f-wa-btn" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
         </div>
       </div>
       <div>
         <div class="f-lbl">Products</div>
-        <?php foreach (array_slice($products, 0, 7) as $p): ?>
-        <a class="f-link" href="/product/<?= htmlspecialchars($p['slug']) ?>"><?= htmlspecialchars($p['name']) ?></a>
+        <?php foreach (array_slice($categories ?? [], 0, 6) as $c): ?>
+        <a class="f-link" href="/category/<?= htmlspecialchars($c['slug']) ?>"><?= htmlspecialchars($c['name']) ?></a>
         <?php endforeach; ?>
       </div>
       <div>
@@ -377,14 +376,16 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
       </div>
       <div>
         <div class="f-lbl">Contact</div>
-        <div class="f-link"><?= $bizPhone ?></div>
-        <div class="f-link"><?= $bizEmail ?></div>
-        <div class="f-link" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')" style="cursor:pointer">WhatsApp Chat</div>
+        <div class="f-contact">
+          <div class="f-link"><?= $bizPhone ?></div>
+          <div class="f-link"><?= $bizEmail ?></div>
+          <div class="f-link" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')" style="cursor:pointer">WhatsApp Chat</div>
+        </div>
       </div>
     </div>
     <div class="f-bot">
       <div>© <?= date('Y') ?> <?= $bizName ?>. All rights reserved.</div>
-      <div>Made with ❤️ in Rajkot, Gujarat</div>
+      <div>Developed By Prakash Karena</div>
     </div>
   </div>
 </footer>
