@@ -678,6 +678,19 @@ textarea.fi  { resize:vertical; }
   line-height:1.12; letter-spacing:-.03em;
   margin-bottom:14px;
 }
+.pd-code {
+  display:inline-flex;
+  align-items:center;
+  padding:5px 10px;
+  border-radius:999px;
+  border:1px solid var(--blue-mid);
+  background:var(--blue-bg);
+  color:var(--blue2);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.02em;
+  margin-bottom:12px;
+}
 .pd-desc { font-size:14px; color:var(--text2); line-height:1.72; margin-bottom:22px; }
 
 /* Config blocks */

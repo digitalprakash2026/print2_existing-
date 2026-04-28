@@ -86,6 +86,9 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <div class="pd-cat"><?= htmlspecialchars($product['category_name'] ?? '') ?></div>
 
       <h1 class="pd-name"><?= htmlspecialchars($product['name']) ?></h1>
+      <?php if (!empty($product['product_code'])): ?>
+      <div class="pd-code">Product Code: <?= htmlspecialchars((string)$product['product_code']) ?></div>
+      <?php endif; ?>
       <p class="pd-desc"><?= htmlspecialchars($product['description'] ?? '') ?></p>
 
       <!-- ── SPECIFICATIONS ── -->
