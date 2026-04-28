@@ -24,7 +24,7 @@ include __DIR__ . '/layout.php';
 </div>
 
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-  <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Recent Orders</div>
+  <div style="font-family:var(--fd);font-size:16px;font-weight:700">Recent Orders</div>
   <a href="/admin/orders" class="btn btn-outline btn-sm">View All →</a>
 </div>
 <div id="recentOrders"><div style="text-align:center;padding:28px;color:var(--text3)">Loading…</div></div>
