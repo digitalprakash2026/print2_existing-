@@ -819,8 +819,36 @@ textarea.fi  { resize:vertical; }
 .coupon-row input:focus { border-color:var(--blue); outline:none; }
 .coupon-applied { background:var(--green-bg); border:1px solid var(--green-mid); border-radius:8px; padding:8px 12px; font-size:12px; font-weight:600; color:var(--green); display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
 
+/* Admin/shared modal primitives (used by admin forms) */
+.modal-bg {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,.45);
+  backdrop-filter:blur(2px);
+  z-index:980;
+  padding:22px 14px;
+  overflow-y:auto;
+}
+.modal-bg.show { display:flex; align-items:center; justify-content:center; }
+.modal-box {
+  width:min(620px,100%);
+  background:var(--white);
+  border:1.5px solid var(--border);
+  border-radius:16px;
+  box-shadow:var(--sh-lg);
+  overflow:hidden;
+}
+.modal-pill { width:46px; height:4px; border-radius:999px; background:var(--border2); margin:9px auto 0; }
+.modal-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding:12px 16px; border-bottom:1px solid var(--border);
+}
+.modal-ttl { font-family:var(--fd); font-size:18px; font-weight:700; color:var(--ink); }
+.modal-bdy { padding:16px; }
+
 /* Close button */
-.modal-cls { width:30px; height:30px; border-radius:50%; background:var(--bg2); display:flex; align-items:center; justify-content:center; color:var(--text2); font-size:17px; transition:var(--tr); border:none; cursor:pointer; }
+.modal-cls { width:32px; height:32px; border-radius:50%; background:var(--bg2); display:flex; align-items:center; justify-content:center; color:var(--text2); font-size:17px; transition:var(--tr); border:none; cursor:pointer; }
 .modal-cls:hover { background:var(--red-bg); color:var(--red); }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1224,6 +1252,11 @@ textarea.fi  { resize:vertical; }
   .hero-btns .btn { flex:1; justify-content:center; }
   .adm-stats,
   .adm-dash-charts { grid-template-columns:1fr; }
+  .modal-bg { padding:10px; }
+  .modal-box { border-radius:14px; }
+  .modal-hdr { padding:11px 13px; }
+  .modal-ttl { font-size:16px; }
+  .modal-bdy { padding:13px; }
   .pc-carousel-card { flex:0 0 calc(100% - 0px); }
   .pc-prev { left:-14px; } .pc-next { right:-14px; }
   /* Trust bar wraps nicely on tiny screens */
