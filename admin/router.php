@@ -32,6 +32,12 @@ if ($uri === '/admin/logout') {
 if (str_starts_with($uri, '/admin/api/')) {
     header('Content-Type: application/json');
     $body = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $normalizePublicImagePath = static function (mixed $path): string {
+        $p = trim((string)$path);
+        if ($p === '') return '';
+        if (preg_match('#^https?://#i', $p)) return $p;
+        return '/' . ltrim($p, '/');
+    };
 
     if ($uri === '/admin/api/dashboard' && $method === 'GET') {
         $stats = [
@@ -377,7 +383,7 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['eyebrow'] ?? '')),
                     trim((string)($body['title'] ?? '')),
                     trim((string)($body['subtitle'] ?? '')),
-                    trim((string)($body['image_path'] ?? '')),
+                    $normalizePublicImagePath($body['image_path'] ?? ''),
                     trim((string)($body['image_alt'] ?? '')),
                     trim((string)($body['cta_primary_text'] ?? 'View Products →')),
                     trim((string)($body['cta_primary_url'] ?? '#')),
@@ -403,7 +409,7 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['eyebrow'] ?? '')),
                     trim((string)($body['title'] ?? '')),
                     trim((string)($body['subtitle'] ?? '')),
-                    trim((string)($body['image_path'] ?? '')),
+                    $normalizePublicImagePath($body['image_path'] ?? ''),
                     trim((string)($body['image_alt'] ?? '')),
                     trim((string)($body['cta_primary_text'] ?? 'View Products →')),
                     trim((string)($body['cta_primary_url'] ?? '#')),
@@ -443,7 +449,19 @@ if (str_starts_with($uri, '/admin/api/')) {
         if ((int)$file['size'] > 6 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 6MB'], 400);
         $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
-        $mime = mime_content_type($file['tmp_name']) ?: '';
+        $mime = '';
+        if (function_exists('finfo_open')) {
+            $f = finfo_open(FILEINFO_MIME_TYPE);
+            if ($f) {
+                $mime = (string)(finfo_file($f, $file['tmp_name']) ?: '');
+                finfo_close($f);
+            }
+        } elseif (function_exists('mime_content_type')) {
+            $mime = (string)(mime_content_type($file['tmp_name']) ?: '');
+        }
+        if ($mime === '') {
+            $mime = strtolower((string)($file['type'] ?? ''));
+        }
         if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
         $dir = PUBLIC_PATH . '/uploads/banners/';
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
@@ -461,6 +479,19 @@ if (str_starts_with($uri, '/admin/api/')) {
         foreach ($body as $k=>$v) if ($k) Database::setSetting($k,$v);
         \Orders\AdminAudit::log('settings_updated','Settings saved');
         json(['ok'=>true]);
+    }
+    if ($uri === '/admin/api/email/test' && $method === 'POST') {
+        $to = trim((string)($body['email'] ?? ''));
+        if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            json(['ok'=>false,'msg'=>'Valid email required'], 422);
+        }
+        $ok = \Email\Mailer::send(
+            $to,
+            'Test User',
+            'Test Email — RCS Graphic',
+            '<h2>Test email successful ✅</h2><p>Email configuration is working from Admin Panel settings.</p>'
+        );
+        json($ok ? ['ok'=>true] : ['ok'=>false,'msg'=>(\Email\Mailer::lastError() ?: 'Send failed. Check provider credentials and logs.')]);
     }
 
     if ($uri === '/admin/api/customers' && $method === 'GET') {
@@ -538,7 +569,7 @@ if (preg_match('#^/admin/artwork/(\d+)/download$#', $uri, $m)) {
 }
 
 $settingsMap = [];
-if (str_contains($uri, '/admin/settings') || str_contains($uri, '/admin/integrations')) {
+if (str_contains($uri, '/admin/settings') || str_contains($uri, '/admin/integrations') || str_contains($uri, '/admin/email-settings')) {
     $rows = Database::rows("SELECT `key`, value FROM settings");
     foreach ($rows as $r) $settingsMap[$r['key']] = $r['value'];
 }
@@ -593,6 +624,7 @@ $adminPage = match(true) {
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/customers'  => 'admin/customers',
     $uri === '/admin/settings'   => 'admin/settings',
+    $uri === '/admin/email-settings' => 'admin/email-settings',
     $uri === '/admin/integrations' => 'admin/integrations',
     $uri === '/admin/audit-logs' => 'admin/audit-logs',
     default                      => null,

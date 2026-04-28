@@ -97,10 +97,28 @@ class ProductCatalog
 
     public static function related(int $productId, int $categoryId, int $limit = 4): array
     {
-        return self::fetchProductRows(
+        $limit = max(1, (int)$limit);
+        $related = self::fetchProductRows(
             'WHERE p.is_active = 1 AND p.id != ? AND p.category_id = ? ORDER BY RAND() LIMIT ?',
             [$productId, $categoryId, $limit]
         );
+
+        if (count($related) >= $limit) return array_slice($related, 0, $limit);
+
+        $excludeIds = array_merge([$productId], array_map(fn($p) => (int)($p['id'] ?? 0), $related));
+        $excludeIds = array_values(array_unique(array_filter($excludeIds, fn($id) => $id > 0)));
+        $need = $limit - count($related);
+
+        if ($need > 0) {
+            $ph = implode(',', array_fill(0, count($excludeIds), '?'));
+            $fallback = self::fetchProductRows(
+                "WHERE p.is_active = 1 AND p.id NOT IN ($ph) ORDER BY RAND() LIMIT ?",
+                [...$excludeIds, $need]
+            );
+            $related = array_merge($related, $fallback);
+        }
+
+        return array_slice($related, 0, $limit);
     }
 
     public static function search(string $q): array

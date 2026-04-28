@@ -26,7 +26,7 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
 
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
       <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">📦 Delivery Address</div>
-      <div class="fg"><label>Business Name (optional)</label><input id="s-business" class="fi" placeholder="ABC Pvt Ltd"></div>
+      <div class="fg"><label>Business Name *</label><input id="s-business" class="fi" placeholder="ABC Pvt Ltd"></div>
       <div class="fg"><label>Address Line 1 *</label><input id="s-add1" class="fi" placeholder="House / Building / Street"></div>
       <div class="fg"><label>Address Line 2 (optional)</label><input id="s-add2" class="fi" placeholder="Area / Landmark"></div>
       <div class="f2">
@@ -108,7 +108,7 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:14px 16px;margin-bottom:14px">
       <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2);line-height:1.55">
         <input type="checkbox" id="ship-consent" style="accent-color:var(--blue);margin-top:2px">
-        <span>Shipping charges <strong>will</strong> apply based on total package weight and delivery location. Final shipping details will be shared with you via call or message before dispatch.</span>
+        <span><strong>Shipping charges are extra</strong> and will be calculated based on package weight and delivery location. Final charges will be shared before dispatch. <strong>Customer needs to collect the parcel from the transport office.</strong></span>
       </label>
       <div id="shipConsentErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
     </div>
@@ -385,7 +385,7 @@ function getCheckoutShipping() {
   const err = document.getElementById('shipErr');
   const pinOk = /^[1-9][0-9]{5}$/.test(pin);
 
-  if (!add1 || !city || !state || !pin) {
+  if (!business || !add1 || !city || !state || !pin) {
     if (err) { err.textContent = 'Please fill delivery address details to continue.'; err.style.display = 'block'; }
     return false;
   }

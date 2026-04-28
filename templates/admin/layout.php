@@ -17,18 +17,21 @@
     <div><div class="hdr-logo-name">RCS Admin</div><div class="hdr-logo-sub">Print Order System</div></div>
   </div>
   <div class="hdr-space"></div>
-  <div style="display:flex;align-items:center;gap:10px">
+  <div class="adm-head-actions">
+    <button type="button" id="admNavToggle" class="adm-nav-btn" aria-label="Toggle admin menu" aria-expanded="false" title="Menu">☰</button>
     <?php $admin = \Auth\Auth::admin(); ?>
-    <span style="font-size:13px;color:var(--text2)"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
-    <a href="/" class="btn-auth btn-auth-ghost" style="font-size:12px">🌐 Site</a>
-    <a href="/admin/logout" class="btn-auth btn-auth-ghost" style="font-size:12px">Logout</a>
+    <span class="adm-admin-name"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
+    <a href="/" class="btn-auth btn-auth-ghost adm-site-btn">🌐 Site</a>
+    <a href="/admin/logout" class="btn-auth btn-auth-ghost adm-logout-btn">Logout</a>
   </div>
 </header>
 
-<div style="margin-top:var(--hh)">
+<div id="admNavBackdrop" class="adm-nav-backdrop" aria-hidden="true"></div>
+
+<div class="adm-shell" style="margin-top:var(--hh)">
   <div class="adm-lay">
     <!-- Sidebar -->
-    <div class="adm-sb">
+    <div class="adm-sb" id="admSidebar">
       <div class="adm-sb-logo">
         <div class="adm-sb-t">RCS Graphic</div>
         <div class="adm-sb-s">Admin Panel</div>
@@ -48,6 +51,7 @@
       <a href="/admin/customers" class="adm-ni <?= $cur === 'customers' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Customers</a>
       <div class="adm-nl">Config</div>
       <a href="/admin/settings" class="adm-ni <?= $cur === 'settings' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>Settings</a>
+      <a href="/admin/email-settings" class="adm-ni <?= $cur === 'email-settings' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>Email Setup</a>
       <a href="/admin/integrations" class="adm-ni <?= $cur === 'integrations' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 1 5 5v2h-2V7a3 3 0 1 0-6 0v2H7V7a5 5 0 0 1 5-5zm-7 9h14v9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-9zm4 3v2h2v-2H9zm4 0v2h2v-2h-2z"/></svg>Integrations</a>
       <a href="/admin/audit-logs" class="adm-ni <?= $cur === 'audit' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>Audit Log</a>
       <a href="/admin/export/orders" class="adm-ni" target="_blank"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Export CSV</a>
@@ -58,3 +62,28 @@
 
     <!-- Main content -->
     <div class="adm-main<?= !empty($admMainClass) ? ' ' . htmlspecialchars((string)$admMainClass) : '' ?>">
+<script>
+(() => {
+  const btn = document.getElementById('admNavToggle');
+  const backdrop = document.getElementById('admNavBackdrop');
+  const sidebar = document.getElementById('admSidebar');
+  if (!btn || !backdrop || !sidebar) return;
+  const mq = window.matchMedia('(max-width: 900px)');
+  const setOpen = (open) => {
+    document.body.classList.toggle('adm-nav-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+  btn.addEventListener('click', () => {
+    if (!mq.matches) return;
+    setOpen(!document.body.classList.contains('adm-nav-open'));
+  });
+  backdrop.addEventListener('click', () => setOpen(false));
+  sidebar.addEventListener('click', (event) => {
+    const link = event.target.closest('a');
+    if (link && mq.matches) setOpen(false);
+  });
+  window.addEventListener('resize', () => {
+    if (!mq.matches) setOpen(false);
+  });
+})();
+</script>

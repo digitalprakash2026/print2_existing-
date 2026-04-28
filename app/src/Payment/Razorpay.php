@@ -108,7 +108,12 @@ class Razorpay
 
             $order = \Orders\OrderManager::getOrder($internalOrderId);
             if ($order) {
-                try { \Email\Mailer::sendPaymentSuccess($order); } catch (\Throwable) {}
+                try {
+                    $ok = \Email\Mailer::sendPaymentSuccess($order);
+                    if (!$ok) error_log('Payment success email failed for order #' . ($order['order_id'] ?? '') . ': ' . \Email\Mailer::lastError());
+                } catch (\Throwable $e) {
+                    error_log('Payment success email exception for order #' . ($order['order_id'] ?? '') . ': ' . $e->getMessage());
+                }
                 try { \Sheets\SheetsSync::syncOrder($order); } catch (\Throwable) {}
             }
 

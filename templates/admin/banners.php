@@ -27,9 +27,15 @@ include __DIR__ . '/layout.php';
     <div class="fg">
       <label>Banner Image</label>
       <input type="file" class="fi" id="bn-image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-      <div style="font-size:11px;color:var(--text3);margin-top:5px">Upload image first, then save banner.</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:5px">Image select karo, Save Banner par auto upload ho jayegi.</div>
+      <input type="hidden" id="bn-image-path">
+      <div id="bn-img-preview-wrap" style="display:none;margin-top:8px">
+        <img id="bn-img-preview" src="" alt="Banner preview" style="width:180px;height:96px;object-fit:cover;border:1px solid var(--border);border-radius:8px">
+      </div>
     </div>
-    <div class="fg"><label>Image Path</label><input class="fi" id="bn-image-path" placeholder="/uploads/banners/..."></div>
+    <div class="fg" style="display:flex;align-items:flex-end">
+      <div style="font-size:12px;color:var(--text2)">Image path ab auto-manage hota hai.</div>
+    </div>
   </div>
   <div class="f2">
     <div class="fg"><label>Primary CTA Text</label><input class="fi" id="bn-ptext" value="View Products →"></div>
@@ -60,7 +66,6 @@ include __DIR__ . '/layout.php';
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
     <button class="btn btn-blue btn-sm" onclick="saveBanner()" id="bnSaveBtn">Save Banner</button>
     <button class="btn btn-outline btn-sm" onclick="resetForm()">Reset</button>
-    <button class="btn btn-outline btn-sm" onclick="uploadBannerImage()">Upload Image</button>
   </div>
 </div>
 
@@ -69,8 +74,22 @@ let banners = [];
 let editId = 0;
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function resolveImagePath(path){
+  const p = String(path || '').trim();
+  if (!p) return '';
+  if (/^https?:\/\//i.test(p)) return p;
+  return '/' + p.replace(/^\/+/, '');
+}
 function toastMsg(msg,type='info'){ const w=document.getElementById('tw'); const t=document.createElement('div'); t.className='toast '+type; t.textContent=msg; w.appendChild(t); requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show'))); setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(),300);},2600); }
 function showErr(msg=''){ const e=document.getElementById('bnErr'); if(!e) return; if(!msg){e.style.display='none';return;} e.textContent=msg; e.style.display='block'; }
+function setPreview(path){
+  const wrap = document.getElementById('bn-img-preview-wrap');
+  const img = document.getElementById('bn-img-preview');
+  const p = resolveImagePath(path);
+  if (!p) { wrap.style.display = 'none'; img.src=''; return; }
+  img.src = p;
+  wrap.style.display = 'block';
+}
 
 async function loadBanners() {
   const res = await fetch('/admin/api/banners').then(r=>r.json());
@@ -88,7 +107,7 @@ function renderBanners() {
   }
   box.innerHTML = banners.map((b,idx)=>`
     <div style="display:grid;grid-template-columns:100px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:#fff">
-      <img src="${esc(b.image_path)}" style="width:100px;height:58px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+      <img src="${esc(resolveImagePath(b.image_path))}" style="width:100px;height:58px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
       <div>
         <div style="font-weight:700;font-size:13px">${esc(b.title || '(No title)')}</div>
         <div style="font-size:11px;color:var(--text2)">Order: ${Number(b.sort_order||0)} · ${b.is_active ? 'Active' : 'Inactive'}</div>
@@ -110,6 +129,7 @@ function fillForm(b) {
   document.getElementById('bn-title').value = b.title || '';
   document.getElementById('bn-subtitle').value = b.subtitle || '';
   document.getElementById('bn-image-path').value = b.image_path || '';
+  setPreview(b.image_path || '');
   document.getElementById('bn-alt').value = b.image_alt || '';
   document.getElementById('bn-ptext').value = b.cta_primary_text || 'View Products →';
   document.getElementById('bn-purl').value = b.cta_primary_url || '/products';
@@ -125,7 +145,7 @@ function collectForm() {
     eyebrow: document.getElementById('bn-eyebrow').value.trim(),
     title: document.getElementById('bn-title').value.trim(),
     subtitle: document.getElementById('bn-subtitle').value.trim(),
-    image_path: document.getElementById('bn-image-path').value.trim(),
+    image_path: resolveImagePath(document.getElementById('bn-image-path').value),
     image_alt: document.getElementById('bn-alt').value.trim(),
     cta_primary_text: document.getElementById('bn-ptext').value.trim(),
     cta_primary_url: document.getElementById('bn-purl').value.trim(),
@@ -137,18 +157,39 @@ function collectForm() {
   };
 }
 
-function resetForm(){ editId = 0; fillForm({}); showErr(''); }
+function resetForm(){ editId = 0; fillForm({}); showErr(''); const fi=document.getElementById('bn-image'); if(fi) fi.value=''; }
 function newBanner(){ resetForm(); window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
 function editBanner(id){ const b = banners.find(x=>Number(x.id)===Number(id)); if (!b) return; fillForm(b); window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
 
+async function ensureImagePathForSave(){
+  const file = document.getElementById('bn-image').files?.[0];
+  if (!file) return document.getElementById('bn-image-path').value.trim();
+  const fd = new FormData();
+  fd.append('image', file);
+  const res = await fetch('/admin/api/banners/upload', {method:'POST', headers:{'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'}, body: fd}).then(r=>r.json());
+  if (!res.ok) throw new Error(res.msg || 'Upload failed');
+  const path = resolveImagePath(res.path || '');
+  document.getElementById('bn-image-path').value = path;
+  setPreview(path);
+  return path;
+}
+
 async function saveBanner() {
   const payload = collectForm();
-  if (!payload.title || !payload.image_path) { showErr('Title and image path required.'); return; }
-  if (payload.cta_secondary_type === 'url' && !payload.cta_secondary_url) { showErr('Secondary CTA URL required for type=url'); return; }
-  showErr('');
   const btn = document.getElementById('bnSaveBtn');
   btn.disabled = true;
   btn.textContent = 'Saving...';
+  try {
+    payload.image_path = await ensureImagePathForSave();
+  } catch (e) {
+    showErr(e?.message || 'Image upload failed');
+    btn.disabled = false;
+    btn.textContent = 'Save Banner';
+    return;
+  }
+  if (!payload.title || !payload.image_path) { showErr('Title and image required.'); btn.disabled = false; btn.textContent = 'Save Banner'; return; }
+  if (payload.cta_secondary_type === 'url' && !payload.cta_secondary_url) { showErr('Secondary CTA URL required for type=url'); btn.disabled = false; btn.textContent = 'Save Banner'; return; }
+  showErr('');
   try {
     const url = editId ? `/admin/api/banners/${editId}` : '/admin/api/banners';
     const method = editId ? 'PUT' : 'POST';
@@ -186,20 +227,13 @@ async function shiftOrder(id, delta){
   await loadBanners();
 }
 
-async function uploadBannerImage(){
-  const file = document.getElementById('bn-image').files?.[0];
-  if (!file) { showErr('Select image first.'); return; }
-  const fd = new FormData();
-  fd.append('image', file);
-  const res = await fetch('/admin/api/banners/upload', {method:'POST', headers:{'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'}, body: fd}).then(r=>r.json());
-  if (!res.ok) { showErr(res.msg || 'Upload failed'); return; }
-  document.getElementById('bn-image-path').value = res.path || '';
-  showErr('');
-  toastMsg('Image uploaded', 'success');
-}
-
 resetForm();
 loadBanners();
+document.getElementById('bn-image').addEventListener('change', (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  setPreview(URL.createObjectURL(file));
+});
 </script>
     </div></div></div>
 </body></html>

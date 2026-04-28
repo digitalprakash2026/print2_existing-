@@ -9,12 +9,25 @@ namespace Email;
 
 class Mailer
 {
+    private static string $lastError = '';
+
+    public static function lastError(): string
+    {
+        return self::$lastError;
+    }
+
+    private static function setLastError(string $msg): void
+    {
+        self::$lastError = trim($msg);
+        if (self::$lastError !== '') error_log('Mailer: ' . self::$lastError);
+    }
+
     // ── Transactional Emails ──────────────────────────────────
 
-    public static function sendWelcome(array $user): void
+    public static function sendWelcome(array $user): bool
     {
         $biz = self::bizInfo();
-        self::send(
+        $ok = self::send(
             $user['email'],
             $user['name'],
             "Welcome to {$biz['name']}!",
@@ -25,14 +38,16 @@ class Mailer
                 <a href='{$biz['url']}' class='btn'>Start Ordering →</a>
             ")
         );
+        self::trace('welcome', (string)($user['email'] ?? ''), $ok);
+        return $ok;
     }
 
-    public static function sendOrderConfirmation(array $order): void
+    public static function sendOrderConfirmation(array $order): bool
     {
         $biz = self::bizInfo();
         $itemsHtml = self::renderOrderItems($order['items'] ?? []);
 
-        self::send(
+        $ok = self::send(
             $order['customer_email'],
             $order['customer_name'],
             "Order Confirmed #{$order['order_id']} — {$biz['name']}",
@@ -45,12 +60,14 @@ class Mailer
                 <a href='{$biz['url']}/my-orders' class='btn'>Track Order →</a>
             ")
         );
+        self::trace('order_confirmation', (string)($order['customer_email'] ?? ''), $ok, (string)($order['order_id'] ?? ''));
+        return $ok;
     }
 
-    public static function sendPaymentSuccess(array $order): void
+    public static function sendPaymentSuccess(array $order): bool
     {
         $biz = self::bizInfo();
-        self::send(
+        $ok = self::send(
             $order['customer_email'],
             $order['customer_name'],
             "Payment Confirmed ✅ — #{$order['order_id']}",
@@ -62,9 +79,11 @@ class Mailer
                 <a href='{$biz['url']}/my-orders' class='btn'>Track Your Order →</a>
             ")
         );
+        self::trace('payment_success', (string)($order['customer_email'] ?? ''), $ok, (string)($order['order_id'] ?? ''));
+        return $ok;
     }
 
-    public static function sendStatusUpdate(array $order): void
+    public static function sendStatusUpdate(array $order): bool
     {
         $biz = self::bizInfo();
         $statusMessages = [
@@ -77,7 +96,7 @@ class Mailer
 
         $msg = $statusMessages[$order['status']] ?? 'Your order status has been updated.';
 
-        self::send(
+        $ok = self::send(
             $order['customer_email'],
             $order['customer_name'],
             "Order Update #{$order['order_id']}: " . ucfirst($order['status']),
@@ -90,14 +109,16 @@ class Mailer
                 <a href='{$biz['url']}/my-orders' class='btn'>View Order →</a>
             ")
         );
+        self::trace('status_update', (string)($order['customer_email'] ?? ''), $ok, (string)($order['order_id'] ?? ''));
+        return $ok;
     }
 
     // ── Email Marketing (Brevo) ───────────────────────────────
 
     public static function marketingOptIn(array $user): void
     {
-        $apiKey = env('BREVO_API_KEY', '');
-        $listId = (int)env('BREVO_LIST_ID', '1');
+        $apiKey = self::cfg('brevo_api_key', 'BREVO_API_KEY', '');
+        $listId = (int)self::cfg('brevo_list_id', 'BREVO_LIST_ID', '1');
 
         if (!$apiKey) return;
 
@@ -121,20 +142,35 @@ class Mailer
 
     public static function send(string $toEmail, string $toName, string $subject, string $htmlBody): bool
     {
-        $host     = env('SMTP_HOST', '');
-        $apiKey   = env('BREVO_API_KEY', '');
+        self::$lastError = '';
+        $enabled = strtolower(self::cfg('email_enabled', 'EMAIL_ENABLED', '1'));
+        if (in_array($enabled, ['0','false','off','no'], true)) {
+            self::setLastError('Email sending disabled in settings.');
+            return false;
+        }
 
-        // Prefer Brevo transactional if configured
-        if ($apiKey) {
+        $host     = self::cfg('smtp_host', 'SMTP_HOST', '');
+        $apiKey   = self::cfg('brevo_api_key', 'BREVO_API_KEY', '');
+        $provider = strtolower(self::cfg('email_provider', 'EMAIL_PROVIDER', 'auto'));
+
+        if ($provider === 'brevo' && $apiKey !== '') {
             return self::sendViaBrevo($toEmail, $toName, $subject, $htmlBody);
         }
-
-        // Fallback to raw SMTP via socket
-        if ($host) {
+        if ($provider === 'smtp' && $host !== '') {
             return self::sendViaSmtp($toEmail, $toName, $subject, $htmlBody);
         }
+        if ($provider === 'log') {
+            self::setLastError('Provider is set to log mode.');
+            return self::logOnly($toEmail, $subject);
+        }
+        // auto mode: prefer Brevo -> SMTP -> log
+        if ($apiKey !== '') return self::sendViaBrevo($toEmail, $toName, $subject, $htmlBody);
+        if ($host !== '') return self::sendViaSmtp($toEmail, $toName, $subject, $htmlBody);
+        return self::logOnly($toEmail, $subject);
+    }
 
-        // Log to file if neither configured
+    private static function logOnly(string $toEmail, string $subject): bool
+    {
         $logDir = BASE_PATH . '/logs';
         if (!is_dir($logDir)) mkdir($logDir, 0755, true);
         file_put_contents(
@@ -150,14 +186,17 @@ class Mailer
         try {
             $biz = self::bizInfo();
             self::brevoApiCall('POST', '/smtp/email', [
-                'sender'     => ['name' => $biz['name'], 'email' => env('SMTP_FROM_EMAIL', $biz['email'])],
+                'sender'     => [
+                    'name' => self::cfg('smtp_from_name', 'SMTP_FROM_NAME', $biz['name']),
+                    'email' => self::cfg('smtp_from_email', 'SMTP_FROM_EMAIL', $biz['email'])
+                ],
                 'to'         => [['email' => $toEmail, 'name' => $toName]],
                 'subject'    => $subject,
                 'htmlContent'=> $html,
             ]);
             return true;
         } catch (\Throwable $e) {
-            error_log('Brevo send failed: ' . $e->getMessage());
+            self::setLastError('Brevo send failed: ' . $e->getMessage());
             return false;
         }
     }
@@ -166,26 +205,143 @@ class Mailer
     {
         try {
             $biz      = self::bizInfo();
-            $fromName = env('SMTP_FROM_NAME', $biz['name']);
-            $fromAddr = env('SMTP_FROM_EMAIL', $biz['email']);
+            $fromName = self::cfg('smtp_from_name', 'SMTP_FROM_NAME', $biz['name']);
+            $fromAddr = self::cfg('smtp_from_email', 'SMTP_FROM_EMAIL', $biz['email']);
+            $host = trim((string)self::cfg('smtp_host', 'SMTP_HOST', ''));
+            $port = (int)self::cfg('smtp_port', 'SMTP_PORT', '587');
+            $user = trim((string)self::cfg('smtp_user', 'SMTP_USER', ''));
+            $pass = (string)self::cfg('smtp_pass', 'SMTP_PASS', '');
+            $secure = strtolower(trim((string)self::cfg('smtp_secure', 'SMTP_SECURE', 'tls')));
 
-            $headers  = implode("\r\n", [
-                "MIME-Version: 1.0",
-                "Content-Type: text/html; charset=UTF-8",
-                "From: =?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromAddr}>",
-                "Reply-To: {$fromAddr}",
-            ]);
+            // Backward-compatible fallback if explicit SMTP credentials are not configured.
+            if ($host === '' || $user === '' || $pass === '') {
+                $headers  = implode("\r\n", [
+                    "MIME-Version: 1.0",
+                    "Content-Type: text/html; charset=UTF-8",
+                    "From: =?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromAddr}>",
+                    "Reply-To: {$fromAddr}",
+                ]);
+                return mail($toEmail, $subject, $html, $headers);
+            }
 
-            return mail($toEmail, $subject, $html, $headers);
+            return self::sendViaSmtpSocket([
+                'host' => $host,
+                'port' => $port > 0 ? $port : 587,
+                'user' => $user,
+                'pass' => $pass,
+                'secure' => in_array($secure, ['tls', 'ssl', 'none'], true) ? $secure : 'tls',
+                'from_name' => $fromName,
+                'from_email' => $fromAddr,
+            ], $toEmail, $toName, $subject, $html);
         } catch (\Throwable $e) {
-            error_log('SMTP send failed: ' . $e->getMessage());
+            self::setLastError('SMTP send failed: ' . $e->getMessage());
             return false;
         }
     }
 
+    private static function sendViaSmtpSocket(array $cfg, string $toEmail, string $toName, string $subject, string $html): bool
+    {
+        $host = (string)$cfg['host'];
+        $port = (int)$cfg['port'];
+        $secure = (string)$cfg['secure'];
+        $timeout = 15;
+        $remote = ($secure === 'ssl' ? 'ssl://' : '') . $host;
+
+        $fp = @fsockopen($remote, $port, $errno, $errstr, $timeout);
+        if (!$fp) throw new \RuntimeException("SMTP connect failed: {$errno} {$errstr}");
+        stream_set_timeout($fp, $timeout);
+
+        self::smtpExpect($fp, [220]);
+        self::smtpCmd($fp, 'EHLO ' . self::localHostname(), [250]);
+
+        if ($secure === 'tls') {
+            self::smtpCmd($fp, 'STARTTLS', [220]);
+            if (!@stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new \RuntimeException('STARTTLS negotiation failed');
+            }
+            self::smtpCmd($fp, 'EHLO ' . self::localHostname(), [250]);
+        }
+
+        self::smtpCmd($fp, 'AUTH LOGIN', [334]);
+        self::smtpCmd($fp, base64_encode((string)$cfg['user']), [334]);
+        self::smtpCmd($fp, base64_encode((string)$cfg['pass']), [235]);
+
+        $fromEmail = (string)$cfg['from_email'];
+        self::smtpCmd($fp, 'MAIL FROM:<' . $fromEmail . '>', [250]);
+        self::smtpCmd($fp, 'RCPT TO:<' . $toEmail . '>', [250, 251]);
+        self::smtpCmd($fp, 'DATA', [354]);
+
+        $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+        $encodedToName = trim($toName) !== '' ? '=?UTF-8?B?' . base64_encode($toName) . '?= ' : '';
+        $encodedFromName = trim((string)$cfg['from_name']) !== '' ? '=?UTF-8?B?' . base64_encode((string)$cfg['from_name']) . '?= ' : '';
+
+        $headers = [
+            'Date: ' . date(DATE_RFC2822),
+            'From: ' . $encodedFromName . '<' . $fromEmail . '>',
+            'To: ' . $encodedToName . '<' . $toEmail . '>',
+            'Reply-To: <' . $fromEmail . '>',
+            'Subject: ' . $encodedSubject,
+            'MIME-Version: 1.0',
+            'Content-Type: text/html; charset=UTF-8',
+            'Content-Transfer-Encoding: 8bit',
+        ];
+
+        $payload = implode("\r\n", $headers) . "\r\n\r\n" . $html;
+        // SMTP dot-stuffing
+        $payload = preg_replace('/^\./m', '..', $payload) ?? $payload;
+        fwrite($fp, $payload . "\r\n.\r\n");
+        self::smtpExpect($fp, [250]);
+        self::smtpCmd($fp, 'QUIT', [221]);
+        fclose($fp);
+        return true;
+    }
+
+    private static function smtpCmd($fp, string $cmd, array $expect): void
+    {
+        fwrite($fp, $cmd . "\r\n");
+        self::smtpExpect($fp, $expect);
+    }
+
+    private static function smtpExpect($fp, array $expect): void
+    {
+        $resp = '';
+        while (!feof($fp)) {
+            $line = fgets($fp, 515);
+            if ($line === false) break;
+            $resp .= $line;
+            if (preg_match('/^\d{3}\s/', $line)) break;
+        }
+        $code = (int)substr(trim($resp), 0, 3);
+        if (!in_array($code, $expect, true)) {
+            throw new \RuntimeException('SMTP unexpected response: ' . trim($resp));
+        }
+    }
+
+    private static function localHostname(): string
+    {
+        $h = gethostname();
+        if (!$h || $h === '') return 'localhost';
+        return $h;
+    }
+
+    private static function trace(string $event, string $to, bool $ok, string $orderId = ''): void
+    {
+        $logDir = BASE_PATH . '/logs';
+        if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+        $line = date('Y-m-d H:i:s')
+            . " EVENT={$event}"
+            . " ORDER={$orderId}"
+            . " TO={$to}"
+            . " RESULT=" . ($ok ? 'OK' : 'FAIL')
+            . ($ok ? '' : " ERROR=" . self::lastError())
+            . "\n";
+        @file_put_contents($logDir . '/email-events.log', $line, FILE_APPEND);
+    }
+
     private static function brevoApiCall(string $method, string $path, array $data): array
     {
-        $apiKey = env('BREVO_API_KEY', '');
+        $apiKey = self::cfg('brevo_api_key', 'BREVO_API_KEY', '');
+        if ($apiKey === '') return [];
         $ch = curl_init('https://api.brevo.com/v3' . $path);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -218,6 +374,15 @@ class Mailer
         } catch (\Throwable) {
             return ['name' => 'RCS Graphic', 'email' => '', 'phone' => '', 'whatsapp' => '', 'url' => '/'];
         }
+    }
+
+    private static function cfg(string $settingKey, string $envKey, mixed $default = ''): mixed
+    {
+        try {
+            $v = \Database::setting($settingKey, null);
+            if ($v !== null && $v !== '') return $v;
+        } catch (\Throwable) {}
+        return env($envKey, $default);
     }
 
     private static function renderOrderItems(array $items): string

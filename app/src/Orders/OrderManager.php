@@ -182,7 +182,8 @@ class OrderManager
         if ($order) {
             \Sheets\SheetsSync::syncStatusUpdate($order);
             // Notify customer via email
-            \Email\Mailer::sendStatusUpdate($order);
+            $ok = \Email\Mailer::sendStatusUpdate($order);
+            if (!$ok) error_log('Status update email failed for order #' . ($order['order_id'] ?? '') . ': ' . \Email\Mailer::lastError());
         }
 
         return true;
@@ -238,7 +239,12 @@ class OrderManager
 
     private static function afterOrderPlaced(array $order): void
     {
-        try { \Email\Mailer::sendOrderConfirmation($order); } catch (\Throwable) {}
+        try {
+            $ok = \Email\Mailer::sendOrderConfirmation($order);
+            if (!$ok) error_log('Order confirmation email failed for order #' . ($order['order_id'] ?? '') . ': ' . \Email\Mailer::lastError());
+        } catch (\Throwable $e) {
+            error_log('Order confirmation email exception: ' . $e->getMessage());
+        }
         try { \Sheets\SheetsSync::syncOrder($order); } catch (\Throwable) {}
     }
 
@@ -291,7 +297,7 @@ class OrderManager
             'save_as_default' => !empty($shipping['save_as_default']),
         ];
 
-        if ($clean['address_line1'] === '' || $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
+        if ($clean['business_name'] === '' || $clean['address_line1'] === '' || $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
             return null;
         }
         return $clean;

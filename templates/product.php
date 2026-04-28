@@ -261,12 +261,12 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <a href="/#prod-sec" class="btn btn-outline btn-sm">View All Products →</a>
     </div>
 
-    <div class="prod-grid" style="grid-template-columns:repeat(<?= min(count($related), 3) ?>,1fr)">
-      <?php foreach (array_slice($related, 0, 3) as $rp):
+    <div class="prod-grid related-grid">
+      <?php foreach (array_slice($related, 0, 4) as $rp):
         $rimg = $rp['primary_image'] ?? '';
         $rmin = (float)($rp['min_price'] ?? 0);
       ?>
-      <div class="pc" style="cursor:default" data-reveal data-reveal-delay="<?= ((int)($rp['id'] ?? 0) % 3) * 60 ?>">
+      <div class="pc" style="cursor:default" data-reveal data-reveal-delay="<?= ((int)($rp['id'] ?? 0) % 4) * 45 ?>">
         <a href="/product/<?= htmlspecialchars($rp['slug']) ?>" style="display:contents;text-decoration:none">
           <div class="pc-img">
             <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" loading="lazy"
@@ -290,10 +290,6 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
                  class="btn btn-blue btn-sm btn-full" style="font-size:12px">
                 Order Now →
               </a>
-              <button onclick="window.open('https://wa.me/<?= htmlspecialchars($bizWa) ?>?text=<?= urlencode('Hi! I\'m interested in ' . $rp['name']) ?>','_blank')"
-                      class="btn btn-outline btn-sm" style="font-size:12px;padding:7px 10px" title="WhatsApp">
-                💬
-              </button>
             </div>
           </div>
         </div>

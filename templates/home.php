@@ -14,6 +14,12 @@ $bizPhone = htmlspecialchars($settingsMap['biz_phone']   ?? '+91 98765 43210');
 $bizWa    = htmlspecialchars($settingsMap['biz_whatsapp']?? '919876543210');
 $bizEmail = htmlspecialchars($settingsMap['biz_email']   ?? 'hello@rcsgraphic.in');
 $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
+$toPublicImagePath = static function (mixed $path): string {
+    $p = trim((string)$path);
+    if ($p === '') return '';
+    if (preg_match('#^https?://#i', $p)) return $p;
+    return '/' . ltrim($p, '/');
+};
 ?>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -80,7 +86,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
   ];
   $bannerSlides = !empty($homeBanners ?? []) ? $homeBanners : $fallbackBanners;
   foreach ($bannerSlides as $i => $slide):
-    $img = htmlspecialchars((string)($slide['image_path'] ?? ''));
+    $img = htmlspecialchars($toPublicImagePath($slide['image_path'] ?? ''));
     $alt = htmlspecialchars((string)($slide['image_alt'] ?? ('Slide ' . ($i + 1))));
     $eyebrow = (string)($slide['eyebrow'] ?? '');
     $title = strip_tags((string)($slide['title'] ?? ''), '<br><br/>');
@@ -133,11 +139,11 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <div class="trust" data-reveal>
   <div class="container">
     <div class="trust-inner">
-      <div class="trust-i" data-reveal data-reveal-delay="40"><div class="trust-ic" style="background:#ECFDF5">✅</div>GST Invoice Included</div>
-      <div class="trust-i" data-reveal data-reveal-delay="80"><div class="trust-ic" style="background:#EEF3FD">🔒</div>Secure Razorpay Payment</div>
-      <div class="trust-i" data-reveal data-reveal-delay="120"><div class="trust-ic" style="background:#FFF4ED">⚡</div>24–48hr Fast Delivery</div>
-      <div class="trust-i" data-reveal data-reveal-delay="160"><div class="trust-ic" style="background:#FEF9C3">🎨</div>Free Design Support</div>
-      <div class="trust-i" data-reveal data-reveal-delay="200"><div class="trust-ic" style="background:#F0FDF4">💯</div>Quality Guaranteed</div>
+      <div class="trust-i" data-reveal data-reveal-delay="40"><div class="trust-ic" style="background:#FEF9C3">🎨</div>Free Design Support</div>
+      <div class="trust-i" data-reveal data-reveal-delay="80"><div class="trust-ic" style="background:#EEF3FD">🖨️</div>Best Print Quality</div>
+      <div class="trust-i" data-reveal data-reveal-delay="120"><div class="trust-ic" style="background:#FFF4ED">💸</div>Affordable Pricing</div>
+      <div class="trust-i" data-reveal data-reveal-delay="160"><div class="trust-ic" style="background:#ECFDF5">⏱️</div>On-Time Delivery</div>
+      <div class="trust-i" data-reveal data-reveal-delay="200"><div class="trust-ic" style="background:#F0FDF4">💯</div>100% Satisfaction</div>
     </div>
   </div>
 </div>
@@ -288,8 +294,8 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 
       <div class="why-c" data-reveal data-reveal-delay="120">
         <div class="why-ic" style="background:#FEF9C3">🎨</div>
-        <div class="why-t">Free Design Help</div>
-        <div class="why-d">Our creative team helps you get the perfect design ready for print at no extra cost.</div>
+        <div class="why-t">Free Design Support</div>
+        <div class="why-d">Our creative team support you get the perfect design ready for print for bulk Orders...</div>
       </div>
 
       <div class="why-c" data-reveal data-reveal-delay="150">
@@ -364,8 +370,17 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
       </div>
       <div>
         <div class="f-lbl">Products</div>
-        <?php foreach (array_slice($products, 0, 7) as $p): ?>
-        <a class="f-link" href="/product/<?= htmlspecialchars($p['slug']) ?>"><?= htmlspecialchars($p['name']) ?></a>
+        <?php
+          $footerCategories = [
+            ['name' => 'Brochure', 'url' => '/category/brochures'],
+            ['name' => 'Business Card', 'url' => '/category/cards'],
+            ['name' => 'Calendars', 'url' => '/category/calendars'],
+            ['name' => 'Flyer', 'url' => '/category/flyers'],
+            ['name' => 'Posters', 'url' => '/category/posters'],
+          ];
+        ?>
+        <?php foreach ($footerCategories as $cat): ?>
+        <a class="f-link" href="<?= htmlspecialchars($cat['url']) ?>"><?= htmlspecialchars($cat['name']) ?></a>
         <?php endforeach; ?>
       </div>
       <div>
@@ -384,7 +399,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
     </div>
     <div class="f-bot">
       <div>© <?= date('Y') ?> <?= $bizName ?>. All rights reserved.</div>
-      <div>Made with ❤️ in Rajkot, Gujarat</div>
+      <div>👨‍💻 Developed By Prakash Karena</div>
     </div>
   </div>
 </footer>
