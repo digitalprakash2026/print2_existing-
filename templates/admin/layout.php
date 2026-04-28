@@ -27,7 +27,6 @@
     <?php $admin = \Auth\Auth::admin(); ?>
     <div class="adm-hdr-actions">
       <span class="adm-hdr-name"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
-      <a href="/" class="btn-auth btn-auth-ghost adm-hdr-link">🌐 Site</a>
       <a href="/admin/logout" class="btn-auth btn-auth-ghost adm-hdr-link">Logout</a>
     </div>
     <div class="adm-user-menu" id="admUserMenu">
@@ -36,7 +35,6 @@
       </button>
       <div class="adm-user-panel" id="admUserPanel">
         <div class="adm-user-name"><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></div>
-        <a href="/" class="adm-user-link">🌐 Site</a>
         <a href="/admin/logout" class="adm-user-link">Logout</a>
       </div>
     </div>
@@ -70,9 +68,6 @@
       <a href="/admin/integrations" class="adm-ni <?= $cur === 'integrations' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 1 5 5v2h-2V7a3 3 0 1 0-6 0v2H7V7a5 5 0 0 1 5-5zm-7 9h14v9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-9zm4 3v2h2v-2H9zm4 0v2h2v-2h-2z"/></svg>Integrations</a>
       <a href="/admin/audit-logs" class="adm-ni <?= $cur === 'audit' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>Audit Log</a>
       <a href="/admin/export/orders" class="adm-ni" target="_blank"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Export CSV</a>
-      <div class="adm-sb-logout">
-        <a href="/admin/logout" style="display:block;padding:9px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;text-align:center;text-decoration:none">← Logout</a>
-      </div>
     </div>
     <button class="adm-sb-backdrop" id="admSidebarBack" type="button" aria-label="Close admin menu" onclick="document.body.classList.remove('adm-sb-open');document.getElementById('admMobToggle')?.setAttribute('aria-expanded','false');"></button>
 
