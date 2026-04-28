@@ -63,7 +63,7 @@ class Pricing
         ];
     }
 
-    public static function validateCoupon(string $code, float $subtotal): array
+    public static function validateCoupon(string $code, float $subtotal, array $items = []): array
     {
         $coupon = \Database::row(
             "SELECT * FROM coupons WHERE code = ? AND is_active = 1",
@@ -77,18 +77,33 @@ class Pricing
             return ['ok' => false, 'msg' => 'Coupon not yet active.'];
         if ($coupon['valid_until'] && $coupon['valid_until'] < $today)
             return ['ok' => false, 'msg' => 'Coupon has expired.'];
-        if ($coupon['min_order_amount'] > 0 && $subtotal < $coupon['min_order_amount'])
+        $scopeType = (string)($coupon['scope_type'] ?? 'all');
+        $scopeCategoryId = (int)($coupon['category_id'] ?? 0);
+        $eligibleSubtotal = $subtotal;
+        if ($scopeType === 'category' && $scopeCategoryId > 0) {
+            $eligibleSubtotal = 0.0;
+            foreach ($items as $item) {
+                if ((int)($item['category_id'] ?? 0) === $scopeCategoryId) {
+                    $eligibleSubtotal += (float)($item['total_price'] ?? 0);
+                }
+            }
+            if ($eligibleSubtotal <= 0) {
+                return ['ok' => false, 'msg' => 'Coupon is valid only for selected category products.'];
+            }
+        }
+
+        if ($coupon['min_order_amount'] > 0 && $eligibleSubtotal < $coupon['min_order_amount'])
             return ['ok' => false, 'msg' => 'Minimum order ₹' . number_format($coupon['min_order_amount']) . ' required.'];
         if ($coupon['max_uses'] > 0 && $coupon['used_count'] >= $coupon['max_uses'])
             return ['ok' => false, 'msg' => 'Coupon usage limit reached.'];
 
         $discount = $coupon['discount_type'] === 'percent'
-            ? round($subtotal * $coupon['discount_value'] / 100)
+            ? round($eligibleSubtotal * $coupon['discount_value'] / 100)
             : (float)$coupon['discount_value'];
 
         return [
             'ok'       => true,
-            'discount' => min($discount, $subtotal),
+            'discount' => min($discount, $eligibleSubtotal),
             'coupon'   => $coupon,
         ];
     }

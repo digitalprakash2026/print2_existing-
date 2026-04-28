@@ -25,6 +25,19 @@ include __DIR__ . '/layout.php';
         <div class="fg"><label>Max Uses (0 = unlimited)</label><input type="number" class="fi" id="ec-uses" placeholder="0"></div>
       </div>
       <div class="f2">
+        <div class="fg">
+          <label>Coupon Scope</label>
+          <select class="fi fi-sel" id="ec-scope" onchange="toggleCouponScope(this.value)">
+            <option value="all">All Products</option>
+            <option value="category">Specific Category</option>
+          </select>
+        </div>
+        <div class="fg" id="ec-cat-wrap" style="display:none">
+          <label>Category *</label>
+          <select class="fi fi-sel" id="ec-category"><option value="">Select category</option></select>
+        </div>
+      </div>
+      <div class="f2">
         <div class="fg"><label>Valid From</label><input type="date" class="fi" id="ec-from"></div>
         <div class="fg"><label>Valid Until</label><input type="date" class="fi" id="ec-to"></div>
       </div>
@@ -50,6 +63,7 @@ async function loadCoupons() {
         <div class="coupon-name">${escH(c.description||'—')}</div>
         <div class="coupon-meta">
           ${c.discount_type==='percent'?c.discount_value+'% off':'₹'+Number(c.discount_value).toLocaleString('en-IN')+' off'}
+          ${(c.scope_type||'all')==='category' ? ` · Category: ${escH(c.category_name || 'Selected')}` : ' · All products'}
           ${c.min_order_amount>0?' · Min ₹'+Number(c.min_order_amount).toLocaleString('en-IN'):''}
           · Used ${c.used_count||0}/${c.max_uses||'∞'} times
           ${c.valid_until?' · Expires '+c.valid_until:''}
@@ -65,13 +79,31 @@ async function loadCoupons() {
 function openCouponModal() {
   ['ec-code','ec-desc','ec-val','ec-min','ec-uses','ec-from','ec-to'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('ec-type').value='percent';
+  document.getElementById('ec-scope').value='all';
+  document.getElementById('ec-category').value='';
+  toggleCouponScope('all');
   openM('m-coupon');
+}
+
+async function loadCouponCategories() {
+  const res = await fetch('/admin/api/categories').then(r=>r.json());
+  const cats = res.categories || [];
+  document.getElementById('ec-category').innerHTML = `<option value="">Select category</option>` + cats.map(c =>
+    `<option value="${c.id}">${escH(c.name)}</option>`
+  ).join('');
+}
+
+function toggleCouponScope(scope) {
+  document.getElementById('ec-cat-wrap').style.display = scope === 'category' ? '' : 'none';
 }
 
 async function saveCoupon() {
   const code = document.getElementById('ec-code').value.trim().toUpperCase();
   const val  = parseFloat(document.getElementById('ec-val').value);
+  const scopeType = document.getElementById('ec-scope').value;
+  const categoryId = parseInt(document.getElementById('ec-category').value || '0', 10);
   if (!code || !val) { toast('Code and value required','error'); return; }
+  if (scopeType === 'category' && !categoryId) { toast('Select coupon category','error'); return; }
   const res = await fetch('/admin/api/coupons',{
     method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},
     body:JSON.stringify({
@@ -79,6 +111,8 @@ async function saveCoupon() {
       discount_type:document.getElementById('ec-type').value, discount_value:val,
       min_order_amount:parseFloat(document.getElementById('ec-min').value)||0,
       max_uses:parseInt(document.getElementById('ec-uses').value)||0,
+      scope_type:scopeType,
+      category_id: scopeType === 'category' ? categoryId : null,
       valid_from:document.getElementById('ec-from').value||null,
       valid_until:document.getElementById('ec-to').value||null,
     })
@@ -105,6 +139,7 @@ function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 function toast(msg,type='info'){const w=document.getElementById('tw');const t=document.createElement('div');t.className='toast '+type;t.textContent=msg;w.appendChild(t);requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},2800);}
 
 loadCoupons();
+loadCouponCategories();
 </script>
     </div></div></div>
 </body></html>

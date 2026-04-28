@@ -335,14 +335,50 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
     if ($uri === '/admin/api/coupons' && $method === 'GET') {
-        json(['ok'=>true,'coupons'=>Database::rows("SELECT * FROM coupons ORDER BY created_at DESC")]);
+        try {
+            $coupons = Database::rows(
+                "SELECT c.*, cat.name AS category_name
+                 FROM coupons c
+                 LEFT JOIN categories cat ON cat.id = c.category_id
+                 ORDER BY c.created_at DESC"
+            );
+        } catch (\Throwable) {
+            $coupons = Database::rows("SELECT * FROM coupons ORDER BY created_at DESC");
+            foreach ($coupons as &$c) $c['category_name'] = null;
+        }
+        json(['ok'=>true,'coupons'=>$coupons]);
     }
     if ($uri === '/admin/api/coupons' && $method === 'POST') {
         $code = strtoupper(trim($body['code']??''));
         if (!$code) json(['ok'=>false,'msg'=>'Code required']);
         if (Database::row("SELECT id FROM coupons WHERE code=?",[$code])) json(['ok'=>false,'msg'=>'Code exists']);
-        $id = Database::insert("INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_uses,valid_from,valid_until,is_active) VALUES (?,?,?,?,?,?,?,?,1)",
-            [$code,$body['description']??'',$body['discount_type']??'percent',(float)($body['discount_value']??0),(float)($body['min_order_amount']??0),(int)($body['max_uses']??0),$body['valid_from']?:null,$body['valid_until']?:null]);
+        $scopeType = ($body['scope_type'] ?? 'all') === 'category' ? 'category' : 'all';
+        $categoryId = (int)($body['category_id'] ?? 0);
+        if ($scopeType === 'category' && $categoryId <= 0) {
+            json(['ok'=>false,'msg'=>'Please select a category for category-specific coupon.'], 422);
+        }
+        try {
+            $id = Database::insert(
+                "INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_uses,valid_from,valid_until,scope_type,category_id,is_active)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,1)",
+                [
+                    $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
+                    (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
+                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null,
+                    $scopeType, $scopeType === 'category' ? $categoryId : null,
+                ]
+            );
+        } catch (\Throwable) {
+            $id = Database::insert(
+                "INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_uses,valid_from,valid_until,is_active)
+                 VALUES (?,?,?,?,?,?,?,?,1)",
+                [
+                    $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
+                    (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
+                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null,
+                ]
+            );
+        }
         \Orders\AdminAudit::log('coupon_created',"Coupon: $code");
         json(['ok'=>true,'id'=>$id]);
     }

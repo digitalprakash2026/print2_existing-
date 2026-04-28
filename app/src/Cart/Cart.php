@@ -115,6 +115,7 @@ class Cart
         if ($userId) {
             return \Database::rows(
                 "SELECT ci.*, p.name as product_name, p.slug,
+                        p.category_id,
                         'Standard' as quality_name,
                         pi.url as product_image
                  FROM cart_items ci
@@ -133,6 +134,7 @@ class Cart
         foreach ($items as &$item) {
             $prod = \Database::row(
                 "SELECT p.name as product_name, p.slug, pi.url as product_image,
+                        p.category_id,
                         'Standard' as quality_name
                  FROM products p
                  LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
@@ -164,7 +166,7 @@ class Cart
         $coupon = null;
 
         if ($couponCode) {
-            $coupon = Pricing::validateCoupon($couponCode, $subtotal);
+            $coupon = Pricing::validateCoupon($couponCode, $subtotal, $items);
             if ($coupon['ok']) {
                 $discount = $coupon['discount'];
                 $coupon = $coupon['coupon'];
