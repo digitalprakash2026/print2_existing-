@@ -90,8 +90,8 @@ async function loadAdmins() {
         </div>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap">
-        <button class="btn btn-outline btn-xs" onclick="openPasswordModal(${Number(a.id)}, ${JSON.stringify(String(a.name || 'Admin'))})">🔑 Change Password</button>
-        <button class="btn btn-red btn-xs" ${Number(a.id)===CURRENT_ADMIN_ID ? 'disabled title=\"Cannot remove current login\"' : ''} onclick="removeAdmin(${Number(a.id)}, ${JSON.stringify(String(a.name || 'Admin'))})">🗑️ Remove</button>
+        <button class="btn btn-outline btn-xs js-pass-btn" data-id="${Number(a.id)}" data-name="${escH(a.name || 'Admin')}">🔑 Change Password</button>
+        <button class="btn btn-red btn-xs js-remove-btn" data-id="${Number(a.id)}" data-name="${escH(a.name || 'Admin')}" ${Number(a.id)===CURRENT_ADMIN_ID ? 'disabled title="Cannot remove current login"' : ''}>🗑️ Remove</button>
       </div>
     </div>
   `).join('');
@@ -139,12 +139,18 @@ async function saveAdminPassword() {
   if (p1 !== p2) { toast('Passwords do not match', 'error'); return; }
   if (p1.length < 6) { toast('Password must be at least 6 chars', 'error'); return; }
 
-  const res = await fetch(`/admin/api/admin-users/${passAdminId}/password`, {
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},
-    credentials:'same-origin',
-    body: JSON.stringify({ new_password: p1 })
-  }).then(r=>r.json());
+  let res;
+  try {
+    res = await fetch(`/admin/api/admin-users/${passAdminId}/password`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},
+      credentials:'same-origin',
+      body: JSON.stringify({ new_password: p1 })
+    }).then(r=>r.json());
+  } catch (e) {
+    toast('Network error. Please try again.', 'error');
+    return;
+  }
   if (!res.ok) { toast(res.msg || 'Could not update password', 'error'); return; }
   toast(`Password updated for ${passAdminName}`, 'success');
   closePassModal();
@@ -158,16 +164,40 @@ async function removeAdmin(id, name) {
     return;
   }
   if (!confirm(`Are you sure you want to remove admin \"${name}\"?`)) return;
-  const res = await fetch(`/admin/api/admin-users/${adminId}`, {
-    method:'DELETE',
-    headers:{'X-CSRF-TOKEN':CSRF},
-    credentials:'same-origin'
-  }).then(r=>r.json());
+  let res;
+  try {
+    res = await fetch(`/admin/api/admin-users/${adminId}`, {
+      method:'DELETE',
+      headers:{'X-CSRF-TOKEN':CSRF},
+      credentials:'same-origin'
+    }).then(r=>r.json());
+  } catch (e) {
+    toast('Network error. Please try again.', 'error');
+    return;
+  }
   if (!res.ok) { toast(res.msg || 'Could not remove admin', 'error'); return; }
   toast('Admin removed successfully', 'success');
   loadAdmins();
 }
 
+function setupAdminActions() {
+  const wrap = document.getElementById('adminsWrap');
+  if (!wrap || wrap.dataset.actionsBound === '1') return;
+  wrap.dataset.actionsBound = '1';
+  wrap.addEventListener('click', function (e) {
+    const passBtn = e.target.closest('.js-pass-btn');
+    if (passBtn) {
+      openPasswordModal(Number(passBtn.dataset.id || 0), passBtn.dataset.name || 'Admin');
+      return;
+    }
+    const remBtn = e.target.closest('.js-remove-btn');
+    if (remBtn) {
+      removeAdmin(Number(remBtn.dataset.id || 0), remBtn.dataset.name || 'Admin');
+    }
+  });
+}
+
+setupAdminActions();
 loadAdmins();
 </script>
     </div></div></div>
