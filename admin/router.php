@@ -413,6 +413,58 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
         json(['ok'=>true,'id'=>$id]);
     }
+    if (preg_match('#^/admin/api/categories/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $id = (int)$m[1];
+        $existing = Database::row("SELECT * FROM categories WHERE id=?", [$id]);
+        if (!$existing) json(['ok'=>false,'msg'=>'Category not found'], 404);
+
+        $name = trim((string)($body['name'] ?? $existing['name']));
+        if ($name === '') json(['ok'=>false,'msg'=>'Category name is required'], 422);
+
+        $slug = strtolower(preg_replace('/[^a-z0-9]+/', '-', $body['slug'] ?? $name));
+        $slug = trim((string)$slug, '-') ?: ('category-' . $id);
+        $prefix = strtoupper(trim((string)($body['code_prefix'] ?? ($existing['code_prefix'] ?? ''))));
+        $prefix = preg_replace('/[^A-Z0-9]/', '', $prefix) ?: null;
+        $icon = trim((string)($body['icon'] ?? ($existing['icon'] ?? '🖨️'))) ?: '🖨️';
+        $sort = (int)($body['sort_order'] ?? ($existing['sort_order'] ?? 0));
+        $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : (int)($existing['is_active'] ?? 1);
+
+        try {
+            Database::query(
+                "UPDATE categories SET name=?, slug=?, code_prefix=?, icon=?, sort_order=?, is_active=? WHERE id=?",
+                [$name, $slug, $prefix, $icon, $sort, $active, $id]
+            );
+        } catch (\Throwable) {
+            Database::query(
+                "UPDATE categories SET name=?, slug=?, icon=?, sort_order=?, is_active=? WHERE id=?",
+                [$name, $slug, $icon, $sort, $active, $id]
+            );
+        }
+        \Orders\AdminAudit::log('category_updated', "Category #{$id}: {$name}");
+        json(['ok'=>true]);
+    }
+    if (preg_match('#^/admin/api/categories/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
+        $id = (int)$m[1];
+        Database::query("UPDATE categories SET is_active = CASE WHEN is_active=1 THEN 0 ELSE 1 END WHERE id=?", [$id]);
+        \Orders\AdminAudit::log('category_toggled', "Category #{$id} status toggled");
+        json(['ok'=>true]);
+    }
+    if (preg_match('#^/admin/api/categories/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        $id = (int)$m[1];
+        $cat = Database::row("SELECT id,name FROM categories WHERE id=?", [$id]);
+        if (!$cat) json(['ok'=>false,'msg'=>'Category not found'], 404);
+        $usage = (int)(Database::row("SELECT COUNT(*) c FROM products WHERE category_id=?", [$id])['c'] ?? 0);
+        if ($usage > 0) {
+            json(['ok'=>false,'msg'=>'Category is in use by products. Reassign products before deleting.'], 422);
+        }
+        try {
+            Database::query("DELETE FROM categories WHERE id=?", [$id]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not delete category. It may be referenced elsewhere.'], 422);
+        }
+        \Orders\AdminAudit::log('category_deleted', "Category #{$id}: {$cat['name']}");
+        json(['ok'=>true]);
+    }
 
     if ($uri === '/admin/api/banners' && $method === 'GET') {
         try {
@@ -731,6 +783,7 @@ $adminPage = match(true) {
     $uri === '/admin' || $uri === '/admin/dashboard' => 'admin/dashboard',
     $uri === '/admin/analytics'  => 'admin/analytics',
     $uri === '/admin/products'   => 'admin/products',
+    $uri === '/admin/categories' => 'admin/categories',
     $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/pricing'    => 'admin/pricing',
