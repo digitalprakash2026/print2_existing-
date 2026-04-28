@@ -286,6 +286,12 @@ ul  { list-style:none; }
   white-space:nowrap; font-family:var(--fn); text-decoration:none;
   -webkit-tap-highlight-color:transparent;
 }
+.btn:focus-visible,
+.btn-auth:focus-visible,
+.adm-user-btn:focus-visible {
+  outline:none;
+  box-shadow:var(--ring);
+}
 .btn-blue   { background:var(--blue); color:#fff; }
 .btn-blue:hover   { background:var(--blue2); transform:translateY(-1px); box-shadow:0 6px 20px rgba(26,86,232,.28); }
 .btn-orange { background:var(--orange); color:#fff; }
@@ -310,6 +316,7 @@ ul  { list-style:none; }
 .fg label    { display:block; font-size:11px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px; }
 .fi          { width:100%; min-height:42px; padding:11px 13px; border:1.5px solid var(--border2); border-radius:10px; font-size:14px; color:var(--text); background:var(--white); transition:var(--tr); }
 .fi:focus    { border-color:var(--blue); box-shadow:var(--ring); }
+.fi:hover    { border-color:#c3cde0; }
 .fi::placeholder { color:var(--text3); }
 .fi.err      { border-color:var(--red); }
 .fi-sel      { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6.5L13 1' stroke='%234B5563' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; }
@@ -1067,6 +1074,7 @@ textarea.fi  { resize:vertical; }
   border-bottom-right-radius:10px;
 }
 .adm-orders-table tbody tr:hover td { background:#FCFDFF; }
+.adm-orders-table td { line-height:1.55; }
 .ord-id { font-family:monospace; font-size:12px; font-weight:700; color:var(--blue); }
 .ord-date, .ord-meta { color:var(--text2); font-size:11px; line-height:1.45; }
 .ord-customer { font-weight:700; color:var(--ink); font-size:13px; margin-bottom:2px; }
@@ -1224,6 +1232,7 @@ textarea.fi  { resize:vertical; }
   .hdr-right .btn-auth-ghost { display:none; }
   .cta { flex-direction:column; padding:28px 22px; }
   .sec { padding:38px 0; }
+  .f2 { grid-template-columns:1fr; gap:10px; }
   .cart-drawer { width:100%; max-width:100%; }
   /* Banner mobile fixes */
   .banner-slider { height:clamp(260px,78vw,420px); }
