@@ -28,6 +28,24 @@ if ($uri === '/admin/logout') {
 }
 
 \Auth\Auth::requireAdmin();
+$adminUsersHasMobile = null;
+$hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
+    if ($adminUsersHasMobile !== null) return $adminUsersHasMobile;
+    try {
+        $row = Database::row(
+            "SELECT 1 AS ok
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'admin_users'
+               AND COLUMN_NAME = 'mobile'
+             LIMIT 1"
+        );
+        $adminUsersHasMobile = (bool)$row;
+    } catch (\Throwable) {
+        $adminUsersHasMobile = false;
+    }
+    return $adminUsersHasMobile;
+};
 
 if (str_starts_with($uri, '/admin/api/')) {
     header('Content-Type: application/json');
@@ -466,6 +484,62 @@ if (str_starts_with($uri, '/admin/api/')) {
     if ($uri === '/admin/api/customers' && $method === 'GET') {
         json(['ok'=>true,'customers'=>Database::rows("SELECT u.*,COUNT(o.id) as order_count, COALESCE(SUM(o.total_amount),0) as total_spent FROM users u LEFT JOIN orders o ON o.user_id=u.id GROUP BY u.id ORDER BY total_spent DESC")]);
     }
+    if ($uri === '/admin/api/admin-users' && $method === 'GET') {
+        $hasMobile = $hasAdminUsersMobile();
+        $mobileSelect = $hasMobile ? "mobile" : "'' AS mobile";
+        $admins = Database::rows(
+            "SELECT id, name, email, role, is_active, created_at, last_login, $mobileSelect
+             FROM admin_users
+             ORDER BY created_at DESC"
+        );
+        json(['ok' => true, 'admins' => $admins, 'has_mobile_column' => $hasMobile]);
+    }
+    if ($uri === '/admin/api/admin-users' && $method === 'POST') {
+        $name = trim((string)($body['name'] ?? ''));
+        $email = strtolower(trim((string)($body['email'] ?? '')));
+        $mobile = trim((string)($body['mobile'] ?? ''));
+        $password = (string)($body['password'] ?? '');
+        $role = trim((string)($body['role'] ?? 'admin')) ?: 'admin';
+
+        if ($name === '' || $email === '' || $mobile === '' || $password === '') {
+            json(['ok'=>false,'msg'=>'Name, email, mobile and password are required.'], 422);
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            json(['ok'=>false,'msg'=>'Please enter a valid email address.'], 422);
+        }
+        if (!preg_match('/^[0-9]{10,15}$/', preg_replace('/\D+/', '', $mobile))) {
+            json(['ok'=>false,'msg'=>'Please enter a valid mobile number (10-15 digits).'], 422);
+        }
+        if (strlen($password) < 6) {
+            json(['ok'=>false,'msg'=>'Password must be at least 6 characters.'], 422);
+        }
+
+        if (Database::row("SELECT id FROM admin_users WHERE email = ? LIMIT 1", [$email])) {
+            json(['ok'=>false,'msg'=>'Email is already used by another admin.'], 409);
+        }
+
+        $hasMobile = $hasAdminUsersMobile();
+        if ($hasMobile && Database::row("SELECT id FROM admin_users WHERE mobile = ? LIMIT 1", [$mobile])) {
+            json(['ok'=>false,'msg'=>'Mobile number is already used by another admin.'], 409);
+        }
+
+        $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
+        if ($hasMobile) {
+            $id = Database::insert(
+                "INSERT INTO admin_users (name, email, mobile, password, role, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, 1, NOW())",
+                [$name, $email, $mobile, $hash, $role]
+            );
+        } else {
+            $id = Database::insert(
+                "INSERT INTO admin_users (name, email, password, role, is_active, created_at)
+                 VALUES (?, ?, ?, ?, 1, NOW())",
+                [$name, $email, $hash, $role]
+            );
+        }
+        \Orders\AdminAudit::log('admin_user_created', "Admin user #{$id} created ({$email})");
+        json(['ok' => true, 'id' => $id]);
+    }
     if ($uri === '/admin/api/audit-logs' && $method === 'GET') {
         json(['ok'=>true,'logs'=>Database::rows("SELECT * FROM admin_audit_logs ORDER BY created_at DESC LIMIT 200")]);
     }
@@ -592,6 +666,7 @@ $adminPage = match(true) {
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/customers'  => 'admin/customers',
+    $uri === '/admin/admins'     => 'admin/admins',
     $uri === '/admin/settings'   => 'admin/settings',
     $uri === '/admin/integrations' => 'admin/integrations',
     $uri === '/admin/audit-logs' => 'admin/audit-logs',
