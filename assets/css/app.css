@@ -1283,6 +1283,7 @@ textarea.fi  { resize:vertical; }
   .bs-actions { gap:8px; }
   /* Category page grid */
   .cat-page-grid { grid-template-columns:repeat(2,1fr) !important; }
+  .related-grid { grid-template-columns:1fr !important; gap:12px; }
   /* Why grid */
   .why-grid { grid-template-columns:1fr; gap:14px; }
   .why-ic { width:44px; height:44px; font-size:22px; }
@@ -1295,6 +1296,7 @@ textarea.fi  { resize:vertical; }
   .hdr-logo-name { font-size:15px; }
   .cart-btn,.ham { width:36px; height:36px; }
   .why-grid  { grid-template-columns:1fr; gap:12px; }
+  .related-grid { grid-template-columns:1fr !important; }
   .footer-grid { grid-template-columns:1fr; }
   .f2 { grid-template-columns:1fr; }
   .hero-btns .btn { flex:1; justify-content:center; }

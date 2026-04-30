@@ -264,8 +264,8 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <a href="/#prod-sec" class="btn btn-outline btn-sm">View All Products →</a>
     </div>
 
-    <div class="prod-grid" style="grid-template-columns:repeat(<?= min(count($related), 3) ?>,1fr)">
-      <?php foreach (array_slice($related, 0, 3) as $rp):
+    <div class="prod-grid related-grid" style="grid-template-columns:repeat(<?= min(count($related), 4) ?>,1fr)">
+      <?php foreach (array_slice($related, 0, 4) as $rp):
         $rimg = $rp['primary_image'] ?? '';
         $rmin = (float)($rp['min_price'] ?? 0);
       ?>
