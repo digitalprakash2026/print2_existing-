@@ -561,8 +561,15 @@ textarea.fi  { resize:vertical; }
 }
 .cat-spot { padding:24px 0 14px; }
 .cat-spot-wrap { position:relative; overflow:hidden; }
-.cat-spot-track { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; transition:transform .45s cubic-bezier(.4,0,.2,1); will-change:transform; }
-.cat-spot-card { border:1.5px solid var(--border); border-radius:14px; background:var(--white); overflow:hidden; transition:var(--tr); box-shadow:0 8px 20px rgba(15,23,42,.04); }
+.cat-spot-track {
+  display:flex; gap:14px;
+  transition:transform .45s cubic-bezier(.4,0,.2,1);
+  will-change:transform;
+}
+.cat-spot-card {
+  flex:0 0 calc((100% - 42px) / 4);
+  border:1.5px solid var(--border); border-radius:14px; background:var(--white); overflow:hidden; transition:var(--tr); box-shadow:0 8px 20px rgba(15,23,42,.04);
+}
 .cat-spot-card:hover,.cat-spot-card.is-active { border-color:var(--blue-mid); box-shadow:0 16px 34px rgba(37,99,235,.13); transform:translateY(-2px); }
 .cat-spot-link { display:block; text-decoration:none; }
 .cat-spot-img { aspect-ratio:16/10; overflow:hidden; background:var(--bg2); }
@@ -1271,7 +1278,7 @@ textarea.fi  { resize:vertical; }
   body.adm-sb-open .adm-sb-backdrop { display:block; }
   .anl-grid{ grid-template-columns:1fr; }
   .pc-carousel-card { flex:0 0 calc(50% - 10px); }
-  .cat-spot-track { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .cat-spot-card { flex-basis:calc((100% - 14px) / 2); }
 }
 
 @media (max-width:768px) {
@@ -1298,12 +1305,9 @@ textarea.fi  { resize:vertical; }
   /* Category page grid */
   .cat-page-grid { grid-template-columns:repeat(2,1fr) !important; }
   .cat-spot-wrap { padding:0 2px; }
-  .cat-spot-track {
-    display:flex; overflow-x:auto; gap:12px; scroll-snap-type:x mandatory;
-    -webkit-overflow-scrolling:touch; scrollbar-width:none;
-  }
+  .cat-spot-track { overflow-x:auto; gap:12px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
   .cat-spot-track::-webkit-scrollbar { display:none; }
-  .cat-spot-card { min-width:85%; scroll-snap-align:start; }
+  .cat-spot-card { flex-basis:85%; min-width:85%; scroll-snap-align:start; }
   .cat-spot-nav {
     display:flex; position:absolute; top:42%; transform:translateY(-50%);
     width:30px; height:30px; border-radius:50%; align-items:center; justify-content:center;
