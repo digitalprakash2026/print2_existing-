@@ -105,6 +105,54 @@ class ProductCatalog
         );
     }
 
+    public static function relatedFromFixedCategories(int $productId, int $limit = 4): array
+    {
+        $preferred = ['brochure', 'business-card', 'calendar', 'flyer'];
+        $picked = [];
+        $usedCategoryIds = [];
+
+        foreach ($preferred as $slug) {
+            if (count($picked) >= $limit) break;
+            $row = self::fetchOneFromCategorySlug($productId, $slug);
+            if (!$row) continue;
+            $picked[] = $row;
+            $usedCategoryIds[] = (int)($row['category_id'] ?? 0);
+        }
+
+        if (count($picked) < $limit) {
+            $remaining = $limit - count($picked);
+            $fallback = self::fetchFallbackRelated($productId, $usedCategoryIds, $remaining);
+            foreach ($fallback as $row) {
+                $picked[] = $row;
+            }
+        }
+
+        return array_slice($picked, 0, $limit);
+    }
+
+    private static function fetchOneFromCategorySlug(int $productId, string $slug): ?array
+    {
+        $rows = self::fetchProductRows(
+            'WHERE p.is_active = 1 AND p.id != ? AND c.slug = ? ORDER BY p.sort_order ASC, p.id DESC LIMIT 1',
+            [$productId, $slug]
+        );
+        return $rows[0] ?? null;
+    }
+
+    private static function fetchFallbackRelated(int $productId, array $excludeCategoryIds, int $limit): array
+    {
+        if ($limit <= 0) return [];
+        $params = [$productId];
+        $where = 'WHERE p.is_active = 1 AND p.id != ?';
+        if (!empty($excludeCategoryIds)) {
+            $ph = implode(',', array_fill(0, count($excludeCategoryIds), '?'));
+            $where .= " AND p.category_id NOT IN ($ph)";
+            array_push($params, ...$excludeCategoryIds);
+        }
+        $where .= ' ORDER BY c.sort_order ASC, p.sort_order ASC, p.id DESC LIMIT ' . (int)$limit;
+        return self::fetchProductRows($where, $params);
+    }
+
     public static function search(string $q): array
     {
         $like = '%' . $q . '%';
