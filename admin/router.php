@@ -28,6 +28,24 @@ if ($uri === '/admin/logout') {
 }
 
 \Auth\Auth::requireAdmin();
+$adminUsersHasMobile = null;
+$hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
+    if ($adminUsersHasMobile !== null) return $adminUsersHasMobile;
+    try {
+        $row = Database::row(
+            "SELECT 1 AS ok
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'admin_users'
+               AND COLUMN_NAME = 'mobile'
+             LIMIT 1"
+        );
+        $adminUsersHasMobile = (bool)$row;
+    } catch (\Throwable) {
+        $adminUsersHasMobile = false;
+    }
+    return $adminUsersHasMobile;
+};
 
 if (str_starts_with($uri, '/admin/api/')) {
     header('Content-Type: application/json');
@@ -317,14 +335,50 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
     if ($uri === '/admin/api/coupons' && $method === 'GET') {
-        json(['ok'=>true,'coupons'=>Database::rows("SELECT * FROM coupons ORDER BY created_at DESC")]);
+        try {
+            $coupons = Database::rows(
+                "SELECT c.*, cat.name AS category_name
+                 FROM coupons c
+                 LEFT JOIN categories cat ON cat.id = c.category_id
+                 ORDER BY c.created_at DESC"
+            );
+        } catch (\Throwable) {
+            $coupons = Database::rows("SELECT * FROM coupons ORDER BY created_at DESC");
+            foreach ($coupons as &$c) $c['category_name'] = null;
+        }
+        json(['ok'=>true,'coupons'=>$coupons]);
     }
     if ($uri === '/admin/api/coupons' && $method === 'POST') {
         $code = strtoupper(trim($body['code']??''));
         if (!$code) json(['ok'=>false,'msg'=>'Code required']);
         if (Database::row("SELECT id FROM coupons WHERE code=?",[$code])) json(['ok'=>false,'msg'=>'Code exists']);
-        $id = Database::insert("INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_uses,valid_from,valid_until,is_active) VALUES (?,?,?,?,?,?,?,?,1)",
-            [$code,$body['description']??'',$body['discount_type']??'percent',(float)($body['discount_value']??0),(float)($body['min_order_amount']??0),(int)($body['max_uses']??0),$body['valid_from']?:null,$body['valid_until']?:null]);
+        $scopeType = ($body['scope_type'] ?? 'all') === 'category' ? 'category' : 'all';
+        $categoryId = (int)($body['category_id'] ?? 0);
+        if ($scopeType === 'category' && $categoryId <= 0) {
+            json(['ok'=>false,'msg'=>'Please select a category for category-specific coupon.'], 422);
+        }
+        try {
+            $id = Database::insert(
+                "INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_uses,valid_from,valid_until,scope_type,category_id,is_active)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,1)",
+                [
+                    $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
+                    (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
+                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null,
+                    $scopeType, $scopeType === 'category' ? $categoryId : null,
+                ]
+            );
+        } catch (\Throwable) {
+            $id = Database::insert(
+                "INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_uses,valid_from,valid_until,is_active)
+                 VALUES (?,?,?,?,?,?,?,?,1)",
+                [
+                    $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
+                    (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
+                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null,
+                ]
+            );
+        }
         \Orders\AdminAudit::log('coupon_created',"Coupon: $code");
         json(['ok'=>true,'id'=>$id]);
     }
@@ -358,6 +412,58 @@ if (str_starts_with($uri, '/admin/api/')) {
                 [$body['name'],$slug,$body['icon']??'🖨️',$body['sort_order']??0]);
         }
         json(['ok'=>true,'id'=>$id]);
+    }
+    if (preg_match('#^/admin/api/categories/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $id = (int)$m[1];
+        $existing = Database::row("SELECT * FROM categories WHERE id=?", [$id]);
+        if (!$existing) json(['ok'=>false,'msg'=>'Category not found'], 404);
+
+        $name = trim((string)($body['name'] ?? $existing['name']));
+        if ($name === '') json(['ok'=>false,'msg'=>'Category name is required'], 422);
+
+        $slug = strtolower(preg_replace('/[^a-z0-9]+/', '-', $body['slug'] ?? $name));
+        $slug = trim((string)$slug, '-') ?: ('category-' . $id);
+        $prefix = strtoupper(trim((string)($body['code_prefix'] ?? ($existing['code_prefix'] ?? ''))));
+        $prefix = preg_replace('/[^A-Z0-9]/', '', $prefix) ?: null;
+        $icon = trim((string)($body['icon'] ?? ($existing['icon'] ?? '🖨️'))) ?: '🖨️';
+        $sort = (int)($body['sort_order'] ?? ($existing['sort_order'] ?? 0));
+        $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : (int)($existing['is_active'] ?? 1);
+
+        try {
+            Database::query(
+                "UPDATE categories SET name=?, slug=?, code_prefix=?, icon=?, sort_order=?, is_active=? WHERE id=?",
+                [$name, $slug, $prefix, $icon, $sort, $active, $id]
+            );
+        } catch (\Throwable) {
+            Database::query(
+                "UPDATE categories SET name=?, slug=?, icon=?, sort_order=?, is_active=? WHERE id=?",
+                [$name, $slug, $icon, $sort, $active, $id]
+            );
+        }
+        \Orders\AdminAudit::log('category_updated', "Category #{$id}: {$name}");
+        json(['ok'=>true]);
+    }
+    if (preg_match('#^/admin/api/categories/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
+        $id = (int)$m[1];
+        Database::query("UPDATE categories SET is_active = CASE WHEN is_active=1 THEN 0 ELSE 1 END WHERE id=?", [$id]);
+        \Orders\AdminAudit::log('category_toggled', "Category #{$id} status toggled");
+        json(['ok'=>true]);
+    }
+    if (preg_match('#^/admin/api/categories/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        $id = (int)$m[1];
+        $cat = Database::row("SELECT id,name FROM categories WHERE id=?", [$id]);
+        if (!$cat) json(['ok'=>false,'msg'=>'Category not found'], 404);
+        $usage = (int)(Database::row("SELECT COUNT(*) c FROM products WHERE category_id=?", [$id])['c'] ?? 0);
+        if ($usage > 0) {
+            json(['ok'=>false,'msg'=>'Category is in use by products. Reassign products before deleting.'], 422);
+        }
+        try {
+            Database::query("DELETE FROM categories WHERE id=?", [$id]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not delete category. It may be referenced elsewhere.'], 422);
+        }
+        \Orders\AdminAudit::log('category_deleted', "Category #{$id}: {$cat['name']}");
+        json(['ok'=>true]);
     }
 
     if ($uri === '/admin/api/banners' && $method === 'GET') {
@@ -465,6 +571,96 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/customers' && $method === 'GET') {
         json(['ok'=>true,'customers'=>Database::rows("SELECT u.*,COUNT(o.id) as order_count, COALESCE(SUM(o.total_amount),0) as total_spent FROM users u LEFT JOIN orders o ON o.user_id=u.id GROUP BY u.id ORDER BY total_spent DESC")]);
+    }
+    if ($uri === '/admin/api/admin-users' && $method === 'GET') {
+        $hasMobile = $hasAdminUsersMobile();
+        $mobileSelect = $hasMobile ? "mobile" : "'' AS mobile";
+        $admins = Database::rows(
+            "SELECT id, name, email, role, is_active, created_at, last_login, $mobileSelect
+             FROM admin_users
+             ORDER BY created_at DESC"
+        );
+        json(['ok' => true, 'admins' => $admins, 'has_mobile_column' => $hasMobile]);
+    }
+    if ($uri === '/admin/api/admin-users' && $method === 'POST') {
+        $name = trim((string)($body['name'] ?? ''));
+        $email = strtolower(trim((string)($body['email'] ?? '')));
+        $mobile = trim((string)($body['mobile'] ?? ''));
+        $password = (string)($body['password'] ?? '');
+        $role = trim((string)($body['role'] ?? 'admin')) ?: 'admin';
+
+        if ($name === '' || $email === '' || $mobile === '' || $password === '') {
+            json(['ok'=>false,'msg'=>'Name, email, mobile and password are required.'], 422);
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            json(['ok'=>false,'msg'=>'Please enter a valid email address.'], 422);
+        }
+        if (!preg_match('/^[0-9]{10,15}$/', preg_replace('/\D+/', '', $mobile))) {
+            json(['ok'=>false,'msg'=>'Please enter a valid mobile number (10-15 digits).'], 422);
+        }
+        if (strlen($password) < 6) {
+            json(['ok'=>false,'msg'=>'Password must be at least 6 characters.'], 422);
+        }
+
+        if (Database::row("SELECT id FROM admin_users WHERE email = ? LIMIT 1", [$email])) {
+            json(['ok'=>false,'msg'=>'Email is already used by another admin.'], 409);
+        }
+
+        $hasMobile = $hasAdminUsersMobile();
+        if ($hasMobile && Database::row("SELECT id FROM admin_users WHERE mobile = ? LIMIT 1", [$mobile])) {
+            json(['ok'=>false,'msg'=>'Mobile number is already used by another admin.'], 409);
+        }
+
+        $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
+        if ($hasMobile) {
+            $id = Database::insert(
+                "INSERT INTO admin_users (name, email, mobile, password, role, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, 1, NOW())",
+                [$name, $email, $mobile, $hash, $role]
+            );
+        } else {
+            $id = Database::insert(
+                "INSERT INTO admin_users (name, email, password, role, is_active, created_at)
+                 VALUES (?, ?, ?, ?, 1, NOW())",
+                [$name, $email, $hash, $role]
+            );
+        }
+        \Orders\AdminAudit::log('admin_user_created', "Admin user #{$id} created ({$email})");
+        json(['ok' => true, 'id' => $id]);
+    }
+    if (preg_match('#^/admin/api/admin-users/(\d+)/password$#', $uri, $m) && $method === 'POST') {
+        $adminId = (int)$m[1];
+        $newPassword = (string)($body['new_password'] ?? '');
+        if (strlen($newPassword) < 6) {
+            json(['ok' => false, 'msg' => 'Password must be at least 6 characters.'], 422);
+        }
+        $target = Database::row("SELECT id, email FROM admin_users WHERE id = ? LIMIT 1", [$adminId]);
+        if (!$target) json(['ok' => false, 'msg' => 'Admin user not found.'], 404);
+        $hash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 10]);
+        Database::query("UPDATE admin_users SET password = ? WHERE id = ?", [$hash, $adminId]);
+        \Orders\AdminAudit::log('admin_user_password_changed', "Password changed for admin #{$adminId} ({$target['email']})");
+        json(['ok' => true]);
+    }
+    if (preg_match('#^/admin/api/admin-users/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        $targetId = (int)$m[1];
+        $current = \Auth\Auth::admin();
+        $currentId = (int)($current['id'] ?? 0);
+        if ($targetId === $currentId) {
+            json(['ok' => false, 'msg' => 'You cannot remove your own admin account.'], 422);
+        }
+
+        $target = Database::row("SELECT id, email, is_active FROM admin_users WHERE id = ? LIMIT 1", [$targetId]);
+        if (!$target) json(['ok' => false, 'msg' => 'Admin user not found.'], 404);
+        if ((int)$target['is_active'] !== 1) json(['ok' => false, 'msg' => 'Admin is already inactive.'], 422);
+
+        $activeCount = (int)(Database::row("SELECT COUNT(*) AS c FROM admin_users WHERE is_active = 1")['c'] ?? 0);
+        if ($activeCount <= 1) {
+            json(['ok' => false, 'msg' => 'At least one active admin is required.'], 422);
+        }
+
+        Database::query("UPDATE admin_users SET is_active = 0 WHERE id = ?", [$targetId]);
+        \Orders\AdminAudit::log('admin_user_removed', "Admin #{$targetId} deactivated ({$target['email']})");
+        json(['ok' => true]);
     }
     if ($uri === '/admin/api/audit-logs' && $method === 'GET') {
         json(['ok'=>true,'logs'=>Database::rows("SELECT * FROM admin_audit_logs ORDER BY created_at DESC LIMIT 200")]);
@@ -587,11 +783,13 @@ $adminPage = match(true) {
     $uri === '/admin' || $uri === '/admin/dashboard' => 'admin/dashboard',
     $uri === '/admin/analytics'  => 'admin/analytics',
     $uri === '/admin/products'   => 'admin/products',
+    $uri === '/admin/categories' => 'admin/categories',
     $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/customers'  => 'admin/customers',
+    $uri === '/admin/admins'     => 'admin/admins',
     $uri === '/admin/settings'   => 'admin/settings',
     $uri === '/admin/integrations' => 'admin/integrations',
     $uri === '/admin/audit-logs' => 'admin/audit-logs',

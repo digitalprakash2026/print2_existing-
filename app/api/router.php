@@ -136,7 +136,7 @@ if ($uri === '/api/cart/clear' && $method === 'POST') {
 if ($uri === '/api/coupon/validate' && $method === 'POST') {
     $items    = \Cart\Cart::get();
     $subtotal = array_sum(array_column($items, 'total_price'));
-    $result   = \Cart\Pricing::validateCoupon($body['code'] ?? '', $subtotal);
+    $result   = \Cart\Pricing::validateCoupon($body['code'] ?? '', $subtotal, $items);
     json($result);
 }
 

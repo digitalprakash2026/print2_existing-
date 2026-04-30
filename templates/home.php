@@ -126,18 +126,36 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
   </div>
 </div>
 
-
+<?php
+$catSpot = [];
+foreach ($categories as $cat) {
+  $cid = (int)($cat['id'] ?? 0);
+  if ($cid <= 0) continue;
+  $catProducts = array_values(array_filter($products, fn($p) => (int)($p['category_id'] ?? 0) === $cid));
+  if (!$catProducts) continue;
+  usort($catProducts, fn($a, $b) => ((float)($a['min_price'] ?? 0) <=> (float)($b['min_price'] ?? 0)));
+  $first = $catProducts[0];
+  $catSpot[] = [
+    'name' => $cat['name'] ?? 'Category',
+    'slug' => $cat['slug'] ?? '',
+    'icon' => $cat['icon'] ?? '📦',
+    'image' => $first['primary_image'] ?? '',
+    'start' => (float)($first['min_price'] ?? 0),
+    'count' => count($catProducts),
+  ];
+}
+?>
 <!-- ═══════════════════════════════════════════════════════════
      TRUST BAR
 ══════════════════════════════════════════════════════════════ -->
 <div class="trust" data-reveal>
   <div class="container">
     <div class="trust-inner">
-      <div class="trust-i" data-reveal data-reveal-delay="40"><div class="trust-ic" style="background:#ECFDF5">✅</div>GST Invoice Included</div>
-      <div class="trust-i" data-reveal data-reveal-delay="80"><div class="trust-ic" style="background:#EEF3FD">🔒</div>Secure Razorpay Payment</div>
-      <div class="trust-i" data-reveal data-reveal-delay="120"><div class="trust-ic" style="background:#FFF4ED">⚡</div>24–48hr Fast Delivery</div>
-      <div class="trust-i" data-reveal data-reveal-delay="160"><div class="trust-ic" style="background:#FEF9C3">🎨</div>Free Design Support</div>
-      <div class="trust-i" data-reveal data-reveal-delay="200"><div class="trust-ic" style="background:#F0FDF4">💯</div>Quality Guaranteed</div>
+      <div class="trust-i" data-reveal data-reveal-delay="40"><div class="trust-ic" style="background:#FEF9C3">🎨</div>Free Design Support</div>
+      <div class="trust-i" data-reveal data-reveal-delay="80"><div class="trust-ic" style="background:#ECFDF5">🖨️</div>Best Print Quality</div>
+      <div class="trust-i" data-reveal data-reveal-delay="120"><div class="trust-ic" style="background:#EEF3FD">💸</div>Affordable Pricing</div>
+      <div class="trust-i" data-reveal data-reveal-delay="160"><div class="trust-ic" style="background:#FFF4ED">⏱️</div>On-Time Delivery</div>
+      <div class="trust-i" data-reveal data-reveal-delay="200"><div class="trust-ic" style="background:#F0FDF4">💯</div>100% Satisfaction</div>
     </div>
   </div>
 </div>
@@ -146,7 +164,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <!-- ═══════════════════════════════════════════════════════════
      PRODUCTS SECTION — Category-based boxes with 4 products each
 ══════════════════════════════════════════════════════════════ -->
-<section class="sec home-prod-sec" id="prod-sec" style="background:var(--bg)">
+<section class="sec home-prod-sec sec-tint-blue" id="prod-sec">
   <div class="home-prod-wrap">
 
     <div class="sec-hdr" style="margin-bottom:32px" data-reveal>
@@ -254,7 +272,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 
 
 <!-- WHY US -->
-<section class="sec" id="why-sec" style="background:var(--white)" data-reveal>
+<section class="sec sec-tint-warm" id="why-sec" data-reveal>
   <div class="container">
     <div class="sec-hdr" style="margin-bottom:28px">
       <div>
@@ -288,8 +306,8 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 
       <div class="why-c" data-reveal data-reveal-delay="120">
         <div class="why-ic" style="background:#FEF9C3">🎨</div>
-        <div class="why-t">Free Design Help</div>
-        <div class="why-d">Our creative team helps you get the perfect design ready for print at no extra cost.</div>
+        <div class="why-t">Free Design Support</div>
+        <div class="why-d">Our creative team helps you get the perfect design ready for print for Your Bulk Orders.</div>
       </div>
 
       <div class="why-c" data-reveal data-reveal-delay="150">
@@ -307,6 +325,39 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
     </div>
   </div>
 </section>
+
+<?php if (!empty($catSpot)): ?>
+<section class="cs-section sec-tint-blue cs-full" data-reveal>
+  <div class="container">
+    <div class="sec-hdr" style="margin-bottom:18px">
+      <div>
+        <div class="sec-ey">Explore Print Categories</div>
+        <div class="sec-t">Pick Your Perfect Category</div>
+      </div>
+    </div>
+    <div class="cs-wrap" id="csWrap">
+      <button class="cs-nav prev" type="button" aria-label="Previous category" onclick="csPrev()">‹</button>
+      <div class="cs-track" id="csTrack">
+        <?php foreach ($catSpot as $i => $c): ?>
+        <article class="cs-card<?= $i === 0 ? ' is-active' : '' ?>">
+          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="cs-link">
+            <div class="cs-img">
+              <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy">
+            </div>
+            <div class="cs-body">
+              <div class="cs-title"><?= htmlspecialchars($c['icon']) ?> <?= htmlspecialchars($c['name']) ?></div>
+              <div class="cs-meta"><?= (int)$c['count'] ?> products · Starting from ₹<?= $c['start'] > 0 ? number_format($c['start']) : '—' ?></div>
+              <span class="cs-cta">View Category →</span>
+            </div>
+          </a>
+        </article>
+        <?php endforeach; ?>
+      </div>
+      <button class="cs-nav next" type="button" aria-label="Next category" onclick="csNext()">›</button>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
 
 <!-- CTA BAND -->
 <section class="sec">
@@ -326,7 +377,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 </section>
 
 <!-- CONTACT -->
-<section class="sec" id="contact-sec" style="background:var(--white)" data-reveal>
+<section class="sec sec-tint-blue" id="contact-sec" data-reveal>
   <div class="container">
     <div class="contact-grid">
       <div>
@@ -354,18 +405,17 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <footer class="footer">
   <div class="container">
     <div class="footer-grid">
-      <div>
+      <div class="f-col-brand">
         <div class="f-brand"><?= $bizName ?></div>
         <div class="f-desc">Premium printing services for businesses. Quality that speaks for itself.</div>
-        <div style="margin-top:13px">
-          <button onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')"
-                  style="padding:7px 13px;border-radius:8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.65);font-size:12px;cursor:pointer;font-family:var(--fn)">💬 WhatsApp</button>
+        <div class="f-brand-cta">
+          <button class="f-wa-btn" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
         </div>
       </div>
       <div>
         <div class="f-lbl">Products</div>
-        <?php foreach (array_slice($products, 0, 7) as $p): ?>
-        <a class="f-link" href="/product/<?= htmlspecialchars($p['slug']) ?>"><?= htmlspecialchars($p['name']) ?></a>
+        <?php foreach (array_slice($categories ?? [], 0, 6) as $c): ?>
+        <a class="f-link" href="/category/<?= htmlspecialchars($c['slug']) ?>"><?= htmlspecialchars($c['name']) ?></a>
         <?php endforeach; ?>
       </div>
       <div>
@@ -377,14 +427,16 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
       </div>
       <div>
         <div class="f-lbl">Contact</div>
-        <div class="f-link"><?= $bizPhone ?></div>
-        <div class="f-link"><?= $bizEmail ?></div>
-        <div class="f-link" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')" style="cursor:pointer">WhatsApp Chat</div>
+        <div class="f-contact">
+          <div class="f-link"><?= $bizPhone ?></div>
+          <div class="f-link"><?= $bizEmail ?></div>
+          <div class="f-link" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')" style="cursor:pointer">WhatsApp Chat</div>
+        </div>
       </div>
     </div>
     <div class="f-bot">
       <div>© <?= date('Y') ?> <?= $bizName ?>. All rights reserved.</div>
-      <div>Made with ❤️ in Rajkot, Gujarat</div>
+      <div>Developed By Prakash Karena</div>
     </div>
   </div>
 </footer>

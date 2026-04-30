@@ -86,7 +86,7 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 
     if (!$product) { http_response_code(404); view('404'); exit; }
 
-    try { $related = \Catalog\ProductCatalog::related((int)$product['id'], (int)$product['category_id']); }
+    try { $related = \Catalog\ProductCatalog::relatedFromFixedCategories((int)$product['id'], 4); }
     catch (\Throwable) { $related = []; }
 
     view('product', compact('product', 'related'));

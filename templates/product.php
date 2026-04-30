@@ -86,6 +86,9 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <div class="pd-cat"><?= htmlspecialchars($product['category_name'] ?? '') ?></div>
 
       <h1 class="pd-name"><?= htmlspecialchars($product['name']) ?></h1>
+      <?php if (!empty($product['product_code'])): ?>
+      <div class="pd-code">Product Code: <?= htmlspecialchars((string)$product['product_code']) ?></div>
+      <?php endif; ?>
       <p class="pd-desc"><?= htmlspecialchars($product['description'] ?? '') ?></p>
 
       <!-- ── SPECIFICATIONS ── -->
@@ -261,8 +264,8 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <a href="/#prod-sec" class="btn btn-outline btn-sm">View All Products →</a>
     </div>
 
-    <div class="prod-grid" style="grid-template-columns:repeat(<?= min(count($related), 3) ?>,1fr)">
-      <?php foreach (array_slice($related, 0, 3) as $rp):
+    <div class="prod-grid related-grid" style="grid-template-columns:repeat(<?= min(count($related), 4) ?>,1fr)">
+      <?php foreach (array_slice($related, 0, 4) as $rp):
         $rimg = $rp['primary_image'] ?? '';
         $rmin = (float)($rp['min_price'] ?? 0);
       ?>

@@ -20,7 +20,7 @@ async function loadCustomers() {
     document.getElementById('custList').innerHTML = `<div style="text-align:center;padding:60px;color:var(--text2)"><div style="font-size:48px;margin-bottom:12px">👥</div><div style="font-size:15px;font-weight:600">No registered customers yet</div></div>`;
     return;
   }
-  const colors = ['#1A56E8','#059669','#D97706','#DC2626','#7C3AED','#0891B2'];
+  const colors = ['#2563EB','#0F766E','#B45309','#DC2626','#6D28D9','#0E7490'];
   function avColor(name) { let h=0; for(let i=0;i<name.length;i++)h=name.charCodeAt(i)+((h<<5)-h); return colors[Math.abs(h)%colors.length]; }
   function initials(name) { return (name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 
@@ -33,7 +33,7 @@ async function loadCustomers() {
         <div style="font-size:11px;color:var(--text3);margin-top:2px">Joined: ${new Date(c.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:20px;font-weight:700;color:var(--blue);font-family:'Fraunces',serif">${c.order_count}</div>
+        <div style="font-size:20px;font-weight:700;color:var(--blue);font-family:var(--fd)">${c.order_count}</div>
         <div style="font-size:10px;color:var(--text3)">orders</div>
         <div style="font-size:13px;font-weight:700;color:var(--green)">₹${Number(c.total_spent||0).toLocaleString('en-IN')}</div>
       </div>

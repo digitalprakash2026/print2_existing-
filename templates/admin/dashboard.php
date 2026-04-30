@@ -12,7 +12,7 @@ include __DIR__ . '/layout.php';
   <div class="ast"><div class="ast-v" style="color:var(--amber)" id="ds-pending">—</div><div class="ast-l">In Progress</div></div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px" id="dash-charts">
+<div class="adm-dash-charts" id="dash-charts">
   <div class="anl-card">
     <div class="anl-t">Revenue (6 months)</div>
     <div class="rev-chart" id="revChart"><div style="color:var(--text3);font-size:12px;margin:auto">Loading…</div></div>
@@ -24,7 +24,7 @@ include __DIR__ . '/layout.php';
 </div>
 
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-  <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Recent Orders</div>
+  <div style="font-family:var(--fd);font-size:16px;font-weight:700">Recent Orders</div>
   <a href="/admin/orders" class="btn btn-outline btn-sm">View All →</a>
 </div>
 <div id="recentOrders"><div style="text-align:center;padding:28px;color:var(--text3)">Loading…</div></div>
