@@ -146,7 +146,7 @@ foreach ($categories as $cat) {
 }
 ?>
 <?php if (!empty($catSpot)): ?>
-<section class="cat-spot sec-tint-blue" data-reveal>
+<section class="cs-section sec-tint-blue" data-reveal>
   <div class="container">
     <div class="sec-hdr" style="margin-bottom:18px">
       <div>
@@ -154,25 +154,25 @@ foreach ($categories as $cat) {
         <div class="sec-t">Pick Your Perfect Category</div>
       </div>
     </div>
-    <div class="cat-spot-wrap" id="catSpotWrap">
-      <button class="cat-spot-nav prev" type="button" aria-label="Previous category" onclick="catSpotPrev()">‹</button>
-      <div class="cat-spot-track" id="catSpotTrack">
+    <div class="cs-wrap" id="csWrap">
+      <button class="cs-nav prev" type="button" aria-label="Previous category" onclick="csPrev()">‹</button>
+      <div class="cs-track" id="csTrack">
         <?php foreach ($catSpot as $i => $c): ?>
-        <article class="cat-spot-card<?= $i === 0 ? ' is-active' : '' ?>">
-          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="cat-spot-link">
-            <div class="cat-spot-img">
+        <article class="cs-card<?= $i === 0 ? ' is-active' : '' ?>">
+          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="cs-link">
+            <div class="cs-img">
               <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy">
             </div>
-            <div class="cat-spot-b">
-              <div class="cat-spot-t"><?= htmlspecialchars($c['icon']) ?> <?= htmlspecialchars($c['name']) ?></div>
-              <div class="cat-spot-m"><?= (int)$c['count'] ?> products · Starting from ₹<?= $c['start'] > 0 ? number_format($c['start']) : '—' ?></div>
-              <span class="cat-spot-cta">View Category →</span>
+            <div class="cs-body">
+              <div class="cs-title"><?= htmlspecialchars($c['icon']) ?> <?= htmlspecialchars($c['name']) ?></div>
+              <div class="cs-meta"><?= (int)$c['count'] ?> products · Starting from ₹<?= $c['start'] > 0 ? number_format($c['start']) : '—' ?></div>
+              <span class="cs-cta">View Category →</span>
             </div>
           </a>
         </article>
         <?php endforeach; ?>
       </div>
-      <button class="cat-spot-nav next" type="button" aria-label="Next category" onclick="catSpotNext()">›</button>
+      <button class="cs-nav next" type="button" aria-label="Next category" onclick="csNext()">›</button>
     </div>
   </div>
 </section>

@@ -526,6 +526,45 @@ function initCategorySpotlight(id = 'catSpotWrap') {
 function catSpotNext() { _catSpotApi?.next?.(); }
 function catSpotPrev() { _catSpotApi?.prev?.(); }
 
+let _csApi = null;
+function initCategoryShowcase(id = 'csWrap') {
+  const wrap = document.getElementById(id);
+  const track = document.getElementById('csTrack');
+  if (!wrap || !track) return;
+
+  const cards = () => track.querySelectorAll('.cs-card');
+  let idx = 0;
+  let timer = null;
+  const mobile = () => window.matchMedia('(max-width: 768px)').matches;
+  const visible = () => (mobile() ? 1 : (window.innerWidth < 1100 ? 2 : 4));
+
+  function slideTo(n) {
+    const list = cards();
+    if (!list.length) return;
+    const max = Math.max(0, list.length - visible());
+    idx = Math.max(0, Math.min(n, max));
+    list.forEach((c, i) => c.classList.toggle('is-active', i === idx));
+    const shift = (list[0]?.offsetWidth || 0) + (mobile() ? 12 : 14);
+    track.style.transform = `translateX(-${idx * shift}px)`;
+  }
+  function next() { slideTo(idx + 1); }
+  function prev() { slideTo(idx - 1); }
+  function start() { timer = setInterval(() => next(), 4200); }
+  function stop() { clearInterval(timer); }
+
+  wrap.addEventListener('mouseenter', stop);
+  wrap.addEventListener('mouseleave', start);
+  wrap.addEventListener('touchstart', stop, { passive: true });
+  wrap.addEventListener('touchend', start, { passive: true });
+  window.addEventListener('resize', () => slideTo(idx));
+
+  slideTo(0);
+  start();
+  _csApi = { next, prev };
+}
+function csNext() { _csApi?.next?.(); }
+function csPrev() { _csApi?.prev?.(); }
+
 // ── Scroll Reveal Animations ───────────────────────────────────
 function initRevealAnimations() {
   const nodes = document.querySelectorAll('[data-reveal]');
@@ -659,6 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Init sliders if present
   initBannerSlider('bannerSlider');
+  initCategoryShowcase('csWrap');
   initCategorySpotlight('catSpotWrap');
   initProductCarousel('prodCarousel');
   initRevealAnimations();
