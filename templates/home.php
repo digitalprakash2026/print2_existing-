@@ -145,39 +145,6 @@ foreach ($categories as $cat) {
   ];
 }
 ?>
-<?php if (!empty($catSpot)): ?>
-<section class="cs-section sec-tint-blue" data-reveal>
-  <div class="container">
-    <div class="sec-hdr" style="margin-bottom:18px">
-      <div>
-        <div class="sec-ey">Explore Print Categories</div>
-        <div class="sec-t">Pick Your Perfect Category</div>
-      </div>
-    </div>
-    <div class="cs-wrap" id="csWrap">
-      <button class="cs-nav prev" type="button" aria-label="Previous category" onclick="csPrev()">‹</button>
-      <div class="cs-track" id="csTrack">
-        <?php foreach ($catSpot as $i => $c): ?>
-        <article class="cs-card<?= $i === 0 ? ' is-active' : '' ?>">
-          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="cs-link">
-            <div class="cs-img">
-              <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy">
-            </div>
-            <div class="cs-body">
-              <div class="cs-title"><?= htmlspecialchars($c['icon']) ?> <?= htmlspecialchars($c['name']) ?></div>
-              <div class="cs-meta"><?= (int)$c['count'] ?> products · Starting from ₹<?= $c['start'] > 0 ? number_format($c['start']) : '—' ?></div>
-              <span class="cs-cta">View Category →</span>
-            </div>
-          </a>
-        </article>
-        <?php endforeach; ?>
-      </div>
-      <button class="cs-nav next" type="button" aria-label="Next category" onclick="csNext()">›</button>
-    </div>
-  </div>
-</section>
-<?php endif; ?>
-
 <!-- ═══════════════════════════════════════════════════════════
      TRUST BAR
 ══════════════════════════════════════════════════════════════ -->
@@ -358,6 +325,39 @@ foreach ($categories as $cat) {
     </div>
   </div>
 </section>
+
+<?php if (!empty($catSpot)): ?>
+<section class="cs-section sec-tint-blue cs-full" data-reveal>
+  <div class="container">
+    <div class="sec-hdr" style="margin-bottom:18px">
+      <div>
+        <div class="sec-ey">Explore Print Categories</div>
+        <div class="sec-t">Pick Your Perfect Category</div>
+      </div>
+    </div>
+    <div class="cs-wrap" id="csWrap">
+      <button class="cs-nav prev" type="button" aria-label="Previous category" onclick="csPrev()">‹</button>
+      <div class="cs-track" id="csTrack">
+        <?php foreach ($catSpot as $i => $c): ?>
+        <article class="cs-card<?= $i === 0 ? ' is-active' : '' ?>">
+          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="cs-link">
+            <div class="cs-img">
+              <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy">
+            </div>
+            <div class="cs-body">
+              <div class="cs-title"><?= htmlspecialchars($c['icon']) ?> <?= htmlspecialchars($c['name']) ?></div>
+              <div class="cs-meta"><?= (int)$c['count'] ?> products · Starting from ₹<?= $c['start'] > 0 ? number_format($c['start']) : '—' ?></div>
+              <span class="cs-cta">View Category →</span>
+            </div>
+          </a>
+        </article>
+        <?php endforeach; ?>
+      </div>
+      <button class="cs-nav next" type="button" aria-label="Next category" onclick="csNext()">›</button>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
 
 <!-- CTA BAND -->
 <section class="sec">

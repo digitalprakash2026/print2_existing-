@@ -542,14 +542,22 @@ function initCategoryShowcase(id = 'csWrap') {
     const list = cards();
     if (!list.length) return;
     const max = Math.max(0, list.length - visible());
-    idx = Math.max(0, Math.min(n, max));
+    if (max <= 0) {
+      idx = 0;
+    } else if (n > max) {
+      idx = 0;
+    } else if (n < 0) {
+      idx = max;
+    } else {
+      idx = n;
+    }
     list.forEach((c, i) => c.classList.toggle('is-active', i === idx));
     const shift = (list[0]?.offsetWidth || 0) + (mobile() ? 12 : 14);
     track.style.transform = `translateX(-${idx * shift}px)`;
   }
   function next() { slideTo(idx + 1); }
   function prev() { slideTo(idx - 1); }
-  function start() { timer = setInterval(() => next(), 4200); }
+  function start() { timer = setInterval(() => next(), 3000); }
   function stop() { clearInterval(timer); }
 
   wrap.addEventListener('mouseenter', stop);
