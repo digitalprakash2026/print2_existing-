@@ -126,6 +126,57 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
   </div>
 </div>
 
+<?php
+$catSpot = [];
+foreach ($categories as $cat) {
+  $cid = (int)($cat['id'] ?? 0);
+  if ($cid <= 0) continue;
+  $catProducts = array_values(array_filter($products, fn($p) => (int)($p['category_id'] ?? 0) === $cid));
+  if (!$catProducts) continue;
+  usort($catProducts, fn($a, $b) => ((float)($a['min_price'] ?? 0) <=> (float)($b['min_price'] ?? 0)));
+  $first = $catProducts[0];
+  $catSpot[] = [
+    'name' => $cat['name'] ?? 'Category',
+    'slug' => $cat['slug'] ?? '',
+    'icon' => $cat['icon'] ?? '📦',
+    'image' => $first['primary_image'] ?? '',
+    'start' => (float)($first['min_price'] ?? 0),
+    'count' => count($catProducts),
+  ];
+}
+?>
+<?php if (!empty($catSpot)): ?>
+<section class="cat-spot sec-tint-blue" data-reveal>
+  <div class="container">
+    <div class="sec-hdr" style="margin-bottom:18px">
+      <div>
+        <div class="sec-ey">Explore Print Categories</div>
+        <div class="sec-t">Pick Your Perfect Category</div>
+      </div>
+    </div>
+    <div class="cat-spot-wrap" id="catSpotWrap">
+      <button class="cat-spot-nav prev" type="button" aria-label="Previous category" onclick="catSpotPrev()">‹</button>
+      <div class="cat-spot-track" id="catSpotTrack">
+        <?php foreach ($catSpot as $i => $c): ?>
+        <article class="cat-spot-card<?= $i === 0 ? ' is-active' : '' ?>">
+          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="cat-spot-link">
+            <div class="cat-spot-img">
+              <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy">
+            </div>
+            <div class="cat-spot-b">
+              <div class="cat-spot-t"><?= htmlspecialchars($c['icon']) ?> <?= htmlspecialchars($c['name']) ?></div>
+              <div class="cat-spot-m"><?= (int)$c['count'] ?> products · Starting from ₹<?= $c['start'] > 0 ? number_format($c['start']) : '—' ?></div>
+              <span class="cat-spot-cta">View Category →</span>
+            </div>
+          </a>
+        </article>
+        <?php endforeach; ?>
+      </div>
+      <button class="cat-spot-nav next" type="button" aria-label="Next category" onclick="catSpotNext()">›</button>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
 
 <!-- ═══════════════════════════════════════════════════════════
      TRUST BAR

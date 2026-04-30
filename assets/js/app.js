@@ -480,6 +480,52 @@ function initProductCarousel(id = 'prodCarousel') {
   }, { passive: true });
 }
 
+// ── Category Spotlight Carousel ───────────────────────────────
+let _catSpotApi = null;
+function initCategorySpotlight(id = 'catSpotWrap') {
+  const wrap = document.getElementById(id);
+  const track = document.getElementById('catSpotTrack');
+  if (!wrap || !track) return;
+
+  const cards = () => track.querySelectorAll('.cat-spot-card');
+  let idx = 0;
+  let timer = null;
+
+  const mobile = () => window.matchMedia('(max-width: 768px)').matches;
+  const visible = () => (mobile() ? 1 : (window.innerWidth < 1100 ? 2 : 4));
+
+  function slideTo(n) {
+    const list = cards();
+    if (!list.length) return;
+    const max = Math.max(0, list.length - visible());
+    idx = Math.max(0, Math.min(n, max));
+    list.forEach((c, i) => c.classList.toggle('is-active', i === idx));
+    if (mobile()) {
+      list[idx]?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+    } else {
+      const shift = (list[0]?.offsetWidth || 0) + 14;
+      track.style.transform = `translateX(-${idx * shift}px)`;
+    }
+  }
+
+  function next() { slideTo(idx + 1); }
+  function prev() { slideTo(idx - 1); }
+
+  function start() { timer = setInterval(() => next(), 4500); }
+  function stop() { clearInterval(timer); }
+
+  wrap.addEventListener('mouseenter', stop);
+  wrap.addEventListener('mouseleave', start);
+  window.addEventListener('resize', () => slideTo(idx));
+
+  slideTo(0);
+  start();
+  _catSpotApi = { next, prev };
+}
+
+function catSpotNext() { _catSpotApi?.next?.(); }
+function catSpotPrev() { _catSpotApi?.prev?.(); }
+
 // ── Scroll Reveal Animations ───────────────────────────────────
 function initRevealAnimations() {
   const nodes = document.querySelectorAll('[data-reveal]');
@@ -613,6 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Init sliders if present
   initBannerSlider('bannerSlider');
+  initCategorySpotlight('catSpotWrap');
   initProductCarousel('prodCarousel');
   initRevealAnimations();
   initChatbot();
