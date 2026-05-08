@@ -8,7 +8,7 @@ $profile = $profile ?? [];
 $billing = $profile['billing'] ?? [];
 $shipping = $profile['shipping'] ?? [];
 ?>
-<div style="margin-top:var(--hh);min-height:calc(100vh - var(--hh));background:var(--bg);padding:32px 0 80px">
+<div class="profile-page" style="background:var(--bg);padding:32px 0 80px">
   <div class="container" style="max-width:760px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
       <div>
