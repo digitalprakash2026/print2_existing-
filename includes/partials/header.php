@@ -40,24 +40,24 @@ $currentUri  = $uri ?? '/';
 <!-- ═══════════════════════════════════════════════
      SITE HEADER
 ══════════════════════════════════════════════════ -->
-<header class="site-header" id="siteHeader">
-  <div class="topbar">
-    <div class="header-container topbar-inner">
-      <div class="topbar-left">
+<header class="site-header rcs-site-header" id="siteHeader">
+  <div class="topbar rcs-topbar">
+    <div class="header-container topbar-inner rcs-header-container rcs-topbar-inner">
+      <div class="topbar-left rcs-topbar-left">
         <span>
           <i class="fa-solid fa-truck-fast" aria-hidden="true"></i>
           Free Delivery in Rajkot on All Orders Above ₹999
         </span>
       </div>
 
-      <div class="topbar-right">
-        <div class="topbar-links">
+      <div class="topbar-right rcs-topbar-right">
+        <div class="topbar-links rcs-topbar-links">
           <a href="/my-orders" aria-label="Track Order">Track Order</a>
-          <span class="topbar-divider" aria-hidden="true"></span>
+          <span class="topbar-divider rcs-topbar-divider" aria-hidden="true"></span>
           <a href="/#contact-sec" aria-label="Help Center">Help Center</a>
         </div>
 
-        <div class="social-links" aria-label="Social links">
+        <div class="social-links rcs-social-links" aria-label="Social links">
           <a href="/#contact-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
           <a href="/#contact-sec" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
           <a href="https://wa.me/<?= $navWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
@@ -66,74 +66,74 @@ $currentUri  = $uri ?? '/';
     </div>
   </div>
 
-  <nav class="navbar" aria-label="Main navigation">
-    <div class="header-container navbar-inner">
-      <a href="/" class="brand" aria-label="<?= $navBizName ?> Home">
+  <nav class="navbar rcs-navbar" aria-label="Main navigation">
+    <div class="header-container navbar-inner rcs-header-container rcs-navbar-inner">
+      <a href="/" class="brand rcs-brand" aria-label="<?= $navBizName ?> Home">
         <img src="/assets/images/rcs-graphic-logo.png"
              alt="<?= $navBizName ?> Logo"
-             class="brand-img"
+             class="brand-img rcs-brand-img"
              loading="eager"
              decoding="async">
       </a>
 
-      <div class="nav-center">
-        <ul class="nav-menu">
-          <li><a href="/" class="nav-link <?= $currentUri === '/' ? 'active' : '' ?>">Home</a></li>
-          <li class="nav-dropdown" id="ddWrap">
-            <button class="nav-link nav-link-button" id="ddBtn" type="button" aria-expanded="false" aria-haspopup="true">
+      <div class="nav-center rcs-nav-center">
+        <ul class="nav-menu rcs-nav-menu">
+          <li><a href="/" class="nav-link rcs-nav-link <?= $currentUri === '/' ? 'active' : '' ?>">Home</a></li>
+          <li class="nav-dropdown rcs-nav-dropdown" id="ddWrap">
+            <button class="nav-link nav-link-button rcs-nav-link rcs-nav-link-button" id="ddBtn" type="button" aria-expanded="false" aria-haspopup="true">
               Products
               <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
             </button>
-            <div class="dd-bridge"></div>
-            <div class="dd-panel" id="ddPanel" role="menu">
+            <div class="dd-bridge rcs-dd-bridge"></div>
+            <div class="dd-panel rcs-dd-panel" id="ddPanel" role="menu">
               <?php if (!empty($navCategories)): ?>
-                <div class="dd-cat-lbl">Browse by Category</div>
+                <div class="dd-cat-lbl rcs-dd-cat-lbl">Browse by Category</div>
                 <?php foreach ($navCategories as $cat): ?>
-                  <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item" role="menuitem">
-                    <span class="dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+                  <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item rcs-dd-item" role="menuitem">
+                    <span class="dd-item-ic rcs-dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
                     <span><?= htmlspecialchars($cat['name']) ?></span>
                     <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
-                      <span class="dd-count"><?= (int)$cat['product_count'] ?></span>
+                      <span class="dd-count rcs-dd-count"><?= (int)$cat['product_count'] ?></span>
                     <?php endif; ?>
                   </a>
                 <?php endforeach; ?>
-                <div class="dd-divider"></div>
+                <div class="dd-divider rcs-dd-divider"></div>
               <?php endif; ?>
               <?php if (!empty($navProducts)): ?>
-                <div class="dd-cat-lbl">Products</div>
+                <div class="dd-cat-lbl rcs-dd-cat-lbl">Products</div>
                 <?php foreach (array_slice($navProducts, 0, 6) as $p): ?>
-                  <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item" role="menuitem">
-                    <span class="dd-item-ic"><?= $catIcons[$p['category_name']] ?? '🖨️' ?></span>
+                  <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item rcs-dd-item" role="menuitem">
+                    <span class="dd-item-ic rcs-dd-item-ic"><?= $catIcons[$p['category_name']] ?? '🖨️' ?></span>
                     <span><?= htmlspecialchars($p['name']) ?></span>
                   </a>
                 <?php endforeach; ?>
-                <div class="dd-divider"></div>
+                <div class="dd-divider rcs-dd-divider"></div>
               <?php endif; ?>
-              <a href="/products" class="dd-item dd-item-all" role="menuitem">
-                <span class="dd-item-ic">→</span>
+              <a href="/products" class="dd-item dd-item-all rcs-dd-item rcs-dd-item-all" role="menuitem">
+                <span class="dd-item-ic rcs-dd-item-ic">→</span>
                 <span>See All Products</span>
               </a>
             </div>
           </li>
-          <li><a href="/#why-sec" class="nav-link">About Us</a></li>
-          <li><a href="/#contact-sec" class="nav-link">Contact Us</a></li>
-          <li><a href="/products" class="nav-link">Blog</a></li>
-          <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link">My Account</a></li>
+          <li><a href="/#why-sec" class="nav-link rcs-nav-link">About Us</a></li>
+          <li><a href="/#contact-sec" class="nav-link rcs-nav-link">Contact Us</a></li>
+          <li><a href="/products" class="nav-link rcs-nav-link">Blog</a></li>
+          <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link rcs-nav-link">My Account</a></li>
         </ul>
       </div>
 
-      <div class="navbar-actions">
-        <a href="/products" class="action-btn" aria-label="Search">
+      <div class="navbar-actions rcs-navbar-actions">
+        <a href="/products" class="action-btn rcs-action-btn" aria-label="Search">
           <i class="fa-solid fa-magnifying-glass"></i>
         </a>
-        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="action-btn" aria-label="My Account">
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="action-btn rcs-action-btn" aria-label="My Account">
           <i class="fa-regular fa-user"></i>
         </a>
-        <button class="action-btn cart-btn" onclick="toggleCart()" aria-label="Cart" type="button">
+        <button class="action-btn cart-btn rcs-action-btn rcs-cart-btn" onclick="toggleCart()" aria-label="Cart" type="button">
           <i class="fa-solid fa-cart-shopping"></i>
-          <span class="cart-badge" id="cartCount">2</span>
+          <span class="cart-badge rcs-cart-badge" id="cartCount">2</span>
         </button>
-        <button class="menu-toggle" id="hamBtn" onclick="toggleDrawer()" aria-label="Toggle menu" aria-expanded="false" type="button">
+        <button class="menu-toggle rcs-menu-toggle" id="hamBtn" onclick="toggleDrawer()" aria-label="Toggle menu" aria-expanded="false" type="button">
           <i class="fa-solid fa-bars"></i>
         </button>
       </div>
