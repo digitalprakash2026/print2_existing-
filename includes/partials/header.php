@@ -40,104 +40,118 @@ $currentUri  = $uri ?? '/';
 <!-- ═══════════════════════════════════════════════
      SITE HEADER
 ══════════════════════════════════════════════════ -->
-<header class="header" id="siteHeader">
+<header class="header site-header" id="siteHeader">
 
-  <!-- Logo -->
-  <a href="/" class="hdr-logo">
-    <img src="/assets/images/rcs-graphic-logo.png"
-         alt="<?= $navBizName ?> Logo"
-         class="hdr-logo-img"
-         loading="eager"
-         decoding="async">
-  </a>
-
-  <!-- Desktop Nav -->
-  <nav class="hdr-nav" id="desktopNav">
-    <a href="/"           class="hn <?= $currentUri === '/'          ? 'act' : '' ?>">Home</a>
-
-    <!-- Products dropdown — hover bridge prevents flicker -->
-    <div class="dd-wrap" id="ddWrap">
-      <button class="dd-btn" id="ddBtn" aria-expanded="false" aria-haspopup="true">
-        Products
-        <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-      </button>
-      <!-- Invisible bridge fills gap between button and panel -->
-      <div class="dd-bridge"></div>
-      <div class="dd-panel" id="ddPanel" role="menu">
-        <?php if (!empty($navCategories)): ?>
-          <div class="dd-cat-lbl">Browse by Category</div>
-          <?php foreach ($navCategories as $cat): ?>
-          <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item" role="menuitem">
-            <div class="dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></div>
-            <span><?= htmlspecialchars($cat['name']) ?></span>
-            <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
-            <span style="margin-left:auto;font-size:10px;color:var(--text3);font-weight:600">
-              <?= (int)$cat['product_count'] ?>
-            </span>
-            <?php endif; ?>
-          </a>
-          <?php endforeach; ?>
-          <div class="dd-divider"></div>
-        <?php endif; ?>
-        <?php if (!empty($navProducts)): ?>
-          <div class="dd-cat-lbl">Products</div>
-          <?php foreach (array_slice($navProducts, 0, 6) as $p): ?>
-          <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item" role="menuitem">
-            <div class="dd-item-ic"><?= $catIcons[$p['category_name']] ?? '🖨️' ?></div>
-            <?= htmlspecialchars($p['name']) ?>
-          </a>
-          <?php endforeach; ?>
-          <div class="dd-divider"></div>
-        <?php endif; ?>
-        <a href="/products" class="dd-item" role="menuitem"
-           style="color:var(--blue);font-weight:700">
-          <div class="dd-item-ic" style="background:var(--blue);color:#fff">→</div>
-          See All Products
-        </a>
-      </div>
+  <!-- Top purple utility bar -->
+  <div class="hdr-topbar">
+    <div class="hdr-topbar-left">
+      <span class="hdr-delivery-ic" aria-hidden="true">🚚</span>
+      <span>Free Delivery in Rajkot on All Orders Above ₹999</span>
     </div>
+    <div class="hdr-topbar-right" aria-label="Header quick links">
+      <a href="/my-orders" class="hdr-top-link">Track Order</a>
+      <span class="hdr-top-sep" aria-hidden="true">|</span>
+      <a href="/#contact-sec" class="hdr-top-link">Help Center</a>
+      <span class="hdr-top-sep" aria-hidden="true">|</span>
+      <a href="/#contact-sec" class="hdr-social" aria-label="Facebook">f</a>
+      <a href="/#contact-sec" class="hdr-social" aria-label="Facebook Messenger">↗</a>
+      <a href="/#contact-sec" class="hdr-social" aria-label="Instagram">◎</a>
+      <a href="https://wa.me/<?= $navWa ?>" class="hdr-social" aria-label="WhatsApp" target="_blank" rel="noopener">◔</a>
+    </div>
+  </div>
 
-    <a href="/#why-sec"     class="hn">Why Us</a>
-    <a href="/#contact-sec" class="hn">Contact</a>
-    <?php if ($user ?? null): ?>
-      <a href="/my-orders" class="hn">My Orders</a>
-      <a href="/profile" class="hn">Profile</a>
-    <?php endif; ?>
-  </nav>
+  <!-- Main white navigation row -->
+  <div class="hdr-mainbar">
+    <!-- Logo -->
+    <a href="/" class="hdr-logo">
+      <img src="/assets/images/rcs-graphic-logo.png"
+           alt="<?= $navBizName ?> Logo"
+           class="hdr-logo-img"
+           loading="eager"
+           decoding="async">
+    </a>
 
-  <div class="hdr-space"></div>
+    <!-- Desktop Nav -->
+    <nav class="hdr-nav" id="desktopNav">
+      <a href="/" class="hn <?= $currentUri === '/' ? 'act' : '' ?>">Home</a>
 
- 
+      <!-- Products dropdown — hover bridge prevents flicker -->
+      <div class="dd-wrap" id="ddWrap">
+        <button class="dd-btn" id="ddBtn" aria-expanded="false" aria-haspopup="true">
+          Products
+          <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <!-- Invisible bridge fills gap between button and panel -->
+        <div class="dd-bridge"></div>
+        <div class="dd-panel" id="ddPanel" role="menu">
+          <?php if (!empty($navCategories)): ?>
+            <div class="dd-cat-lbl">Browse by Category</div>
+            <?php foreach ($navCategories as $cat): ?>
+            <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item" role="menuitem">
+              <div class="dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></div>
+              <span><?= htmlspecialchars($cat['name']) ?></span>
+              <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
+              <span style="margin-left:auto;font-size:10px;color:var(--text3);font-weight:600">
+                <?= (int)$cat['product_count'] ?>
+              </span>
+              <?php endif; ?>
+            </a>
+            <?php endforeach; ?>
+            <div class="dd-divider"></div>
+          <?php endif; ?>
+          <?php if (!empty($navProducts)): ?>
+            <div class="dd-cat-lbl">Products</div>
+            <?php foreach (array_slice($navProducts, 0, 6) as $p): ?>
+            <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item" role="menuitem">
+              <div class="dd-item-ic"><?= $catIcons[$p['category_name']] ?? '🖨️' ?></div>
+              <?= htmlspecialchars($p['name']) ?>
+            </a>
+            <?php endforeach; ?>
+            <div class="dd-divider"></div>
+          <?php endif; ?>
+          <a href="/products" class="dd-item" role="menuitem"
+             style="color:var(--blue);font-weight:700">
+            <div class="dd-item-ic" style="background:var(--blue);color:#fff">→</div>
+            See All Products
+          </a>
+        </div>
+      </div>
 
-  <!-- Right actions -->
-  <div class="hdr-right">
-    <?php if (!($user ?? null)): ?>
-      <a href="/register" class="hdr-new-customer">
-        <span class="hdr-new-label">New Customer?</span>
-        <span class="hdr-new-link">Start Here</span>
+      <a href="/#why-sec" class="hn">About Us</a>
+      <a href="/#contact-sec" class="hn">Contact Us</a>
+      <a href="/products" class="hn">Blog</a>
+      <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="hn">My Account</a>
+    </nav>
+
+    <div class="hdr-space"></div>
+
+    <!-- Right actions -->
+    <div class="hdr-right">
+      <a href="/products" class="hdr-icon-btn hdr-search-btn" title="Search products" aria-label="Search products">
+        <svg viewBox="0 0 24 24"><path d="M9.5 3a6.5 6.5 0 0 1 5.16 10.45l4.44 4.45-1.4 1.4-4.45-4.44A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>
       </a>
-    <?php endif; ?>
 
-    <!-- Cart -->
-    <button class="cart-btn" onclick="toggleCart()" title="Shopping Cart" aria-label="Open cart">
-      <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 23.46 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
-      <span class="cart-count hidden" id="cartCount">0</span>
-    </button>
+      <?php if ($user ?? null): ?>
+        <a href="/profile" class="hdr-icon-btn hdr-account-btn" title="My account" aria-label="My account">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </a>
+      <?php else: ?>
+        <a href="/login" class="hdr-icon-btn hdr-account-btn" title="Login" aria-label="Login">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </a>
+      <?php endif; ?>
 
-    <!-- Auth -->
-    <?php if ($user ?? null): ?>
-      <span class="hdr-user-name"><?= htmlspecialchars(explode(' ', $user['name'])[0]) ?></span>
-      <a href="/logout" class="btn-auth btn-auth-ghost">Logout</a>
-    <?php else: ?>
-      <a href="/login" class="btn-auth btn-auth-ghost">Login</a>
-    <?php endif; ?>
+      <!-- Cart -->
+      <button class="cart-btn" onclick="toggleCart()" title="Shopping Cart" aria-label="Open cart">
+        <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 23.46 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+        <span class="cart-count hidden" id="cartCount">0</span>
+      </button>
 
-    
-
-    <!-- Hamburger — fixed: calls toggleDrawer() which exists in app.js -->
-    <button class="ham" onclick="toggleDrawer()" id="hamBtn" aria-label="Open menu" aria-expanded="false">
-      <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-    </button>
+      <!-- Hamburger — fixed: calls toggleDrawer() which exists in app.js -->
+      <button class="ham" onclick="toggleDrawer()" id="hamBtn" aria-label="Open menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+      </button>
+    </div>
   </div>
 
 </header>
@@ -173,8 +187,9 @@ $currentUri  = $uri ?? '/';
       </a>
     </div>
 
-    <a href="/#why-sec"     class="md-item" onclick="closeDrawer()">⭐ Why Us</a>
-    <a href="/#contact-sec" class="md-item" onclick="closeDrawer()">📞 Contact</a>
+    <a href="/#why-sec"     class="md-item" onclick="closeDrawer()">⭐ About Us</a>
+    <a href="/#contact-sec" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
+    <a href="/products"      class="md-item" onclick="closeDrawer()">📝 Blog</a>
 
     <?php if ($user ?? null): ?>
       <a href="/my-orders" class="md-item">📋 My Orders</a>
