@@ -52,11 +52,7 @@ $currentUri  = $uri ?? '/';
       <a href="/my-orders" class="hdr-top-link">Track Order</a>
       <span class="hdr-top-sep" aria-hidden="true">|</span>
       <a href="/#contact-sec" class="hdr-top-link">Help Center</a>
-      <span class="hdr-top-sep" aria-hidden="true">|</span>
-      <a href="/#contact-sec" class="hdr-social" aria-label="Facebook">f</a>
-      <a href="/#contact-sec" class="hdr-social" aria-label="Facebook Messenger">↗</a>
-      <a href="/#contact-sec" class="hdr-social" aria-label="Instagram">◎</a>
-      <a href="https://wa.me/<?= $navWa ?>" class="hdr-social" aria-label="WhatsApp" target="_blank" rel="noopener">◔</a>
+      <a href="https://wa.me/<?= $navWa ?>" class="hdr-top-whatsapp" target="_blank" rel="noopener">WhatsApp</a>
     </div>
   </div>
 
@@ -127,6 +123,7 @@ $currentUri  = $uri ?? '/';
 
     <!-- Right actions -->
     <div class="hdr-right">
+      <a href="https://wa.me/<?= $navWa ?>" class="hdr-wa-cta" target="_blank" rel="noopener">WhatsApp</a>
       <a href="/products" class="hdr-icon-btn hdr-search-btn" title="Search products" aria-label="Search products">
         <svg viewBox="0 0 24 24"><path d="M9.5 3a6.5 6.5 0 0 1 5.16 10.45l4.44 4.45-1.4 1.4-4.45-4.44A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>
       </a>
