@@ -79,6 +79,7 @@ body:has(#siteHeader) { --site-hh:124px; }
   height:var(--site-hh);
   background:#fff;
   box-shadow:none;
+  font-family:'Poppins', var(--fn);
 }
 .header-container {
   width:100%;
@@ -128,8 +129,8 @@ body:has(#siteHeader) { --site-hh:124px; }
 .hdr-top-link:hover { opacity:.78; }
 .hdr-top-sep { color:rgba(255,255,255,.72); font-weight:500; }
 .hdr-social {
-  width:18px;
-  height:18px;
+  width:17px;
+  height:17px;
   border-radius:50%;
   color:#fff;
   display:inline-flex;
@@ -141,6 +142,7 @@ body:has(#siteHeader) { --site-hh:124px; }
   opacity:.95;
   transition:opacity .16s ease, transform .16s ease;
 }
+.hdr-social svg { width:17px; height:17px; fill:currentColor; }
 .hdr-social:hover { opacity:.78; transform:translateY(-1px); }
 .hdr-mainbar {
   width:100%;
@@ -156,7 +158,7 @@ body:has(#siteHeader) { --site-hh:124px; }
   gap:24px;
 }
 .hdr-logo {
-  width:180px;
+  width:184px;
   min-width:170px;
   display:flex;
   align-items:center;
@@ -183,12 +185,12 @@ body:has(#siteHeader) { --site-hh:124px; }
 .hdr-space     { display:none; }
 .hdr-user-name { font-size:13px; font-weight:600; color:var(--text2); }
 .hdr-right {
-  width:180px;
-  min-width:170px;
+  width:150px;
+  min-width:140px;
   display:flex;
   align-items:center;
   justify-content:flex-end;
-  gap:22px;
+  gap:24px;
   margin-left:0;
   flex-shrink:0;
 }
@@ -351,7 +353,7 @@ body:has(#siteHeader) { --site-hh:124px; }
   transition:color .16s ease, transform .16s ease;
 }
 .hdr-icon-btn:hover { color:#4B148C; transform:translateY(-1px); }
-.hdr-icon-btn svg { width:24px; height:24px; fill:currentColor; }
+.hdr-icon-btn svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 
 /* Auth buttons */
 .btn-auth      { padding:9px 16px; border-radius:10px; font-size:13px; font-weight:600; transition:var(--tr); cursor:pointer; font-family:var(--fn); }
@@ -368,7 +370,7 @@ body:has(#siteHeader) { --site-hh:124px; }
   box-shadow:none;
 }
 .site-header .cart-btn:hover { background:transparent; border-color:transparent; color:#4B148C; transform:translateY(-1px); box-shadow:none; }
-.site-header .cart-btn svg { width:24px; height:24px; fill:currentColor; }
+.site-header .cart-btn svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 .site-header .cart-count {
   position:absolute; top:-11px; right:-11px; min-width:18px; height:18px; padding:0 5px;
   background:#FF7A00; border-radius:50%; font-size:10px; font-weight:800;
@@ -404,8 +406,8 @@ body:has(#siteHeader) .confirm-page {
 
 @media (max-width:1180px) {
   .header-container { padding:0 20px; }
-  .hdr-logo { width:160px; min-width:150px; }
-  .hdr-right { width:150px; min-width:140px; gap:18px; }
+  .hdr-logo { width:170px; min-width:150px; }
+  .hdr-right { width:135px; min-width:125px; gap:18px; }
   .hdr-nav { gap:22px; }
   .hn,.dd-btn { font-size:13px; }
 }

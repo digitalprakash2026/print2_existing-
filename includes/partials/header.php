@@ -54,9 +54,15 @@ $currentUri  = $uri ?? '/';
         <span class="hdr-top-sep" aria-hidden="true">|</span>
         <a href="/#contact-sec" class="hdr-top-link">Help Center</a>
         <span class="hdr-top-sep" aria-hidden="true">|</span>
-        <a href="/#contact-sec" class="hdr-social" aria-label="Facebook">f</a>
-        <a href="/#contact-sec" class="hdr-social" aria-label="Instagram">◎</a>
-        <a href="https://wa.me/<?= $navWa ?>" class="hdr-social" aria-label="WhatsApp" target="_blank" rel="noopener">◔</a>
+        <a href="/#contact-sec" class="hdr-social" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8.7V6.9c0-.8.3-1.2 1.3-1.2H17V2.4c-.8-.1-1.7-.2-2.5-.2-2.6 0-4.4 1.6-4.4 4.5v2H7.2V12h2.9v9.8H14V12h2.8l.4-3.3H14z"/></svg>
+        </a>
+        <a href="/#contact-sec" class="hdr-social" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 2.8h8.4a5 5 0 0 1 5 5v8.4a5 5 0 0 1-5 5H7.8a5 5 0 0 1-5-5V7.8a5 5 0 0 1 5-5zm0 1.8a3.2 3.2 0 0 0-3.2 3.2v8.4a3.2 3.2 0 0 0 3.2 3.2h8.4a3.2 3.2 0 0 0 3.2-3.2V7.8a3.2 3.2 0 0 0-3.2-3.2H7.8zm4.2 3.1a4.3 4.3 0 1 1 0 8.6 4.3 4.3 0 0 1 0-8.6zm0 1.8a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm4.5-2.3a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+        </a>
+        <a href="https://wa.me/<?= $navWa ?>" class="hdr-social" aria-label="WhatsApp" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2a9.6 9.6 0 0 1 8.2 14.6l1.1 4-4.1-1.1A9.6 9.6 0 0 1 2.4 11.8 9.6 9.6 0 0 1 12 2.2zm0 1.8a7.8 7.8 0 0 0-6.6 12l.3.5-.7 2.1 2.2-.6.5.3A7.8 7.8 0 1 0 12 4zm-3.3 4.1c.2-.4.4-.4.7-.4h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4 0 .5l-.5.6c-.1.1-.2.3-.1.5.4.8 1.1 1.6 1.8 2.1.8.5 1 .6 1.2.4l.8-1c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.3.4.5-.1.6-.5 1.3-1 1.6-.5.3-1.3.4-2.4 0-2-.8-4-2.5-5.1-4.4-.7-1.2-.8-2.2-.5-2.8l.1-.2z"/></svg>
+        </a>
       </div>
     </div>
   </div>
@@ -127,22 +133,22 @@ $currentUri  = $uri ?? '/';
       <!-- Right actions -->
       <div class="header-actions hdr-right">
         <a href="/products" class="hdr-icon-btn hdr-search-btn" title="Search products" aria-label="Search products">
-          <svg viewBox="0 0 24 24"><path d="M9.5 3a6.5 6.5 0 0 1 5.16 10.45l4.44 4.45-1.4 1.4-4.45-4.44A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M16 16l5 5"/></svg>
         </a>
 
         <?php if ($user ?? null): ?>
           <a href="/profile" class="hdr-icon-btn hdr-account-btn" title="My account" aria-label="My account">
-            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7.5" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>
           </a>
         <?php else: ?>
           <a href="/login" class="hdr-icon-btn hdr-account-btn" title="Login" aria-label="Login">
-            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7.5" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>
           </a>
         <?php endif; ?>
 
         <!-- Cart -->
         <button class="cart-btn" onclick="toggleCart()" title="Shopping Cart" aria-label="Open cart">
-          <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 23.46 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h2l2.1 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 7H6"/><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/></svg>
           <span class="cart-count cart-badge" id="cartCount">2</span>
         </button>
 
