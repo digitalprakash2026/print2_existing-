@@ -41,125 +41,104 @@ $currentUri  = $uri ?? '/';
      SITE HEADER
 ══════════════════════════════════════════════════ -->
 <header class="site-header" id="siteHeader">
-
-  <!-- Top announcement bar -->
-  <div class="top-bar hdr-topbar">
-    <div class="header-container top-bar-inner hdr-topbar-inner">
-      <div class="top-bar-left hdr-topbar-left">
-        <span class="hdr-delivery-ic" aria-hidden="true">🚚</span>
-        <span>Free Delivery in Rajkot on All Orders Above ₹999</span>
+  <div class="topbar">
+    <div class="header-container topbar-inner">
+      <div class="topbar-left">
+        <span>
+          <i class="fa-solid fa-truck-fast" aria-hidden="true"></i>
+          Free Delivery in Rajkot on All Orders Above ₹999
+        </span>
       </div>
-      <div class="top-bar-right hdr-topbar-right" aria-label="Header quick links">
-        <a href="/my-orders" class="hdr-top-link">Track Order</a>
-        <span class="hdr-top-sep" aria-hidden="true">|</span>
-        <a href="/#contact-sec" class="hdr-top-link">Help Center</a>
-        <span class="hdr-top-sep" aria-hidden="true">|</span>
-        <a href="/#contact-sec" class="hdr-social" aria-label="Facebook">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8.7V6.9c0-.8.3-1.2 1.3-1.2H17V2.4c-.8-.1-1.7-.2-2.5-.2-2.6 0-4.4 1.6-4.4 4.5v2H7.2V12h2.9v9.8H14V12h2.8l.4-3.3H14z"/></svg>
-        </a>
-        <a href="/#contact-sec" class="hdr-social" aria-label="Instagram">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 2.8h8.4a5 5 0 0 1 5 5v8.4a5 5 0 0 1-5 5H7.8a5 5 0 0 1-5-5V7.8a5 5 0 0 1 5-5zm0 1.8a3.2 3.2 0 0 0-3.2 3.2v8.4a3.2 3.2 0 0 0 3.2 3.2h8.4a3.2 3.2 0 0 0 3.2-3.2V7.8a3.2 3.2 0 0 0-3.2-3.2H7.8zm4.2 3.1a4.3 4.3 0 1 1 0 8.6 4.3 4.3 0 0 1 0-8.6zm0 1.8a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm4.5-2.3a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
-        </a>
-        <a href="https://wa.me/<?= $navWa ?>" class="hdr-social" aria-label="WhatsApp" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2a9.6 9.6 0 0 1 8.2 14.6l1.1 4-4.1-1.1A9.6 9.6 0 0 1 2.4 11.8 9.6 9.6 0 0 1 12 2.2zm0 1.8a7.8 7.8 0 0 0-6.6 12l.3.5-.7 2.1 2.2-.6.5.3A7.8 7.8 0 1 0 12 4zm-3.3 4.1c.2-.4.4-.4.7-.4h.5c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4 0 .5l-.5.6c-.1.1-.2.3-.1.5.4.8 1.1 1.6 1.8 2.1.8.5 1 .6 1.2.4l.8-1c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.3.4.5-.1.6-.5 1.3-1 1.6-.5.3-1.3.4-2.4 0-2-.8-4-2.5-5.1-4.4-.7-1.2-.8-2.2-.5-2.8l.1-.2z"/></svg>
-        </a>
+
+      <div class="topbar-right">
+        <div class="topbar-links">
+          <a href="/my-orders" aria-label="Track Order">Track Order</a>
+          <span class="topbar-divider" aria-hidden="true"></span>
+          <a href="/#contact-sec" aria-label="Help Center">Help Center</a>
+        </div>
+
+        <div class="social-links" aria-label="Social links">
+          <a href="/#contact-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="/#contact-sec" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://wa.me/<?= $navWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Main white navigation row -->
-  <div class="main-header hdr-mainbar">
-    <div class="header-container main-header-inner hdr-mainbar-inner">
-      <!-- Logo -->
-      <a href="/" class="logo hdr-logo">
+  <nav class="navbar" aria-label="Main navigation">
+    <div class="header-container navbar-inner">
+      <a href="/" class="brand" aria-label="<?= $navBizName ?> Home">
         <img src="/assets/images/rcs-graphic-logo.png"
              alt="<?= $navBizName ?> Logo"
-             class="hdr-logo-img"
+             class="brand-img"
              loading="eager"
              decoding="async">
       </a>
 
-      <!-- Desktop Nav -->
-      <nav class="main-nav hdr-nav" id="desktopNav">
-        <a href="/" class="hn <?= $currentUri === '/' ? 'act' : '' ?>">Home</a>
-
-        <!-- Products dropdown — hover bridge prevents flicker -->
-        <div class="dd-wrap" id="ddWrap">
-          <button class="dd-btn" id="ddBtn" aria-expanded="false" aria-haspopup="true">
-            Products
-            <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-          </button>
-          <!-- Invisible bridge fills gap between button and panel -->
-          <div class="dd-bridge"></div>
-          <div class="dd-panel" id="ddPanel" role="menu">
-            <?php if (!empty($navCategories)): ?>
-              <div class="dd-cat-lbl">Browse by Category</div>
-              <?php foreach ($navCategories as $cat): ?>
-              <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item" role="menuitem">
-                <div class="dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></div>
-                <span><?= htmlspecialchars($cat['name']) ?></span>
-                <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
-                <span style="margin-left:auto;font-size:10px;color:var(--text3);font-weight:600">
-                  <?= (int)$cat['product_count'] ?>
-                </span>
-                <?php endif; ?>
+      <div class="nav-center">
+        <ul class="nav-menu">
+          <li><a href="/" class="nav-link <?= $currentUri === '/' ? 'active' : '' ?>">Home</a></li>
+          <li class="nav-dropdown" id="ddWrap">
+            <button class="nav-link nav-link-button" id="ddBtn" type="button" aria-expanded="false" aria-haspopup="true">
+              Products
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div class="dd-bridge"></div>
+            <div class="dd-panel" id="ddPanel" role="menu">
+              <?php if (!empty($navCategories)): ?>
+                <div class="dd-cat-lbl">Browse by Category</div>
+                <?php foreach ($navCategories as $cat): ?>
+                  <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item" role="menuitem">
+                    <span class="dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+                    <span><?= htmlspecialchars($cat['name']) ?></span>
+                    <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
+                      <span class="dd-count"><?= (int)$cat['product_count'] ?></span>
+                    <?php endif; ?>
+                  </a>
+                <?php endforeach; ?>
+                <div class="dd-divider"></div>
+              <?php endif; ?>
+              <?php if (!empty($navProducts)): ?>
+                <div class="dd-cat-lbl">Products</div>
+                <?php foreach (array_slice($navProducts, 0, 6) as $p): ?>
+                  <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item" role="menuitem">
+                    <span class="dd-item-ic"><?= $catIcons[$p['category_name']] ?? '🖨️' ?></span>
+                    <span><?= htmlspecialchars($p['name']) ?></span>
+                  </a>
+                <?php endforeach; ?>
+                <div class="dd-divider"></div>
+              <?php endif; ?>
+              <a href="/products" class="dd-item dd-item-all" role="menuitem">
+                <span class="dd-item-ic">→</span>
+                <span>See All Products</span>
               </a>
-              <?php endforeach; ?>
-              <div class="dd-divider"></div>
-            <?php endif; ?>
-            <?php if (!empty($navProducts)): ?>
-              <div class="dd-cat-lbl">Products</div>
-              <?php foreach (array_slice($navProducts, 0, 6) as $p): ?>
-              <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item" role="menuitem">
-                <div class="dd-item-ic"><?= $catIcons[$p['category_name']] ?? '🖨️' ?></div>
-                <?= htmlspecialchars($p['name']) ?>
-              </a>
-              <?php endforeach; ?>
-              <div class="dd-divider"></div>
-            <?php endif; ?>
-            <a href="/products" class="dd-item dd-item-all" role="menuitem">
-              <div class="dd-item-ic">→</div>
-              See All Products
-            </a>
-          </div>
-        </div>
+            </div>
+          </li>
+          <li><a href="/#why-sec" class="nav-link">About Us</a></li>
+          <li><a href="/#contact-sec" class="nav-link">Contact Us</a></li>
+          <li><a href="/products" class="nav-link">Blog</a></li>
+          <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link">My Account</a></li>
+        </ul>
+      </div>
 
-        <a href="/#why-sec" class="hn">About Us</a>
-        <a href="/#contact-sec" class="hn">Contact Us</a>
-        <a href="/products" class="hn">Blog</a>
-        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="hn">My Account</a>
-      </nav>
-
-      <!-- Right actions -->
-      <div class="header-actions hdr-right">
-        <a href="/products" class="hdr-icon-btn hdr-search-btn" title="Search products" aria-label="Search products">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M16 16l5 5"/></svg>
+      <div class="navbar-actions">
+        <a href="/products" class="action-btn" aria-label="Search">
+          <i class="fa-solid fa-magnifying-glass"></i>
         </a>
-
-        <?php if ($user ?? null): ?>
-          <a href="/profile" class="hdr-icon-btn hdr-account-btn" title="My account" aria-label="My account">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7.5" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>
-          </a>
-        <?php else: ?>
-          <a href="/login" class="hdr-icon-btn hdr-account-btn" title="Login" aria-label="Login">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7.5" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>
-          </a>
-        <?php endif; ?>
-
-        <!-- Cart -->
-        <button class="cart-btn" onclick="toggleCart()" title="Shopping Cart" aria-label="Open cart">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h2l2.1 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 7H6"/><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/></svg>
-          <span class="cart-count cart-badge" id="cartCount">2</span>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="action-btn" aria-label="My Account">
+          <i class="fa-regular fa-user"></i>
+        </a>
+        <button class="action-btn cart-btn" onclick="toggleCart()" aria-label="Cart" type="button">
+          <i class="fa-solid fa-cart-shopping"></i>
+          <span class="cart-badge" id="cartCount">2</span>
         </button>
-
-        <!-- Hamburger — fixed: calls toggleDrawer() which exists in app.js -->
-        <button class="mobile-menu-toggle ham" onclick="toggleDrawer()" id="hamBtn" aria-label="Open menu" aria-expanded="false">
-          <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        <button class="menu-toggle" id="hamBtn" onclick="toggleDrawer()" aria-label="Toggle menu" aria-expanded="false" type="button">
+          <i class="fa-solid fa-bars"></i>
         </button>
       </div>
     </div>
-  </div>
-
+  </nav>
 </header>
 
 <!-- ═══════════════════════════════════════════════
