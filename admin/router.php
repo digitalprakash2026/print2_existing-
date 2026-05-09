@@ -432,17 +432,56 @@ if (str_starts_with($uri, '/admin/api/')) {
         $code = \Catalog\ProductCatalog::nextProductCodePreview($categoryId, $editId > 0 ? $editId : null);
         json(['ok' => true, 'code' => $code]);
     }
+    if ($uri === '/admin/api/categories/upload' && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 6 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 6MB'], 400);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $dir = PUBLIC_PATH . '/uploads/categories/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'category_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        json(['ok'=>true,'path'=>'/uploads/categories/' . $name]);
+    }
     if ($uri === '/admin/api/categories' && $method === 'POST') {
-        $slug = strtolower(preg_replace('/[^a-z0-9]+/','-',$body['name']??''));
+        $name = trim((string)($body['name'] ?? ''));
+        if ($name === '') json(['ok'=>false,'msg'=>'Category name is required'], 422);
+        $slugBase = trim((string)($body['slug'] ?? $name));
+        $slug = strtolower(preg_replace('/[^a-z0-9]+/', '-', $slugBase) ?? '');
+        $slug = trim($slug, '-') ?: strtolower(preg_replace('/[^a-z0-9]+/', '-', $name));
         $prefix = strtoupper(trim((string)($body['code_prefix'] ?? '')));
         $prefix = preg_replace('/[^A-Z0-9]/', '', $prefix) ?: null;
+        $icon = trim((string)($body['icon'] ?? '🖨️')) ?: '🖨️';
+        $imagePath = trim((string)($body['image_path'] ?? '')) ?: null;
+        $imageAlt = trim((string)($body['image_alt'] ?? '')) ?: ($name . ' category image');
+        $sort = (int)($body['sort_order'] ?? 0);
+        $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : 1;
         try {
-            $id = Database::insert("INSERT INTO categories (name,slug,code_prefix,icon,sort_order,is_active) VALUES (?,?,?,?,?,1)",
-                [$body['name'],$slug,$prefix,$body['icon']??'🖨️',$body['sort_order']??0]);
+            $id = Database::insert(
+                "INSERT INTO categories (name,slug,code_prefix,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?)",
+                [$name,$slug,$prefix,$icon,$imagePath,$imageAlt,$sort,$active]
+            );
         } catch (\Throwable) {
-            $id = Database::insert("INSERT INTO categories (name,slug,icon,sort_order,is_active) VALUES (?,?,?,?,1)",
-                [$body['name'],$slug,$body['icon']??'🖨️',$body['sort_order']??0]);
+            try {
+                $id = Database::insert(
+                    "INSERT INTO categories (name,slug,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?)",
+                    [$name,$slug,$icon,$imagePath,$imageAlt,$sort,$active]
+                );
+            } catch (\Throwable) {
+                $id = Database::insert(
+                    "INSERT INTO categories (name,slug,icon,sort_order,is_active) VALUES (?,?,?,?,?)",
+                    [$name,$slug,$icon,$sort,$active]
+                );
+            }
         }
+        \Orders\AdminAudit::log('category_created', "Category #{$id}: {$name}");
         json(['ok'=>true,'id'=>$id]);
     }
     if (preg_match('#^/admin/api/categories/(\d+)$#', $uri, $m) && $method === 'PUT') {
@@ -458,19 +497,28 @@ if (str_starts_with($uri, '/admin/api/')) {
         $prefix = strtoupper(trim((string)($body['code_prefix'] ?? ($existing['code_prefix'] ?? ''))));
         $prefix = preg_replace('/[^A-Z0-9]/', '', $prefix) ?: null;
         $icon = trim((string)($body['icon'] ?? ($existing['icon'] ?? '🖨️'))) ?: '🖨️';
+        $imagePath = trim((string)($body['image_path'] ?? ($existing['image_path'] ?? ''))) ?: null;
+        $imageAlt = trim((string)($body['image_alt'] ?? ($existing['image_alt'] ?? ''))) ?: ($name . ' category image');
         $sort = (int)($body['sort_order'] ?? ($existing['sort_order'] ?? 0));
         $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : (int)($existing['is_active'] ?? 1);
 
         try {
             Database::query(
-                "UPDATE categories SET name=?, slug=?, code_prefix=?, icon=?, sort_order=?, is_active=? WHERE id=?",
-                [$name, $slug, $prefix, $icon, $sort, $active, $id]
+                "UPDATE categories SET name=?, slug=?, code_prefix=?, icon=?, image_path=?, image_alt=?, sort_order=?, is_active=? WHERE id=?",
+                [$name, $slug, $prefix, $icon, $imagePath, $imageAlt, $sort, $active, $id]
             );
         } catch (\Throwable) {
-            Database::query(
-                "UPDATE categories SET name=?, slug=?, icon=?, sort_order=?, is_active=? WHERE id=?",
-                [$name, $slug, $icon, $sort, $active, $id]
-            );
+            try {
+                Database::query(
+                    "UPDATE categories SET name=?, slug=?, icon=?, image_path=?, image_alt=?, sort_order=?, is_active=? WHERE id=?",
+                    [$name, $slug, $icon, $imagePath, $imageAlt, $sort, $active, $id]
+                );
+            } catch (\Throwable) {
+                Database::query(
+                    "UPDATE categories SET name=?, slug=?, icon=?, sort_order=?, is_active=? WHERE id=?",
+                    [$name, $slug, $icon, $sort, $active, $id]
+                );
+            }
         }
         \Orders\AdminAudit::log('category_updated', "Category #{$id}: {$name}");
         json(['ok'=>true]);

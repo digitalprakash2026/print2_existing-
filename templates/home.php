@@ -127,11 +127,16 @@ foreach ($categories as $cat) {
   if (!$catProducts) continue;
   usort($catProducts, fn($a, $b) => ((float)($a['min_price'] ?? 0) <=> (float)($b['min_price'] ?? 0)));
   $first = $catProducts[0];
+  $catImage = trim((string)($cat['image_path'] ?? ''));
+  if ($catImage === '') {
+    $catImage = trim((string)($first['primary_image'] ?? ''));
+  }
   $catSpot[] = [
     'name' => $cat['name'] ?? 'Category',
     'slug' => $cat['slug'] ?? '',
     'icon' => $cat['icon'] ?? '📦',
-    'image' => $first['primary_image'] ?? '',
+    'image' => $catImage,
+    'image_alt' => trim((string)($cat['image_alt'] ?? '')) ?: ($cat['name'] ?? 'Category'),
     'start' => (float)($first['min_price'] ?? 0),
     'count' => count($catProducts),
   ];
@@ -152,7 +157,7 @@ foreach ($categories as $cat) {
           <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="shop-cat-link">
             <div class="shop-cat-img">
               <?php if (!empty($c['image'])): ?>
-                <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy">
+                <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['image_alt'] ?? $c['name']) ?>" loading="lazy">
               <?php else: ?>
                 <div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($c['icon']) ?></div>
               <?php endif; ?>
