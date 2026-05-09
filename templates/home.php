@@ -288,6 +288,55 @@ foreach ($categories as $cat) {
   </div>
 </section>
 
+<!-- HOW IT WORKS -->
+<section class="how-works-section" aria-labelledby="howWorksTitle" data-reveal>
+  <div class="how-works-container">
+    <div class="how-works-panel">
+      <h2 class="how-works-title" id="howWorksTitle">How It Works</h2>
+
+      <div class="how-works-track" role="list">
+        <article class="how-step" role="listitem">
+          <div class="how-icon how-icon-white"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></div>
+          <div class="how-copy">
+            <span>01</span>
+            <h3>Upload or Request<br> Your Design</h3>
+          </div>
+        </article>
+
+        <div class="how-arrow" aria-hidden="true">→</div>
+
+        <article class="how-step" role="listitem">
+          <div class="how-icon how-icon-orange"><i class="fa-solid fa-pencil" aria-hidden="true"></i></div>
+          <div class="how-copy">
+            <span>02</span>
+            <h3>Approve<br> Your Design</h3>
+          </div>
+        </article>
+
+        <div class="how-arrow" aria-hidden="true">→</div>
+
+        <article class="how-step" role="listitem">
+          <div class="how-icon how-icon-green"><i class="fa-solid fa-print" aria-hidden="true"></i></div>
+          <div class="how-copy">
+            <span>03</span>
+            <h3>We Print<br> Your Order</h3>
+          </div>
+        </article>
+
+        <div class="how-arrow" aria-hidden="true">→</div>
+
+        <article class="how-step" role="listitem">
+          <div class="how-icon how-icon-white"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></div>
+          <div class="how-copy">
+            <span>04</span>
+            <h3>We Deliver<br> At Your Doorstep</h3>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- CTA BAND -->
 <section class="sec">
   <div class="container">
