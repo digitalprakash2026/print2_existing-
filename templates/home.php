@@ -405,11 +405,7 @@ foreach ($categories as $cat) {
     <h2 class="customer-say-title" id="customerSayTitle">What Our <span>Customers</span> Say</h2>
 
     <div class="customer-say-shell">
-      <button class="customer-nav customer-nav-prev" type="button" aria-label="Previous testimonial">
-        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-      </button>
-
-      <div class="customer-say-track" role="list">
+      <div class="customer-say-track" id="customerSayTrack" role="list" data-auto-slide="true">
         <article class="customer-card" role="listitem">
           <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
           <p class="customer-text">Excellent quality printing and super fast service. Highly recommended!</p>
@@ -468,9 +464,6 @@ foreach ($categories as $cat) {
         </article>
       </div>
 
-      <button class="customer-nav customer-nav-next" type="button" aria-label="Next testimonial">
-        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-      </button>
     </div>
 
     <div class="customer-dots" aria-label="Testimonials pagination">
@@ -708,12 +701,6 @@ foreach ($categories as $cat) {
 
     <div class="footer-bottom">
       <div class="footer-copy">© <?= date('Y') ?> RCS PRINT. All Rights Reserved.</div>
-      <div class="footer-payments" aria-label="Accepted payments">
-        <span>VISA</span>
-        <span>Mastercard</span>
-        <span>UPI</span>
-        <span>Paytm</span>
-      </div>
       <div class="footer-developed">Developed By Prakash Karena</div>
     </div>
   </div>
@@ -798,22 +785,41 @@ foreach ($categories as $cat) {
   start();
 })();
 
-document.querySelectorAll('.customer-say-shell').forEach((shell) => {
-  const track = shell.querySelector('.customer-say-track');
-  const cards = Array.from(shell.querySelectorAll('.customer-card'));
-  const prev = shell.querySelector('.customer-nav-prev');
-  const next = shell.querySelector('.customer-nav-next');
-  if (!track || !cards.length || !prev || !next) return;
-
-  const scrollTestimonials = (direction) => {
-    const cardGap = parseFloat(getComputedStyle(track).gap || '0');
-    const step = cards[0].getBoundingClientRect().width + cardGap;
-    track.scrollBy({ left: direction * step, behavior: 'smooth' });
+(() => {
+  const track = document.getElementById('customerSayTrack');
+  if (!track) return;
+  let timer = null;
+  const getStep = () => {
+    const card = track.querySelector('.customer-card');
+    if (!card) return Math.max(220, Math.round(track.clientWidth * 0.7));
+    const gap = parseFloat(getComputedStyle(track).gap || '0');
+    return Math.max(160, card.getBoundingClientRect().width + gap);
   };
-
-  prev.addEventListener('click', () => scrollTestimonials(-1));
-  next.addEventListener('click', () => scrollTestimonials(1));
-});
+  const slideNext = () => {
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    if (maxScroll <= 4) return;
+    if (track.scrollLeft >= maxScroll - 8) {
+      track.scrollTo({ left: 0, behavior: 'smooth' });
+      return;
+    }
+    track.scrollBy({ left: getStep(), behavior: 'smooth' });
+  };
+  const start = () => {
+    stop();
+    timer = window.setInterval(slideNext, 3000);
+  };
+  const stop = () => {
+    if (timer) window.clearInterval(timer);
+    timer = null;
+  };
+  track.addEventListener('mouseenter', stop);
+  track.addEventListener('mouseleave', start);
+  track.addEventListener('focusin', stop);
+  track.addEventListener('focusout', start);
+  document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  start();
+})();
 
 </script>
 

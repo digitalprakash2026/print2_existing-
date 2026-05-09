@@ -3661,3 +3661,31 @@ html[data-motion='minimal'] .pd-main:hover img { transform:none !important; }
   .footer { padding-top:32px; }
   .footer-container { width:min(100%, calc(100vw - 20px)); padding:0 12px; }
 }
+
+/* Testimonials auto-slider without arrow controls + simplified footer bottom */
+.customer-say-shell { display:block; }
+.customer-say-track {
+  display:flex;
+  gap:24px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+  padding:0 2px 4px;
+}
+.customer-say-track::-webkit-scrollbar { display:none; width:0; height:0; }
+.customer-card {
+  flex:0 0 calc((100% - 24px) / 2);
+  scroll-snap-align:start;
+}
+.customer-nav,
+.footer-payments { display:none !important; }
+.footer-bottom { grid-template-columns:1fr 1fr; }
+@media (max-width:900px) {
+  .customer-card { flex-basis:min(82vw, 360px); }
+}
+@media (max-width:480px) {
+  .customer-card { flex-basis:calc(100vw - 88px); }
+  .footer-bottom { grid-template-columns:1fr; }
+}
