@@ -138,6 +138,21 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     exit;
 }
 
+// ── All Categories Page — /categories ─────────────────────────
+if ($uri === '/categories' && $method === 'GET') {
+    try {
+        $categories = \Catalog\ProductCatalog::categories();
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable $e) {
+        error_log('Categories page error: ' . $e->getMessage());
+        $categories = [];
+        $settingsMap = [];
+    }
+    view('categories', compact('categories', 'settingsMap'));
+    exit;
+}
+
 // ── Category Page — /category/{slug} ─────────────────────────
 if (preg_match('#^/category/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     try {

@@ -122,11 +122,10 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 $catSpot = [];
 foreach ($categories as $cat) {
   $cid = (int)($cat['id'] ?? 0);
-  if ($cid <= 0) continue;
+  if ($cid <= 0 || (int)($cat['is_active'] ?? 1) !== 1) continue;
   $catProducts = array_values(array_filter($products, fn($p) => (int)($p['category_id'] ?? 0) === $cid));
-  if (!$catProducts) continue;
   usort($catProducts, fn($a, $b) => ((float)($a['min_price'] ?? 0) <=> (float)($b['min_price'] ?? 0)));
-  $first = $catProducts[0];
+  $first = $catProducts[0] ?? [];
   $catImage = trim((string)($cat['image_path'] ?? ''));
   if ($catImage === '') {
     $catImage = trim((string)($first['primary_image'] ?? ''));
@@ -148,10 +147,10 @@ foreach ($categories as $cat) {
   <div class="shop-cat-container">
     <div class="shop-cat-head">
       <h2 class="shop-cat-title" id="shopCatTitle">Shop By <span>Category</span></h2>
-      <a href="/products" class="shop-cat-all">View All Products</a>
+      <a href="/categories" class="shop-cat-all">View All Categories</a>
     </div>
 
-    <div class="shop-cat-track" aria-label="Product categories">
+    <div class="shop-cat-track" id="shopCatTrack" aria-label="Product categories" data-auto-slide="true">
       <?php foreach ($catSpot as $i => $c): ?>
         <article class="shop-cat-card">
           <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="shop-cat-link">
@@ -717,9 +716,43 @@ foreach ($categories as $cat) {
   <a href="/products" class="mq-btn mq-btn-primary">Start Order</a>
 </div>
 
-<!-- No carousel/filter JS needed with new category layout -->
-
 <script>
+(() => {
+  const track = document.getElementById('shopCatTrack');
+  if (!track) return;
+  let timer = null;
+  const getStep = () => {
+    const card = track.querySelector('.shop-cat-card');
+    if (!card) return Math.max(180, Math.round(track.clientWidth * 0.7));
+    const gap = parseFloat(getComputedStyle(track).gap || '0');
+    return Math.max(120, card.getBoundingClientRect().width + gap);
+  };
+  const slideNext = () => {
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    if (maxScroll <= 4) return;
+    if (track.scrollLeft >= maxScroll - 8) {
+      track.scrollTo({ left: 0, behavior: 'smooth' });
+      return;
+    }
+    track.scrollBy({ left: getStep(), behavior: 'smooth' });
+  };
+  const start = () => {
+    stop();
+    timer = window.setInterval(slideNext, 3500);
+  };
+  const stop = () => {
+    if (timer) window.clearInterval(timer);
+    timer = null;
+  };
+  track.addEventListener('mouseenter', stop);
+  track.addEventListener('mouseleave', start);
+  track.addEventListener('focusin', stop);
+  track.addEventListener('focusout', start);
+  document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  start();
+})();
+
 document.querySelectorAll('.customer-say-shell').forEach((shell) => {
   const track = shell.querySelector('.customer-say-track');
   const cards = Array.from(shell.querySelectorAll('.customer-card'));
