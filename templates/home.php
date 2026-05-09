@@ -420,6 +420,70 @@ foreach ($categories as $cat) {
   </div>
 </section>
 
+
+<!-- FROM OUR BLOGS -->
+<section class="blog-section" aria-labelledby="blogTitle" data-reveal>
+  <div class="blog-container">
+    <div class="blog-head">
+      <h2 class="blog-title" id="blogTitle">From Our <span>Blogs</span></h2>
+      <a class="blog-view-all" href="/products">View All</a>
+    </div>
+
+    <div class="blog-grid" role="list">
+      <article class="blog-card" role="listitem">
+        <a href="/products" class="blog-card-link" aria-label="Read blog: How to Choose the Perfect Business Card Finish">
+          <div class="blog-image">
+            <img src="https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=900&q=85&fit=crop" alt="Premium printed business cards arranged on a desk" loading="lazy">
+            <span class="blog-badge">Print Tips</span>
+          </div>
+          <div class="blog-content">
+            <div class="blog-meta"><i class="fa-regular fa-calendar" aria-hidden="true"></i> 09 May, 2026</div>
+            <h3>How to Choose the Perfect Business Card Finish</h3>
+            <p>Learn when to pick matte, gloss, textured or premium laminated cards for a stronger first impression.</p>
+            <span class="blog-read-more">Read More <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </div>
+        </a>
+      </article>
+
+      <article class="blog-card" role="listitem">
+        <a href="/products" class="blog-card-link" aria-label="Read blog: 5 Flyer Design Ideas That Get More Customers">
+          <div class="blog-image">
+            <img src="https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=900&q=85&fit=crop" alt="Creative flyer and brochure design samples" loading="lazy">
+            <span class="blog-badge blog-badge-orange">Design Ideas</span>
+          </div>
+          <div class="blog-content">
+            <div class="blog-meta"><i class="fa-regular fa-calendar" aria-hidden="true"></i> 05 May, 2026</div>
+            <h3>5 Flyer Design Ideas That Get More Customers</h3>
+            <p>Simple layout, color and copy tips to make your next flyer campaign clear, attractive and conversion focused.</p>
+            <span class="blog-read-more">Read More <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </div>
+        </a>
+      </article>
+
+      <article class="blog-card" role="listitem">
+        <a href="/products" class="blog-card-link" aria-label="Read blog: Bulk Printing Checklist for Events and Shops">
+          <div class="blog-image">
+            <img src="https://images.unsplash.com/photo-1600172454284-934feca24de6?w=900&q=85&fit=crop" alt="Stacks of brochures and colorful printed material" loading="lazy">
+            <span class="blog-badge blog-badge-green">Bulk Orders</span>
+          </div>
+          <div class="blog-content">
+            <div class="blog-meta"><i class="fa-regular fa-calendar" aria-hidden="true"></i> 02 May, 2026</div>
+            <h3>Bulk Printing Checklist for Events and Shops</h3>
+            <p>Plan quantities, paper type, delivery timing and finishing options before placing your next large print order.</p>
+            <span class="blog-read-more">Read More <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </div>
+        </a>
+      </article>
+    </div>
+
+    <div class="blog-dots" aria-label="Blog pagination">
+      <span class="blog-dot blog-dot-active"></span>
+      <span class="blog-dot"></span>
+      <span class="blog-dot"></span>
+    </div>
+  </div>
+</section>
+
 <!-- CTA BAND -->
 <section class="sec">
   <div class="container">
