@@ -488,7 +488,7 @@ foreach ($categories as $cat) {
   <div class="blog-container">
     <div class="blog-head">
       <h2 class="blog-title" id="blogTitle">From Our <span>Blogs</span></h2>
-      <a class="blog-view-all" href="/#blogs-sec">View All</a>
+      <a class="blog-view-all" href="/blogs">View All</a>
     </div>
 
     <?php
@@ -523,6 +523,16 @@ foreach ($categories as $cat) {
         'badge_theme' => 'green',
         'published_at' => '2026-05-02 10:00:00',
       ],
+      [
+        'title' => 'How Square Category Images Improve Product Browsing',
+        'slug' => 'how-square-category-images-improve-product-browsing',
+        'excerpt' => 'See why clean square thumbnails make product discovery faster and help customers compare print categories easily.',
+        'featured_image' => 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900&q=85&fit=crop',
+        'image_alt' => 'Designer arranging print category thumbnails on a screen',
+        'category' => 'Product Guide',
+        'badge_theme' => 'purple',
+        'published_at' => '2026-04-28 10:00:00',
+      ],
     ];
     $blogCards = !empty($homeBlogs ?? []) ? $homeBlogs : $fallbackBlogs;
     $blogBadgeClass = static function ($theme): string {
@@ -539,7 +549,7 @@ foreach ($categories as $cat) {
     };
     ?>
 
-    <div class="blog-grid" role="list">
+    <div class="blog-grid" id="blogGrid" role="list" data-auto-slide="true">
       <?php foreach ($blogCards as $blog):
         $blogTitleRaw = trim((string)($blog['title'] ?? 'Blog'));
         $blogSlugRaw = trim((string)($blog['slug'] ?? ''));
@@ -739,6 +749,42 @@ foreach ($categories as $cat) {
   const start = () => {
     stop();
     timer = window.setInterval(slideNext, 3500);
+  };
+  const stop = () => {
+    if (timer) window.clearInterval(timer);
+    timer = null;
+  };
+  track.addEventListener('mouseenter', stop);
+  track.addEventListener('mouseleave', start);
+  track.addEventListener('focusin', stop);
+  track.addEventListener('focusout', start);
+  document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  start();
+})();
+
+(() => {
+  const track = document.getElementById('blogGrid');
+  if (!track) return;
+  let timer = null;
+  const getStep = () => {
+    const card = track.querySelector('.blog-card');
+    if (!card) return Math.max(220, Math.round(track.clientWidth * 0.7));
+    const gap = parseFloat(getComputedStyle(track).gap || '0');
+    return Math.max(160, card.getBoundingClientRect().width + gap);
+  };
+  const slideNext = () => {
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    if (maxScroll <= 4) return;
+    if (track.scrollLeft >= maxScroll - 8) {
+      track.scrollTo({ left: 0, behavior: 'smooth' });
+      return;
+    }
+    track.scrollBy({ left: getStep(), behavior: 'smooth' });
+  };
+  const start = () => {
+    stop();
+    timer = window.setInterval(slideNext, 3600);
   };
   const stop = () => {
     if (timer) window.clearInterval(timer);

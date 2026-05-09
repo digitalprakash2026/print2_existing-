@@ -75,7 +75,7 @@ if ($uri === '/' && $method === 'GET') {
         }
         $homeBlogs = [];
         try {
-            $homeBlogs = Database::rows("SELECT * FROM blogs WHERE is_active=1 AND is_featured=1 ORDER BY sort_order ASC, published_at DESC, id DESC LIMIT 4");
+            $homeBlogs = Database::rows("SELECT * FROM blogs WHERE is_active=1 AND is_featured=1 ORDER BY sort_order ASC, published_at DESC, id DESC");
         } catch (\Throwable $e) {
             error_log('Home blogs unavailable: ' . $e->getMessage());
         }
@@ -93,6 +93,26 @@ if ($uri === '/' && $method === 'GET') {
     exit;
 }
 
+
+// Blogs Listing Page — /blogs
+if ($uri === '/blogs' && $method === 'GET') {
+    try {
+        $blogs = Database::rows(
+            "SELECT id,title,slug,excerpt,featured_image,image_alt,category,badge_theme,published_at
+             FROM blogs
+             WHERE is_active = 1
+             ORDER BY is_featured DESC, sort_order ASC, published_at DESC, id DESC"
+        );
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable $e) {
+        error_log('Blogs listing error: ' . $e->getMessage());
+        $blogs = [];
+        $settingsMap = [];
+    }
+    view('blogs', compact('blogs', 'settingsMap'));
+    exit;
+}
 
 // Blog Detail Page — /blog/{slug}
 if (preg_match('#^/blog/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
