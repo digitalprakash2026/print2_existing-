@@ -606,11 +606,11 @@ foreach ($categories as $cat) {
         </span>
       </button>
 
-      <a class="quick-help-item quick-help-download" href="/products" aria-label="Download brochure for bulk orders">
+      <a class="quick-help-item quick-help-download" href="/products" aria-label="Download our brochure for all products">
         <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
         <span class="quick-help-copy">
-          <strong>Download Brochure</strong>
-          <span>For Bulk Orders</span>
+          <strong>Download Our Brochure</strong>
+          <span>For All Products</span>
         </span>
       </a>
     </div>
