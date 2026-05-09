@@ -3636,3 +3636,28 @@ html[data-motion='minimal'] .pd-main:hover img { transform:none !important; }
   .how-works-panel { padding:20px 18px; }
   .how-works-title { margin-bottom:14px; }
 }
+
+/* Footer breathing room */
+.footer {
+  padding:36px 0 0;
+}
+.footer-container {
+  padding:0 clamp(18px, 2.4vw, 34px);
+}
+.footer-main {
+  gap:42px;
+  padding:8px 0 30px;
+}
+.footer-bottom {
+  min-height:58px;
+  padding:12px 0 14px;
+}
+@media (max-width:900px) {
+  .footer-container { padding:0 14px; }
+  .footer-main { gap:26px; padding:4px 0 28px; }
+  .footer-bottom { padding:16px 0 22px; }
+}
+@media (max-width:480px) {
+  .footer { padding-top:32px; }
+  .footer-container { width:min(100%, calc(100vw - 20px)); padding:0 12px; }
+}
