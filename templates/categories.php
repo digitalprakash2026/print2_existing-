@@ -14,23 +14,21 @@ include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 ?>
 
-<main class="all-cat-page" style="margin-top:var(--hh);padding:26px 0 84px;background:var(--bg);min-height:calc(100vh - var(--hh))">
-  <div class="container">
-    <div class="breadcrumb" style="padding-top:4px">
-      <a href="/">Home</a><span>/</span>
-      <span style="color:var(--ink);font-weight:600">All Categories</span>
+<main class="all-cat-page">
+  <section class="all-cat-hero-banner" aria-labelledby="allCatTitle">
+    <div class="all-cat-hero-copy">
+      <nav class="all-cat-crumb" aria-label="Breadcrumb">
+        <a href="/">Home</a><span>›</span><span>All Categories</span>
+      </nav>
+      <h1 id="allCatTitle">All Categories</h1>
+      <p>Premium Quality Printing for Every Need</p>
     </div>
+    <div class="all-cat-hero-visual" aria-hidden="true">
+      <img src="/assets/img/categories/all-categories-hero.svg" alt="" loading="eager">
+    </div>
+  </section>
 
-    <section class="all-cat-hero" style="padding:26px 0 22px;border-bottom:1px solid var(--border);margin-bottom:28px">
-      <div class="sec-ey">Browse Categories</div>
-      <h1 style="font-family:var(--fd);font-size:clamp(26px,4.5vw,42px);font-weight:800;color:var(--ink);line-height:1.1;margin:0 0 8px">
-        Shop By Printing Category
-      </h1>
-      <p style="font-size:14px;color:var(--text2);margin:0;max-width:720px;line-height:1.7">
-        Choose a category to explore products, pricing options and custom print solutions from RCS Print.
-      </p>
-    </section>
-
+  <div class="container all-cat-content">
     <?php if (empty($activeCategories)): ?>
       <div style="text-align:center;padding:80px 20px;background:#fff;border:1px solid var(--border);border-radius:18px">
         <div style="font-size:48px;margin-bottom:12px">🗂️</div>
