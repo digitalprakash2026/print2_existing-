@@ -219,6 +219,75 @@ foreach ($categories as $cat) {
   </div>
 </section>
 
+<!-- BEST DEALS -->
+<section class="best-deals-section" aria-labelledby="bestDealsTitle" data-reveal>
+  <div class="best-deals-container">
+    <h2 class="best-deals-heading" id="bestDealsTitle">Our <span>Best Deals</span></h2>
+
+    <div class="best-deals-grid">
+      <article class="deal-card deal-green">
+        <a href="/products" class="deal-card-link">
+          <div class="deal-card-img">
+            <img src="https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=700&q=85&fit=crop" alt="500 visiting cards printing deal" loading="lazy">
+          </div>
+          <div class="deal-card-band">
+            <div class="deal-copy">
+              <h3>500 Visiting Cards</h3>
+              <p>Starting from</p>
+              <strong>₹199</strong>
+            </div>
+            <span class="deal-order-btn">Order Now</span>
+          </div>
+        </a>
+      </article>
+
+      <article class="deal-card deal-orange">
+        <a href="/products" class="deal-card-link">
+          <div class="deal-card-img">
+            <img src="https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=700&q=85&fit=crop" alt="1000 flyers printing deal" loading="lazy">
+          </div>
+          <div class="deal-card-band">
+            <div class="deal-copy">
+              <h3>1000 Flyers</h3>
+              <p>Starting from</p>
+              <strong>₹499</strong>
+            </div>
+            <span class="deal-order-btn">Order Now</span>
+          </div>
+        </a>
+      </article>
+
+      <article class="deal-card deal-purple">
+        <a href="/products" class="deal-card-link">
+          <div class="deal-card-img">
+            <img src="https://images.unsplash.com/photo-1600172454284-934feca24de6?w=700&q=85&fit=crop" alt="A4 brochure printing deal" loading="lazy">
+          </div>
+          <div class="deal-card-band">
+            <div class="deal-copy">
+              <h3>Brochure (A4)</h3>
+              <p>Starting from</p>
+              <strong>₹799</strong>
+            </div>
+            <span class="deal-order-btn">Order Now</span>
+          </div>
+        </a>
+      </article>
+
+      <article class="deal-promo-card">
+        <div class="deal-confetti" aria-hidden="true"></div>
+        <div class="deal-promo-copy">
+          <h3>Get <span>FREE Design</span><br>on Your First Order!</h3>
+          <a href="/#contact-sec" class="deal-promo-btn">Get Free Design</a>
+        </div>
+        <div class="deal-gift" aria-hidden="true">
+          <div class="deal-gift-bow"></div>
+          <div class="deal-gift-box"></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
 <!-- CTA BAND -->
 <section class="sec">
   <div class="container">
