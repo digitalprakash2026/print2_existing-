@@ -36,7 +36,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
       'cta_primary_url' => '/products',
       'cta_secondary_text' => 'Get Free Design',
       'cta_secondary_type' => 'url',
-      'cta_secondary_url' => '/#contact-sec',
+      'cta_secondary_url' => '/#quick-help-sec',
     ],
   ];
   $bannerSlides = array_values(array_filter(!empty($homeBanners ?? []) ? $homeBanners : $fallbackBanners, static function ($slide) {
@@ -277,7 +277,7 @@ foreach ($categories as $cat) {
         <div class="deal-confetti" aria-hidden="true"></div>
         <div class="deal-promo-copy">
           <h3>Get <span>FREE Design</span><br>on Your First Order!</h3>
-          <a href="/#contact-sec" class="deal-promo-btn">Get Free Design</a>
+          <a href="/#quick-help-sec" class="deal-promo-btn">Get Free Design</a>
         </div>
         <div class="deal-gift" aria-hidden="true">
           <div class="deal-gift-bow"></div>
@@ -486,7 +486,7 @@ foreach ($categories as $cat) {
 
 
 <!-- QUICK HELP STRIP -->
-<section class="quick-help-section" aria-label="Quick help and bulk order actions" data-reveal>
+<section class="quick-help-section" id="quick-help-sec" aria-label="Quick help and bulk order actions" data-reveal>
   <div class="quick-help-container">
     <div class="quick-help-bar">
       <a class="quick-help-item quick-help-call" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
@@ -516,47 +516,6 @@ foreach ($categories as $cat) {
   </div>
 </section>
 
-<!-- CTA BAND -->
-<section class="sec">
-  <div class="container">
-    <div class="cta" data-reveal>
-      <div style="position:relative;z-index:1">
-        <div class="cta-h">Ready to Print Something Amazing?</div>
-        <div class="cta-s">Place your order in minutes. We'll take care of the rest.</div>
-      </div>
-      <div class="cta-btns">
-        <a href="/products" class="btn" style="background:#fff;color:var(--blue);font-weight:700">Order Now →</a>
-        <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3)"
-                onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CONTACT -->
-<section class="sec sec-tint-blue" id="contact-sec" data-reveal>
-  <div class="container">
-    <div class="contact-grid">
-      <div>
-        <div class="sec-ey">Get In Touch</div>
-        <div class="sec-t" style="font-size:26px;margin-bottom:14px">Let's Talk About Your Project</div>
-        <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:22px">Custom requirements? Bulk pricing? Just say hello!</p>
-        <div class="cinfo-card">
-          <div class="ci-item"><div class="ci-ic">📞</div><div><div class="ci-lbl">Phone</div><div class="ci-v"><?= $bizPhone ?></div></div></div>
-          <div class="ci-item"><div class="ci-ic">📧</div><div><div class="ci-lbl">Email</div><div class="ci-v"><?= $bizEmail ?></div></div></div>
-          <div class="ci-item"><div class="ci-ic">📍</div><div><div class="ci-lbl">Address</div><div class="ci-v"><?= $bizAddr ?></div></div></div>
-          <div class="ci-item" style="border:none"><div class="ci-ic">🕐</div><div><div class="ci-lbl">Hours</div><div class="ci-v">Mon–Sat · 9AM–7PM</div></div></div>
-        </div>
-      </div>
-      <div>
-        <div class="fg"><label>Your Name</label><input class="fi" id="ct-name" placeholder="Full Name"></div>
-        <div class="fg"><label>Phone / Email</label><input class="fi" id="ct-contact" placeholder="+91 98765 43210"></div>
-        <div class="fg"><label>Message</label><textarea class="fi" id="ct-msg" style="height:96px" placeholder="Tell us about your print requirement…"></textarea></div>
-        <button class="btn btn-blue btn-full" onclick="sendEnquiry()" style="padding:14px">Send Enquiry →</button>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- FOOTER -->
 <footer class="footer">
@@ -624,18 +583,6 @@ document.querySelectorAll('.customer-say-shell').forEach((shell) => {
   next.addEventListener('click', () => scrollTestimonials(1));
 });
 
-// Enquiry (WhatsApp)
-function sendEnquiry() {
-  const n = document.getElementById('ct-name').value.trim();
-  const c = document.getElementById('ct-contact').value.trim();
-  const m = document.getElementById('ct-msg').value.trim();
-  if (!n || !c) { toast('Fill name and contact', 'error'); return; }
-  window.open(`https://wa.me/<?= $bizWa ?>?text=${encodeURIComponent('📩 Enquiry:\nName: ' + n + '\nContact: ' + c + '\nMessage: ' + (m || '—'))}`, '_blank');
-  toast('Enquiry sent!', 'success');
-  document.getElementById('ct-name').value = '';
-  document.getElementById('ct-contact').value = '';
-  document.getElementById('ct-msg').value = '';
-}
 </script>
 
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>

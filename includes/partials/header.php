@@ -54,12 +54,12 @@ $currentUri  = $uri ?? '/';
         <div class="topbar-links rcs-topbar-links">
           <a href="/my-orders" aria-label="Track Order">Track Order</a>
           <span class="topbar-divider rcs-topbar-divider" aria-hidden="true"></span>
-          <a href="/#contact-sec" aria-label="Help Center">Help Center</a>
+          <a href="/#quick-help-sec" aria-label="Help Center">Help Center</a>
         </div>
 
         <div class="social-links rcs-social-links" aria-label="Social links">
-          <a href="/#contact-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-          <a href="/#contact-sec" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
           <a href="https://wa.me/<?= $navWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
       </div>
@@ -116,7 +116,7 @@ $currentUri  = $uri ?? '/';
             </div>
           </li>
           <li><a href="/#why-sec" class="nav-link rcs-nav-link">About Us</a></li>
-          <li><a href="/#contact-sec" class="nav-link rcs-nav-link">Contact Us</a></li>
+          <li><a href="/#quick-help-sec" class="nav-link rcs-nav-link">Contact Us</a></li>
           <li><a href="/products" class="nav-link rcs-nav-link">Blog</a></li>
           <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link rcs-nav-link">My Account</a></li>
         </ul>
@@ -173,7 +173,7 @@ $currentUri  = $uri ?? '/';
     </div>
 
     <a href="/#why-sec"     class="md-item" onclick="closeDrawer()">⭐ About Us</a>
-    <a href="/#contact-sec" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
+    <a href="/#quick-help-sec" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
     <a href="/products"      class="md-item" onclick="closeDrawer()">📝 Blog</a>
     <a href="/products"      class="md-item" onclick="closeDrawer()">🔎 Search Products</a>
     <button type="button" class="md-item md-action" onclick="toggleCart();closeDrawer()">
