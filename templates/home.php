@@ -329,33 +329,31 @@ foreach ($categories as $cat) {
 </section>
 
 <?php if (!empty($catSpot)): ?>
-<section class="cs-section sec-tint-blue cs-full" data-reveal>
-  <div class="container">
-    <div class="sec-hdr" style="margin-bottom:18px">
-      <div>
-        <div class="sec-ey">Explore Print Categories</div>
-        <div class="sec-t">Pick Your Perfect Category</div>
-      </div>
+<section class="shop-cat-section" aria-labelledby="shopCatTitle" data-reveal>
+  <div class="shop-cat-container">
+    <div class="shop-cat-head">
+      <h2 class="shop-cat-title" id="shopCatTitle">Shop By <span>Category</span></h2>
+      <a href="/products" class="shop-cat-all">View All Products</a>
     </div>
-    <div class="cs-wrap" id="csWrap">
-      <button class="cs-nav prev" type="button" aria-label="Previous category" onclick="csPrev()">‹</button>
-      <div class="cs-track" id="csTrack">
-        <?php foreach ($catSpot as $i => $c): ?>
-        <article class="cs-card<?= $i === 0 ? ' is-active' : '' ?>">
-          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="cs-link">
-            <div class="cs-img">
-              <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy">
+
+    <div class="shop-cat-track" aria-label="Product categories">
+      <?php foreach ($catSpot as $i => $c): ?>
+        <article class="shop-cat-card">
+          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="shop-cat-link">
+            <div class="shop-cat-img">
+              <?php if (!empty($c['image'])): ?>
+                <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy">
+              <?php else: ?>
+                <div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($c['icon']) ?></div>
+              <?php endif; ?>
             </div>
-            <div class="cs-body">
-              <div class="cs-title"><?= htmlspecialchars($c['icon']) ?> <?= htmlspecialchars($c['name']) ?></div>
-              <div class="cs-meta"><?= (int)$c['count'] ?> products · Starting from ₹<?= $c['start'] > 0 ? number_format($c['start']) : '—' ?></div>
-              <span class="cs-cta">View Category →</span>
+            <div class="shop-cat-body">
+              <span class="shop-cat-icon" aria-hidden="true"><?= htmlspecialchars($c['icon']) ?></span>
+              <span class="shop-cat-name"><?= htmlspecialchars($c['name']) ?></span>
             </div>
           </a>
         </article>
-        <?php endforeach; ?>
-      </div>
-      <button class="cs-nav next" type="button" aria-label="Next category" onclick="csNext()">›</button>
+      <?php endforeach; ?>
     </div>
   </div>
 </section>
