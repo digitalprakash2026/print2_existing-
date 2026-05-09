@@ -3491,3 +3491,68 @@ html[data-motion='minimal'] .pd-main:hover img { transform:none !important; }
 @media (max-width:768px) {
   .all-blogs-grid { grid-template-columns:1fr; gap:16px; }
 }
+
+/* Home page typography readability tuning: soften heavy weights and loosen tight tracking. */
+.bs-title,
+.shop-cat-title,
+.why-print-heading,
+.best-deals-heading,
+.how-works-title,
+.customer-say-title,
+.blog-title {
+  font-weight:700;
+  letter-spacing:-.012em;
+}
+.bs-eyebrow,
+.bs-cta-primary,
+.bs-cta-wa,
+.shop-cat-all,
+.deal-card-band,
+.deal-cta,
+.deal-promo-cta,
+.blog-view-all,
+.blog-badge,
+.blog-read-more,
+.quick-help-copy strong,
+.footer-col h3,
+.footer-newsletter button {
+  font-weight:700;
+  letter-spacing:.005em;
+}
+.shop-cat-name,
+.why-print-copy h3,
+.deal-copy strong,
+.deal-promo-copy h3,
+.how-copy span,
+.how-copy h3,
+.customer-profile h3,
+.blog-content h3,
+.all-blogs-grid .blog-content h2,
+.quick-help-copy span,
+.footer-logo-main,
+.footer-logo-sub {
+  font-weight:700;
+  letter-spacing:0;
+}
+.blog-content h3,
+.all-blogs-grid .blog-content h2,
+.deal-promo-copy h3,
+.deal-copy strong,
+.quick-help-copy strong {
+  letter-spacing:-.005em;
+}
+.bs-sub,
+.deal-copy span,
+.deal-promo-copy p,
+.how-copy p,
+.customer-text,
+.blog-content p,
+.footer-desc,
+.footer-col a,
+.footer-col p,
+.footer-contact-item,
+.footer-copy,
+.footer-developed {
+  font-weight:400;
+  letter-spacing:.002em;
+}
