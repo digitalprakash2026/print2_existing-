@@ -170,61 +170,54 @@ foreach ($categories as $cat) {
 <?php endif; ?>
 
 
-<!-- WHY US -->
-<section class="sec sec-tint-warm" id="why-sec" data-reveal>
-  <div class="container">
-    <div class="sec-hdr" style="margin-bottom:28px">
-      <div>
-        <div class="sec-ey">Why RCS Graphic</div>
-        <div class="sec-t">Quality You Can Count On</div>
-      </div>
-      <a href="https://wa.me/<?= $bizWa ?>" target="_blank"
-         class="btn btn-outline btn-sm" style="font-size:13px">
-        💬 Talk to Us
-      </a>
-    </div>
-    <div class="why-grid">
+<!-- WHY CHOOSE -->
+<section class="why-print-section" id="why-sec" data-reveal>
+  <div class="why-print-container">
+    <h2 class="why-print-heading">Why Choose <span>RCS PRINT?</span></h2>
 
-      <div class="why-c" data-reveal data-reveal-delay="30">
-        <div class="why-ic" style="background:#EEF3FD">🖨️</div>
-        <div class="why-t">Premium Print Quality</div>
-        <div class="why-d">State-of-the-art printing technology ensuring sharp, vibrant and consistent results every time.</div>
-      </div>
+    <div class="why-print-panel" aria-label="Why choose RCS Print">
+      <article class="why-print-item">
+        <div class="why-print-icon why-print-purple"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></div>
+        <div class="why-print-copy">
+          <h3>Fast Delivery</h3>
+          <p>On-time delivery always guaranteed.</p>
+        </div>
+      </article>
 
-      <div class="why-c" data-reveal data-reveal-delay="60">
-        <div class="why-ic" style="background:#ECFDF5">⚡</div>
-        <div class="why-t">Fast Turnaround</div>
-        <div class="why-d">Same-day and next-day options available. We know deadlines matter for your business.</div>
-      </div>
+      <article class="why-print-item">
+        <div class="why-print-icon why-print-orange"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div>
+        <div class="why-print-copy">
+          <h3>Free Design Support</h3>
+          <p>Professional design support at no extra cost.</p>
+        </div>
+      </article>
 
-      <div class="why-c" data-reveal data-reveal-delay="90">
-        <div class="why-ic" style="background:#FFF4ED">💰</div>
-        <div class="why-t">Best Bulk Prices</div>
-        <div class="why-d">Competitive pricing with bulk discounts. The more you print, the more you save.</div>
-      </div>
+      <article class="why-print-item">
+        <div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div>
+        <div class="why-print-copy">
+          <h3>Premium Quality</h3>
+          <p>Best quality materials and printing.</p>
+        </div>
+      </article>
 
-      <div class="why-c" data-reveal data-reveal-delay="120">
-        <div class="why-ic" style="background:#FEF9C3">🎨</div>
-        <div class="why-t">Free Design Support</div>
-        <div class="why-d">Our creative team helps you get the perfect design ready for print for Your Bulk Orders.</div>
-      </div>
+      <article class="why-print-item">
+        <div class="why-print-icon why-print-purple"><i class="fa-solid fa-tags" aria-hidden="true"></i></div>
+        <div class="why-print-copy">
+          <h3>Affordable Pricing</h3>
+          <p>Low price with the best value.</p>
+        </div>
+      </article>
 
-      <div class="why-c" data-reveal data-reveal-delay="150">
-        <div class="why-ic" style="background:#F0F9FF">📦</div>
-        <div class="why-t">Safe Packaging</div>
-        <div class="why-d">Every order is carefully packed to ensure your prints arrive in perfect condition.</div>
-      </div>
-
-      <div class="why-c" data-reveal data-reveal-delay="180">
-        <div class="why-ic" style="background:#FDF4FF">🤝</div>
-        <div class="why-t">Dedicated Support</div>
-        <div class="why-d">Personal support via WhatsApp and phone. We're here at every step of your order.</div>
-      </div>
-
+      <article class="why-print-item">
+        <div class="why-print-icon why-print-orange"><i class="fa-solid fa-cube" aria-hidden="true"></i></div>
+        <div class="why-print-copy">
+          <h3>Bulk Order Specialist</h3>
+          <p>Special prices for bulk requirements.</p>
+        </div>
+      </article>
     </div>
   </div>
 </section>
-
 
 <!-- CTA BAND -->
 <section class="sec">
