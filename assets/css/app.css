@@ -976,11 +976,11 @@ textarea.fi  { resize:vertical; }
   font-size:20px; flex-shrink:0; line-height:1;
 }
 .shop-cat-section {
-  padding:28px 0 34px;
+  padding:34px 0 42px;
   background:#fff;
 }
 .shop-cat-container {
-  width:min(1540px, calc(100vw - 36px));
+  width:min(1680px, calc(100vw - 40px));
   margin:0 auto;
 }
 .shop-cat-head {
@@ -988,7 +988,7 @@ textarea.fi  { resize:vertical; }
   align-items:center;
   justify-content:space-between;
   gap:18px;
-  margin-bottom:18px;
+  margin-bottom:22px;
 }
 .shop-cat-title {
   font-family:'Poppins', var(--fn);
@@ -1023,8 +1023,8 @@ textarea.fi  { resize:vertical; }
 .shop-cat-track {
   display:grid;
   grid-auto-flow:column;
-  grid-auto-columns:calc((100% - 84px) / 7);
-  gap:14px;
+  grid-auto-columns:calc((100% - 80px) / 6);
+  gap:16px;
   overflow-x:auto;
   overflow-y:hidden;
   padding:2px 2px 10px;
@@ -1042,10 +1042,10 @@ textarea.fi  { resize:vertical; }
 }
 .shop-cat-link {
   display:flex;
-  min-height:200px;
+  min-height:244px;
   height:100%;
   flex-direction:column;
-  border-radius:14px;
+  border-radius:16px;
   overflow:hidden;
   background:linear-gradient(180deg,#fff 0%,#fbfbfc 100%);
   border:1px solid #e8eaee;
@@ -1059,18 +1059,18 @@ textarea.fi  { resize:vertical; }
 }
 .shop-cat-img {
   flex:1 1 auto;
-  min-height:142px;
+  min-height:178px;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:12px 14px 4px;
+  padding:16px 18px 6px;
   background:
     radial-gradient(120px 80px at 70% 15%, rgba(109,40,217,.07), transparent 62%),
     linear-gradient(180deg,#fff 0%,#f8f9fb 100%);
 }
 .shop-cat-img img {
   width:100%;
-  height:130px;
+  height:164px;
   object-fit:contain;
   object-position:center;
   filter:drop-shadow(0 10px 14px rgba(15,23,42,.12));
@@ -1089,11 +1089,11 @@ textarea.fi  { resize:vertical; }
   box-shadow:inset 0 0 0 1px rgba(234,88,12,.12);
 }
 .shop-cat-body {
-  min-height:48px;
+  min-height:58px;
   display:flex;
   align-items:center;
   gap:9px;
-  padding:8px 14px 13px;
+  padding:10px 16px 15px;
 }
 .shop-cat-icon {
   width:28px;
@@ -1116,7 +1116,7 @@ textarea.fi  { resize:vertical; }
   min-width:0;
   color:var(--orange);
   font-family:'Poppins', var(--fn);
-  font-size:13px;
+  font-size:14px;
   font-weight:800;
   line-height:1.2;
   white-space:nowrap;
@@ -1782,7 +1782,7 @@ textarea.fi  { resize:vertical; }
   .ord-ship-grid { grid-template-columns:1fr 1fr; }
   .ord-cust-actions { flex-wrap:wrap; }
   .pc-carousel-card { flex:0 0 calc(33.333% - 14px); }
-  .shop-cat-track { grid-auto-columns:calc((100% - 56px) / 5); }
+  .shop-cat-track { grid-auto-columns:calc((100% - 54px) / 4); gap:18px; }
 }
 
 @media (max-width:900px) {
@@ -1823,7 +1823,7 @@ textarea.fi  { resize:vertical; }
   body.adm-sb-open .adm-sb-backdrop { display:block; }
   .anl-grid{ grid-template-columns:1fr; }
   .pc-carousel-card { flex:0 0 calc(50% - 10px); }
-  .shop-cat-track { grid-auto-columns:calc((100% - 28px) / 3); }
+  .shop-cat-track { grid-auto-columns:calc((100% - 32px) / 3); gap:16px; }
 }
 
 @media (max-width:768px) {
@@ -1849,20 +1849,20 @@ textarea.fi  { resize:vertical; }
   .bs-actions { gap:7px; }
   /* Category page grid */
   .cat-page-grid { grid-template-columns:repeat(2,1fr) !important; }
-  .shop-cat-section { padding:22px 0 28px; }
+  .shop-cat-section { padding:26px 0 32px; }
   .shop-cat-container { width:min(100%, calc(100vw - 24px)); }
   .shop-cat-head { margin-bottom:14px; }
   .shop-cat-track {
-    grid-auto-columns:minmax(152px, 42vw);
+    grid-auto-columns:minmax(172px, 44vw);
     gap:12px;
     padding-bottom:8px;
     scroll-snap-type:x mandatory;
     scrollbar-width:none;
   }
   .shop-cat-track::-webkit-scrollbar { display:none; }
-  .shop-cat-link { min-height:178px; border-radius:13px; }
-  .shop-cat-img { min-height:122px; padding:10px 12px 2px; }
-  .shop-cat-img img { height:112px; }
+  .shop-cat-link { min-height:194px; border-radius:14px; }
+  .shop-cat-img { min-height:136px; padding:12px 14px 4px; }
+  .shop-cat-img img { height:126px; }
   .shop-cat-body { padding:7px 10px 11px; gap:7px; }
   .shop-cat-icon { width:25px; height:25px; flex-basis:25px; font-size:12px; }
   .shop-cat-name { font-size:12px; }
@@ -1910,10 +1910,10 @@ textarea.fi  { resize:vertical; }
   .shop-cat-head { align-items:flex-start; }
   .shop-cat-title { font-size:22px; }
   .shop-cat-all { min-height:32px; padding:0 14px; font-size:10px; }
-  .shop-cat-track { grid-auto-columns:minmax(138px, 58vw); }
-  .shop-cat-link { min-height:166px; }
-  .shop-cat-img { min-height:112px; }
-  .shop-cat-img img { height:102px; }
+  .shop-cat-track { grid-auto-columns:minmax(156px, 62vw); }
+  .shop-cat-link { min-height:184px; }
+  .shop-cat-img { min-height:126px; }
+  .shop-cat-img img { height:116px; }
   .bs-actions { width:100%; }
   .bs-actions .bs-cta-primary, .bs-actions .bs-cta-wa { flex:1 1 auto; justify-content:center; padding:8px 9px; }
 }

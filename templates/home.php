@@ -162,6 +162,37 @@ foreach ($categories as $cat) {
   </div>
 </div>
 
+<?php if (!empty($catSpot)): ?>
+<section class="shop-cat-section" aria-labelledby="shopCatTitle" data-reveal>
+  <div class="shop-cat-container">
+    <div class="shop-cat-head">
+      <h2 class="shop-cat-title" id="shopCatTitle">Shop By <span>Category</span></h2>
+      <a href="/products" class="shop-cat-all">View All Products</a>
+    </div>
+
+    <div class="shop-cat-track" aria-label="Product categories">
+      <?php foreach ($catSpot as $i => $c): ?>
+        <article class="shop-cat-card">
+          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="shop-cat-link">
+            <div class="shop-cat-img">
+              <?php if (!empty($c['image'])): ?>
+                <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy">
+              <?php else: ?>
+                <div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($c['icon']) ?></div>
+              <?php endif; ?>
+            </div>
+            <div class="shop-cat-body">
+              <span class="shop-cat-icon" aria-hidden="true"><?= htmlspecialchars($c['icon']) ?></span>
+              <span class="shop-cat-name"><?= htmlspecialchars($c['name']) ?></span>
+            </div>
+          </a>
+        </article>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
+
 
 <!-- ═══════════════════════════════════════════════════════════
      PRODUCTS SECTION — Category-based boxes with 4 products each
@@ -328,36 +359,6 @@ foreach ($categories as $cat) {
   </div>
 </section>
 
-<?php if (!empty($catSpot)): ?>
-<section class="shop-cat-section" aria-labelledby="shopCatTitle" data-reveal>
-  <div class="shop-cat-container">
-    <div class="shop-cat-head">
-      <h2 class="shop-cat-title" id="shopCatTitle">Shop By <span>Category</span></h2>
-      <a href="/products" class="shop-cat-all">View All Products</a>
-    </div>
-
-    <div class="shop-cat-track" aria-label="Product categories">
-      <?php foreach ($catSpot as $i => $c): ?>
-        <article class="shop-cat-card">
-          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="shop-cat-link">
-            <div class="shop-cat-img">
-              <?php if (!empty($c['image'])): ?>
-                <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy">
-              <?php else: ?>
-                <div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($c['icon']) ?></div>
-              <?php endif; ?>
-            </div>
-            <div class="shop-cat-body">
-              <span class="shop-cat-icon" aria-hidden="true"><?= htmlspecialchars($c['icon']) ?></span>
-              <span class="shop-cat-name"><?= htmlspecialchars($c['name']) ?></span>
-            </div>
-          </a>
-        </article>
-      <?php endforeach; ?>
-    </div>
-  </div>
-</section>
-<?php endif; ?>
 
 <!-- CTA BAND -->
 <section class="sec">
