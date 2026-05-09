@@ -337,6 +337,89 @@ foreach ($categories as $cat) {
   </div>
 </section>
 
+
+<!-- CUSTOMER TESTIMONIALS -->
+<section class="customer-say-section" aria-labelledby="customerSayTitle" data-reveal>
+  <div class="customer-say-container">
+    <h2 class="customer-say-title" id="customerSayTitle">What Our <span>Customers</span> Say</h2>
+
+    <div class="customer-say-shell">
+      <button class="customer-nav customer-nav-prev" type="button" aria-label="Previous testimonial">
+        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+      </button>
+
+      <div class="customer-say-track" role="list">
+        <article class="customer-card" role="listitem">
+          <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
+          <p class="customer-text">Excellent quality printing and super fast service. Highly recommended!</p>
+          <div class="customer-stars" aria-label="5 out of 5 stars">
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+          </div>
+          <div class="customer-profile">
+            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&q=80&fit=crop&crop=faces" alt="Rakesh Mehta" loading="lazy">
+            <div>
+              <h3>– Rakesh Mehta</h3>
+              <span>Business Owner</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="customer-card" role="listitem">
+          <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
+          <p class="customer-text">Very professional design support and premium quality prints.</p>
+          <div class="customer-stars" aria-label="5 out of 5 stars">
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+          </div>
+          <div class="customer-profile">
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&q=80&fit=crop&crop=faces" alt="Khushbu Shah" loading="lazy">
+            <div>
+              <h3>– Khushbu Shah</h3>
+              <span>Marketing Head</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="customer-card" role="listitem">
+          <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
+          <p class="customer-text">Best experience for bulk printing. Great price and on-time delivery.</p>
+          <div class="customer-stars" aria-label="5 out of 5 stars">
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+          </div>
+          <div class="customer-profile">
+            <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=160&q=80&fit=crop&crop=faces" alt="Jigar Patel" loading="lazy">
+            <div>
+              <h3>– Jigar Patel</h3>
+              <span>Event Organizer</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <button class="customer-nav customer-nav-next" type="button" aria-label="Next testimonial">
+        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="customer-dots" aria-label="Testimonials pagination">
+      <span class="customer-dot customer-dot-green"></span>
+      <span class="customer-dot customer-dot-active"></span>
+      <span class="customer-dot customer-dot-green"></span>
+    </div>
+  </div>
+</section>
+
 <!-- CTA BAND -->
 <section class="sec">
   <div class="container">
@@ -428,6 +511,23 @@ foreach ($categories as $cat) {
 <!-- No carousel/filter JS needed with new category layout -->
 
 <script>
+document.querySelectorAll('.customer-say-shell').forEach((shell) => {
+  const track = shell.querySelector('.customer-say-track');
+  const cards = Array.from(shell.querySelectorAll('.customer-card'));
+  const prev = shell.querySelector('.customer-nav-prev');
+  const next = shell.querySelector('.customer-nav-next');
+  if (!track || !cards.length || !prev || !next) return;
+
+  const scrollTestimonials = (direction) => {
+    const cardGap = parseFloat(getComputedStyle(track).gap || '0');
+    const step = cards[0].getBoundingClientRect().width + cardGap;
+    track.scrollBy({ left: direction * step, behavior: 'smooth' });
+  };
+
+  prev.addEventListener('click', () => scrollTestimonials(-1));
+  next.addEventListener('click', () => scrollTestimonials(1));
+});
+
 // Enquiry (WhatsApp)
 function sendEnquiry() {
   const n = document.getElementById('ct-name').value.trim();
