@@ -518,41 +518,93 @@ foreach ($categories as $cat) {
 
 
 <!-- FOOTER -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer-grid">
-      <div class="f-col-brand">
-        <div class="f-brand"><?= $bizName ?></div>
-        <div class="f-desc">Premium printing services for businesses. Quality that speaks for itself.</div>
-        <div class="f-brand-cta">
-          <button class="f-wa-btn" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
+<footer class="footer" aria-label="Site footer">
+  <div class="footer-container">
+    <div class="footer-main">
+      <div class="footer-brand-col">
+        <a href="/" class="footer-logo" aria-label="RCS Print home">
+          <span class="footer-logo-main">RCS</span>
+          <span class="footer-logo-sub">PRINT</span>
+        </a>
+        <p class="footer-desc">Your one-stop solution for all your printing needs. Quality prints that represent your brand perfectly.</p>
+        <div class="footer-social" aria-label="Social links">
+          <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+          <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+          <a href="https://wa.me/<?= $bizWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
+          <a href="/#quick-help-sec" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
         </div>
       </div>
-      <div>
-        <div class="f-lbl">Products</div>
-        <?php foreach (array_slice($categories ?? [], 0, 6) as $c): ?>
-        <a class="f-link" href="/category/<?= htmlspecialchars($c['slug']) ?>"><?= htmlspecialchars($c['name']) ?></a>
-        <?php endforeach; ?>
-      </div>
-      <div>
-        <div class="f-lbl">Company</div>
-        <a class="f-link" href="/">Home</a>
-        <a class="f-link" href="/#why-sec">Why Us</a>
-        <a class="f-link" href="/login">Login / Register</a>
-        <a class="f-link" href="/admin">Admin Panel</a>
-      </div>
-      <div>
-        <div class="f-lbl">Contact</div>
-        <div class="f-contact">
-          <div class="f-link"><?= $bizPhone ?></div>
-          <div class="f-link"><?= $bizEmail ?></div>
-          <div class="f-link" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')" style="cursor:pointer">WhatsApp Chat</div>
+
+      <nav class="footer-col" aria-label="Quick links">
+        <h3>Quick Links</h3>
+        <a href="/">Home</a>
+        <a href="/#why-sec">About Us</a>
+        <a href="/products">Products</a>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
+        <a href="/#quick-help-sec">Contact Us</a>
+      </nav>
+
+      <nav class="footer-col" aria-label="Products">
+        <h3>Products</h3>
+        <a href="/products">Business Cards</a>
+        <a href="/products">Flyers</a>
+        <a href="/products">Brochures</a>
+        <a href="/products">Posters</a>
+        <a href="/products">Diaries</a>
+        <a href="/products">Calendars</a>
+        <a href="/products">Stationery &amp; More</a>
+      </nav>
+
+      <nav class="footer-col" aria-label="Customer service">
+        <h3>Customer Service</h3>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
+        <a href="/my-orders">Track Order</a>
+        <a href="/products">Shipping Policy</a>
+        <a href="/products">Refund &amp; Return</a>
+        <a href="/terms-and-conditions">Terms &amp; Conditions</a>
+        <a href="/terms-and-conditions">Privacy Policy</a>
+      </nav>
+
+      <div class="footer-col footer-contact-col">
+        <h3>Contact Us</h3>
+        <div class="footer-contact-item">
+          <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+          <span><?= $bizAddr ?></span>
         </div>
+        <a class="footer-contact-item" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span><?= $bizPhone ?></span>
+        </a>
+        <a class="footer-contact-item" href="mailto:<?= $bizEmail ?>">
+          <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+          <span><?= $bizEmail ?></span>
+        </a>
+        <div class="footer-contact-item">
+          <i class="fa-regular fa-clock" aria-hidden="true"></i>
+          <span>Mon - Sat: 10:00 AM - 7:00 PM</span>
+        </div>
+      </div>
+
+      <div class="footer-col footer-newsletter-col">
+        <h3>Newsletter</h3>
+        <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
+        <form class="footer-newsletter" action="/products" method="get">
+          <label class="sr-only" for="footerEmail">Enter your email</label>
+          <input id="footerEmail" name="email" type="email" placeholder="Enter your email" autocomplete="email">
+          <button type="submit">Subscribe</button>
+        </form>
       </div>
     </div>
-    <div class="f-bot">
-      <div>© <?= date('Y') ?> <?= $bizName ?>. All rights reserved.</div>
-      <div>Developed By Prakash Karena</div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">© <?= date('Y') ?> RCS PRINT. All Rights Reserved.</div>
+      <div class="footer-payments" aria-label="Accepted payments">
+        <span>VISA</span>
+        <span>Mastercard</span>
+        <span>UPI</span>
+        <span>Paytm</span>
+      </div>
+      <div class="footer-developed">Developed By Prakash Karena</div>
     </div>
   </div>
 </footer>
