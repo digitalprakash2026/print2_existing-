@@ -157,4 +157,26 @@ include INCLUDE_PATH . '/partials/header.php';
   </div>
 </main>
 
+
+<script>
+(() => {
+  const panel = document.querySelector('.all-cat-filter-panel');
+  if (!panel) return;
+  const mobileQuery = window.matchMedia('(max-width: 820px)');
+  const syncFilterPanel = (event) => {
+    if (mobileQuery.matches) {
+      if (!event) panel.open = false;
+    } else {
+      panel.open = true;
+    }
+  };
+  syncFilterPanel();
+  if (typeof mobileQuery.addEventListener === 'function') {
+    mobileQuery.addEventListener('change', syncFilterPanel);
+  } else if (typeof mobileQuery.addListener === 'function') {
+    mobileQuery.addListener(syncFilterPanel);
+  }
+})();
+</script>
+
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
