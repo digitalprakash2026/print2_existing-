@@ -475,6 +475,9 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     }
     if ($uri === '/admin/api/banners' && $method === 'POST') {
+        if (trim((string)($body['image_path'] ?? '')) === '') {
+            json(['ok'=>false,'msg'=>'Banner image path is required'], 400);
+        }
         try {
             $id = Database::insert(
                 "INSERT INTO home_banners (eyebrow,title,subtitle,image_path,image_alt,cta_primary_text,cta_primary_url,cta_secondary_text,cta_secondary_type,cta_secondary_url,sort_order,is_active,created_at,updated_at)
@@ -485,9 +488,9 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['subtitle'] ?? '')),
                     trim((string)($body['image_path'] ?? '')),
                     trim((string)($body['image_alt'] ?? '')),
-                    trim((string)($body['cta_primary_text'] ?? 'View Products →')),
-                    trim((string)($body['cta_primary_url'] ?? '#')),
-                    trim((string)($body['cta_secondary_text'] ?? '💬 WhatsApp')),
+                    trim((string)($body['cta_primary_text'] ?? '')),
+                    trim((string)($body['cta_primary_url'] ?? '')),
+                    trim((string)($body['cta_secondary_text'] ?? '')),
                     trim((string)($body['cta_secondary_type'] ?? 'whatsapp')),
                     trim((string)($body['cta_secondary_url'] ?? '')),
                     (int)($body['sort_order'] ?? 0),
@@ -500,6 +503,9 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     }
     if (preg_match('#^/admin/api/banners/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        if (trim((string)($body['image_path'] ?? '')) === '') {
+            json(['ok'=>false,'msg'=>'Banner image path is required'], 400);
+        }
         try {
             Database::query(
                 "UPDATE home_banners
@@ -511,9 +517,9 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['subtitle'] ?? '')),
                     trim((string)($body['image_path'] ?? '')),
                     trim((string)($body['image_alt'] ?? '')),
-                    trim((string)($body['cta_primary_text'] ?? 'View Products →')),
-                    trim((string)($body['cta_primary_url'] ?? '#')),
-                    trim((string)($body['cta_secondary_text'] ?? '💬 WhatsApp')),
+                    trim((string)($body['cta_primary_text'] ?? '')),
+                    trim((string)($body['cta_primary_url'] ?? '')),
+                    trim((string)($body['cta_secondary_text'] ?? '')),
                     trim((string)($body['cta_secondary_type'] ?? 'whatsapp')),
                     trim((string)($body['cta_secondary_url'] ?? '')),
                     (int)($body['sort_order'] ?? 0),

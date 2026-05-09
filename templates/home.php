@@ -19,111 +19,102 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 <!-- ═══════════════════════════════════════════════════════════
      BANNER SLIDER
      ─────────────────────────────────────────────────────────
-     HOW TO CHANGE SLIDES:
-       • Change background images: edit the <img src="..."> in each .bs-slide
-       • Change slide text: edit .bs-eyebrow, .bs-title, .bs-sub
-       • Change CTA buttons: edit href on .bs-cta-primary / .bs-cta-wa
-       • Add/remove slides: copy a .bs-slide div and add a matching .bs-dot
-       • Auto-advance interval: edit `10000` in app.js → initBannerSlider()
+     Admin-managed, image-first banner slider. Optional text/CTA fields
+     render only when filled, so a designed clickable banner image can
+     stand on its own across desktop and mobile.
 ═══════════════════════════════════════════════════════════════ -->
 <div class="banner-slider" id="bannerSlider">
   <?php
   $fallbackBanners = [
     [
-      'eyebrow' => 'New Arrivals',
-      'title' => 'Premium Business<br>Cards That Impress',
-      'subtitle' => '400 GSM thick stock, UV coating, matte finish.<br>Make every handshake count.',
+      'eyebrow' => 'Premium Print Studio',
+      'title' => 'Print That Grows<br>Your Business',
+      'subtitle' => 'Business cards, flyers, brochures, posters and more with fast Rajkot delivery.',
       'image_path' => 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=1400&q=85&fit=crop',
       'image_alt' => 'Premium Business Card Printing',
-      'cta_primary_text' => 'View Products →',
-      'cta_primary_url' => '/category/cards',
-      'cta_secondary_text' => '💬 WhatsApp',
-      'cta_secondary_type' => 'whatsapp',
-      'cta_secondary_url' => '',
-    ],
-    [
-      'eyebrow' => 'Best Seller',
-      'title' => 'Brochures That<br>Tell Your Story',
-      'subtitle' => 'Tri-fold, bi-fold, A4 or custom sizes.<br>Full colour, gloss or matte finish.',
-      'image_path' => 'https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=1400&q=85&fit=crop',
-      'image_alt' => 'Brochure Printing',
-      'cta_primary_text' => 'View Products →',
-      'cta_primary_url' => '/category/brochures',
-      'cta_secondary_text' => '💬 WhatsApp',
-      'cta_secondary_type' => 'whatsapp',
-      'cta_secondary_url' => '',
-    ],
-    [
-      'eyebrow' => 'Large Format',
-      'title' => 'Banners &amp; Posters<br>That Grab Attention',
-      'subtitle' => 'Weather-resistant flex banners, standees,<br>hoarding prints — any size.',
-      'image_path' => 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1400&q=85&fit=crop',
-      'image_alt' => 'Banner Printing',
-      'cta_primary_text' => 'View Products →',
-      'cta_primary_url' => '/category/banners',
-      'cta_secondary_text' => '💬 WhatsApp',
-      'cta_secondary_type' => 'whatsapp',
-      'cta_secondary_url' => '',
-    ],
-    [
-      'eyebrow' => 'Fast Turnaround',
-      'title' => 'Flyers &amp; Pamphlets<br>Delivered in 24 hrs',
-      'subtitle' => 'High-volume offset printing, vibrant colours,<br>bulk discounts available.',
-      'image_path' => 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1400&q=85&fit=crop',
-      'image_alt' => 'Flyer Printing',
-      'cta_primary_text' => 'View Products →',
-      'cta_primary_url' => '/category/flyers',
-      'cta_secondary_text' => '💬 WhatsApp',
-      'cta_secondary_type' => 'whatsapp',
-      'cta_secondary_url' => '',
+      'cta_primary_text' => 'Order Now',
+      'cta_primary_url' => '/products',
+      'cta_secondary_text' => 'Get Free Design',
+      'cta_secondary_type' => 'url',
+      'cta_secondary_url' => '/#contact-sec',
     ],
   ];
-  $bannerSlides = !empty($homeBanners ?? []) ? $homeBanners : $fallbackBanners;
+  $bannerSlides = array_values(array_filter(!empty($homeBanners ?? []) ? $homeBanners : $fallbackBanners, static function ($slide) {
+    return trim((string)($slide['image_path'] ?? '')) !== '';
+  }));
+  $formatBannerHtml = static function ($value): string {
+    $safe = htmlspecialchars(trim((string)$value), ENT_QUOTES, 'UTF-8');
+    return preg_replace('/&lt;br\s*\/?&gt;/i', '<br>', $safe) ?? $safe;
+  };
   foreach ($bannerSlides as $i => $slide):
-    $img = htmlspecialchars((string)($slide['image_path'] ?? ''));
-    $alt = htmlspecialchars((string)($slide['image_alt'] ?? ('Slide ' . ($i + 1))));
-    $eyebrow = (string)($slide['eyebrow'] ?? '');
-    $title = strip_tags((string)($slide['title'] ?? ''), '<br><br/>');
-    $subtitle = strip_tags((string)($slide['subtitle'] ?? ''), '<br><br/>');
-    $ctaPrimaryText = htmlspecialchars((string)($slide['cta_primary_text'] ?? 'View Products →'));
-    $ctaPrimaryUrl = htmlspecialchars((string)($slide['cta_primary_url'] ?? '#'));
-    $ctaSecondaryText = htmlspecialchars((string)($slide['cta_secondary_text'] ?? '💬 WhatsApp'));
+    $rawImg = trim((string)($slide['image_path'] ?? ''));
+    $img = htmlspecialchars($rawImg, ENT_QUOTES, 'UTF-8');
+    $altText = trim((string)($slide['image_alt'] ?? '')) ?: ('RCS Graphic banner ' . ($i + 1));
+    $alt = htmlspecialchars($altText, ENT_QUOTES, 'UTF-8');
+    $eyebrow = trim((string)($slide['eyebrow'] ?? ''));
+    $title = $formatBannerHtml($slide['title'] ?? '');
+    $subtitle = $formatBannerHtml($slide['subtitle'] ?? '');
+    $ctaPrimaryTextRaw = trim((string)($slide['cta_primary_text'] ?? ''));
+    $ctaPrimaryUrlRaw = trim((string)($slide['cta_primary_url'] ?? ''));
+    $ctaPrimaryText = htmlspecialchars($ctaPrimaryTextRaw, ENT_QUOTES, 'UTF-8');
+    $ctaPrimaryUrl = htmlspecialchars($ctaPrimaryUrlRaw, ENT_QUOTES, 'UTF-8');
+    $ctaSecondaryTextRaw = trim((string)($slide['cta_secondary_text'] ?? ''));
+    $ctaSecondaryText = htmlspecialchars($ctaSecondaryTextRaw, ENT_QUOTES, 'UTF-8');
     $ctaSecondaryType = strtolower(trim((string)($slide['cta_secondary_type'] ?? 'whatsapp')));
-    $ctaSecondaryUrl = trim((string)($slide['cta_secondary_url'] ?? ''));
+    $ctaSecondaryUrlRaw = trim((string)($slide['cta_secondary_url'] ?? ''));
+    $ctaSecondaryUrl = htmlspecialchars($ctaSecondaryUrlRaw, ENT_QUOTES, 'UTF-8');
+    $hasPrimaryCta = $ctaPrimaryTextRaw !== '' && $ctaPrimaryUrlRaw !== '' && $ctaPrimaryUrlRaw !== '#';
+    $hasSecondaryCta = $ctaSecondaryTextRaw !== '' && ($ctaSecondaryType !== 'url' || ($ctaSecondaryUrlRaw !== '' && $ctaSecondaryUrlRaw !== '#'));
+    $hasContent = $eyebrow !== '' || $title !== '' || $subtitle !== '' || $hasPrimaryCta || $hasSecondaryCta;
+    $slideClickUrl = $hasPrimaryCta ? $ctaPrimaryUrl : '';
   ?>
-  <div class="bs-slide">
-    <img src="<?= $img ?>" alt="<?= $alt ?>">
-    <div class="bs-overlay"></div>
-    <div class="bs-content">
-      <div class="bs-eyebrow"><?= htmlspecialchars($eyebrow) ?></div>
-      <div class="bs-title"><?= $title ?></div>
-      <div class="bs-sub"><?= $subtitle ?></div>
-      <div class="bs-actions">
-        <a href="<?= $ctaPrimaryUrl ?>" class="bs-cta-primary"><?= $ctaPrimaryText ?></a>
-        <?php if ($ctaSecondaryType === 'url' && $ctaSecondaryUrl !== ''): ?>
-          <a href="<?= htmlspecialchars($ctaSecondaryUrl) ?>" class="bs-cta-wa"><?= $ctaSecondaryText ?></a>
-        <?php else: ?>
-          <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')"><?= $ctaSecondaryText ?></button>
+  <div class="bs-slide <?= $hasContent ? 'has-content' : 'image-only' ?>">
+    <?php if ($slideClickUrl !== ''): ?>
+      <a class="bs-image-link" href="<?= $slideClickUrl ?>" aria-label="<?= $alt ?>">
+        <img src="<?= $img ?>" alt="<?= $alt ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async">
+      </a>
+    <?php else: ?>
+      <img src="<?= $img ?>" alt="<?= $alt ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async">
+    <?php endif; ?>
+    <?php if ($hasContent): ?>
+      <div class="bs-overlay" aria-hidden="true"></div>
+      <div class="bs-content">
+        <?php if ($eyebrow !== ''): ?><div class="bs-eyebrow"><?= htmlspecialchars($eyebrow, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+        <?php if ($title !== ''): ?><div class="bs-title"><?= $title ?></div><?php endif; ?>
+        <?php if ($subtitle !== ''): ?><div class="bs-sub"><?= $subtitle ?></div><?php endif; ?>
+        <?php if ($hasPrimaryCta || $hasSecondaryCta): ?>
+          <div class="bs-actions">
+            <?php if ($hasPrimaryCta): ?><a href="<?= $ctaPrimaryUrl ?>" class="bs-cta-primary"><?= $ctaPrimaryText ?></a><?php endif; ?>
+            <?php if ($hasSecondaryCta): ?>
+              <?php if ($ctaSecondaryType === 'url'): ?>
+                <a href="<?= $ctaSecondaryUrl ?>" class="bs-cta-wa"><?= $ctaSecondaryText ?></a>
+              <?php else: ?>
+                <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')" type="button"><?= $ctaSecondaryText ?></button>
+              <?php endif; ?>
+            <?php endif; ?>
+          </div>
         <?php endif; ?>
       </div>
-    </div>
+    <?php endif; ?>
   </div>
   <?php endforeach; ?>
 
-  <!-- Prev / Next arrows -->
-  <button class="bs-prev" onclick="document.getElementById('bannerSlider')._sliderPrev()" aria-label="Previous slide">
-    <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-  </button>
-  <button class="bs-next" onclick="document.getElementById('bannerSlider')._sliderNext()" aria-label="Next slide">
-    <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-  </button>
+  <?php if (count($bannerSlides) > 1): ?>
+    <!-- Prev / Next arrows -->
+    <button class="bs-prev" onclick="document.getElementById('bannerSlider')._sliderPrev()" aria-label="Previous slide">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <button class="bs-next" onclick="document.getElementById('bannerSlider')._sliderNext()" aria-label="Next slide">
+      <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+    </button>
 
-  <!-- Dot indicators -->
-  <div class="bs-dots">
-    <?php foreach ($bannerSlides as $i => $_): ?>
-      <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(<?= (int)$i ?>)" aria-label="Slide <?= (int)$i + 1 ?>"></button>
-    <?php endforeach; ?>
-  </div>
+    <!-- Dot indicators -->
+    <div class="bs-dots">
+      <?php foreach ($bannerSlides as $i => $_): ?>
+        <button class="bs-dot" onclick="document.getElementById('bannerSlider')._sliderGoTo(<?= (int)$i ?>)" aria-label="Slide <?= (int)$i + 1 ?>"></button>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
 </div>
 
 <section class="hp-proof" aria-label="Customer trust highlights">
