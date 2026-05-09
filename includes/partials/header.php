@@ -117,7 +117,7 @@ $currentUri  = $uri ?? '/';
           </li>
           <li><a href="/#why-sec" class="nav-link rcs-nav-link">About Us</a></li>
           <li><a href="/#quick-help-sec" class="nav-link rcs-nav-link">Contact Us</a></li>
-          <li><a href="/products" class="nav-link rcs-nav-link">Blog</a></li>
+          <li><a href="/#blogs-sec" class="nav-link rcs-nav-link">Blog</a></li>
           <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link rcs-nav-link">My Account</a></li>
         </ul>
       </div>
@@ -174,7 +174,7 @@ $currentUri  = $uri ?? '/';
 
     <a href="/#why-sec"     class="md-item" onclick="closeDrawer()">⭐ About Us</a>
     <a href="/#quick-help-sec" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
-    <a href="/products"      class="md-item" onclick="closeDrawer()">📝 Blog</a>
+    <a href="/#blogs-sec"    class="md-item" onclick="closeDrawer()">📝 Blog</a>
     <a href="/products"      class="md-item" onclick="closeDrawer()">🔎 Search Products</a>
     <button type="button" class="md-item md-action" onclick="toggleCart();closeDrawer()">
       🛒 Cart <span class="md-cart-badge">2</span>

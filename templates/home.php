@@ -480,65 +480,104 @@ foreach ($categories as $cat) {
 
 
 <!-- FROM OUR BLOGS -->
-<section class="blog-section" aria-labelledby="blogTitle" data-reveal>
+<section class="blog-section" id="blogs-sec" aria-labelledby="blogTitle" data-reveal>
   <div class="blog-container">
     <div class="blog-head">
       <h2 class="blog-title" id="blogTitle">From Our <span>Blogs</span></h2>
-      <a class="blog-view-all" href="/products">View All</a>
+      <a class="blog-view-all" href="/#blogs-sec">View All</a>
     </div>
+
+    <?php
+    $fallbackBlogs = [
+      [
+        'title' => 'How to Choose the Perfect Business Card Finish',
+        'slug' => 'how-to-choose-the-perfect-business-card-finish',
+        'excerpt' => 'Learn when to pick matte, gloss, textured or premium laminated cards for a stronger first impression.',
+        'featured_image' => 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=900&q=85&fit=crop',
+        'image_alt' => 'Premium printed business cards arranged on a desk',
+        'category' => 'Print Tips',
+        'badge_theme' => 'purple',
+        'published_at' => '2026-05-09 10:00:00',
+      ],
+      [
+        'title' => '5 Flyer Design Ideas That Get More Customers',
+        'slug' => '5-flyer-design-ideas-that-get-more-customers',
+        'excerpt' => 'Simple layout, color and copy tips to make your next flyer campaign clear, attractive and conversion focused.',
+        'featured_image' => 'https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=900&q=85&fit=crop',
+        'image_alt' => 'Creative flyer and brochure design samples',
+        'category' => 'Design Ideas',
+        'badge_theme' => 'orange',
+        'published_at' => '2026-05-05 10:00:00',
+      ],
+      [
+        'title' => 'Bulk Printing Checklist for Events and Shops',
+        'slug' => 'bulk-printing-checklist-for-events-and-shops',
+        'excerpt' => 'Plan quantities, paper type, delivery timing and finishing options before placing your next large print order.',
+        'featured_image' => 'https://images.unsplash.com/photo-1600172454284-934feca24de6?w=900&q=85&fit=crop',
+        'image_alt' => 'Stacks of brochures and colorful printed material',
+        'category' => 'Bulk Orders',
+        'badge_theme' => 'green',
+        'published_at' => '2026-05-02 10:00:00',
+      ],
+    ];
+    $blogCards = !empty($homeBlogs ?? []) ? $homeBlogs : $fallbackBlogs;
+    $blogBadgeClass = static function ($theme): string {
+      $theme = strtolower(trim((string)$theme));
+      return match ($theme) {
+        'orange' => ' blog-badge-orange',
+        'green' => ' blog-badge-green',
+        default => '',
+      };
+    };
+    $formatBlogDate = static function ($value): string {
+      $time = strtotime((string)$value);
+      return $time ? date('d M, Y', $time) : date('d M, Y');
+    };
+    ?>
 
     <div class="blog-grid" role="list">
+      <?php foreach ($blogCards as $blog):
+        $blogTitleRaw = trim((string)($blog['title'] ?? 'Blog'));
+        $blogSlugRaw = trim((string)($blog['slug'] ?? ''));
+        $blogUrl = $blogSlugRaw !== '' ? '/blog/' . rawurlencode($blogSlugRaw) : '/#blogs-sec';
+        $blogImageRaw = trim((string)($blog['featured_image'] ?? ''));
+        $blogAltRaw = trim((string)($blog['image_alt'] ?? '')) ?: $blogTitleRaw;
+        $blogCategoryRaw = trim((string)($blog['category'] ?? 'Print Tips')) ?: 'Print Tips';
+        $blogExcerptRaw = trim((string)($blog['excerpt'] ?? ''));
+        $blogTitle = htmlspecialchars($blogTitleRaw, ENT_QUOTES, 'UTF-8');
+        $blogImage = htmlspecialchars($blogImageRaw, ENT_QUOTES, 'UTF-8');
+        $blogAlt = htmlspecialchars($blogAltRaw, ENT_QUOTES, 'UTF-8');
+        $blogCategory = htmlspecialchars($blogCategoryRaw, ENT_QUOTES, 'UTF-8');
+        $blogExcerpt = htmlspecialchars($blogExcerptRaw, ENT_QUOTES, 'UTF-8');
+        $blogDate = htmlspecialchars($formatBlogDate($blog['published_at'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $badgeClass = $blogBadgeClass($blog['badge_theme'] ?? 'purple');
+      ?>
       <article class="blog-card" role="listitem">
-        <a href="/products" class="blog-card-link" aria-label="Read blog: How to Choose the Perfect Business Card Finish">
+        <a href="<?= htmlspecialchars($blogUrl, ENT_QUOTES, 'UTF-8') ?>" class="blog-card-link" aria-label="Read blog: <?= $blogTitle ?>">
           <div class="blog-image">
-            <img src="https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=900&q=85&fit=crop" alt="Premium printed business cards arranged on a desk" loading="lazy">
-            <span class="blog-badge">Print Tips</span>
+            <?php if ($blogImageRaw !== ''): ?>
+              <img src="<?= $blogImage ?>" alt="<?= $blogAlt ?>" loading="lazy">
+            <?php endif; ?>
+            <span class="blog-badge<?= $badgeClass ?>"><?= $blogCategory ?></span>
           </div>
           <div class="blog-content">
-            <div class="blog-meta"><i class="fa-regular fa-calendar" aria-hidden="true"></i> 09 May, 2026</div>
-            <h3>How to Choose the Perfect Business Card Finish</h3>
-            <p>Learn when to pick matte, gloss, textured or premium laminated cards for a stronger first impression.</p>
+            <div class="blog-meta"><i class="fa-regular fa-calendar" aria-hidden="true"></i> <?= $blogDate ?></div>
+            <h3><?= $blogTitle ?></h3>
+            <?php if ($blogExcerpt !== ''): ?><p><?= $blogExcerpt ?></p><?php endif; ?>
             <span class="blog-read-more">Read More <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
           </div>
         </a>
       </article>
-
-      <article class="blog-card" role="listitem">
-        <a href="/products" class="blog-card-link" aria-label="Read blog: 5 Flyer Design Ideas That Get More Customers">
-          <div class="blog-image">
-            <img src="https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=900&q=85&fit=crop" alt="Creative flyer and brochure design samples" loading="lazy">
-            <span class="blog-badge blog-badge-orange">Design Ideas</span>
-          </div>
-          <div class="blog-content">
-            <div class="blog-meta"><i class="fa-regular fa-calendar" aria-hidden="true"></i> 05 May, 2026</div>
-            <h3>5 Flyer Design Ideas That Get More Customers</h3>
-            <p>Simple layout, color and copy tips to make your next flyer campaign clear, attractive and conversion focused.</p>
-            <span class="blog-read-more">Read More <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
-          </div>
-        </a>
-      </article>
-
-      <article class="blog-card" role="listitem">
-        <a href="/products" class="blog-card-link" aria-label="Read blog: Bulk Printing Checklist for Events and Shops">
-          <div class="blog-image">
-            <img src="https://images.unsplash.com/photo-1600172454284-934feca24de6?w=900&q=85&fit=crop" alt="Stacks of brochures and colorful printed material" loading="lazy">
-            <span class="blog-badge blog-badge-green">Bulk Orders</span>
-          </div>
-          <div class="blog-content">
-            <div class="blog-meta"><i class="fa-regular fa-calendar" aria-hidden="true"></i> 02 May, 2026</div>
-            <h3>Bulk Printing Checklist for Events and Shops</h3>
-            <p>Plan quantities, paper type, delivery timing and finishing options before placing your next large print order.</p>
-            <span class="blog-read-more">Read More <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
-          </div>
-        </a>
-      </article>
+      <?php endforeach; ?>
     </div>
 
+    <?php if (count($blogCards) > 1): ?>
     <div class="blog-dots" aria-label="Blog pagination">
-      <span class="blog-dot blog-dot-active"></span>
-      <span class="blog-dot"></span>
-      <span class="blog-dot"></span>
+      <?php foreach ($blogCards as $idx => $_blog): ?>
+        <span class="blog-dot <?= $idx === 0 ? 'blog-dot-active' : '' ?>"></span>
+      <?php endforeach; ?>
     </div>
+    <?php endif; ?>
   </div>
 </section>
 
