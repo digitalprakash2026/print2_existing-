@@ -224,66 +224,124 @@ foreach ($categories as $cat) {
   <div class="best-deals-container">
     <h2 class="best-deals-heading" id="bestDealsTitle">Our <span>Best Deals</span></h2>
 
+    <?php
+    $fallbackDeals = [
+      [
+        'deal_type' => 'deal',
+        'title' => '500 Visiting Cards',
+        'subtitle' => 'Starting from',
+        'price_text' => '₹199',
+        'image_path' => 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=700&q=85&fit=crop',
+        'image_alt' => '500 visiting cards printing deal',
+        'cta_text' => 'Order Now',
+        'cta_url' => '/products',
+        'color_theme' => 'green',
+      ],
+      [
+        'deal_type' => 'deal',
+        'title' => '1000 Flyers',
+        'subtitle' => 'Starting from',
+        'price_text' => '₹499',
+        'image_path' => 'https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=700&q=85&fit=crop',
+        'image_alt' => '1000 flyers printing deal',
+        'cta_text' => 'Order Now',
+        'cta_url' => '/products',
+        'color_theme' => 'orange',
+      ],
+      [
+        'deal_type' => 'deal',
+        'title' => 'Brochure (A4)',
+        'subtitle' => 'Starting from',
+        'price_text' => '₹799',
+        'image_path' => 'https://images.unsplash.com/photo-1600172454284-934feca24de6?w=700&q=85&fit=crop',
+        'image_alt' => 'A4 brochure printing deal',
+        'cta_text' => 'Order Now',
+        'cta_url' => '/products',
+        'color_theme' => 'purple',
+      ],
+      [
+        'deal_type' => 'promo',
+        'title' => 'Get',
+        'highlight_text' => 'FREE Design',
+        'subtitle' => 'on Your First Order!',
+        'image_path' => '',
+        'image_alt' => 'Free design offer',
+        'cta_text' => 'Get Free Design',
+        'cta_url' => '/#quick-help-sec',
+        'color_theme' => 'purple',
+      ],
+    ];
+    $bestDeals = !empty($homeDeals ?? []) ? $homeDeals : $fallbackDeals;
+    $dealThemes = ['green', 'orange', 'purple'];
+    $formatDealText = static function ($value): string {
+      $safe = htmlspecialchars(trim((string)$value), ENT_QUOTES, 'UTF-8');
+      return preg_replace('/&lt;br\s*\/?&gt;/i', '<br>', $safe) ?? $safe;
+    };
+    ?>
+
     <div class="best-deals-grid">
-      <article class="deal-card deal-green">
-        <a href="/products" class="deal-card-link">
-          <div class="deal-card-img">
-            <img src="https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=700&q=85&fit=crop" alt="500 visiting cards printing deal" loading="lazy">
-          </div>
-          <div class="deal-card-band">
-            <div class="deal-copy">
-              <h3>500 Visiting Cards</h3>
-              <p>Starting from</p>
-              <strong>₹199</strong>
+      <?php foreach ($bestDeals as $deal):
+        $dealType = strtolower(trim((string)($deal['deal_type'] ?? 'deal')));
+        $themeRaw = strtolower(trim((string)($deal['color_theme'] ?? 'green')));
+        $theme = in_array($themeRaw, $dealThemes, true) ? $themeRaw : 'green';
+        $titleRaw = trim((string)($deal['title'] ?? ''));
+        $highlightRaw = trim((string)($deal['highlight_text'] ?? ''));
+        $subtitleRaw = trim((string)($deal['subtitle'] ?? ''));
+        $priceRaw = trim((string)($deal['price_text'] ?? ''));
+        $imageRaw = trim((string)($deal['image_path'] ?? ''));
+        $imageAltRaw = trim((string)($deal['image_alt'] ?? '')) ?: ($titleRaw !== '' ? $titleRaw : 'Best deal');
+        $ctaTextRaw = trim((string)($deal['cta_text'] ?? '')) ?: ($dealType === 'promo' ? 'Get Offer' : 'Order Now');
+        $ctaUrlRaw = trim((string)($deal['cta_url'] ?? '')) ?: '/products';
+        $title = $formatDealText($titleRaw);
+        $highlight = htmlspecialchars($highlightRaw, ENT_QUOTES, 'UTF-8');
+        $subtitle = $formatDealText($subtitleRaw);
+        $price = htmlspecialchars($priceRaw, ENT_QUOTES, 'UTF-8');
+        $image = htmlspecialchars($imageRaw, ENT_QUOTES, 'UTF-8');
+        $imageAlt = htmlspecialchars($imageAltRaw, ENT_QUOTES, 'UTF-8');
+        $ctaText = htmlspecialchars($ctaTextRaw, ENT_QUOTES, 'UTF-8');
+        $ctaUrl = htmlspecialchars($ctaUrlRaw, ENT_QUOTES, 'UTF-8');
+      ?>
+        <?php if ($dealType === 'promo'): ?>
+          <article class="deal-promo-card">
+            <div class="deal-confetti" aria-hidden="true"></div>
+            <div class="deal-promo-copy">
+              <h3>
+                <?= $title ?><?php if ($highlight !== ''): ?> <span><?= $highlight ?></span><?php endif; ?>
+                <?php if ($subtitle !== ''): ?><br><?= $subtitle ?><?php endif; ?>
+              </h3>
+              <a href="<?= $ctaUrl ?>" class="deal-promo-btn"><?= $ctaText ?></a>
             </div>
-            <span class="deal-order-btn">Order Now</span>
-          </div>
-        </a>
-      </article>
-
-      <article class="deal-card deal-orange">
-        <a href="/products" class="deal-card-link">
-          <div class="deal-card-img">
-            <img src="https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?w=700&q=85&fit=crop" alt="1000 flyers printing deal" loading="lazy">
-          </div>
-          <div class="deal-card-band">
-            <div class="deal-copy">
-              <h3>1000 Flyers</h3>
-              <p>Starting from</p>
-              <strong>₹499</strong>
-            </div>
-            <span class="deal-order-btn">Order Now</span>
-          </div>
-        </a>
-      </article>
-
-      <article class="deal-card deal-purple">
-        <a href="/products" class="deal-card-link">
-          <div class="deal-card-img">
-            <img src="https://images.unsplash.com/photo-1600172454284-934feca24de6?w=700&q=85&fit=crop" alt="A4 brochure printing deal" loading="lazy">
-          </div>
-          <div class="deal-card-band">
-            <div class="deal-copy">
-              <h3>Brochure (A4)</h3>
-              <p>Starting from</p>
-              <strong>₹799</strong>
-            </div>
-            <span class="deal-order-btn">Order Now</span>
-          </div>
-        </a>
-      </article>
-
-      <article class="deal-promo-card">
-        <div class="deal-confetti" aria-hidden="true"></div>
-        <div class="deal-promo-copy">
-          <h3>Get <span>FREE Design</span><br>on Your First Order!</h3>
-          <a href="/#quick-help-sec" class="deal-promo-btn">Get Free Design</a>
-        </div>
-        <div class="deal-gift" aria-hidden="true">
-          <div class="deal-gift-bow"></div>
-          <div class="deal-gift-box"></div>
-        </div>
-      </article>
+            <?php if ($imageRaw !== ''): ?>
+              <div class="deal-gift deal-gift-image">
+                <img src="<?= $image ?>" alt="<?= $imageAlt ?>" loading="lazy">
+              </div>
+            <?php else: ?>
+              <div class="deal-gift" aria-hidden="true">
+                <div class="deal-gift-bow"></div>
+                <div class="deal-gift-box"></div>
+              </div>
+            <?php endif; ?>
+          </article>
+        <?php else: ?>
+          <article class="deal-card deal-<?= htmlspecialchars($theme, ENT_QUOTES, 'UTF-8') ?>">
+            <a href="<?= $ctaUrl ?>" class="deal-card-link">
+              <div class="deal-card-img">
+                <?php if ($imageRaw !== ''): ?>
+                  <img src="<?= $image ?>" alt="<?= $imageAlt ?>" loading="lazy">
+                <?php endif; ?>
+              </div>
+              <div class="deal-card-band">
+                <div class="deal-copy">
+                  <h3><?= $title ?></h3>
+                  <?php if ($subtitle !== ''): ?><p><?= $subtitle ?></p><?php endif; ?>
+                  <?php if ($price !== ''): ?><strong><?= $price ?></strong><?php endif; ?>
+                </div>
+                <span class="deal-order-btn"><?= $ctaText ?></span>
+              </div>
+            </a>
+          </article>
+        <?php endif; ?>
+      <?php endforeach; ?>
     </div>
   </div>
 </section>

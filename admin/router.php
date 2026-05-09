@@ -565,6 +565,122 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true,'path'=>'/uploads/banners/' . $name]);
     }
 
+
+    if ($uri === '/admin/api/deals' && $method === 'GET') {
+        try {
+            $rows = Database::rows("SELECT * FROM home_deals ORDER BY sort_order ASC, id DESC");
+            json(['ok'=>true,'deals'=>$rows]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'home_deals table missing. Run SQL migration first.','deals'=>[]], 500);
+        }
+    }
+    if ($uri === '/admin/api/deals' && $method === 'POST') {
+        $dealType = strtolower(trim((string)($body['deal_type'] ?? 'deal')));
+        $title = trim((string)($body['title'] ?? ''));
+        $imagePath = trim((string)($body['image_path'] ?? ''));
+        $priceText = trim((string)($body['price_text'] ?? ''));
+        $theme = strtolower(trim((string)($body['color_theme'] ?? 'green')));
+        if (!in_array($theme, ['green','orange','purple'], true)) $theme = 'green';
+        if (!in_array($dealType, ['deal','promo'], true)) json(['ok'=>false,'msg'=>'Invalid deal type'], 400);
+        if ($title === '') json(['ok'=>false,'msg'=>'Deal title is required'], 400);
+        if ($dealType === 'deal' && $imagePath === '') json(['ok'=>false,'msg'=>'Deal image is required'], 400);
+        if ($dealType === 'deal' && $priceText === '') json(['ok'=>false,'msg'=>'Deal price is required'], 400);
+        try {
+            $id = Database::insert(
+                "INSERT INTO home_deals (deal_type,title,highlight_text,subtitle,price_text,description,image_path,image_alt,cta_text,cta_url,color_theme,sort_order,is_active,created_at,updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",
+                [
+                    $dealType,
+                    $title,
+                    trim((string)($body['highlight_text'] ?? '')),
+                    trim((string)($body['subtitle'] ?? ($dealType === 'deal' ? 'Starting from' : ''))),
+                    $priceText,
+                    trim((string)($body['description'] ?? '')),
+                    $imagePath,
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['cta_text'] ?? '')) ?: ($dealType === 'promo' ? 'Get Offer' : 'Order Now'),
+                    trim((string)($body['cta_url'] ?? '/products')) ?: '/products',
+                    $theme,
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_active'] ?? 1),
+                ]
+            );
+            json(['ok'=>true,'id'=>$id]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not create deal. Run migration first.'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/deals/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $dealType = strtolower(trim((string)($body['deal_type'] ?? 'deal')));
+        $title = trim((string)($body['title'] ?? ''));
+        $imagePath = trim((string)($body['image_path'] ?? ''));
+        $priceText = trim((string)($body['price_text'] ?? ''));
+        $theme = strtolower(trim((string)($body['color_theme'] ?? 'green')));
+        if (!in_array($theme, ['green','orange','purple'], true)) $theme = 'green';
+        if (!in_array($dealType, ['deal','promo'], true)) json(['ok'=>false,'msg'=>'Invalid deal type'], 400);
+        if ($title === '') json(['ok'=>false,'msg'=>'Deal title is required'], 400);
+        if ($dealType === 'deal' && $imagePath === '') json(['ok'=>false,'msg'=>'Deal image is required'], 400);
+        if ($dealType === 'deal' && $priceText === '') json(['ok'=>false,'msg'=>'Deal price is required'], 400);
+        try {
+            Database::query(
+                "UPDATE home_deals
+                 SET deal_type=?, title=?, highlight_text=?, subtitle=?, price_text=?, description=?, image_path=?, image_alt=?, cta_text=?, cta_url=?, color_theme=?, sort_order=?, is_active=?, updated_at=NOW()
+                 WHERE id=?",
+                [
+                    $dealType,
+                    $title,
+                    trim((string)($body['highlight_text'] ?? '')),
+                    trim((string)($body['subtitle'] ?? ($dealType === 'deal' ? 'Starting from' : ''))),
+                    $priceText,
+                    trim((string)($body['description'] ?? '')),
+                    $imagePath,
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['cta_text'] ?? '')) ?: ($dealType === 'promo' ? 'Get Offer' : 'Order Now'),
+                    trim((string)($body['cta_url'] ?? '/products')) ?: '/products',
+                    $theme,
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_active'] ?? 1),
+                    (int)$m[1],
+                ]
+            );
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not update deal'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/deals/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        try {
+            Database::query("DELETE FROM home_deals WHERE id=?", [(int)$m[1]]);
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not delete deal'], 500);
+        }
+    }
+    if ($uri === '/admin/api/deals/reorder' && $method === 'POST') {
+        foreach (($body['items'] ?? []) as $item) {
+            Database::query("UPDATE home_deals SET sort_order=?, updated_at=NOW() WHERE id=?", [(int)($item['sort_order'] ?? 0), (int)($item['id'] ?? 0)]);
+        }
+        json(['ok'=>true]);
+    }
+    if ($uri === '/admin/api/deals/upload' && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 6 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 6MB'], 400);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $dir = PUBLIC_PATH . '/uploads/deals/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'deal_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        json(['ok'=>true,'path'=>'/uploads/deals/' . $name]);
+    }
+
     if ($uri === '/admin/api/settings' && $method === 'GET') {
         $rows = Database::rows("SELECT `key`,value FROM settings");
         json(['ok'=>true,'settings'=>array_column($rows,'value','key')]);
@@ -792,6 +908,7 @@ $adminPage = match(true) {
     $uri === '/admin/categories' => 'admin/categories',
     $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/banners'    => 'admin/banners',
+    $uri === '/admin/deals'      => 'admin/deals',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/customers'  => 'admin/customers',

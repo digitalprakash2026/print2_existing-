@@ -67,15 +67,22 @@ if ($uri === '/' && $method === 'GET') {
         $categories  = \Catalog\ProductCatalog::categories();
         $products    = \Catalog\ProductCatalog::all();
         $homeBanners = Database::rows("SELECT * FROM home_banners WHERE is_active=1 ORDER BY sort_order ASC, id DESC");
+        $homeDeals   = [];
+        try {
+            $homeDeals = Database::rows("SELECT * FROM home_deals WHERE is_active=1 ORDER BY sort_order ASC, id DESC");
+        } catch (\Throwable $e) {
+            error_log('Home deals unavailable: ' . $e->getMessage());
+        }
         $settings    = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {
         error_log('Home error: ' . $e->getMessage());
         $categories = $products = [];
         $homeBanners = [];
+        $homeDeals = [];
         $settingsMap = [];
     }
-    view('home', compact('categories', 'products', 'settingsMap', 'homeBanners'));
+    view('home', compact('categories', 'products', 'settingsMap', 'homeBanners', 'homeDeals'));
     exit;
 }
 
