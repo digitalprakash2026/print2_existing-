@@ -3556,3 +3556,83 @@ html[data-motion='minimal'] .pd-main:hover img { transform:none !important; }
   font-weight:400;
   letter-spacing:.002em;
 }
+
+/* How It Works heading placement + 3-color home brand consistency. */
+.how-works-title {
+  position:static;
+  transform:none;
+  text-align:center;
+  margin:0 0 18px;
+  color:#071225;
+}
+.how-works-title span { color:var(--orange); }
+.how-works-panel { padding:26px 30px; }
+.how-works-track { padding-top:0; }
+.why-print-green,
+.how-icon-green,
+.quick-help-whatsapp {
+  background:linear-gradient(135deg,var(--green),#15803d);
+}
+.deal-green .deal-card-band,
+.blog-badge-green {
+  background:linear-gradient(135deg,var(--green),#15803d);
+}
+.why-print-orange,
+.how-icon-orange,
+.deal-orange .deal-card-band,
+.blog-badge-orange,
+.quick-help-download {
+  background:linear-gradient(135deg,var(--orange),#ff7a18);
+}
+.why-print-purple,
+.deal-purple .deal-card-band,
+.blog-badge,
+.deal-promo-card,
+.footer {
+  background:linear-gradient(135deg,var(--purple),#43178d);
+}
+.deal-promo-card {
+  background:
+    radial-gradient(220px 130px at 78% 72%, rgba(255,138,31,.34), transparent 68%),
+    linear-gradient(135deg,var(--purple) 0%,#571a9f 58%,#43178d 100%);
+}
+.why-print-heading span,
+.best-deals-heading span,
+.shop-cat-title span,
+.customer-say-title span,
+.blog-title span,
+.deal-promo-copy h3 span,
+.how-works-title span {
+  color:var(--orange);
+}
+.how-copy span,
+.blog-meta i,
+.blog-read-more i,
+.all-cat-arrow {
+  color:var(--orange);
+}
+.how-step:nth-of-type(3) .how-copy span { color:var(--green); }
+.how-step:nth-of-type(1) .how-copy span,
+.how-step:nth-of-type(4) .how-copy span { color:#fff; }
+.how-icon::after { background:var(--green); }
+.how-icon-orange::after { background:var(--purple); }
+.how-icon-green::after { background:var(--orange); }
+.quick-help-call .quick-help-icon,
+.how-icon-white {
+  color:var(--purple);
+}
+.shop-cat-card:nth-child(3n+1) .shop-cat-icon,
+.all-cat-icon,
+.blog-badge {
+  background:linear-gradient(135deg,var(--purple),#43178d);
+}
+.shop-cat-card:nth-child(3n+2) .shop-cat-icon {
+  background:linear-gradient(135deg,var(--orange),#ff7a18);
+}
+.shop-cat-card:nth-child(3n+3) .shop-cat-icon {
+  background:linear-gradient(135deg,var(--green),#15803d);
+}
+@media (max-width:900px) {
+  .how-works-panel { padding:20px 18px; }
+  .how-works-title { margin-bottom:14px; }
+}

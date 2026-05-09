@@ -353,9 +353,8 @@ foreach ($categories as $cat) {
 <!-- HOW IT WORKS -->
 <section class="how-works-section" aria-labelledby="howWorksTitle" data-reveal>
   <div class="how-works-container">
+    <h2 class="how-works-title" id="howWorksTitle">How It <span>Works</span></h2>
     <div class="how-works-panel">
-      <h2 class="how-works-title" id="howWorksTitle">How It Works</h2>
-
       <div class="how-works-track" role="list">
         <article class="how-step" role="listitem">
           <div class="how-icon how-icon-white"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></div>
