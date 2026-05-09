@@ -53,7 +53,9 @@ include INCLUDE_PATH . '/partials/header.php';
       </div>
     <?php else: ?>
       <section class="all-cat-shop" aria-label="Browse all categories">
-        <aside class="all-cat-sidebar" aria-label="Category filters">
+        <details class="all-cat-filter-panel" open>
+          <summary><span>Categories &amp; Filters</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+          <aside class="all-cat-sidebar" aria-label="Category filters">
           <div class="all-cat-side-box all-cat-side-categories">
             <h2>Categories</h2>
             <nav class="all-cat-side-list" aria-label="Category quick links">
@@ -95,7 +97,8 @@ include INCLUDE_PATH . '/partials/header.php';
             </div>
             <button type="button" class="all-cat-apply-btn">Apply Filters <i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
           </div>
-        </aside>
+          </aside>
+        </details>
 
         <div class="all-cat-results">
           <div class="all-cat-toolbar">
