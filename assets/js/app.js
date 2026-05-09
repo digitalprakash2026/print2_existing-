@@ -204,7 +204,7 @@ function renderCartDrawer() {
       <div style="font-size:40px;margin-bottom:10px">🛒</div>
       <div style="font-size:15px;font-weight:600;margin-bottom:4px">Your cart is empty</div>
       <div style="font-size:13px">Browse products and add items to cart</div></div>`;
-    footer.innerHTML = `<a href="/#prod-sec" class="btn btn-blue btn-full" style="border-radius:10px;padding:13px">Browse Products</a>`;
+    footer.innerHTML = `<a href="/products" class="btn btn-blue btn-full" style="border-radius:10px;padding:13px">Browse Products</a>`;
     return;
   }
 

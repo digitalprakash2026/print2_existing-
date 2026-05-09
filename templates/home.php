@@ -117,16 +117,6 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
   <?php endif; ?>
 </div>
 
-<section class="hp-proof" aria-label="Customer trust highlights">
-  <div class="container">
-    <div class="hp-proof-row">
-      <div class="hp-proof-item"><strong>4.8/5</strong><span>Customer Rating</span></div>
-      <div class="hp-proof-item"><strong>5000+</strong><span>Orders Delivered</span></div>
-      <div class="hp-proof-item"><strong>24-48 hrs</strong><span>Fast Turnaround</span></div>
-      <div class="hp-proof-item"><strong>GST</strong><span>Invoice Available</span></div>
-    </div>
-  </div>
-</section>
 
 <?php
 $catSpot = [];
@@ -147,20 +137,6 @@ foreach ($categories as $cat) {
   ];
 }
 ?>
-<!-- ═══════════════════════════════════════════════════════════
-     TRUST BAR
-══════════════════════════════════════════════════════════════ -->
-<div class="trust" data-reveal>
-  <div class="container">
-    <div class="trust-inner">
-      <div class="trust-i" data-reveal data-reveal-delay="40"><div class="trust-ic trust-ic-svg" style="background:#FEF9C3"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.1 6.3 7 .9-5 4.8 1.2 6.9L12 17.8 5.7 21l1.2-6.9-5-4.8 7-.9z"/></svg></div>Free Design Support</div>
-      <div class="trust-i" data-reveal data-reveal-delay="80"><div class="trust-ic trust-ic-svg" style="background:#ECFDF5"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v9H4zm2 2v5h12V8zM2 17h20v2H2z"/></svg></div>Best Print Quality</div>
-      <div class="trust-i" data-reveal data-reveal-delay="120"><div class="trust-ic trust-ic-svg" style="background:#EEF3FD"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18v2H3zM12 3l4 4h-3v5h-2V7H8zM12 21l-4-4h3v-5h2v5h3z"/></svg></div>Affordable Pricing</div>
-      <div class="trust-i" data-reveal data-reveal-delay="160"><div class="trust-ic trust-ic-svg" style="background:#FFF4ED"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6zm-1 2h2v7h-2zm1 11a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg></div>On-Time Delivery</div>
-      <div class="trust-i" data-reveal data-reveal-delay="200"><div class="trust-ic trust-ic-svg" style="background:#F0FDF4"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.4 9.7-8 11-4.6-1.3-8-6-8-11V6zm-1 14 6-6-1.4-1.4-4.6 4.6-2.6-2.6L7 12z"/></svg></div>100% Satisfaction</div>
-    </div>
-  </div>
-</div>
 
 <?php if (!empty($catSpot)): ?>
 <section class="shop-cat-section" aria-labelledby="shopCatTitle" data-reveal>
@@ -192,116 +168,6 @@ foreach ($categories as $cat) {
   </div>
 </section>
 <?php endif; ?>
-
-
-<!-- ═══════════════════════════════════════════════════════════
-     PRODUCTS SECTION — Category-based boxes with 4 products each
-══════════════════════════════════════════════════════════════ -->
-<section class="sec home-prod-sec sec-tint-blue" id="prod-sec">
-  <div class="home-prod-wrap">
-
-    <div class="sec-hdr" style="margin-bottom:32px" data-reveal>
-      <div>
-        <div class="sec-ey">Our Products</div>
-        <div class="sec-t">Everything You Need to Print</div>
-      </div>
-      <a href="/products" class="btn btn-outline btn-sm" style="font-size:13px">
-        See All Products →
-      </a>
-    </div>
-
-    <?php
-    // Group products by category
-    $byCategory = [];
-    foreach ($products as $p) {
-        $catId = $p['category_id'] ?? 0;
-        if (!isset($byCategory[$catId])) {
-            $byCategory[$catId] = [
-                'name'     => $p['category_name'] ?? 'Other',
-                'slug'     => strtolower(preg_replace('/[^a-z0-9]+/', '-', $p['category_name'] ?? 'other')),
-                'icon'     => '',
-                'products' => [],
-            ];
-        }
-        $byCategory[$catId]['products'][] = $p;
-    }
-    // Merge icon from $categories array
-    foreach ($categories as $cat) {
-        if (isset($byCategory[$cat['id']])) {
-            $byCategory[$cat['id']]['icon'] = $cat['icon'] ?? '';
-            $byCategory[$cat['id']]['slug'] = $cat['slug'] ?? $byCategory[$cat['id']]['slug'];
-        }
-    }
-    ?>
-
-    <?php if (empty($products)): ?>
-    <div style="text-align:center;padding:60px 20px;color:var(--text2)">
-      <div style="font-size:44px;margin-bottom:12px">🖨️</div>
-      <div style="font-size:16px;font-weight:600;margin-bottom:6px">Products coming soon</div>
-      <div style="font-size:13px">Check back or contact us via WhatsApp</div>
-    </div>
-    <?php else: ?>
-
-    <div class="home-cat-grid">
-      <?php foreach ($byCategory as $catId => $catData):
-        $catProducts = array_slice($catData['products'], 0, 4);
-        $catSlug     = htmlspecialchars($catData['slug']);
-        $catName     = htmlspecialchars($catData['name']);
-        $catIcon     = htmlspecialchars($catData['icon'] ?? '📦');
-      ?>
-      <div class="cat-box cat-box-square" data-reveal data-reveal-delay="<?= ((int)$catId % 5) * 40 ?>">
-
-        <!-- Category header -->
-        <div class="cat-box-hdr">
-          <div class="cat-box-title">
-            <div class="cat-box-icon"><?= $catIcon ?></div>
-            <?= $catName ?>
-          </div>
-        </div>
-
-        <!-- Products mini grid (4 items preview) -->
-        <div class="cat-box-products">
-          <?php foreach ($catProducts as $p):
-            $img  = $p['primary_image'] ?? '';
-            $minP = (float)($p['min_price'] ?? 0);
-          ?>
-          <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="cat-mini-prod">
-            <div class="cat-mini-img">
-              <img src="<?= htmlspecialchars($img) ?>"
-                   alt="<?= htmlspecialchars($p['name']) ?>"
-                   loading="lazy"
-                   onerror="this.src='https://placehold.co/300x300/EEF3FD/1A56E8?text=<?= urlencode($p['name']) ?>'">
-            </div>
-            <div class="cat-mini-name"><?= htmlspecialchars($p['name']) ?></div>
-            <div class="cat-mini-from">Starting from</div>
-            <div class="cat-mini-price">
-              <?= $minP > 0 ? '₹' . number_format($minP) : '—' ?>
-            </div>
-          </a>
-          <?php endforeach; ?>
-        </div>
-
-        <div class="cat-box-ft">
-          <a href="/category/<?= $catSlug ?>" class="cat-box-see">
-            See all products
-          </a>
-        </div>
-
-      </div>
-      <?php endforeach; ?>
-    </div>
-
-    <!-- See all products CTA -->
-    <div style="text-align:center;margin-top:36px">
-      <a href="/products" class="btn btn-blue" style="padding:14px 36px;font-size:15px">
-        🖨️ See All Products
-      </a>
-    </div>
-
-    <?php endif; ?>
-
-  </div>
-</section>
 
 
 <!-- WHY US -->
@@ -369,7 +235,7 @@ foreach ($categories as $cat) {
         <div class="cta-s">Place your order in minutes. We'll take care of the rest.</div>
       </div>
       <div class="cta-btns">
-        <a href="#prod-sec" class="btn" style="background:#fff;color:var(--blue);font-weight:700">Order Now →</a>
+        <a href="/products" class="btn" style="background:#fff;color:var(--blue);font-weight:700">Order Now →</a>
         <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3)"
                 onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">💬 WhatsApp</button>
       </div>
@@ -445,7 +311,7 @@ foreach ($categories as $cat) {
 <div class="mob-quick-cta" role="navigation" aria-label="Quick actions">
   <a href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>" class="mq-btn">Call</a>
   <button type="button" class="mq-btn mq-btn-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">WhatsApp</button>
-  <a href="#prod-sec" class="mq-btn mq-btn-primary">Start Order</a>
+  <a href="/products" class="mq-btn mq-btn-primary">Start Order</a>
 </div>
 
 <!-- No carousel/filter JS needed with new category layout -->

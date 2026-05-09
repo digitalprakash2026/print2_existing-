@@ -26,7 +26,7 @@ include INCLUDE_PATH . '/partials/header.php';
     <!-- ── Breadcrumb ─────────────────────────────────────── -->
     <div class="breadcrumb" style="padding-top:22px">
       <a href="/">Home</a><span>/</span>
-      <a href="/#prod-sec">Products</a><span>/</span>
+      <a href="/products">Products</a><span>/</span>
       <span style="color:var(--ink);font-weight:600"><?= htmlspecialchars($category['name']) ?></span>
     </div>
 
