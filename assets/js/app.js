@@ -3,6 +3,25 @@
 //  Shared JS: toast, mobile drawer, cart, checkout, product page
 // ═══════════════════════════════════════════════════════════════
 
+// ── Header height sync ───────────────────────────────────────
+// The site header changes height across mobile breakpoints. Keep the
+// content offset equal to the rendered header height so the home banner
+// starts immediately after the fixed header without a mobile gap.
+function syncSiteHeaderHeight() {
+  const header = document.getElementById('siteHeader');
+  if (!header) return;
+  const height = Math.ceil(header.getBoundingClientRect().height);
+  if (height > 0) {
+    const value = `${height}px`;
+    document.documentElement.style.setProperty('--site-hh', value);
+    document.body?.style.setProperty('--site-hh', value);
+  }
+}
+
+syncSiteHeaderHeight();
+window.addEventListener('load', syncSiteHeaderHeight);
+window.addEventListener('resize', syncSiteHeaderHeight);
+
 // ── Toast ─────────────────────────────────────────────────────
 function toast(msg, type = 'info') {
   const w = document.getElementById('tw');

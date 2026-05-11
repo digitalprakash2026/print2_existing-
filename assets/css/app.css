@@ -3048,7 +3048,15 @@ textarea.fi  { resize:vertical; }
   .f2 { grid-template-columns:1fr; gap:10px; }
   .cart-drawer { width:100%; max-width:100%; }
   /* Banner mobile fixes */
-  .banner-slider { height:clamp(245px, calc(39vw + 100px), 400px); }
+  .banner-slider {
+    height:clamp(184px, 56vw, 300px);
+    margin-top:var(--site-hh, 129px);
+  }
+  .bs-slide > img,
+  .bs-image-link img {
+    object-fit:cover;
+    object-position:center center;
+  }
   .bs-prev,.bs-next { width:32px; height:32px; }
   .bs-content {
     width:min(58%, 360px);
@@ -3222,7 +3230,10 @@ textarea.fi  { resize:vertical; }
   .pc-carousel-card { flex:0 0 calc(100% - 0px); }
   .pc-prev { left:-14px; } .pc-next { right:-14px; }
   /* Banner tiny */
-  .banner-slider { height:clamp(228px, calc(40vw + 100px), 310px); }
+  .banner-slider {
+    height:clamp(168px, 58vw, 238px);
+    margin-top:var(--site-hh, 144px);
+  }
   .bs-prev,.bs-next { display:none; }
   .bs-content {
     width:auto;
