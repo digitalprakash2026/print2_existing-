@@ -42,7 +42,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
   <!-- Breadcrumb -->
   <div class="breadcrumb">
     <a href="/">Home</a><span>/</span>
-    <a href="/#prod-sec">Products</a><span>/</span>
+    <a href="/products">Products</a><span>/</span>
     <span style="color:var(--ink);font-weight:600"><?= htmlspecialchars($product['name']) ?></span>
   </div>
 
@@ -261,7 +261,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
         <div class="sec-ey">More From Us</div>
         <div style="font-family:var(--fd);font-size:22px;font-weight:700;color:var(--ink)">You May Also Like</div>
       </div>
-      <a href="/#prod-sec" class="btn btn-outline btn-sm">View All Products →</a>
+      <a href="/products" class="btn btn-outline btn-sm">View All Products →</a>
     </div>
 
     <div class="prod-grid related-grid" style="grid-template-columns:repeat(<?= min(count($related), 4) ?>,1fr)">

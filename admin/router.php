@@ -51,6 +51,38 @@ if (str_starts_with($uri, '/admin/api/')) {
     header('Content-Type: application/json');
     $body = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
+    $slugify = static function (string $value): string {
+        $value = strtolower(trim($value));
+        $value = preg_replace('/[^a-z0-9]+/i', '-', $value) ?? '';
+        $value = trim($value, '-');
+        return $value !== '' ? $value : 'blog-post';
+    };
+    $sanitizeBlogContent = static function (string $html): string {
+        $allowed = '<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><a><blockquote><img><figure><figcaption>';
+        $clean = strip_tags($html, $allowed);
+        $clean = preg_replace('/\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $clean) ?? $clean;
+        $clean = preg_replace('/(href|src)\s*=\s*("|\')\s*javascript:[^"\']*("|\')/i', '$1="#"', $clean) ?? $clean;
+        return trim($clean);
+    };
+    $uniqueBlogSlug = static function (string $base, int $ignoreId = 0) use ($slugify): string {
+        $slug = $slugify($base);
+        $candidate = $slug;
+        $i = 2;
+        while (true) {
+            $params = [$candidate];
+            $sql = "SELECT id FROM blogs WHERE slug = ?";
+            if ($ignoreId > 0) {
+                $sql .= " AND id <> ?";
+                $params[] = $ignoreId;
+            }
+            $sql .= " LIMIT 1";
+            $row = Database::row($sql, $params);
+            if (!$row) return $candidate;
+            $candidate = $slug . '-' . $i;
+            $i++;
+        }
+    };
+
     if ($uri === '/admin/api/dashboard' && $method === 'GET') {
         $stats = [
             'total_orders'    => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
@@ -400,17 +432,56 @@ if (str_starts_with($uri, '/admin/api/')) {
         $code = \Catalog\ProductCatalog::nextProductCodePreview($categoryId, $editId > 0 ? $editId : null);
         json(['ok' => true, 'code' => $code]);
     }
+    if ($uri === '/admin/api/categories/upload' && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 6 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 6MB'], 400);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $dir = PUBLIC_PATH . '/uploads/categories/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'category_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        json(['ok'=>true,'path'=>'/uploads/categories/' . $name]);
+    }
     if ($uri === '/admin/api/categories' && $method === 'POST') {
-        $slug = strtolower(preg_replace('/[^a-z0-9]+/','-',$body['name']??''));
+        $name = trim((string)($body['name'] ?? ''));
+        if ($name === '') json(['ok'=>false,'msg'=>'Category name is required'], 422);
+        $slugBase = trim((string)($body['slug'] ?? $name));
+        $slug = strtolower(preg_replace('/[^a-z0-9]+/', '-', $slugBase) ?? '');
+        $slug = trim($slug, '-') ?: strtolower(preg_replace('/[^a-z0-9]+/', '-', $name));
         $prefix = strtoupper(trim((string)($body['code_prefix'] ?? '')));
         $prefix = preg_replace('/[^A-Z0-9]/', '', $prefix) ?: null;
+        $icon = trim((string)($body['icon'] ?? '🖨️')) ?: '🖨️';
+        $imagePath = trim((string)($body['image_path'] ?? '')) ?: null;
+        $imageAlt = trim((string)($body['image_alt'] ?? '')) ?: ($name . ' category image');
+        $sort = (int)($body['sort_order'] ?? 0);
+        $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : 1;
         try {
-            $id = Database::insert("INSERT INTO categories (name,slug,code_prefix,icon,sort_order,is_active) VALUES (?,?,?,?,?,1)",
-                [$body['name'],$slug,$prefix,$body['icon']??'🖨️',$body['sort_order']??0]);
+            $id = Database::insert(
+                "INSERT INTO categories (name,slug,code_prefix,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?)",
+                [$name,$slug,$prefix,$icon,$imagePath,$imageAlt,$sort,$active]
+            );
         } catch (\Throwable) {
-            $id = Database::insert("INSERT INTO categories (name,slug,icon,sort_order,is_active) VALUES (?,?,?,?,1)",
-                [$body['name'],$slug,$body['icon']??'🖨️',$body['sort_order']??0]);
+            try {
+                $id = Database::insert(
+                    "INSERT INTO categories (name,slug,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?)",
+                    [$name,$slug,$icon,$imagePath,$imageAlt,$sort,$active]
+                );
+            } catch (\Throwable) {
+                $id = Database::insert(
+                    "INSERT INTO categories (name,slug,icon,sort_order,is_active) VALUES (?,?,?,?,?)",
+                    [$name,$slug,$icon,$sort,$active]
+                );
+            }
         }
+        \Orders\AdminAudit::log('category_created', "Category #{$id}: {$name}");
         json(['ok'=>true,'id'=>$id]);
     }
     if (preg_match('#^/admin/api/categories/(\d+)$#', $uri, $m) && $method === 'PUT') {
@@ -426,19 +497,28 @@ if (str_starts_with($uri, '/admin/api/')) {
         $prefix = strtoupper(trim((string)($body['code_prefix'] ?? ($existing['code_prefix'] ?? ''))));
         $prefix = preg_replace('/[^A-Z0-9]/', '', $prefix) ?: null;
         $icon = trim((string)($body['icon'] ?? ($existing['icon'] ?? '🖨️'))) ?: '🖨️';
+        $imagePath = trim((string)($body['image_path'] ?? ($existing['image_path'] ?? ''))) ?: null;
+        $imageAlt = trim((string)($body['image_alt'] ?? ($existing['image_alt'] ?? ''))) ?: ($name . ' category image');
         $sort = (int)($body['sort_order'] ?? ($existing['sort_order'] ?? 0));
         $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : (int)($existing['is_active'] ?? 1);
 
         try {
             Database::query(
-                "UPDATE categories SET name=?, slug=?, code_prefix=?, icon=?, sort_order=?, is_active=? WHERE id=?",
-                [$name, $slug, $prefix, $icon, $sort, $active, $id]
+                "UPDATE categories SET name=?, slug=?, code_prefix=?, icon=?, image_path=?, image_alt=?, sort_order=?, is_active=? WHERE id=?",
+                [$name, $slug, $prefix, $icon, $imagePath, $imageAlt, $sort, $active, $id]
             );
         } catch (\Throwable) {
-            Database::query(
-                "UPDATE categories SET name=?, slug=?, icon=?, sort_order=?, is_active=? WHERE id=?",
-                [$name, $slug, $icon, $sort, $active, $id]
-            );
+            try {
+                Database::query(
+                    "UPDATE categories SET name=?, slug=?, icon=?, image_path=?, image_alt=?, sort_order=?, is_active=? WHERE id=?",
+                    [$name, $slug, $icon, $imagePath, $imageAlt, $sort, $active, $id]
+                );
+            } catch (\Throwable) {
+                Database::query(
+                    "UPDATE categories SET name=?, slug=?, icon=?, sort_order=?, is_active=? WHERE id=?",
+                    [$name, $slug, $icon, $sort, $active, $id]
+                );
+            }
         }
         \Orders\AdminAudit::log('category_updated', "Category #{$id}: {$name}");
         json(['ok'=>true]);
@@ -475,6 +555,9 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     }
     if ($uri === '/admin/api/banners' && $method === 'POST') {
+        if (trim((string)($body['image_path'] ?? '')) === '') {
+            json(['ok'=>false,'msg'=>'Banner image path is required'], 400);
+        }
         try {
             $id = Database::insert(
                 "INSERT INTO home_banners (eyebrow,title,subtitle,image_path,image_alt,cta_primary_text,cta_primary_url,cta_secondary_text,cta_secondary_type,cta_secondary_url,sort_order,is_active,created_at,updated_at)
@@ -485,9 +568,9 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['subtitle'] ?? '')),
                     trim((string)($body['image_path'] ?? '')),
                     trim((string)($body['image_alt'] ?? '')),
-                    trim((string)($body['cta_primary_text'] ?? 'View Products →')),
-                    trim((string)($body['cta_primary_url'] ?? '#')),
-                    trim((string)($body['cta_secondary_text'] ?? '💬 WhatsApp')),
+                    trim((string)($body['cta_primary_text'] ?? '')),
+                    trim((string)($body['cta_primary_url'] ?? '')),
+                    trim((string)($body['cta_secondary_text'] ?? '')),
                     trim((string)($body['cta_secondary_type'] ?? 'whatsapp')),
                     trim((string)($body['cta_secondary_url'] ?? '')),
                     (int)($body['sort_order'] ?? 0),
@@ -500,6 +583,9 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     }
     if (preg_match('#^/admin/api/banners/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        if (trim((string)($body['image_path'] ?? '')) === '') {
+            json(['ok'=>false,'msg'=>'Banner image path is required'], 400);
+        }
         try {
             Database::query(
                 "UPDATE home_banners
@@ -511,9 +597,9 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['subtitle'] ?? '')),
                     trim((string)($body['image_path'] ?? '')),
                     trim((string)($body['image_alt'] ?? '')),
-                    trim((string)($body['cta_primary_text'] ?? 'View Products →')),
-                    trim((string)($body['cta_primary_url'] ?? '#')),
-                    trim((string)($body['cta_secondary_text'] ?? '💬 WhatsApp')),
+                    trim((string)($body['cta_primary_text'] ?? '')),
+                    trim((string)($body['cta_primary_url'] ?? '')),
+                    trim((string)($body['cta_secondary_text'] ?? '')),
                     trim((string)($body['cta_secondary_type'] ?? 'whatsapp')),
                     trim((string)($body['cta_secondary_url'] ?? '')),
                     (int)($body['sort_order'] ?? 0),
@@ -557,6 +643,231 @@ if (str_starts_with($uri, '/admin/api/')) {
         $target = $dir . $name;
         if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
         json(['ok'=>true,'path'=>'/uploads/banners/' . $name]);
+    }
+
+
+    if ($uri === '/admin/api/deals' && $method === 'GET') {
+        try {
+            $rows = Database::rows("SELECT * FROM home_deals ORDER BY sort_order ASC, id DESC");
+            json(['ok'=>true,'deals'=>$rows]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'home_deals table missing. Run SQL migration first.','deals'=>[]], 500);
+        }
+    }
+    if ($uri === '/admin/api/deals' && $method === 'POST') {
+        $dealType = strtolower(trim((string)($body['deal_type'] ?? 'deal')));
+        $title = trim((string)($body['title'] ?? ''));
+        $imagePath = trim((string)($body['image_path'] ?? ''));
+        $priceText = trim((string)($body['price_text'] ?? ''));
+        $theme = strtolower(trim((string)($body['color_theme'] ?? 'green')));
+        if (!in_array($theme, ['green','orange','purple'], true)) $theme = 'green';
+        if (!in_array($dealType, ['deal','promo'], true)) json(['ok'=>false,'msg'=>'Invalid deal type'], 400);
+        if ($title === '') json(['ok'=>false,'msg'=>'Deal title is required'], 400);
+        if ($dealType === 'deal' && $imagePath === '') json(['ok'=>false,'msg'=>'Deal image is required'], 400);
+        if ($dealType === 'deal' && $priceText === '') json(['ok'=>false,'msg'=>'Deal price is required'], 400);
+        try {
+            $id = Database::insert(
+                "INSERT INTO home_deals (deal_type,title,highlight_text,subtitle,price_text,description,image_path,image_alt,cta_text,cta_url,color_theme,sort_order,is_active,created_at,updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",
+                [
+                    $dealType,
+                    $title,
+                    trim((string)($body['highlight_text'] ?? '')),
+                    trim((string)($body['subtitle'] ?? ($dealType === 'deal' ? 'Starting from' : ''))),
+                    $priceText,
+                    trim((string)($body['description'] ?? '')),
+                    $imagePath,
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['cta_text'] ?? '')) ?: ($dealType === 'promo' ? 'Get Offer' : 'Order Now'),
+                    trim((string)($body['cta_url'] ?? '/products')) ?: '/products',
+                    $theme,
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_active'] ?? 1),
+                ]
+            );
+            json(['ok'=>true,'id'=>$id]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not create deal. Run migration first.'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/deals/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $dealType = strtolower(trim((string)($body['deal_type'] ?? 'deal')));
+        $title = trim((string)($body['title'] ?? ''));
+        $imagePath = trim((string)($body['image_path'] ?? ''));
+        $priceText = trim((string)($body['price_text'] ?? ''));
+        $theme = strtolower(trim((string)($body['color_theme'] ?? 'green')));
+        if (!in_array($theme, ['green','orange','purple'], true)) $theme = 'green';
+        if (!in_array($dealType, ['deal','promo'], true)) json(['ok'=>false,'msg'=>'Invalid deal type'], 400);
+        if ($title === '') json(['ok'=>false,'msg'=>'Deal title is required'], 400);
+        if ($dealType === 'deal' && $imagePath === '') json(['ok'=>false,'msg'=>'Deal image is required'], 400);
+        if ($dealType === 'deal' && $priceText === '') json(['ok'=>false,'msg'=>'Deal price is required'], 400);
+        try {
+            Database::query(
+                "UPDATE home_deals
+                 SET deal_type=?, title=?, highlight_text=?, subtitle=?, price_text=?, description=?, image_path=?, image_alt=?, cta_text=?, cta_url=?, color_theme=?, sort_order=?, is_active=?, updated_at=NOW()
+                 WHERE id=?",
+                [
+                    $dealType,
+                    $title,
+                    trim((string)($body['highlight_text'] ?? '')),
+                    trim((string)($body['subtitle'] ?? ($dealType === 'deal' ? 'Starting from' : ''))),
+                    $priceText,
+                    trim((string)($body['description'] ?? '')),
+                    $imagePath,
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['cta_text'] ?? '')) ?: ($dealType === 'promo' ? 'Get Offer' : 'Order Now'),
+                    trim((string)($body['cta_url'] ?? '/products')) ?: '/products',
+                    $theme,
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_active'] ?? 1),
+                    (int)$m[1],
+                ]
+            );
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not update deal'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/deals/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        try {
+            Database::query("DELETE FROM home_deals WHERE id=?", [(int)$m[1]]);
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not delete deal'], 500);
+        }
+    }
+    if ($uri === '/admin/api/deals/reorder' && $method === 'POST') {
+        foreach (($body['items'] ?? []) as $item) {
+            Database::query("UPDATE home_deals SET sort_order=?, updated_at=NOW() WHERE id=?", [(int)($item['sort_order'] ?? 0), (int)($item['id'] ?? 0)]);
+        }
+        json(['ok'=>true]);
+    }
+    if ($uri === '/admin/api/deals/upload' && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 6 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 6MB'], 400);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $dir = PUBLIC_PATH . '/uploads/deals/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'deal_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        json(['ok'=>true,'path'=>'/uploads/deals/' . $name]);
+    }
+
+
+    if ($uri === '/admin/api/blogs' && $method === 'GET') {
+        try {
+            $rows = Database::rows("SELECT * FROM blogs ORDER BY sort_order ASC, published_at DESC, id DESC");
+            json(['ok'=>true,'blogs'=>$rows]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'blogs table missing. Run SQL migration first.','blogs'=>[]], 500);
+        }
+    }
+    if ($uri === '/admin/api/blogs' && $method === 'POST') {
+        $title = trim((string)($body['title'] ?? ''));
+        $content = $sanitizeBlogContent((string)($body['content'] ?? ''));
+        if ($title === '') json(['ok'=>false,'msg'=>'Blog title is required'], 400);
+        if ($content === '') json(['ok'=>false,'msg'=>'Blog content is required'], 400);
+        $badgeTheme = strtolower(trim((string)($body['badge_theme'] ?? 'purple')));
+        if (!in_array($badgeTheme, ['purple','orange','green'], true)) $badgeTheme = 'purple';
+        try {
+            $slug = $uniqueBlogSlug(trim((string)($body['slug'] ?? '')) ?: $title);
+            $id = Database::insert(
+                "INSERT INTO blogs (title,slug,excerpt,content,featured_image,image_alt,category,badge_theme,author_name,meta_title,meta_description,published_at,sort_order,is_featured,is_active,created_at,updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",
+                [
+                    $title,
+                    $slug,
+                    trim((string)($body['excerpt'] ?? '')),
+                    $content,
+                    trim((string)($body['featured_image'] ?? '')),
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['category'] ?? 'Print Tips')) ?: 'Print Tips',
+                    $badgeTheme,
+                    trim((string)($body['author_name'] ?? 'RCS Print Team')) ?: 'RCS Print Team',
+                    trim((string)($body['meta_title'] ?? '')),
+                    trim((string)($body['meta_description'] ?? '')),
+                    trim((string)($body['published_at'] ?? '')) ?: date('Y-m-d H:i:s'),
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_featured'] ?? 1),
+                    (int)($body['is_active'] ?? 1),
+                ]
+            );
+            json(['ok'=>true,'id'=>$id,'slug'=>$slug]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not create blog. Run migration first.'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/blogs/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $id = (int)$m[1];
+        $title = trim((string)($body['title'] ?? ''));
+        $content = $sanitizeBlogContent((string)($body['content'] ?? ''));
+        if ($title === '') json(['ok'=>false,'msg'=>'Blog title is required'], 400);
+        if ($content === '') json(['ok'=>false,'msg'=>'Blog content is required'], 400);
+        $badgeTheme = strtolower(trim((string)($body['badge_theme'] ?? 'purple')));
+        if (!in_array($badgeTheme, ['purple','orange','green'], true)) $badgeTheme = 'purple';
+        try {
+            $slug = $uniqueBlogSlug(trim((string)($body['slug'] ?? '')) ?: $title, $id);
+            Database::query(
+                "UPDATE blogs
+                 SET title=?, slug=?, excerpt=?, content=?, featured_image=?, image_alt=?, category=?, badge_theme=?, author_name=?, meta_title=?, meta_description=?, published_at=?, sort_order=?, is_featured=?, is_active=?, updated_at=NOW()
+                 WHERE id=?",
+                [
+                    $title,
+                    $slug,
+                    trim((string)($body['excerpt'] ?? '')),
+                    $content,
+                    trim((string)($body['featured_image'] ?? '')),
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['category'] ?? 'Print Tips')) ?: 'Print Tips',
+                    $badgeTheme,
+                    trim((string)($body['author_name'] ?? 'RCS Print Team')) ?: 'RCS Print Team',
+                    trim((string)($body['meta_title'] ?? '')),
+                    trim((string)($body['meta_description'] ?? '')),
+                    trim((string)($body['published_at'] ?? '')) ?: date('Y-m-d H:i:s'),
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_featured'] ?? 1),
+                    (int)($body['is_active'] ?? 1),
+                    $id,
+                ]
+            );
+            json(['ok'=>true,'slug'=>$slug]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not update blog'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/blogs/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        try {
+            Database::query("DELETE FROM blogs WHERE id=?", [(int)$m[1]]);
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not delete blog'], 500);
+        }
+    }
+    if ($uri === '/admin/api/blogs/upload' && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 6 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 6MB'], 400);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $dir = PUBLIC_PATH . '/uploads/blogs/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'blog_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        json(['ok'=>true,'path'=>'/uploads/blogs/' . $name]);
     }
 
     if ($uri === '/admin/api/settings' && $method === 'GET') {
@@ -786,6 +1097,8 @@ $adminPage = match(true) {
     $uri === '/admin/categories' => 'admin/categories',
     $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/banners'    => 'admin/banners',
+    $uri === '/admin/deals'      => 'admin/deals',
+    $uri === '/admin/blogs'      => 'admin/blogs',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/customers'  => 'admin/customers',

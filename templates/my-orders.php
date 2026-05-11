@@ -24,7 +24,7 @@ $tlSteps = ['received','processing','printing','ready','delivered'];
     <div style="font-size:48px;margin-bottom:12px">📦</div>
     <div style="font-size:18px;font-weight:700;margin-bottom:8px">No Orders Yet</div>
     <div style="font-size:14px;color:var(--text2);margin-bottom:20px">Your orders will appear here</div>
-    <a href="/#prod-sec" class="btn btn-blue">Browse Products →</a>
+    <a href="/products" class="btn btn-blue">Browse Products →</a>
   </div>
   <?php else: ?>
   <?php foreach ($orders as $order):

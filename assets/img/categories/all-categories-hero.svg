@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 260" role="img" aria-labelledby="title desc">
+  <title id="title">All categories printing mockup</title>
+  <desc id="desc">Premium print collateral mockup using the RCS Print purple, orange and green brand colors.</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f3f5f8"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#15803d"/>
+    </linearGradient>
+    <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6d28d9"/>
+      <stop offset="1" stop-color="#43178d"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff8a1f"/>
+      <stop offset="1" stop-color="#ea580c"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#0f172a" flood-opacity=".18"/>
+    </filter>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+  <rect width="1120" height="260" fill="#f8fafc"/>
+  <path d="M380 0h740v260H268z" fill="#fff" opacity=".78"/>
+  <path d="M710 0h410v260H615z" fill="#eef2f7" opacity=".55"/>
+  <ellipse cx="735" cy="222" rx="330" ry="34" fill="#cbd5e1" opacity=".25" filter="url(#soft)"/>
+
+  <!-- Plant pot -->
+  <g transform="translate(950 18)" filter="url(#shadow)">
+    <ellipse cx="62" cy="92" rx="54" ry="12" fill="#d9dee7" opacity=".5"/>
+    <path d="M24 58h74l-10 66H34z" fill="#ffffff"/>
+    <path d="M31 122h50" stroke="#d4d9e1" stroke-width="3" stroke-linecap="round"/>
+    <path d="M61 60c-19-16-37-19-51-12 8 17 24 25 51 12z" fill="#15803d"/>
+    <path d="M63 58c5-25 20-39 42-44 1 25-12 41-42 44z" fill="#22c55e"/>
+    <path d="M58 60c-22-3-39 3-50 19 21 7 38 1 50-19z" fill="#16a34a"/>
+    <path d="M66 62c20-2 36 5 47 21-20 6-36-1-47-21z" fill="#0f766e"/>
+  </g>
+
+  <!-- Gift / business card box -->
+  <g transform="translate(420 128) rotate(-8)" filter="url(#shadow)">
+    <path d="M0 32 130 0l82 38-132 36z" fill="#111827"/>
+    <path d="M80 74 212 38v48L80 126z" fill="#020617"/>
+    <path d="M0 32 80 74v52L0 82z" fill="#1f2937"/>
+    <text x="77" y="45" font-family="Poppins, Arial" font-size="26" font-weight="800" fill="#fff" text-anchor="middle">RCS</text>
+    <circle cx="112" cy="34" r="5" fill="#22c55e"/>
+    <circle cx="124" cy="31" r="5" fill="#ff8a1f"/>
+    <circle cx="136" cy="28" r="5" fill="#6d28d9"/>
+    <text x="77" y="62" font-family="Poppins, Arial" font-size="8" font-weight="700" fill="#cbd5e1" text-anchor="middle" letter-spacing="3">PRINT</text>
+  </g>
+
+  <!-- White flyer -->
+  <g transform="translate(580 30) rotate(13)" filter="url(#shadow)">
+    <rect x="0" y="0" width="185" height="196" rx="2" fill="url(#paper)"/>
+    <text x="22" y="42" font-family="Poppins, Arial" font-size="15" font-weight="800" fill="#071225">YOUR BRAND</text>
+    <text x="22" y="66" font-family="Poppins, Arial" font-size="15" font-weight="800" fill="#071225">OUR PRINT,</text>
+    <text x="22" y="90" font-family="Poppins, Arial" font-size="15" font-weight="800" fill="#071225">PERFECT IMPACT.</text>
+    <path d="M0 196 185 104v92z" fill="url(#orange)" opacity=".95"/>
+    <path d="M40 196 185 58v138z" fill="url(#green)" opacity=".88"/>
+    <path d="M108 196 185 132v64z" fill="url(#purple)" opacity=".92"/>
+    <path d="M50 143h22v53H50zm38-22h22v75H88zm40-28h22v103h-22z" fill="#0f172a" opacity=".58"/>
+    <circle cx="158" cy="42" r="19" fill="#fff"/>
+    <path d="M146 42a12 12 0 1 1 24 0" fill="none" stroke="#6d28d9" stroke-width="4"/>
+    <path d="M146 42a12 12 0 0 0 24 0" fill="none" stroke="#ff8a1f" stroke-width="4"/>
+  </g>
+
+  <!-- Green flyer -->
+  <g transform="translate(765 28) rotate(12)" filter="url(#shadow)">
+    <rect width="170" height="210" rx="2" fill="url(#green)"/>
+    <text x="24" y="40" font-family="Poppins, Arial" font-size="17" font-weight="800" fill="#fff">BUILD</text>
+    <text x="24" y="63" font-family="Poppins, Arial" font-size="17" font-weight="800" fill="#fff">YOUR BRAND</text>
+    <text x="24" y="86" font-family="Poppins, Arial" font-size="17" font-weight="800" fill="#fff">WITH QUALITY</text>
+    <text x="24" y="109" font-family="Poppins, Arial" font-size="17" font-weight="800" fill="#fff">PRINTING</text>
+    <circle cx="30" cy="134" r="4" fill="#ff8a1f"/>
+    <circle cx="30" cy="154" r="4" fill="#ff8a1f"/>
+    <circle cx="30" cy="174" r="4" fill="#ff8a1f"/>
+    <path d="M42 132h88M42 152h72M42 172h96" stroke="#eafff0" stroke-width="5" stroke-linecap="round" opacity=".75"/>
+    <rect x="92" y="126" width="44" height="44" fill="#0f172a" opacity=".28"/>
+    <path d="M98 170h56l-18 40H83z" fill="#0f172a" opacity=".22"/>
+  </g>
+
+  <!-- Shopping bag -->
+  <g transform="translate(900 142) rotate(10)" filter="url(#shadow)">
+    <path d="M0 30h142l-12 100H12z" fill="#fff"/>
+    <path d="M37 31c0-22 67-22 67 0" fill="none" stroke="#ff8a1f" stroke-width="8" stroke-linecap="round"/>
+    <text x="69" y="86" font-family="Poppins, Arial" font-size="33" font-weight="800" fill="#111827" text-anchor="middle">RCS</text>
+    <circle cx="91" cy="74" r="6" fill="#22c55e"/>
+    <circle cx="105" cy="72" r="6" fill="#ff8a1f"/>
+    <circle cx="119" cy="70" r="6" fill="#6d28d9"/>
+    <text x="69" y="105" font-family="Poppins, Arial" font-size="9" font-weight="700" fill="#64748b" text-anchor="middle" letter-spacing="3">PRINT</text>
+  </g>
+</svg>

@@ -7,7 +7,7 @@ include __DIR__ . '/layout.php';
 
 <div class="fsec" style="max-width:1100px">
   <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-    <div style="font-size:13px;color:var(--text2)">Manage home page slider images, texts and CTA buttons.</div>
+    <div style="font-size:13px;color:var(--text2)">Manage home page slider images. Text, CTA buttons and click URLs are optional.</div>
     <button class="btn btn-blue btn-sm" onclick="newBanner()">+ New Banner</button>
   </div>
 
@@ -18,25 +18,25 @@ include __DIR__ . '/layout.php';
 
   <div style="font-weight:700;margin-bottom:10px" id="bnFormTitle">Add Banner</div>
   <div class="f2">
-    <div class="fg"><label>Eyebrow</label><input class="fi" id="bn-eyebrow" placeholder="New Arrivals"></div>
-    <div class="fg"><label>Image Alt</label><input class="fi" id="bn-alt" placeholder="Premium Business Card Printing"></div>
+    <div class="fg"><label>Eyebrow <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-eyebrow" placeholder="New Arrivals"></div>
+    <div class="fg"><label>Image Alt <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-alt" placeholder="Premium Business Card Printing"></div>
   </div>
-  <div class="fg"><label>Title (use &lt;br&gt; for line break)</label><input class="fi" id="bn-title" placeholder="Premium Business<br>Cards That Impress"></div>
-  <div class="fg"><label>Subtitle (use &lt;br&gt; for line break)</label><textarea class="fi" id="bn-subtitle" style="height:72px"></textarea></div>
+  <div class="fg"><label>Title <span style="color:var(--text3);font-weight:500">(optional, use &lt;br&gt; for line break)</span></label><input class="fi" id="bn-title" placeholder="Print That Grows<br>Your Business"></div>
+  <div class="fg"><label>Subtitle <span style="color:var(--text3);font-weight:500">(optional, use &lt;br&gt; for line break)</span></label><textarea class="fi" id="bn-subtitle" style="height:72px"></textarea></div>
   <div class="f2">
     <div class="fg">
       <label>Banner Image</label>
       <input type="file" class="fi" id="bn-image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-      <div style="font-size:11px;color:var(--text3);margin-top:5px">Upload image first, then save banner.</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:5px">Upload a wide banner image first, then save. Recommended ratio: 1024×384 or similar.</div>
     </div>
-    <div class="fg"><label>Image Path</label><input class="fi" id="bn-image-path" placeholder="/uploads/banners/..."></div>
+    <div class="fg"><label>Image Path *</label><input class="fi" id="bn-image-path" placeholder="/uploads/banners/..."></div>
   </div>
   <div class="f2">
-    <div class="fg"><label>Primary CTA Text</label><input class="fi" id="bn-ptext" value="View Products →"></div>
-    <div class="fg"><label>Primary CTA URL</label><input class="fi" id="bn-purl" value="/products"></div>
+    <div class="fg"><label>Primary CTA Text <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-ptext" placeholder="Order Now"></div>
+    <div class="fg"><label>Banner Click / Primary CTA URL <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-purl" placeholder="/products"></div>
   </div>
   <div class="f2">
-    <div class="fg"><label>Secondary CTA Text</label><input class="fi" id="bn-stext" value="💬 WhatsApp"></div>
+    <div class="fg"><label>Secondary CTA Text <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-stext" placeholder="Get Free Design"></div>
     <div class="fg">
       <label>Secondary CTA Type</label>
       <select class="fi fi-sel" id="bn-stype">
@@ -46,7 +46,7 @@ include __DIR__ . '/layout.php';
     </div>
   </div>
   <div class="f2">
-    <div class="fg"><label>Secondary CTA URL (for type=url)</label><input class="fi" id="bn-surl" placeholder="https://example.com/offer"></div>
+    <div class="fg"><label>Secondary CTA URL <span style="color:var(--text3);font-weight:500">(optional, for type=url)</span></label><input class="fi" id="bn-surl" placeholder="https://example.com/offer"></div>
     <div class="fg"><label>Sort Order</label><input type="number" class="fi" id="bn-sort" value="0"></div>
   </div>
   <div class="fg">
@@ -90,7 +90,7 @@ function renderBanners() {
     <div style="display:grid;grid-template-columns:100px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:#fff">
       <img src="${esc(b.image_path)}" style="width:100px;height:58px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
       <div>
-        <div style="font-weight:700;font-size:13px">${esc(b.title || '(No title)')}</div>
+        <div style="font-weight:700;font-size:13px">${esc(b.title || 'Image-only banner')}</div>
         <div style="font-size:11px;color:var(--text2)">Order: ${Number(b.sort_order||0)} · ${b.is_active ? 'Active' : 'Inactive'}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
@@ -111,9 +111,9 @@ function fillForm(b) {
   document.getElementById('bn-subtitle').value = b.subtitle || '';
   document.getElementById('bn-image-path').value = b.image_path || '';
   document.getElementById('bn-alt').value = b.image_alt || '';
-  document.getElementById('bn-ptext').value = b.cta_primary_text || 'View Products →';
-  document.getElementById('bn-purl').value = b.cta_primary_url || '/products';
-  document.getElementById('bn-stext').value = b.cta_secondary_text || '💬 WhatsApp';
+  document.getElementById('bn-ptext').value = b.cta_primary_text || '';
+  document.getElementById('bn-purl').value = b.cta_primary_url || '';
+  document.getElementById('bn-stext').value = b.cta_secondary_text || '';
   document.getElementById('bn-stype').value = b.cta_secondary_type || 'whatsapp';
   document.getElementById('bn-surl').value = b.cta_secondary_url || '';
   document.getElementById('bn-sort').value = Number(b.sort_order || 0);
@@ -143,8 +143,8 @@ function editBanner(id){ const b = banners.find(x=>Number(x.id)===Number(id)); i
 
 async function saveBanner() {
   const payload = collectForm();
-  if (!payload.title || !payload.image_path) { showErr('Title and image path required.'); return; }
-  if (payload.cta_secondary_type === 'url' && !payload.cta_secondary_url) { showErr('Secondary CTA URL required for type=url'); return; }
+  if (!payload.image_path) { showErr('Banner image path required.'); return; }
+  if (payload.cta_secondary_text && payload.cta_secondary_type === 'url' && !payload.cta_secondary_url) { showErr('Secondary CTA URL required when secondary CTA text uses type=url.'); return; }
   showErr('');
   const btn = document.getElementById('bnSaveBtn');
   btn.disabled = true;

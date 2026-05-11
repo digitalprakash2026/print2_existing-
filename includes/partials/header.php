@@ -40,106 +40,105 @@ $currentUri  = $uri ?? '/';
 <!-- ═══════════════════════════════════════════════
      SITE HEADER
 ══════════════════════════════════════════════════ -->
-<header class="header" id="siteHeader">
+<header class="site-header rcs-site-header" id="siteHeader">
+  <div class="topbar rcs-topbar">
+    <div class="header-container topbar-inner rcs-header-container rcs-topbar-inner">
+      <div class="topbar-left rcs-topbar-left">
+        <span>
+          <i class="fa-solid fa-truck-fast" aria-hidden="true"></i>
+          Free Delivery in Rajkot on All Orders Above ₹999
+        </span>
+      </div>
 
-  <!-- Logo -->
-  <a href="/" class="hdr-logo">
-    <img src="/assets/images/rcs-graphic-logo.png"
-         alt="<?= $navBizName ?> Logo"
-         class="hdr-logo-img"
-         loading="eager"
-         decoding="async">
-  </a>
+      <div class="topbar-right rcs-topbar-right">
+        <div class="topbar-links rcs-topbar-links">
+          <a href="/my-orders" aria-label="Track Order">Track Order</a>
+          <span class="topbar-divider rcs-topbar-divider" aria-hidden="true"></span>
+          <a href="/#quick-help-sec" aria-label="Help Center">Help Center</a>
+        </div>
 
-  <!-- Desktop Nav -->
-  <nav class="hdr-nav" id="desktopNav">
-    <a href="/"           class="hn <?= $currentUri === '/'          ? 'act' : '' ?>">Home</a>
-
-    <!-- Products dropdown — hover bridge prevents flicker -->
-    <div class="dd-wrap" id="ddWrap">
-      <button class="dd-btn" id="ddBtn" aria-expanded="false" aria-haspopup="true">
-        Products
-        <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-      </button>
-      <!-- Invisible bridge fills gap between button and panel -->
-      <div class="dd-bridge"></div>
-      <div class="dd-panel" id="ddPanel" role="menu">
-        <?php if (!empty($navCategories)): ?>
-          <div class="dd-cat-lbl">Browse by Category</div>
-          <?php foreach ($navCategories as $cat): ?>
-          <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item" role="menuitem">
-            <div class="dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></div>
-            <span><?= htmlspecialchars($cat['name']) ?></span>
-            <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
-            <span style="margin-left:auto;font-size:10px;color:var(--text3);font-weight:600">
-              <?= (int)$cat['product_count'] ?>
-            </span>
-            <?php endif; ?>
-          </a>
-          <?php endforeach; ?>
-          <div class="dd-divider"></div>
-        <?php endif; ?>
-        <?php if (!empty($navProducts)): ?>
-          <div class="dd-cat-lbl">Products</div>
-          <?php foreach (array_slice($navProducts, 0, 6) as $p): ?>
-          <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item" role="menuitem">
-            <div class="dd-item-ic"><?= $catIcons[$p['category_name']] ?? '🖨️' ?></div>
-            <?= htmlspecialchars($p['name']) ?>
-          </a>
-          <?php endforeach; ?>
-          <div class="dd-divider"></div>
-        <?php endif; ?>
-        <a href="/products" class="dd-item" role="menuitem"
-           style="color:var(--blue);font-weight:700">
-          <div class="dd-item-ic" style="background:var(--blue);color:#fff">→</div>
-          See All Products
-        </a>
+        <div class="social-links rcs-social-links" aria-label="Social links">
+          <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://wa.me/<?= $navWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
+        </div>
       </div>
     </div>
-
-    <a href="/#why-sec"     class="hn">Why Us</a>
-    <a href="/#contact-sec" class="hn">Contact</a>
-    <?php if ($user ?? null): ?>
-      <a href="/my-orders" class="hn">My Orders</a>
-      <a href="/profile" class="hn">Profile</a>
-    <?php endif; ?>
-  </nav>
-
-  <div class="hdr-space"></div>
-
- 
-
-  <!-- Right actions -->
-  <div class="hdr-right">
-    <?php if (!($user ?? null)): ?>
-      <a href="/register" class="hdr-new-customer">
-        <span class="hdr-new-label">New Customer?</span>
-        <span class="hdr-new-link">Start Here</span>
-      </a>
-    <?php endif; ?>
-
-    <!-- Cart -->
-    <button class="cart-btn" onclick="toggleCart()" title="Shopping Cart" aria-label="Open cart">
-      <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 23.46 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
-      <span class="cart-count hidden" id="cartCount">0</span>
-    </button>
-
-    <!-- Auth -->
-    <?php if ($user ?? null): ?>
-      <span class="hdr-user-name"><?= htmlspecialchars(explode(' ', $user['name'])[0]) ?></span>
-      <a href="/logout" class="btn-auth btn-auth-ghost">Logout</a>
-    <?php else: ?>
-      <a href="/login" class="btn-auth btn-auth-ghost">Login</a>
-    <?php endif; ?>
-
-    
-
-    <!-- Hamburger — fixed: calls toggleDrawer() which exists in app.js -->
-    <button class="ham" onclick="toggleDrawer()" id="hamBtn" aria-label="Open menu" aria-expanded="false">
-      <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-    </button>
   </div>
 
+  <nav class="navbar rcs-navbar" aria-label="Main navigation">
+    <div class="header-container navbar-inner rcs-header-container rcs-navbar-inner">
+      <a href="/" class="brand rcs-brand" aria-label="<?= $navBizName ?> Home">
+        <img src="/assets/images/rcs-graphic-logo.png"
+             alt="<?= $navBizName ?> Logo"
+             class="brand-img rcs-brand-img"
+             loading="eager"
+             decoding="async">
+      </a>
+
+      <div class="nav-center rcs-nav-center">
+        <ul class="nav-menu rcs-nav-menu">
+          <li><a href="/" class="nav-link rcs-nav-link <?= $currentUri === '/' ? 'active' : '' ?>">Home</a></li>
+          <li class="nav-dropdown rcs-nav-dropdown" id="ddWrap">
+            <button class="nav-link nav-link-button rcs-nav-link rcs-nav-link-button" id="ddBtn" type="button" aria-expanded="false" aria-haspopup="true">
+              Products
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div class="dd-bridge rcs-dd-bridge"></div>
+            <div class="dd-panel rcs-dd-panel" id="ddPanel" role="menu">
+              <?php if (!empty($navCategories)): ?>
+                <div class="dd-cat-lbl rcs-dd-cat-lbl">Browse by Category</div>
+                <?php foreach ($navCategories as $cat): ?>
+                  <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item rcs-dd-item" role="menuitem">
+                    <span class="dd-item-ic rcs-dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+                    <span><?= htmlspecialchars($cat['name']) ?></span>
+                    <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
+                      <span class="dd-count rcs-dd-count"><?= (int)$cat['product_count'] ?></span>
+                    <?php endif; ?>
+                  </a>
+                <?php endforeach; ?>
+                <div class="dd-divider rcs-dd-divider"></div>
+              <?php endif; ?>
+              <?php if (!empty($navProducts)): ?>
+                <div class="dd-cat-lbl rcs-dd-cat-lbl">Products</div>
+                <?php foreach (array_slice($navProducts, 0, 6) as $p): ?>
+                  <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item rcs-dd-item" role="menuitem">
+                    <span class="dd-item-ic rcs-dd-item-ic"><?= $catIcons[$p['category_name']] ?? '🖨️' ?></span>
+                    <span><?= htmlspecialchars($p['name']) ?></span>
+                  </a>
+                <?php endforeach; ?>
+                <div class="dd-divider rcs-dd-divider"></div>
+              <?php endif; ?>
+              <a href="/products" class="dd-item dd-item-all rcs-dd-item rcs-dd-item-all" role="menuitem">
+                <span class="dd-item-ic rcs-dd-item-ic">→</span>
+                <span>See All Products</span>
+              </a>
+            </div>
+          </li>
+          <li><a href="/#why-sec" class="nav-link rcs-nav-link">About Us</a></li>
+          <li><a href="/#quick-help-sec" class="nav-link rcs-nav-link">Contact Us</a></li>
+          <li><a href="/#blogs-sec" class="nav-link rcs-nav-link">Blog</a></li>
+          <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link rcs-nav-link">My Account</a></li>
+        </ul>
+      </div>
+
+      <div class="navbar-actions rcs-navbar-actions">
+        <a href="/products" class="action-btn rcs-action-btn" aria-label="Search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </a>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="action-btn rcs-action-btn" aria-label="My Account">
+          <i class="fa-regular fa-user"></i>
+        </a>
+        <button class="action-btn cart-btn rcs-action-btn rcs-cart-btn" onclick="toggleCart()" aria-label="Cart" type="button">
+          <i class="fa-solid fa-cart-shopping"></i>
+          <span class="cart-badge rcs-cart-badge" id="cartCount">2</span>
+        </button>
+        <button class="menu-toggle rcs-menu-toggle" id="hamBtn" onclick="toggleDrawer()" aria-label="Toggle menu" aria-expanded="false" type="button">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
 </header>
 
 <!-- ═══════════════════════════════════════════════
@@ -173,8 +172,13 @@ $currentUri  = $uri ?? '/';
       </a>
     </div>
 
-    <a href="/#why-sec"     class="md-item" onclick="closeDrawer()">⭐ Why Us</a>
-    <a href="/#contact-sec" class="md-item" onclick="closeDrawer()">📞 Contact</a>
+    <a href="/#why-sec"     class="md-item" onclick="closeDrawer()">⭐ About Us</a>
+    <a href="/#quick-help-sec" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
+    <a href="/#blogs-sec"    class="md-item" onclick="closeDrawer()">📝 Blog</a>
+    <a href="/products"      class="md-item" onclick="closeDrawer()">🔎 Search Products</a>
+    <button type="button" class="md-item md-action" onclick="toggleCart();closeDrawer()">
+      🛒 Cart <span class="md-cart-badge">2</span>
+    </button>
 
     <?php if ($user ?? null): ?>
       <a href="/my-orders" class="md-item">📋 My Orders</a>

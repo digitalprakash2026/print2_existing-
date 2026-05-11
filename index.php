@@ -67,15 +67,80 @@ if ($uri === '/' && $method === 'GET') {
         $categories  = \Catalog\ProductCatalog::categories();
         $products    = \Catalog\ProductCatalog::all();
         $homeBanners = Database::rows("SELECT * FROM home_banners WHERE is_active=1 ORDER BY sort_order ASC, id DESC");
+        $homeDeals   = [];
+        try {
+            $homeDeals = Database::rows("SELECT * FROM home_deals WHERE is_active=1 ORDER BY sort_order ASC, id DESC");
+        } catch (\Throwable $e) {
+            error_log('Home deals unavailable: ' . $e->getMessage());
+        }
+        $homeBlogs = [];
+        try {
+            $homeBlogs = Database::rows("SELECT * FROM blogs WHERE is_active=1 AND is_featured=1 ORDER BY sort_order ASC, published_at DESC, id DESC");
+        } catch (\Throwable $e) {
+            error_log('Home blogs unavailable: ' . $e->getMessage());
+        }
         $settings    = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {
         error_log('Home error: ' . $e->getMessage());
         $categories = $products = [];
         $homeBanners = [];
+        $homeDeals = [];
+        $homeBlogs = [];
         $settingsMap = [];
     }
-    view('home', compact('categories', 'products', 'settingsMap', 'homeBanners'));
+    view('home', compact('categories', 'products', 'settingsMap', 'homeBanners', 'homeDeals', 'homeBlogs'));
+    exit;
+}
+
+
+// Blogs Listing Page — /blogs
+if ($uri === '/blogs' && $method === 'GET') {
+    try {
+        $blogs = Database::rows(
+            "SELECT id,title,slug,excerpt,featured_image,image_alt,category,badge_theme,published_at
+             FROM blogs
+             WHERE is_active = 1
+             ORDER BY is_featured DESC, sort_order ASC, published_at DESC, id DESC"
+        );
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable $e) {
+        error_log('Blogs listing error: ' . $e->getMessage());
+        $blogs = [];
+        $settingsMap = [];
+    }
+    view('blogs', compact('blogs', 'settingsMap'));
+    exit;
+}
+
+// Blog Detail Page — /blog/{slug}
+if (preg_match('#^/blog/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
+    try {
+        $blog = Database::row(
+            "SELECT * FROM blogs WHERE slug = ? AND is_active = 1 LIMIT 1",
+            [$m[1]]
+        );
+        $relatedBlogs = Database::rows(
+            "SELECT id,title,slug,excerpt,featured_image,image_alt,category,published_at
+             FROM blogs
+             WHERE is_active = 1 AND slug <> ?
+             ORDER BY is_featured DESC, sort_order ASC, published_at DESC, id DESC
+             LIMIT 3",
+            [$m[1]]
+        );
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable $e) {
+        error_log('Blog detail error: ' . $e->getMessage());
+        $blog = null;
+        $relatedBlogs = [];
+        $settingsMap = [];
+    }
+
+    if (!$blog) { http_response_code(404); view('404'); exit; }
+
+    view('blog-detail', compact('blog', 'relatedBlogs', 'settingsMap'));
     exit;
 }
 
@@ -90,6 +155,21 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     catch (\Throwable) { $related = []; }
 
     view('product', compact('product', 'related'));
+    exit;
+}
+
+// ── All Categories Page — /categories ─────────────────────────
+if ($uri === '/categories' && $method === 'GET') {
+    try {
+        $categories = \Catalog\ProductCatalog::categories();
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable $e) {
+        error_log('Categories page error: ' . $e->getMessage());
+        $categories = [];
+        $settingsMap = [];
+    }
+    view('categories', compact('categories', 'settingsMap'));
     exit;
 }
 
