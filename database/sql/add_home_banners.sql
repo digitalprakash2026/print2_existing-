@@ -28,3 +28,41 @@ ALTER TABLE home_banners MODIFY title VARCHAR(255) NULL;
 ALTER TABLE home_banners MODIFY cta_primary_text VARCHAR(120) NOT NULL DEFAULT '';
 ALTER TABLE home_banners MODIFY cta_primary_url VARCHAR(255) NOT NULL DEFAULT '';
 ALTER TABLE home_banners MODIFY cta_secondary_text VARCHAR(120) NOT NULL DEFAULT '';
+
+-- Sample 2400x1000 banner placeholder designed for desktop and mobile-safe cropping.
+INSERT INTO home_banners (
+    eyebrow,
+    title,
+    subtitle,
+    image_path,
+    image_alt,
+    cta_primary_text,
+    cta_primary_url,
+    cta_secondary_text,
+    cta_secondary_type,
+    cta_secondary_url,
+    sort_order,
+    is_active,
+    created_at,
+    updated_at
+)
+SELECT
+    '',
+    '',
+    '',
+    '/assets/images/banners/rcs-print-placeholder-2400x1000.svg',
+    'RCS Graphic premium printing banner placeholder',
+    '',
+    '',
+    '',
+    'url',
+    '',
+    0,
+    1,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM home_banners
+    WHERE image_path = '/assets/images/banners/rcs-print-placeholder-2400x1000.svg'
+);
