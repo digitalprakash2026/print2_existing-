@@ -34,6 +34,17 @@ CREATE TABLE IF NOT EXISTS product_images (
   KEY idx_product_images_primary (product_id, is_primary)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Compatibility for existing installs where these columns/tables may already exist
+-- with an older structure. If your MySQL version does not support IF NOT EXISTS,
+-- run only the missing ALTER statements manually from phpMyAdmin.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS image_path VARCHAR(255) NULL AFTER design_fee;
+ALTER TABLE product_images ADD COLUMN IF NOT EXISTS image_path VARCHAR(255) NULL AFTER product_id;
+ALTER TABLE product_images ADD COLUMN IF NOT EXISTS url VARCHAR(255) NULL AFTER image_path;
+ALTER TABLE product_images ADD COLUMN IF NOT EXISTS alt_text VARCHAR(255) NULL AFTER url;
+ALTER TABLE product_images ADD COLUMN IF NOT EXISTS is_primary TINYINT(1) NOT NULL DEFAULT 0 AFTER alt_text;
+ALTER TABLE product_images ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0 AFTER is_primary;
+UPDATE product_images SET image_path = COALESCE(image_path, url) WHERE (image_path IS NULL OR image_path = '') AND url IS NOT NULL;
+
 -- Categories: inserted only when a matching slug is missing.
 INSERT INTO categories (name, slug, description, icon, sort_order, is_active, created_at)
 SELECT 'Business Cards', 'business-cards', 'Business card and visiting card samples', '💳', 10, 1, NOW()
