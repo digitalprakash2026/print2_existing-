@@ -3663,8 +3663,8 @@ html[data-motion='minimal'] .pd-main:hover img { transform:none !important; }
 
 /* Home page section rhythm: keep vertical spacing consistent between sections. */
 :root {
-  --home-header-gap:16px;
-  --home-section-gap:28px;
+  --home-header-gap:20px;
+  --home-section-gap:20px;
 }
 body:has(#siteHeader) .banner-slider {
   margin-top:calc(var(--site-hh, 126px) + var(--home-header-gap));
@@ -3684,8 +3684,8 @@ body:has(#siteHeader) .banner-slider {
 }
 @media (max-width:768px) {
   :root {
-    --home-header-gap:14px;
-    --home-section-gap:22px;
+    --home-header-gap:20px;
+    --home-section-gap:20px;
   }
   body:has(#siteHeader) .banner-slider {
     margin-top:calc(var(--site-hh, 129px) + var(--home-header-gap));
@@ -3693,8 +3693,8 @@ body:has(#siteHeader) .banner-slider {
 }
 @media (max-width:480px) {
   :root {
-    --home-header-gap:12px;
-    --home-section-gap:18px;
+    --home-header-gap:20px;
+    --home-section-gap:20px;
   }
   body:has(#siteHeader) .banner-slider {
     margin-top:calc(var(--site-hh, 144px) + var(--home-header-gap));
