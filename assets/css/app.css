@@ -3660,6 +3660,47 @@ html[data-motion='minimal'] .pd-main:hover img { transform:none !important; }
   .footer-container { width:min(100%, calc(100vw - 20px)); padding:0 12px; }
 }
 
+
+/* Home page section rhythm: keep vertical spacing consistent between sections. */
+:root {
+  --home-header-gap:16px;
+  --home-section-gap:28px;
+}
+body:has(#siteHeader) .banner-slider {
+  margin-top:calc(var(--site-hh, 126px) + var(--home-header-gap));
+}
+.banner-slider ~ .shop-cat-section,
+.banner-slider ~ .why-print-section,
+.banner-slider ~ .best-deals-section,
+.banner-slider ~ .how-works-section,
+.banner-slider ~ .customer-say-section,
+.banner-slider ~ .blog-section,
+.banner-slider ~ .quick-help-section {
+  padding-top:var(--home-section-gap);
+  padding-bottom:var(--home-section-gap);
+}
+.banner-slider ~ .footer {
+  padding-top:var(--home-section-gap);
+}
+@media (max-width:768px) {
+  :root {
+    --home-header-gap:14px;
+    --home-section-gap:22px;
+  }
+  body:has(#siteHeader) .banner-slider {
+    margin-top:calc(var(--site-hh, 129px) + var(--home-header-gap));
+  }
+}
+@media (max-width:480px) {
+  :root {
+    --home-header-gap:12px;
+    --home-section-gap:18px;
+  }
+  body:has(#siteHeader) .banner-slider {
+    margin-top:calc(var(--site-hh, 144px) + var(--home-header-gap));
+  }
+}
+
 /* Testimonials auto-slider without arrow controls + simplified footer bottom */
 .customer-say-shell { display:block; }
 .customer-say-track {
