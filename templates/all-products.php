@@ -13,7 +13,7 @@ include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 ?>
 
-<div style="margin-top:var(--hh);padding-bottom:80px;background:var(--bg);min-height:calc(100vh - var(--hh))">
+<div style="margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));padding-bottom:80px;background:var(--bg);min-height:calc(100vh - var(--site-hh, var(--hh)) - var(--post-header-gap,50px))">
   <div class="container">
 
     <!-- Breadcrumb -->

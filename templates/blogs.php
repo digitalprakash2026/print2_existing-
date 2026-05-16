@@ -23,7 +23,7 @@ include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 ?>
 
-<main class="all-blogs-page" style="margin-top:var(--hh);padding:26px 0 84px;background:var(--bg);min-height:calc(100vh - var(--hh))">
+<main class="all-blogs-page" style="margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));padding:26px 0 84px;background:var(--bg);min-height:calc(100vh - var(--site-hh, var(--hh)) - var(--post-header-gap,50px))">
   <div class="container">
     <div class="breadcrumb" style="padding-top:4px">
       <a href="/">Home</a><span>/</span>
