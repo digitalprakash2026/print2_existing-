@@ -3,7 +3,7 @@
  * category.php — Category Page
  * Shows all products belonging to a single category
  * Route: /category/{slug}
- * Variables: $category (array), $products (array), $categories (array), $settingsMap (array)
+ * Variables: $category (array), $products (array), $categories (array), $childCategories (array), $settingsMap (array)
  */
 $pageTitle = htmlspecialchars($category['name']) . ' Printing — RCS Graphic';
 $pageDesc  = 'Browse all ' . htmlspecialchars($category['name']) . ' products at RCS Graphic. Premium quality printing in Rajkot.';
@@ -52,7 +52,18 @@ include INCLUDE_PATH . '/partials/header.php';
           $isActive = ((int)($cat['id'] ?? 0) === (int)($category['id'] ?? 0));
         ?>
           <a href="/category/<?= htmlspecialchars($cat['slug'] ?? '') ?>" class="chip <?= $isActive ? 'on' : '' ?>">
-            <?= htmlspecialchars($cat['icon'] ?? '') ?> <?= htmlspecialchars($cat['name'] ?? 'Category') ?>
+            <?= htmlspecialchars($cat['icon'] ?? '') ?> <?= htmlspecialchars(((int)($cat['parent_id'] ?? 0) > 0 ? '↳ ' : '') . ($cat['name'] ?? 'Category')) ?>
+          </a>
+        <?php endforeach; ?>
+      </nav>
+    <?php endif; ?>
+
+    <?php if (!empty($childCategories)): ?>
+      <nav class="cat-detail-browse" aria-label="Subcategories">
+        <span>Subcategories:</span>
+        <?php foreach ($childCategories as $child): ?>
+          <a href="/category/<?= htmlspecialchars($child['slug'] ?? '') ?>" class="chip">
+            <?= htmlspecialchars($child['icon'] ?? '') ?> <?= htmlspecialchars($child['name'] ?? 'Category') ?>
           </a>
         <?php endforeach; ?>
       </nav>

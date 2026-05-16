@@ -65,7 +65,7 @@ include INCLUDE_PATH . '/partials/header.php';
             <nav class="all-cat-side-list" aria-label="Category quick links">
               <?php foreach ($activeCategories as $idx => $cat): ?>
                 <a href="/category/<?= htmlspecialchars($cat['slug'] ?? '') ?>" class="<?= $idx === 0 ? 'is-active' : '' ?>">
-                  <?= htmlspecialchars($cat['name'] ?? 'Category') ?>
+                  <?= htmlspecialchars(((int)($cat['parent_id'] ?? 0) > 0 ? '↳ ' : '') . ($cat['name'] ?? 'Category')) ?>
                 </a>
               <?php endforeach; ?>
             </nav>
@@ -137,7 +137,7 @@ include INCLUDE_PATH . '/partials/header.php';
                 <div class="all-cat-body">
                   <span class="all-cat-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span>
                   <h2><?= htmlspecialchars($name) ?></h2>
-                  <p><?= htmlspecialchars($desc) ?></p>
+                  <p><?= !empty($cat['parent_name']) ? 'Child of ' . htmlspecialchars($cat['parent_name']) . ' · ' : '' ?><?= htmlspecialchars($desc) ?></p>
                   <strong>(<?= $count ?> Item<?= $count === 1 ? '' : 's' ?>)</strong>
                 </div>
               </a>

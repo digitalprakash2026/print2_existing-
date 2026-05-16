@@ -186,11 +186,12 @@ if (preg_match('#^/category/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 
     $category = $result['category'];
     $products = $result['products'];
+    $childCategories = $result['childCategories'] ?? [];
 
     try { $categories = \Catalog\ProductCatalog::categories(); }
     catch (\Throwable) { $categories = []; }
 
-    view('category', compact('category', 'products', 'categories'));
+    view('category', compact('category', 'products', 'categories', 'childCategories'));
     exit;
 }
 

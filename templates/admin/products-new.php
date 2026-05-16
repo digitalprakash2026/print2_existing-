@@ -82,10 +82,30 @@ function collectFixedTiers() {
   return {ok:true, tiers};
 }
 
+function renderCategoryOptions(cats) {
+  const byParent = new Map();
+  cats.forEach(c => {
+    const pid = Number(c.parent_id || 0);
+    if (!byParent.has(pid)) byParent.set(pid, []);
+    byParent.get(pid).push(c);
+  });
+  const options = [];
+  const walk = (parentId, depth) => {
+    (byParent.get(parentId) || []).forEach(c => {
+      const id = Number(c.id || 0);
+      if (!id) return;
+      options.push(`<option value="${id}">${'— '.repeat(depth)}${escH(c.name)}</option>`);
+      walk(id, depth + 1);
+    });
+  };
+  walk(0, 0);
+  return options.join('');
+}
+
 async function boot() {
   const catsRes = await fetch('/admin/api/categories').then(r=>r.json());
   allCats = catsRes.categories || [];
-  document.getElementById('ep-cat').innerHTML = allCats.map(c=>`<option value="${c.id}">${escH(c.name)}</option>`).join('');
+  document.getElementById('ep-cat').innerHTML = renderCategoryOptions(allCats);
   document.getElementById('ep-cat').addEventListener('change', updateCatPrefixHint);
   document.getElementById('ep-code').addEventListener('input', updateCodeHelp);
   await updateCatPrefixHint();
