@@ -39,12 +39,10 @@ include INCLUDE_PATH . '/partials/header.php';
     <div style="margin-bottom:24px">
       <div class="chip-row">
         <div class="chip on" data-cat="all" onclick="apFilter('all',this)">All Products</div>
-        <?php foreach ($categories as $cat):
-          $catDepthPrefix = ((int)($cat['parent_id'] ?? 0) > 0) ? '↳ ' : '';
-        ?>
+        <?php foreach ($categories as $cat): ?>
         <div class="chip" data-cat="<?= htmlspecialchars($cat['slug']) ?>"
              onclick="apFilter('<?= htmlspecialchars($cat['slug']) ?>',this)">
-          <?= htmlspecialchars($cat['icon'] ?? '') ?> <?= htmlspecialchars($catDepthPrefix . ($cat['name'] ?? 'Category')) ?>
+          <?= htmlspecialchars($cat['icon'] ?? '') ?> <?= htmlspecialchars($cat['name']) ?>
         </div>
         <?php endforeach; ?>
       </div>
@@ -73,19 +71,13 @@ include INCLUDE_PATH . '/partials/header.php';
         $img     = $p['primary_image'] ?? '';
         $minP    = (float)($p['min_price'] ?? 0);
         $catSlug = '';
-        $parentCatSlug = (string)($p['parent_category_slug'] ?? '');
         foreach ($categories as $cat) {
-            if ($cat['id'] == $p['category_id']) {
-                $catSlug = $cat['slug'];
-                $parentCatSlug = $parentCatSlug ?: (string)($cat['parent_slug'] ?? '');
-                break;
-            }
+            if ($cat['id'] == $p['category_id']) { $catSlug = $cat['slug']; break; }
         }
       ?>
       <a href="/product/<?= htmlspecialchars($p['slug']) ?>"
          class="pc"
-         data-cat="<?= htmlspecialchars($catSlug) ?>"
-         data-parent-cat="<?= htmlspecialchars($parentCatSlug) ?>">
+         data-cat="<?= htmlspecialchars($catSlug) ?>">
         <div class="pc-img">
           <img src="<?= htmlspecialchars($img) ?>"
                alt="<?= htmlspecialchars($p['name']) ?>"
@@ -134,7 +126,7 @@ function apFilter(slug, btn) {
   // Filter cards
   let visible = 0;
   document.querySelectorAll('#apGrid .pc').forEach(card => {
-    const show = slug === 'all' || (card.dataset.cat || '') === slug || (card.dataset.parentCat || '') === slug;
+    const show = slug === 'all' || (card.dataset.cat || '') === slug;
     card.style.display = show ? '' : 'none';
     if (show) visible++;
   });

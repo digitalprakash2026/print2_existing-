@@ -249,8 +249,10 @@ body:has(#siteHeader) { --site-hh:126px; }
   top:calc(100% + 10px);
   left:50%;
   transform:translate(-50%,-8px);
-  min-width:275px;
-  padding:10px;
+  width:min(720px, calc(100vw - 32px));
+  max-height:min(70vh, 620px);
+  overflow:auto;
+  padding:12px;
   background:#fff;
   border:1px solid var(--header-border);
   border-radius:14px;
@@ -311,6 +313,43 @@ body:has(#siteHeader) { --site-hh:126px; }
   color:var(--header-muted);
   font-size:10px;
   font-weight:600;
+}
+
+.dd-category-list {
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:10px;
+}
+.dd-cat-group {
+  min-width:0;
+  border:1px solid rgba(17,24,39,.08);
+  border-radius:12px;
+  background:linear-gradient(180deg,#fff 0%,#fafbff 100%);
+  overflow:hidden;
+}
+.dd-cat-link {
+  border-radius:0;
+  font-weight:800;
+  color:var(--purple);
+}
+.dd-product-list {
+  padding:0 8px 8px 42px;
+}
+.dd-product-link {
+  gap:7px;
+  padding:7px 8px;
+  border-radius:8px;
+  color:var(--header-muted);
+  font-size:12px;
+}
+.dd-product-link:hover {
+  color:var(--blue);
+  background:rgba(26,86,232,.06);
+}
+.dd-product-arrow {
+  color:var(--blue);
+  font-size:15px;
+  line-height:1;
 }
 .dd-item-all { color:var(--purple); font-weight:700; }
 .navbar-actions {
@@ -383,6 +422,7 @@ body:has(#siteHeader) .confirm-page {
   min-height:calc(100vh - var(--site-hh, var(--hh)) - 20px);
 }
 @media (max-width:1100px) {
+  .dd-category-list { grid-template-columns:1fr; }
   .nav-menu { gap:24px; }
   .brand { min-width:170px; }
   .brand-img { height:58px; max-width:170px; }
@@ -539,6 +579,18 @@ body:has(#siteHeader) .confirm-page {
   padding-left:36px; font-size:13px; font-weight:400; color:var(--text3);
   justify-content:flex-start;
 }
+.md-cat {
+  justify-content:space-between;
+  font-weight:700;
+  color:var(--blue);
+  background:#fff;
+}
+.md-product {
+  padding-left:58px;
+  font-size:12.5px;
+  color:var(--text2);
+}
+.md-all { font-weight:700; color:var(--blue); }
 .md-sub:hover { color:var(--blue); background:var(--blue-bg); }
 .md-start {
   color:var(--blue); font-weight:700;

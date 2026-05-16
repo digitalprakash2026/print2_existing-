@@ -11,7 +11,6 @@ class ProductCatalog
 {
     private static ?bool $hasProductCodeColumn = null;
     private static ?bool $hasCategoryCodePrefixColumn = null;
-    private static ?bool $hasCategoryParentColumn = null;
 
     private static function minPriceExpr(): string
     {
@@ -30,33 +29,23 @@ class ProductCatalog
 
     private static function fetchProductRows(string $whereSql, array $params = []): array
     {
-        $hasParents = self::categoryParentColumnReady();
-        $parentSelect = $hasParents
-            ? "c.parent_id as category_parent_id, pc.name as parent_category_name, pc.slug as parent_category_slug,"
-            : "NULL as category_parent_id, NULL as parent_category_name, NULL as parent_category_slug,";
-        $parentJoin = $hasParents ? "LEFT JOIN categories pc ON pc.id = c.parent_id" : "";
-
         try {
             return \Database::rows(
                 "SELECT p.*, c.name as category_name,
-                        {$parentSelect}
                         " . self::primaryImageExpr() . " as primary_image,
                         " . self::minPriceExpr() . " as min_price
                  FROM products p
                  LEFT JOIN categories c ON c.id = p.category_id
-                 {$parentJoin}
                  {$whereSql}",
                 $params
             );
         } catch (\Throwable) {
             return \Database::rows(
                 "SELECT p.*, c.name as category_name,
-                        {$parentSelect}
                         (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1) as primary_image,
                         " . self::legacyMinPriceExpr() . " as min_price
                  FROM products p
                  LEFT JOIN categories c ON c.id = p.category_id
-                 {$parentJoin}
                  {$whereSql}",
                 $params
             );
@@ -66,10 +55,7 @@ class ProductCatalog
     public static function all(bool $activeOnly = true): array
     {
         $where = $activeOnly ? 'WHERE p.is_active = 1' : '';
-        $order = self::categoryParentColumnReady()
-            ? ' ORDER BY COALESCE(pc.sort_order, c.sort_order) ASC, c.parent_id IS NOT NULL ASC, c.sort_order ASC, p.sort_order ASC'
-            : ' ORDER BY c.sort_order ASC, p.sort_order ASC';
-        return self::fetchProductRows($where . $order);
+        return self::fetchProductRows($where . ' ORDER BY c.sort_order ASC, p.sort_order ASC');
     }
 
     public static function bySlug(string $slug): ?array
@@ -92,28 +78,8 @@ class ProductCatalog
 
     public static function categories(): array
     {
-        if (self::categoryParentColumnReady()) {
-            return \Database::rows(
-                "SELECT c.*,
-                        parent.name AS parent_name,
-                        parent.slug AS parent_slug,
-                        COUNT(DISTINCT direct_products.id) AS direct_product_count,
-                        COUNT(DISTINCT child_products.id) AS child_product_count,
-                        COUNT(DISTINCT all_products.id) AS product_count,
-                        COUNT(DISTINCT child.id) AS child_count
-                 FROM categories c
-                 LEFT JOIN categories parent ON parent.id = c.parent_id
-                 LEFT JOIN categories child ON child.parent_id = c.id
-                 LEFT JOIN products direct_products ON direct_products.category_id = c.id AND direct_products.is_active = 1
-                 LEFT JOIN products child_products ON child_products.category_id = child.id AND child_products.is_active = 1
-                 LEFT JOIN products all_products ON all_products.is_active = 1 AND (all_products.category_id = c.id OR all_products.category_id = child.id)
-                 GROUP BY c.id
-                 ORDER BY COALESCE(parent.sort_order, c.sort_order) ASC, c.parent_id IS NOT NULL ASC, c.sort_order ASC, c.name ASC"
-            );
-        }
-
         return \Database::rows(
-            "SELECT c.*, COUNT(p.id) as product_count, 0 AS direct_product_count, 0 AS child_product_count, 0 AS child_count
+            "SELECT c.*, COUNT(p.id) as product_count
              FROM categories c
              LEFT JOIN products p ON p.category_id = c.id AND p.is_active = 1
              GROUP BY c.id
@@ -188,27 +154,6 @@ class ProductCatalog
 
     public static function byCategory(string $slug): ?array
     {
-        if (self::categoryParentColumnReady()) {
-            $category = \Database::row(
-                "SELECT c.*, parent.name AS parent_name, parent.slug AS parent_slug
-                 FROM categories c
-                 LEFT JOIN categories parent ON parent.id = c.parent_id
-                 WHERE c.slug = ? AND c.is_active = 1",
-                [$slug]
-            );
-            if (!$category) return null;
-
-            $childCategories = self::activeChildCategories((int)$category['id']);
-            $categoryIds = array_merge([(int)$category['id']], self::categoryDescendantIds((int)$category['id']));
-            $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
-            $products = self::fetchProductRows(
-                "WHERE p.is_active = 1 AND p.category_id IN ($placeholders) ORDER BY c.parent_id IS NULL DESC, c.sort_order ASC, p.sort_order ASC",
-                $categoryIds
-            );
-
-            return ['category' => $category, 'products' => $products, 'childCategories' => $childCategories];
-        }
-
         $category = \Database::row(
             "SELECT * FROM categories WHERE slug = ? AND is_active = 1",
             [$slug]
@@ -217,7 +162,7 @@ class ProductCatalog
 
         $products = self::fetchProductRows('WHERE p.is_active = 1 AND p.category_id = ? ORDER BY p.sort_order ASC', [$category['id']]);
 
-        return ['category' => $category, 'products' => $products, 'childCategories' => []];
+        return ['category' => $category, 'products' => $products];
     }
 
     public static function allProductsPage(): array
@@ -492,44 +437,6 @@ class ProductCatalog
             self::$hasProductCodeColumn = false;
         }
         return self::$hasProductCodeColumn;
-    }
-
-    private static function activeChildCategories(int $categoryId): array
-    {
-        if ($categoryId <= 0 || !self::categoryParentColumnReady()) return [];
-        return \Database::rows(
-            "SELECT * FROM categories WHERE parent_id = ? AND is_active = 1 ORDER BY sort_order ASC, name ASC",
-            [$categoryId]
-        );
-    }
-
-    private static function categoryDescendantIds(int $categoryId): array
-    {
-        if ($categoryId <= 0 || !self::categoryParentColumnReady()) return [];
-        $children = \Database::rows("SELECT id FROM categories WHERE parent_id = ? AND is_active = 1", [$categoryId]);
-        $ids = [];
-        foreach ($children as $child) {
-            $childId = (int)($child['id'] ?? 0);
-            if ($childId <= 0) continue;
-            $ids[] = $childId;
-            $ids = array_merge($ids, self::categoryDescendantIds($childId));
-        }
-        return array_values(array_unique($ids));
-    }
-
-    private static function categoryParentColumnReady(): bool
-    {
-        if (self::$hasCategoryParentColumn !== null) return self::$hasCategoryParentColumn;
-        try {
-            $row = \Database::row(
-                "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'categories' AND COLUMN_NAME = 'parent_id'",
-                [DB_NAME]
-            );
-            self::$hasCategoryParentColumn = ((int)($row['c'] ?? 0)) > 0;
-        } catch (\Throwable) {
-            self::$hasCategoryParentColumn = false;
-        }
-        return self::$hasCategoryParentColumn;
     }
 
     private static function categoryCodePrefixColumnReady(): bool

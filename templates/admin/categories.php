@@ -28,21 +28,17 @@ include __DIR__ . '/layout.php';
       <div class="fg"><label>Slug</label><input id="cat-slug" class="fi" placeholder="visiting-cards"></div>
     </div>
     <div class="f2">
-      <div class="fg"><label>Parent Category</label><select id="cat-parent" class="fi fi-sel"></select></div>
       <div class="fg"><label>Code Prefix</label><input id="cat-prefix" class="fi" placeholder="RCSVC"></div>
-    </div>
-    <div class="f2">
       <div class="fg"><label>Icon</label><input id="cat-icon" class="fi" placeholder="💳"></div>
-      <div class="fg"><label>Sort Order</label><input id="cat-sort" type="number" class="fi" value="0"></div>
     </div>
     <div class="f2">
+      <div class="fg"><label>Sort Order</label><input id="cat-sort" type="number" class="fi" value="0"></div>
       <div class="fg"><label>Status</label>
         <select id="cat-active" class="fi fi-sel">
           <option value="1">Active</option>
           <option value="0">Inactive</option>
         </select>
       </div>
-      <div class="fg"><label>Hierarchy Note</label><div class="fi" style="height:auto;min-height:42px;color:var(--text2);font-size:12px;line-height:1.4;background:#f8fafc">Leave parent empty for a main category. Select a parent to create a child category.</div></div>
     </div>
 
     <div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin:4px 0 14px;background:#f8fafc">
@@ -76,7 +72,6 @@ let editId = 0;
 async function loadCategories() {
   const res = await fetch('/admin/api/categories').then(r=>r.json());
   allCats = res.categories || [];
-  renderParentCategoryOptions();
   document.getElementById('catCount').textContent = `${allCats.length} categories`;
   if (!allCats.length) {
     document.getElementById('catList').innerHTML = `<div style="text-align:center;padding:54px;color:var(--text2)"><div style="font-size:42px;margin-bottom:8px">🗂️</div><div style="font-size:15px;font-weight:600">No categories yet</div></div>`;
@@ -92,9 +87,9 @@ async function loadCategories() {
       <div class="aprod">
         <div class="aprod-img" style="display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden">${media}</div>
         <div class="aprod-info">
-          <div class="aprod-name">${Number(c.parent_id || 0) > 0 ? '<span style="color:var(--text3);font-weight:700">↳ </span>' : ''}${escH(c.name || '')}</div>
-          <div class="aprod-meta">${c.parent_name ? `Parent: ${escH(c.parent_name)} · ` : ''}Slug: ${escH(c.slug || '')} · Prefix: <span style="color:var(--blue);font-weight:700">${escH((c.code_prefix || '').toUpperCase() || '—')}</span></div>
-          <div style="font-size:11px;color:var(--text3);margin-top:3px">Products: ${Number(c.product_count||0)}${Number(c.child_count || 0) > 0 ? ` · Children: ${Number(c.child_count || 0)}` : ''} · Sort: ${Number(c.sort_order||0)} · ${c.is_active ? 'Active' : 'Inactive'} · ${imagePath ? 'Image set' : 'No image'}</div>
+          <div class="aprod-name">${escH(c.name || '')}</div>
+          <div class="aprod-meta">Slug: ${escH(c.slug || '')} · Prefix: <span style="color:var(--blue);font-weight:700">${escH((c.code_prefix || '').toUpperCase() || '—')}</span></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">Products: ${Number(c.product_count||0)} · Sort: ${Number(c.sort_order||0)} · ${c.is_active ? 'Active' : 'Inactive'} · ${imagePath ? 'Image set' : 'No image'}</div>
         </div>
         <div class="aprod-acts">
           <button class="ic-btn" type="button" onclick="openCatModal(${Number(c.id)})" title="Edit">
@@ -110,52 +105,12 @@ async function loadCategories() {
   }).join('');
 }
 
-function renderParentCategoryOptions(currentId = 0) {
-  const sel = document.getElementById('cat-parent');
-  if (!sel) return;
-  const blocked = new Set([Number(currentId || 0), ...descendantIds(Number(currentId || 0))]);
-  const byParent = new Map();
-  allCats.forEach(c => {
-    const pid = Number(c.parent_id || 0);
-    if (!byParent.has(pid)) byParent.set(pid, []);
-    byParent.get(pid).push(c);
-  });
-  const options = ['<option value="">No parent (main category)</option>'];
-  const walk = (parentId, depth) => {
-    (byParent.get(parentId) || []).forEach(c => {
-      const id = Number(c.id || 0);
-      if (!id || blocked.has(id)) return;
-      options.push(`<option value="${id}">${'— '.repeat(depth)}${escH(c.name || 'Category')}</option>`);
-      walk(id, depth + 1);
-    });
-  };
-  walk(0, 0);
-  sel.innerHTML = options.join('');
-}
-
-function descendantIds(id) {
-  if (!id) return [];
-  const out = [];
-  const walk = parentId => {
-    allCats.forEach(c => {
-      if (Number(c.parent_id || 0) !== parentId) return;
-      const childId = Number(c.id || 0);
-      if (!childId || out.includes(childId)) return;
-      out.push(childId);
-      walk(childId);
-    });
-  };
-  walk(id);
-  return out;
-}
-
 function openCatModal(id = 0) {
   editId = Number(id || 0);
   const m = document.getElementById('catModal');
   const title = document.getElementById('catModalTitle');
   const err = document.getElementById('catErr');
   if (err) err.style.display = 'none';
-  renderParentCategoryOptions(editId);
   setVal('cat-image-file', '');
   if (editId > 0) {
     const c = allCats.find(x => Number(x.id) === editId);
@@ -163,7 +118,6 @@ function openCatModal(id = 0) {
     title.textContent = 'Edit Category';
     setVal('cat-name', c.name || '');
     setVal('cat-slug', c.slug || '');
-    setVal('cat-parent', Number(c.parent_id || 0) > 0 ? String(c.parent_id) : '');
     setVal('cat-prefix', (c.code_prefix || '').toUpperCase());
     setVal('cat-icon', c.icon || '🖨️');
     setVal('cat-sort', Number(c.sort_order || 0));
@@ -174,7 +128,6 @@ function openCatModal(id = 0) {
     title.textContent = 'Add Category';
     setVal('cat-name', '');
     setVal('cat-slug', '');
-    setVal('cat-parent', '');
     setVal('cat-prefix', '');
     setVal('cat-icon', '🖨️');
     setVal('cat-sort', 0);
@@ -194,7 +147,6 @@ function closeCatModal() {
 async function saveCategory() {
   const name = getVal('cat-name').trim();
   const slug = getVal('cat-slug').trim().toLowerCase();
-  const parent_id = parseInt(getVal('cat-parent') || '0', 10) || null;
   const code_prefix = getVal('cat-prefix').trim().toUpperCase();
   const icon = getVal('cat-icon').trim() || '🖨️';
   const image_path = getVal('cat-image-path').trim();
@@ -207,7 +159,7 @@ async function saveCategory() {
     return;
   }
 
-  const payload = { name, slug, parent_id, code_prefix, icon, image_path, image_alt, sort_order, is_active };
+  const payload = { name, slug, code_prefix, icon, image_path, image_alt, sort_order, is_active };
   const url = editId > 0 ? `/admin/api/categories/${editId}` : '/admin/api/categories';
   const method = editId > 0 ? 'PUT' : 'POST';
   const res = await fetch(url, {

@@ -57,51 +57,6 @@ if (str_starts_with($uri, '/admin/api/')) {
         $value = trim($value, '-');
         return $value !== '' ? $value : 'blog-post';
     };
-    $categoriesHasParentId = null;
-    $hasCategoryParentId = static function () use (&$categoriesHasParentId): bool {
-        if ($categoriesHasParentId !== null) return $categoriesHasParentId;
-        try {
-            $row = Database::row(
-                "SELECT 1 AS ok
-                 FROM information_schema.COLUMNS
-                 WHERE TABLE_SCHEMA = DATABASE()
-                   AND TABLE_NAME = 'categories'
-                   AND COLUMN_NAME = 'parent_id'
-                 LIMIT 1"
-            );
-            $categoriesHasParentId = (bool)$row;
-        } catch (\Throwable) {
-            $categoriesHasParentId = false;
-        }
-        return $categoriesHasParentId;
-    };
-    $categoryDescendantIds = static function (int $categoryId) use (&$categoryDescendantIds, $hasCategoryParentId): array {
-        if ($categoryId <= 0 || !$hasCategoryParentId()) return [];
-        $children = Database::rows("SELECT id FROM categories WHERE parent_id = ?", [$categoryId]);
-        $ids = [];
-        foreach ($children as $child) {
-            $childId = (int)($child['id'] ?? 0);
-            if ($childId <= 0) continue;
-            $ids[] = $childId;
-            $ids = array_merge($ids, $categoryDescendantIds($childId));
-        }
-        return array_values(array_unique($ids));
-    };
-    $normalizeCategoryParentId = static function (mixed $rawParentId, int $currentId = 0) use ($hasCategoryParentId, $categoryDescendantIds): ?int {
-        if (!$hasCategoryParentId()) return null;
-        $parentId = (int)($rawParentId ?? 0);
-        if ($parentId <= 0) return null;
-        if ($currentId > 0 && $parentId === $currentId) {
-            json(['ok'=>false,'msg'=>'A category cannot be its own parent.'], 422);
-        }
-        $parent = Database::row("SELECT id FROM categories WHERE id = ? LIMIT 1", [$parentId]);
-        if (!$parent) json(['ok'=>false,'msg'=>'Selected parent category was not found.'], 422);
-        if ($currentId > 0 && in_array($parentId, $categoryDescendantIds($currentId), true)) {
-            json(['ok'=>false,'msg'=>'A child category cannot be selected as its parent.'], 422);
-        }
-        return $parentId;
-    };
-
     $sanitizeBlogContent = static function (string $html): string {
         $allowed = '<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><a><blockquote><img><figure><figcaption>';
         $clean = strip_tags($html, $allowed);
@@ -508,32 +463,17 @@ if (str_starts_with($uri, '/admin/api/')) {
         $imageAlt = trim((string)($body['image_alt'] ?? '')) ?: ($name . ' category image');
         $sort = (int)($body['sort_order'] ?? 0);
         $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : 1;
-        $parentId = $normalizeCategoryParentId($body['parent_id'] ?? null);
         try {
-            if ($hasCategoryParentId()) {
-                $id = Database::insert(
-                    "INSERT INTO categories (name,slug,parent_id,code_prefix,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?,?)",
-                    [$name,$slug,$parentId,$prefix,$icon,$imagePath,$imageAlt,$sort,$active]
-                );
-            } else {
-                $id = Database::insert(
-                    "INSERT INTO categories (name,slug,code_prefix,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?)",
-                    [$name,$slug,$prefix,$icon,$imagePath,$imageAlt,$sort,$active]
-                );
-            }
+            $id = Database::insert(
+                "INSERT INTO categories (name,slug,code_prefix,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?)",
+                [$name,$slug,$prefix,$icon,$imagePath,$imageAlt,$sort,$active]
+            );
         } catch (\Throwable) {
             try {
-                if ($hasCategoryParentId()) {
-                    $id = Database::insert(
-                        "INSERT INTO categories (name,slug,parent_id,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?)",
-                        [$name,$slug,$parentId,$icon,$imagePath,$imageAlt,$sort,$active]
-                    );
-                } else {
-                    $id = Database::insert(
-                        "INSERT INTO categories (name,slug,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?)",
-                        [$name,$slug,$icon,$imagePath,$imageAlt,$sort,$active]
-                    );
-                }
+                $id = Database::insert(
+                    "INSERT INTO categories (name,slug,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?)",
+                    [$name,$slug,$icon,$imagePath,$imageAlt,$sort,$active]
+                );
             } catch (\Throwable) {
                 $id = Database::insert(
                     "INSERT INTO categories (name,slug,icon,sort_order,is_active) VALUES (?,?,?,?,?)",
@@ -561,33 +501,18 @@ if (str_starts_with($uri, '/admin/api/')) {
         $imageAlt = trim((string)($body['image_alt'] ?? ($existing['image_alt'] ?? ''))) ?: ($name . ' category image');
         $sort = (int)($body['sort_order'] ?? ($existing['sort_order'] ?? 0));
         $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : (int)($existing['is_active'] ?? 1);
-        $parentId = $normalizeCategoryParentId($body['parent_id'] ?? ($existing['parent_id'] ?? null), $id);
 
         try {
-            if ($hasCategoryParentId()) {
-                Database::query(
-                    "UPDATE categories SET name=?, slug=?, parent_id=?, code_prefix=?, icon=?, image_path=?, image_alt=?, sort_order=?, is_active=? WHERE id=?",
-                    [$name, $slug, $parentId, $prefix, $icon, $imagePath, $imageAlt, $sort, $active, $id]
-                );
-            } else {
-                Database::query(
-                    "UPDATE categories SET name=?, slug=?, code_prefix=?, icon=?, image_path=?, image_alt=?, sort_order=?, is_active=? WHERE id=?",
-                    [$name, $slug, $prefix, $icon, $imagePath, $imageAlt, $sort, $active, $id]
-                );
-            }
+            Database::query(
+                "UPDATE categories SET name=?, slug=?, code_prefix=?, icon=?, image_path=?, image_alt=?, sort_order=?, is_active=? WHERE id=?",
+                [$name, $slug, $prefix, $icon, $imagePath, $imageAlt, $sort, $active, $id]
+            );
         } catch (\Throwable) {
             try {
-                if ($hasCategoryParentId()) {
-                    Database::query(
-                        "UPDATE categories SET name=?, slug=?, parent_id=?, icon=?, image_path=?, image_alt=?, sort_order=?, is_active=? WHERE id=?",
-                        [$name, $slug, $parentId, $icon, $imagePath, $imageAlt, $sort, $active, $id]
-                    );
-                } else {
-                    Database::query(
-                        "UPDATE categories SET name=?, slug=?, icon=?, image_path=?, image_alt=?, sort_order=?, is_active=? WHERE id=?",
-                        [$name, $slug, $icon, $imagePath, $imageAlt, $sort, $active, $id]
-                    );
-                }
+                Database::query(
+                    "UPDATE categories SET name=?, slug=?, icon=?, image_path=?, image_alt=?, sort_order=?, is_active=? WHERE id=?",
+                    [$name, $slug, $icon, $imagePath, $imageAlt, $sort, $active, $id]
+                );
             } catch (\Throwable) {
                 Database::query(
                     "UPDATE categories SET name=?, slug=?, icon=?, sort_order=?, is_active=? WHERE id=?",
@@ -611,12 +536,6 @@ if (str_starts_with($uri, '/admin/api/')) {
         $usage = (int)(Database::row("SELECT COUNT(*) c FROM products WHERE category_id=?", [$id])['c'] ?? 0);
         if ($usage > 0) {
             json(['ok'=>false,'msg'=>'Category is in use by products. Reassign products before deleting.'], 422);
-        }
-        if ($hasCategoryParentId()) {
-            $children = (int)(Database::row("SELECT COUNT(*) c FROM categories WHERE parent_id=?", [$id])['c'] ?? 0);
-            if ($children > 0) {
-                json(['ok'=>false,'msg'=>'Category has child categories. Reassign or delete child categories first.'], 422);
-            }
         }
         try {
             Database::query("DELETE FROM categories WHERE id=?", [$id]);

@@ -26,6 +26,18 @@ $navGst      = (int)($bizSettings['gst_percent'] ?? 18);
 $navDesignFee= (float)($bizSettings['design_fee'] ?? 0);
 $catIcons    = ['Cards'=>'💳','Brochures'=>'📋','Flyers'=>'📄','Pamphlets'=>'📰','Stationery'=>'📝','Banners'=>'🏳️','Posters'=>'🖼️'];
 $currentUri  = $uri ?? '/';
+
+$navProductsByCategory = [];
+foreach ($navCategories as $cat) {
+    $catId = (int)($cat['id'] ?? 0);
+    if ($catId <= 0) continue;
+    $navProductsByCategory[$catId] = [];
+}
+foreach ($navProducts as $p) {
+    $catId = (int)($p['category_id'] ?? 0);
+    if ($catId <= 0 || !array_key_exists($catId, $navProductsByCategory)) continue;
+    $navProductsByCategory[$catId][] = $p;
+}
 ?>
 
 <!-- ── Overlays (toast, payment, cart backdrop) ────────────── -->
@@ -87,26 +99,33 @@ $currentUri  = $uri ?? '/';
             <div class="dd-bridge rcs-dd-bridge"></div>
             <div class="dd-panel rcs-dd-panel" id="ddPanel" role="menu">
               <?php if (!empty($navCategories)): ?>
-                <div class="dd-cat-lbl rcs-dd-cat-lbl">Browse by Category</div>
-                <?php foreach ($navCategories as $cat): ?>
-                  <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item rcs-dd-item" role="menuitem">
-                    <span class="dd-item-ic rcs-dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
-                    <span><?= htmlspecialchars($cat['name']) ?></span>
-                    <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
-                      <span class="dd-count rcs-dd-count"><?= (int)$cat['product_count'] ?></span>
-                    <?php endif; ?>
-                  </a>
-                <?php endforeach; ?>
-                <div class="dd-divider rcs-dd-divider"></div>
-              <?php endif; ?>
-              <?php if (!empty($navProducts)): ?>
-                <div class="dd-cat-lbl rcs-dd-cat-lbl">Products</div>
-                <?php foreach (array_slice($navProducts, 0, 6) as $p): ?>
-                  <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item rcs-dd-item" role="menuitem">
-                    <span class="dd-item-ic rcs-dd-item-ic"><?= $catIcons[$p['category_name']] ?? '🖨️' ?></span>
-                    <span><?= htmlspecialchars($p['name']) ?></span>
-                  </a>
-                <?php endforeach; ?>
+                <div class="dd-cat-lbl rcs-dd-cat-lbl">Categories → Products</div>
+                <div class="dd-category-list rcs-dd-category-list">
+                  <?php foreach ($navCategories as $cat):
+                    $catId = (int)($cat['id'] ?? 0);
+                    $catProducts = $navProductsByCategory[$catId] ?? [];
+                  ?>
+                    <div class="dd-cat-group rcs-dd-cat-group">
+                      <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item dd-cat-link rcs-dd-item rcs-dd-cat-link" role="menuitem">
+                        <span class="dd-item-ic rcs-dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+                        <span><?= htmlspecialchars($cat['name']) ?></span>
+                        <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
+                          <span class="dd-count rcs-dd-count"><?= (int)$cat['product_count'] ?></span>
+                        <?php endif; ?>
+                      </a>
+                      <?php if (!empty($catProducts)): ?>
+                        <div class="dd-product-list rcs-dd-product-list" aria-label="<?= htmlspecialchars($cat['name']) ?> products">
+                          <?php foreach ($catProducts as $p): ?>
+                            <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item dd-product-link rcs-dd-item rcs-dd-product-link" role="menuitem">
+                              <span class="dd-product-arrow" aria-hidden="true">›</span>
+                              <span><?= htmlspecialchars($p['name']) ?></span>
+                            </a>
+                          <?php endforeach; ?>
+                        </div>
+                      <?php endif; ?>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
                 <div class="dd-divider rcs-dd-divider"></div>
               <?php endif; ?>
               <a href="/products" class="dd-item dd-item-all rcs-dd-item rcs-dd-item-all" role="menuitem">
@@ -154,20 +173,23 @@ $currentUri  = $uri ?? '/';
       <svg class="md-acc-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
     </div>
     <div id="mobProdList" class="md-sub-list" style="display:none">
-      <?php foreach ($navCategories as $cat): ?>
-      <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="md-item md-sub"
-         onclick="closeDrawer()" style="font-weight:600;color:var(--blue)">
-        <?= htmlspecialchars($cat['icon'] ?? '') ?> <?= htmlspecialchars($cat['name']) ?>
-      </a>
-      <?php endforeach; ?>
-      <?php foreach ($navProducts as $p): ?>
-      <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="md-item md-sub"
+      <?php foreach ($navCategories as $cat):
+        $catId = (int)($cat['id'] ?? 0);
+        $catProducts = $navProductsByCategory[$catId] ?? [];
+      ?>
+      <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="md-item md-sub md-cat"
          onclick="closeDrawer()">
-        <?= htmlspecialchars($p['name']) ?>
+        <span><?= htmlspecialchars($cat['icon'] ?? '') ?> <?= htmlspecialchars($cat['name']) ?></span>
+        <?php if ((int)($cat['product_count'] ?? 0) > 0): ?><span><?= (int)$cat['product_count'] ?></span><?php endif; ?>
       </a>
+        <?php foreach ($catProducts as $p): ?>
+        <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="md-item md-sub md-product"
+           onclick="closeDrawer()">
+          <span>› <?= htmlspecialchars($p['name']) ?></span>
+        </a>
+        <?php endforeach; ?>
       <?php endforeach; ?>
-      <a href="/products" class="md-item md-sub" onclick="closeDrawer()"
-         style="font-weight:700;color:var(--blue)">
+      <a href="/products" class="md-item md-sub md-all" onclick="closeDrawer()">
         → See All Products
       </a>
     </div>
