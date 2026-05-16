@@ -706,12 +706,6 @@ foreach ($categories as $cat) {
   </div>
 </footer>
 
-<div class="mob-quick-cta" role="navigation" aria-label="Quick actions">
-  <a href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>" class="mq-btn">Call</a>
-  <button type="button" class="mq-btn mq-btn-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">WhatsApp</button>
-  <a href="/products" class="mq-btn mq-btn-primary">Start Order</a>
-</div>
-
 <script>
 (() => {
   const track = document.getElementById('shopCatTrack');

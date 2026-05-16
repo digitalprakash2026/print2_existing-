@@ -1,5 +1,5 @@
 <?php $pageTitle = 'Page Not Found — RCS Graphic'; include INCLUDE_PATH . '/partials/head.php'; include INCLUDE_PATH . '/partials/header.php'; ?>
-<div style="margin-top:var(--hh);min-height:calc(100vh - var(--hh));display:flex;align-items:center;justify-content:center;padding:36px 18px">
+<div style="margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));min-height:calc(100vh - var(--site-hh, var(--hh)) - var(--post-header-gap,50px));display:flex;align-items:center;justify-content:center;padding:36px 18px">
   <div style="text-align:center;max-width:420px">
     <div style="font-family:var(--fd);font-size:80px;font-weight:700;color:var(--blue);line-height:1;margin-bottom:12px">404</div>
     <div style="font-family:var(--fd);font-size:22px;font-weight:700;margin-bottom:8px">Page Not Found</div>

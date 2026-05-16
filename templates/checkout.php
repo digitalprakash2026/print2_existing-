@@ -7,7 +7,7 @@ include INCLUDE_PATH . '/partials/header.php';
 $razKeyId = Database::setting('razorpay_key_id', env('RAZORPAY_KEY_ID', ''));
 $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
 ?>
-<div style="margin-top:var(--hh);min-height:calc(100vh - var(--hh));background:var(--bg);padding:32px 0 80px">
+<div style="margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));min-height:calc(100vh - var(--site-hh, var(--hh)) - var(--post-header-gap,50px));background:var(--bg);padding:32px 0 80px">
   <div class="container" style="max-width:760px">
     <div style="font-family:var(--fd);font-size:24px;font-weight:700;margin-bottom:22px">Checkout</div>
 

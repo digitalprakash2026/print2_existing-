@@ -5,7 +5,7 @@ include INCLUDE_PATH . '/partials/header.php';
 $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
 $bizName = Database::setting('biz_name', 'RCS Graphic');
 ?>
-<div style="margin-top:var(--hh);min-height:calc(100vh - var(--hh));display:flex;align-items:center;justify-content:center;padding:36px 18px;background:var(--bg)">
+<div style="margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));min-height:calc(100vh - var(--site-hh, var(--hh)) - var(--post-header-gap,50px));display:flex;align-items:center;justify-content:center;padding:36px 18px;background:var(--bg)">
   <div class="confirm-card">
     <div class="confirm-ic">
       <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>

@@ -3,7 +3,7 @@ $pageTitle = 'Terms & Conditions — RCS Graphic';
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 ?>
-<div style="margin-top:var(--hh);min-height:calc(100vh - var(--hh));background:var(--bg);padding:32px 0 80px">
+<div style="margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));min-height:calc(100vh - var(--site-hh, var(--hh)) - var(--post-header-gap,50px));background:var(--bg);padding:32px 0 80px">
   <div class="container" style="max-width:860px">
     <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:22px">
       <h1 style="font-family:var(--fd);font-size:26px;margin:0 0 10px">Terms &amp; Conditions</h1>

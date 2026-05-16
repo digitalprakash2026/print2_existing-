@@ -8,7 +8,11 @@ $pageTitle = 'All Categories — RCS Graphic';
 $pageDesc  = 'Browse all printing categories at RCS Graphic — visiting cards, brochures, flyers, posters and more.';
 
 $activeCategories = array_values(array_filter($categories ?? [], static fn($cat) => (int)($cat['is_active'] ?? 1) === 1));
-$bizWa = $settingsMap['biz_whatsapp'] ?? '919876543210';
+$bizName  = htmlspecialchars($settingsMap['biz_name']    ?? 'RCS Graphic');
+$bizPhone = htmlspecialchars($settingsMap['biz_phone']   ?? '+91 98765 43210');
+$bizWa    = htmlspecialchars($settingsMap['biz_whatsapp']?? '919876543210');
+$bizEmail = htmlspecialchars($settingsMap['biz_email']   ?? 'hello@rcsgraphic.in');
+$bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 $visibleCount = count($activeCategories);
 $totalItems = array_sum(array_map(static fn($cat) => max(0, (int)($cat['product_count'] ?? 0)), $activeCategories));
 $totalItems = $totalItems > 0 ? $totalItems : $visibleCount;
@@ -146,17 +150,169 @@ include INCLUDE_PATH . '/partials/header.php';
         </div>
       </section>
 
-      <section class="all-cat-benefits" aria-label="RCS Print benefits">
-        <div><span class="all-cat-benefit-icon is-purple"><i class="fa-solid fa-truck-fast"></i></span><strong>Fast Delivery</strong><p>On-time delivery always guaranteed.</p></div>
-        <div><span class="all-cat-benefit-icon is-orange"><i class="fa-solid fa-pen-ruler"></i></span><strong>Free Design Support</strong><p>Professional design support at no extra cost.</p></div>
-        <div><span class="all-cat-benefit-icon is-green"><i class="fa-solid fa-shield-halved"></i></span><strong>Premium Quality</strong><p>Best quality materials and printing.</p></div>
-        <div><span class="all-cat-benefit-icon is-purple"><i class="fa-solid fa-tags"></i></span><strong>Affordable Pricing</strong><p>Low price with the best value.</p></div>
-        <div><span class="all-cat-benefit-icon is-orange"><i class="fa-solid fa-cube"></i></span><strong>Bulk Order Specialist</strong><p>Special prices for bulk requirements.</p></div>
+      <section class="all-cat-usp" aria-label="RCS Print benefits">
+        <div class="why-print-panel">
+          <article class="why-print-item">
+            <div class="why-print-icon why-print-purple"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></div>
+            <div class="why-print-copy">
+              <h3>Fast Delivery</h3>
+              <p>On-time delivery always guaranteed.</p>
+            </div>
+          </article>
+
+          <article class="why-print-item">
+            <div class="why-print-icon why-print-orange"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div>
+            <div class="why-print-copy">
+              <h3>Free Design Support</h3>
+              <p>Professional design support at no extra cost.</p>
+            </div>
+          </article>
+
+          <article class="why-print-item">
+            <div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div>
+            <div class="why-print-copy">
+              <h3>Premium Quality</h3>
+              <p>Best quality materials and printing.</p>
+            </div>
+          </article>
+
+          <article class="why-print-item">
+            <div class="why-print-icon why-print-purple"><i class="fa-solid fa-tags" aria-hidden="true"></i></div>
+            <div class="why-print-copy">
+              <h3>Affordable Pricing</h3>
+              <p>Low price with the best value.</p>
+            </div>
+          </article>
+
+          <article class="why-print-item">
+            <div class="why-print-icon why-print-orange"><i class="fa-solid fa-cube" aria-hidden="true"></i></div>
+            <div class="why-print-copy">
+              <h3>Bulk Order Specialist</h3>
+              <p>Special prices for bulk requirements.</p>
+            </div>
+          </article>
+        </div>
       </section>
     <?php endif; ?>
   </div>
 </main>
 
+<!-- QUICK HELP STRIP -->
+<section class="quick-help-section" id="quick-help-sec" aria-label="Quick help and bulk order actions" data-reveal>
+  <div class="quick-help-container">
+    <div class="quick-help-bar">
+      <a class="quick-help-item quick-help-call" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
+        <span class="quick-help-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
+        <span class="quick-help-copy">
+          <span>Need Help? Call Us</span>
+          <strong><?= $bizPhone ?></strong>
+        </span>
+      </a>
+
+      <button class="quick-help-item quick-help-whatsapp" type="button" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">
+        <span class="quick-help-icon"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span>
+        <span class="quick-help-copy">
+          <strong>Chat with us on WhatsApp</strong>
+          <span>We are here to help!</span>
+        </span>
+      </button>
+
+      <a class="quick-help-item quick-help-download" href="/products" aria-label="Download our brochure for all products">
+        <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
+        <span class="quick-help-copy">
+          <strong>Download Our Brochure</strong>
+          <span>For All Products</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer" aria-label="Site footer">
+  <div class="footer-container">
+    <div class="footer-main">
+      <div class="footer-brand-col">
+        <a href="/" class="footer-logo" aria-label="RCS Print home">
+          <span class="footer-logo-main">RCS</span>
+          <span class="footer-logo-sub">PRINT</span>
+        </a>
+        <p class="footer-desc">Your one-stop solution for all your printing needs. Quality prints that represent your brand perfectly.</p>
+        <div class="footer-social" aria-label="Social links">
+          <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+          <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+          <a href="https://wa.me/<?= $bizWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
+          <a href="/#quick-help-sec" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+        </div>
+      </div>
+
+      <nav class="footer-col" aria-label="Quick links">
+        <h3>Quick Links</h3>
+        <a href="/">Home</a>
+        <a href="/#why-sec">About Us</a>
+        <a href="/products">Products</a>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
+        <a href="/#quick-help-sec">Contact Us</a>
+      </nav>
+
+      <nav class="footer-col" aria-label="Products">
+        <h3>Products</h3>
+        <a href="/products">Business Cards</a>
+        <a href="/products">Flyers</a>
+        <a href="/products">Brochures</a>
+        <a href="/products">Posters</a>
+        <a href="/products">Diaries</a>
+        <a href="/products">Calendars</a>
+        <a href="/products">Stationery &amp; More</a>
+      </nav>
+
+      <nav class="footer-col" aria-label="Customer service">
+        <h3>Customer Service</h3>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
+        <a href="/my-orders">Track Order</a>
+        <a href="/products">Shipping Policy</a>
+        <a href="/products">Refund &amp; Return</a>
+        <a href="/terms-and-conditions">Terms &amp; Conditions</a>
+        <a href="/terms-and-conditions">Privacy Policy</a>
+      </nav>
+
+      <div class="footer-col footer-contact-col">
+        <h3>Contact Us</h3>
+        <div class="footer-contact-item">
+          <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+          <span><?= $bizAddr ?></span>
+        </div>
+        <a class="footer-contact-item" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span><?= $bizPhone ?></span>
+        </a>
+        <a class="footer-contact-item" href="mailto:<?= $bizEmail ?>">
+          <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+          <span><?= $bizEmail ?></span>
+        </a>
+        <div class="footer-contact-item">
+          <i class="fa-regular fa-clock" aria-hidden="true"></i>
+          <span>Mon - Sat: 10:00 AM - 7:00 PM</span>
+        </div>
+      </div>
+
+      <div class="footer-col footer-newsletter-col">
+        <h3>Newsletter</h3>
+        <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
+        <form class="footer-newsletter" action="/products" method="get">
+          <label class="sr-only" for="footerEmail">Enter your email</label>
+          <input id="footerEmail" name="email" type="email" placeholder="Enter your email" autocomplete="email">
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">© <?= date('Y') ?> RCS PRINT. All Rights Reserved.</div>
+      <div class="footer-developed">Developed By Prakash Karena</div>
+    </div>
+  </div>
+</footer>
 
 <script>
 (() => {

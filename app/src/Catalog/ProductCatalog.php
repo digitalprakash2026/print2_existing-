@@ -60,13 +60,8 @@ class ProductCatalog
 
     public static function bySlug(string $slug): ?array
     {
-        $product = \Database::row(
-            "SELECT p.*, c.name as category_name
-             FROM products p
-             LEFT JOIN categories c ON c.id = p.category_id
-             WHERE p.slug = ? AND p.is_active = 1",
-            [$slug]
-        );
+        $products = self::fetchProductRows('WHERE p.slug = ? AND p.is_active = 1 LIMIT 1', [$slug]);
+        $product = $products[0] ?? null;
         if (!$product) return null;
         $product = self::ensureProductCode($product);
         return self::hydrate($product);
@@ -74,13 +69,8 @@ class ProductCatalog
 
     public static function byId(int $id): ?array
     {
-        $product = \Database::row(
-            "SELECT p.*, c.name as category_name
-             FROM products p
-             LEFT JOIN categories c ON c.id = p.category_id
-             WHERE p.id = ?",
-            [$id]
-        );
+        $products = self::fetchProductRows('WHERE p.id = ? LIMIT 1', [$id]);
+        $product = $products[0] ?? null;
         if (!$product) return null;
         $product = self::ensureProductCode($product);
         return self::hydrate($product);
