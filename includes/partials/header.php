@@ -106,15 +106,22 @@ foreach ($navProducts as $p) {
                     $catProducts = $navProductsByCategory[$catId] ?? [];
                   ?>
                     <div class="dd-cat-group rcs-dd-cat-group">
-                      <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item dd-cat-link rcs-dd-item rcs-dd-cat-link" role="menuitem">
+                      <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item dd-cat-link rcs-dd-item rcs-dd-cat-link" role="menuitem" aria-haspopup="<?= !empty($catProducts) ? 'true' : 'false' ?>">
                         <span class="dd-item-ic rcs-dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
-                        <span><?= htmlspecialchars($cat['name']) ?></span>
+                        <span class="dd-cat-name"><?= htmlspecialchars($cat['name']) ?></span>
                         <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
                           <span class="dd-count rcs-dd-count"><?= (int)$cat['product_count'] ?></span>
+                        <?php endif; ?>
+                        <?php if (!empty($catProducts)): ?>
+                          <span class="dd-flyout-arrow" aria-hidden="true">›</span>
                         <?php endif; ?>
                       </a>
                       <?php if (!empty($catProducts)): ?>
                         <div class="dd-product-list rcs-dd-product-list" aria-label="<?= htmlspecialchars($cat['name']) ?> products">
+                          <div class="dd-product-head">
+                            <span><?= htmlspecialchars($cat['name']) ?></span>
+                            <small><?= count($catProducts) ?> product<?= count($catProducts) === 1 ? '' : 's' ?></small>
+                          </div>
                           <?php foreach ($catProducts as $p): ?>
                             <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item dd-product-link rcs-dd-item rcs-dd-product-link" role="menuitem">
                               <span class="dd-product-arrow" aria-hidden="true">›</span>
@@ -177,17 +184,29 @@ foreach ($navProducts as $p) {
         $catId = (int)($cat['id'] ?? 0);
         $catProducts = $navProductsByCategory[$catId] ?? [];
       ?>
-      <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="md-item md-sub md-cat"
-         onclick="closeDrawer()">
-        <span><?= htmlspecialchars($cat['icon'] ?? '') ?> <?= htmlspecialchars($cat['name']) ?></span>
-        <?php if ((int)($cat['product_count'] ?? 0) > 0): ?><span><?= (int)$cat['product_count'] ?></span><?php endif; ?>
-      </a>
-        <?php foreach ($catProducts as $p): ?>
-        <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="md-item md-sub md-product"
-           onclick="closeDrawer()">
-          <span>› <?= htmlspecialchars($p['name']) ?></span>
-        </a>
-        <?php endforeach; ?>
+      <div class="md-cat-block">
+        <div class="md-item md-sub md-cat-row">
+          <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="md-cat-link" onclick="closeDrawer()">
+            <span><?= htmlspecialchars($cat['icon'] ?? '') ?> <?= htmlspecialchars($cat['name']) ?></span>
+            <?php if ((int)($cat['product_count'] ?? 0) > 0): ?><span class="md-cat-count"><?= (int)$cat['product_count'] ?></span><?php endif; ?>
+          </a>
+          <?php if (!empty($catProducts)): ?>
+            <button type="button" class="md-cat-expand" onclick="toggleMobCatProducts(this)" aria-label="Show <?= htmlspecialchars($cat['name']) ?> products" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
+            </button>
+          <?php endif; ?>
+        </div>
+        <?php if (!empty($catProducts)): ?>
+          <div class="md-cat-products" hidden>
+            <?php foreach ($catProducts as $p): ?>
+            <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="md-item md-sub md-product"
+               onclick="closeDrawer()">
+              <span>› <?= htmlspecialchars($p['name']) ?></span>
+            </a>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
       <?php endforeach; ?>
       <a href="/products" class="md-item md-sub md-all" onclick="closeDrawer()">
         → See All Products

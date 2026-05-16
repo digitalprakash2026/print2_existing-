@@ -78,6 +78,16 @@ function toggleMobProds() {
   if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
+function toggleMobCatProducts(btn) {
+  const block = btn?.closest('.md-cat-block');
+  const list = block?.querySelector('.md-cat-products');
+  if (!block || !list) return;
+  const isOpen = !list.hidden;
+  list.hidden = isOpen;
+  block.classList.toggle('open', !isOpen);
+  btn.setAttribute('aria-expanded', String(!isOpen));
+}
+
 // ── Desktop Dropdown (JS-assisted for stability) ───────────────
 (function () {
   const wrap  = document.getElementById('ddWrap');
