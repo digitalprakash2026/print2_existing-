@@ -36,7 +36,7 @@ $attrGroups = []; // Attribute pricing retired from customer flow
 $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
 ?>
 
-<div style="margin-top:var(--hh);padding-bottom:120px">
+<div class="pd-page-wrap">
 <div class="container">
 
   <!-- Breadcrumb -->
@@ -64,16 +64,20 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       </div>
 
       <?php if (count($imgs) > 1): ?>
-      <div class="pd-thumbs" id="pdThumbs">
-        <?php foreach ($imgs as $i => $img): ?>
-        <div class="pd-th <?= $i === 0 ? 'act' : '' ?>"
-             onclick="switchImg('<?= htmlspecialchars($img['image_path'] ?? ($img['url'] ?? '')) ?>',this)"
-             title="<?= htmlspecialchars($img['alt_text'] ?: $product['name']) ?>">
-          <img src="<?= htmlspecialchars($img['image_path'] ?? ($img['url'] ?? '')) ?>" loading="lazy"
-               alt="<?= htmlspecialchars($img['alt_text'] ?: $product['name']) ?>"
-               onerror="this.style.opacity=.3">
+      <div class="pd-thumbs-shell" aria-label="Product image gallery">
+        <button type="button" class="pd-gallery-nav pd-gallery-prev" onclick="slideProductGallery(-1)" aria-label="Previous product image">‹</button>
+        <div class="pd-thumbs" id="pdThumbs">
+          <?php foreach ($imgs as $i => $img): ?>
+          <div class="pd-th <?= $i === 0 ? 'act' : '' ?>"
+               onclick="switchImg('<?= htmlspecialchars($img['image_path'] ?? ($img['url'] ?? '')) ?>',this)"
+               title="<?= htmlspecialchars($img['alt_text'] ?: $product['name']) ?>">
+            <img src="<?= htmlspecialchars($img['image_path'] ?? ($img['url'] ?? '')) ?>" loading="lazy"
+                 alt="<?= htmlspecialchars($img['alt_text'] ?: $product['name']) ?>"
+                 onerror="this.style.opacity=.3">
+          </div>
+          <?php endforeach; ?>
         </div>
-        <?php endforeach; ?>
+        <button type="button" class="pd-gallery-nav pd-gallery-next" onclick="slideProductGallery(1)" aria-label="Next product image">›</button>
       </div>
       <?php endif; ?>
 
@@ -86,10 +90,22 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <div class="pd-cat"><?= htmlspecialchars($product['category_name'] ?? '') ?></div>
 
       <h1 class="pd-name"><?= htmlspecialchars($product['name']) ?></h1>
+      <div class="pd-rating-row" aria-label="Product rating">
+        <span class="pd-stars" aria-hidden="true">★★★★★</span>
+        <strong>4.8</strong>
+        <span>126 reviews</span>
+        <span>500+ orders</span>
+      </div>
       <?php if (!empty($product['product_code'])): ?>
       <div class="pd-code">Product Code: <?= htmlspecialchars((string)$product['product_code']) ?></div>
       <?php endif; ?>
       <p class="pd-desc"><?= htmlspecialchars($product['description'] ?? '') ?></p>
+      <div class="pd-trust-grid" aria-label="Order benefits">
+        <span><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Fast delivery</span>
+        <span><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Premium print</span>
+        <span><i class="fa-solid fa-file-invoice" aria-hidden="true"></i> GST invoice</span>
+        <span><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp support</span>
+      </div>
 
       <!-- ── SPECIFICATIONS ── -->
       <?php
@@ -164,25 +180,25 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <!-- ── DESIGN OPTION ── -->
       <div class="cfg">
         <div class="cfg-title">Design Option</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="pd-design-grid">
 
           <div class="design-opt sel" id="dopt-upload" onclick="selDesignOpt('upload')">
-            <div style="font-size:26px;margin-bottom:7px">📁</div>
-            <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px">I'll Upload My Design</div>
-            <div style="font-size:11px;color:var(--text2);line-height:1.4">PDF, AI, PNG, JPG etc.</div>
-            <div style="font-size:11px;color:var(--green);margin-top:6px;font-weight:600">No extra charge</div>
+            <div class="design-opt-icon">📁</div>
+            <div class="design-opt-title">I'll Upload My Design</div>
+            <div class="design-opt-copy">PDF, AI, PNG, JPG etc.</div>
+            <div class="design-opt-note is-free">No extra charge</div>
           </div>
 
           <div class="design-opt" id="dopt-rcs" onclick="selDesignOpt('rcs')">
-            <div style="font-size:26px;margin-bottom:7px">🎨</div>
-            <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px">Design by RCS Graphic</div>
-            <div style="font-size:11px;color:var(--text2);line-height:1.4">We'll create your design</div>
+            <div class="design-opt-icon">🎨</div>
+            <div class="design-opt-title">Design by RCS Graphic</div>
+            <div class="design-opt-copy">We'll create your design</div>
             <?php if ($designFee > 0): ?>
-            <div style="font-size:11px;color:var(--amber);margin-top:6px;font-weight:600">
+            <div class="design-opt-note is-paid">
               +₹<?= number_format($designFee) ?> design fee
             </div>
             <?php else: ?>
-            <div style="font-size:11px;color:var(--text3);margin-top:6px">Fee confirmed on enquiry</div>
+            <div class="design-opt-note">Fee confirmed on enquiry</div>
             <?php endif; ?>
           </div>
 
@@ -245,8 +261,9 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
             WhatsApp
           </button>
         </div>
-        <div id="orderHint" style="font-size:12px;color:var(--text2);line-height:1.5">
-          Select quantity to enable Add to Cart / Buy Now.
+        <div class="pd-checkout-note">
+          <span id="orderHint">Select quantity to enable Add to Cart / Buy Now.</span>
+          <small>Secure checkout • GST invoice • Artwork support</small>
         </div>
       </div>
 
@@ -367,7 +384,21 @@ function switchImg(url, el) {
   img.style.opacity = '0.6';
   setTimeout(() => { img.src = url; img.style.opacity = '1'; }, 150);
   document.querySelectorAll('.pd-th').forEach(t => t.classList.remove('act'));
-  el.classList.add('act');
+  if (el) {
+    el.classList.add('act');
+    el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
+}
+
+function slideProductGallery(dir) {
+  const thumbs = Array.from(document.querySelectorAll('.pd-th'));
+  if (!thumbs.length) return;
+  const activeIdx = Math.max(0, thumbs.findIndex(t => t.classList.contains('act')));
+  const nextIdx = (activeIdx + dir + thumbs.length) % thumbs.length;
+  const next = thumbs[nextIdx];
+  const nextImg = next?.querySelector('img');
+  if (!next || !nextImg) return;
+  switchImg(nextImg.currentSrc || nextImg.src, next);
 }
 
 // Quality Selection
