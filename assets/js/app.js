@@ -96,6 +96,11 @@ function toggleMobCatProducts(btn) {
   if (!wrap || !panel) return;
 
   let hideTimer = null;
+  const catGroups = [...panel.querySelectorAll('.dd-cat-group')];
+
+  function closeFlyouts() {
+    catGroups.forEach(group => group.classList.remove('is-open'));
+  }
 
   function showPanel() {
     clearTimeout(hideTimer);
@@ -105,9 +110,31 @@ function toggleMobCatProducts(btn) {
   function scheduleHide() {
     hideTimer = setTimeout(() => {
       panel.classList.remove('open');
+      closeFlyouts();
       if (btn) btn.setAttribute('aria-expanded', 'false');
-    }, 120); // 120 ms grace — enough to cross the bridge div
+    }, 180); // grace period keeps flyouts open while crossing tiny gaps
   }
+
+  catGroups.forEach(group => {
+    let flyoutTimer = null;
+    const openGroup = () => {
+      clearTimeout(flyoutTimer);
+      catGroups.forEach(other => { if (other !== group) other.classList.remove('is-open'); });
+      group.classList.add('is-open');
+      showPanel();
+    };
+    const scheduleGroupClose = () => {
+      flyoutTimer = setTimeout(() => group.classList.remove('is-open'), 220);
+    };
+    group.addEventListener('mouseenter', openGroup);
+    group.addEventListener('focusin', openGroup);
+    group.addEventListener('mouseleave', scheduleGroupClose);
+    group.addEventListener('focusout', () => {
+      flyoutTimer = setTimeout(() => {
+        if (!group.contains(document.activeElement)) group.classList.remove('is-open');
+      }, 220);
+    });
+  });
 
   wrap.addEventListener('mouseenter', showPanel);
   wrap.addEventListener('mouseleave', scheduleHide);
@@ -115,7 +142,11 @@ function toggleMobCatProducts(btn) {
   panel.addEventListener('mouseleave', scheduleHide);
   // Close on Escape
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') panel.classList.remove('open');
+    if (e.key === 'Escape') {
+      panel.classList.remove('open');
+      closeFlyouts();
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
   });
 })();
 
