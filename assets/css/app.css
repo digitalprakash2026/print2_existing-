@@ -4747,3 +4747,31 @@ body:has(#siteHeader) .banner-slider {
   .cat-detail-whatsapp { align-items:flex-start; padding:22px 18px; }
   .cat-detail-whatsapp .btn { width:100%; justify-content:center; }
 }
+
+/* Product detail layout to match provided reference */
+.pd-page-wrap{background:#fff;padding-top:12px}
+.pd-grid{grid-template-columns:minmax(320px,44%) minmax(0,56%);gap:24px}
+.pd-gallery,.pd-info-col{box-shadow:none;border:1px solid #e6e8ee;border-radius:10px;background:#fff}
+.pd-main{position:relative;border-radius:8px;background:#fafafa}
+.pd-badge{position:absolute;top:12px;left:12px;background:#ff7a00;color:#fff;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:700;z-index:2}
+.pd-name{font-size:46px;line-height:1.08;margin-bottom:8px}
+.pd-rating-row{margin-bottom:16px}
+.pd-viewing-dot{color:#16a34a;font-weight:700}
+.pd-price-strip{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.pd-price-now{color:#f97316;font-size:44px;font-weight:800;line-height:1}
+.pd-price-label{font-size:18px;color:#1f2937;font-weight:600}
+.pd-price-old{font-size:28px;color:#9ca3af;text-decoration:line-through;font-weight:700}
+.pd-discount{background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:6px;font-weight:700}
+.cfg{border-radius:8px;padding:10px 12px;background:#fff}
+.cfg-title{font-size:15px;letter-spacing:0;color:#1f2937;margin-bottom:8px}
+.cfg-title-qty{background:#ff7a00;color:#fff;padding:5px 10px;border-radius:4px;display:inline-block}
+.design-opt{min-height:auto;padding:14px;border-style:dashed}
+.price-panel{background:#fff;border:1px solid #e6e8ee;color:#111827}
+.pp-l,.pp-v,.pp-tl,.pp-tv{color:#111827!important}
+.pd-checkout-note.pd-delivery-row{margin-top:4px;padding-top:8px;border-top:1px solid #eef0f4}
+.pd-checkout-note.pd-delivery-row span,.pd-checkout-note.pd-delivery-row small{font-size:14px;font-weight:600;color:#334155}
+.pd-th.act{border-color:#4f46e5;box-shadow:none}
+.btn.btn-blue{background:#ff7a00;border-color:#ff7a00}
+.btn.btn-green{background:#4f46e5;border-color:#4f46e5}
+.btn.btn-outline{background:#22c55e;color:#fff;border-color:#22c55e}
+@media (max-width:900px){.pd-grid{grid-template-columns:1fr}.pd-name{font-size:34px}.pd-price-now{font-size:34px}.pd-price-old{font-size:22px}}
