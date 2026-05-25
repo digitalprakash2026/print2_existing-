@@ -71,38 +71,41 @@ include INCLUDE_PATH . '/partials/header.php';
     <?php else: ?>
       <section class="all-cat-results cat-detail-results" aria-label="<?= htmlspecialchars($categoryName) ?> products">
         <div class="all-cat-toolbar">
-          <p>Showing 1–<?= (int)$productCount ?> of <?= (int)$productCount ?> products</p>
-          <label>Sort by:
-            <select aria-label="Sort <?= htmlspecialchars($categoryName) ?> products">
-              <option>Popularity</option>
-              <option>Newest</option>
-              <option>Price Low to High</option>
-            </select>
-          </label>
+          <p>Showing <?= (int)$productCount ?> products in <?= htmlspecialchars($categoryName) ?></p>
         </div>
 
-        <div class="all-cat-grid cat-product-grid">
-          <?php foreach ($products as $idx => $p):
+        <div class="prod-grid" id="catProductsGrid">
+          <?php foreach ($products as $p):
             $img = trim((string)($p['primary_image'] ?? ''));
             $name = (string)($p['name'] ?? 'Product');
             $slug = (string)($p['slug'] ?? '');
             $desc = trim((string)($p['description'] ?? '')) ?: ('Premium ' . strtolower($name) . ' printing with custom sizes and finishing options.');
             $minP = (float)($p['min_price'] ?? 0);
-            $theme = $themeClasses[$idx % count($themeClasses)];
           ?>
-            <a class="all-cat-card all-cat-card-<?= htmlspecialchars($theme) ?> cat-product-card" href="/product/<?= htmlspecialchars($slug) ?>">
-              <div class="all-cat-img">
+            <a href="/product/<?= htmlspecialchars($slug) ?>" class="pc">
+              <div class="pc-img">
                 <?php if ($img !== ''): ?>
                   <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($name) ?>" loading="lazy" onerror="this.src='https://placehold.co/400x300/EEF3FD/1A56E8?text=<?= urlencode($name) ?>'">
                 <?php else: ?>
                   <div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($category['icon'] ?? '📦') ?></div>
                 <?php endif; ?>
+                <div class="pc-img-badge">
+                  <span class="badge b-blue"><?= htmlspecialchars($categoryName) ?></span>
+                </div>
               </div>
-              <div class="all-cat-body">
-                <span class="all-cat-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span>
-                <h2><?= htmlspecialchars($name) ?></h2>
-                <p><?= htmlspecialchars($desc) ?></p>
-                <strong><?= $minP > 0 ? ('Starting from ₹' . number_format($minP)) : 'Price on request' ?></strong>
+              <div class="pc-body">
+                <div class="pc-cat"><?= htmlspecialchars($categoryName) ?></div>
+                <div class="pc-name"><?= htmlspecialchars($name) ?></div>
+                <div class="pc-desc"><?= htmlspecialchars($desc) ?></div>
+                <div class="pc-foot">
+                  <div>
+                    <div class="pc-from">Starting from</div>
+                    <div class="pc-price"><?= $minP > 0 ? ('₹' . number_format($minP)) : 'Price on request' ?></div>
+                  </div>
+                  <div class="pc-arr">
+                    <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                  </div>
+                </div>
               </div>
             </a>
           <?php endforeach; ?>
