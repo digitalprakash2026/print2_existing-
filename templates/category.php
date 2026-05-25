@@ -25,7 +25,7 @@ include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 ?>
 
-<main class="all-cat-page">
+<main class="all-cat-page subcat-page">
   <section class="all-cat-hero-banner" aria-labelledby="categoryTitle">
     <div class="all-cat-hero-copy">
       <nav class="all-cat-crumb" aria-label="Breadcrumb">

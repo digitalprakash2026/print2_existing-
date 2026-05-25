@@ -4797,3 +4797,14 @@ body:has(#siteHeader) .banner-slider {
 @media (max-width:1024px){.ym-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.ym-title{font-size:30px}.ym-price{font-size:34px}.ym-cat{font-size:15px}.ym-from{font-size:14px}}
 @media (max-width:700px){.ym-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-title{font-size:24px}.ym-view-all{font-size:11px}}
 @media (max-width:460px){.ym-grid{grid-template-columns:1fr}}
+
+
+/* Sub-category page hero should match compact All Categories proportions */
+.subcat-page .all-cat-hero-banner{min-height:220px;grid-template-columns:minmax(320px,48%) minmax(0,52%);}
+.subcat-page .all-cat-hero-copy{padding:24px 0 24px;}
+.subcat-page .all-cat-crumb{margin-bottom:18px;}
+.subcat-page .all-cat-hero-copy h1{font-size:clamp(30px,3.2vw,42px);line-height:1.08;letter-spacing:-.01em;}
+.subcat-page .all-cat-hero-copy p{font-size:clamp(13px,1.05vw,16px);line-height:1.45;max-width:620px;}
+.subcat-page .all-cat-hero-visual,.subcat-page .all-cat-hero-visual img{min-height:220px;}
+.subcat-page .all-cat-hero-visual img{object-fit:contain;object-position:center right;padding:10px 14px 10px 0;}
+@media (max-width:900px){.subcat-page .all-cat-hero-banner{min-height:unset;grid-template-columns:1fr}.subcat-page .all-cat-hero-copy{padding:20px 0 10px}.subcat-page .all-cat-hero-copy h1{font-size:32px}.subcat-page .all-cat-hero-visual,.subcat-page .all-cat-hero-visual img{min-height:160px}.subcat-page .all-cat-hero-visual img{padding:0}}
