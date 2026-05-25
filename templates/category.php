@@ -26,8 +26,8 @@ include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 ?>
 
-<main class="all-cat-page cat-detail-page">
-  <section class="all-cat-hero-banner cat-detail-hero" aria-labelledby="categoryTitle">
+<main class="all-cat-page">
+  <section class="all-cat-hero-banner" aria-labelledby="categoryTitle">
     <div class="all-cat-hero-copy">
       <nav class="all-cat-crumb" aria-label="Breadcrumb">
         <a href="/">Home</a><span>›</span><a href="/categories">All Categories</a><span>›</span><span><?= htmlspecialchars($categoryName) ?></span>
@@ -35,7 +35,7 @@ include INCLUDE_PATH . '/partials/header.php';
       <h1 id="categoryTitle"><?= htmlspecialchars($categoryName) ?> Products</h1>
       <p><?= $categoryDescription !== '' ? htmlspecialchars($categoryDescription) : 'Premium quality printing products for every business need.' ?></p>
     </div>
-    <div class="all-cat-hero-visual cat-detail-hero-visual" aria-hidden="true">
+    <div class="all-cat-hero-visual" aria-hidden="true">
       <?php if ($categoryImage !== ''): ?>
         <img src="<?= htmlspecialchars($categoryImage) ?>" alt="<?= htmlspecialchars($categoryImageAlt) ?>" loading="eager">
       <?php else: ?>
@@ -44,9 +44,9 @@ include INCLUDE_PATH . '/partials/header.php';
     </div>
   </section>
 
-  <div class="container all-cat-content cat-detail-content">
+  <div class="container all-cat-content">
     <?php if (!empty($categories)): ?>
-      <nav class="cat-detail-browse" aria-label="Browse categories">
+      <nav class="all-cat-side-list" aria-label="Browse categories" style="margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px">
         <span>Browse:</span>
         <?php foreach ($categories as $cat):
           $isActive = ((int)($cat['id'] ?? 0) === (int)($category['id'] ?? 0));
@@ -69,12 +69,12 @@ include INCLUDE_PATH . '/partials/header.php';
         </div>
       </div>
     <?php else: ?>
-      <section class="all-cat-results cat-detail-results" aria-label="<?= htmlspecialchars($categoryName) ?> products">
+      <section class="all-cat-results" aria-label="<?= htmlspecialchars($categoryName) ?> products">
         <div class="all-cat-toolbar">
           <p>Showing <?= (int)$productCount ?> products in <?= htmlspecialchars($categoryName) ?></p>
         </div>
 
-        <div class="prod-grid" id="catProductsGrid">
+        <div class="all-cat-grid" id="catProductsGrid">
           <?php foreach ($products as $p):
             $img = trim((string)($p['primary_image'] ?? ''));
             $name = (string)($p['name'] ?? 'Product');
@@ -82,30 +82,19 @@ include INCLUDE_PATH . '/partials/header.php';
             $desc = trim((string)($p['description'] ?? '')) ?: ('Premium ' . strtolower($name) . ' printing with custom sizes and finishing options.');
             $minP = (float)($p['min_price'] ?? 0);
           ?>
-            <a href="/product/<?= htmlspecialchars($slug) ?>" class="pc">
-              <div class="pc-img">
+            <a class="all-cat-card all-cat-card-orange" href="/product/<?= htmlspecialchars($slug) ?>">
+              <div class="all-cat-img">
                 <?php if ($img !== ''): ?>
                   <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($name) ?>" loading="lazy" onerror="this.src='https://placehold.co/400x300/EEF3FD/1A56E8?text=<?= urlencode($name) ?>'">
                 <?php else: ?>
                   <div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($category['icon'] ?? '📦') ?></div>
                 <?php endif; ?>
-                <div class="pc-img-badge">
-                  <span class="badge b-blue"><?= htmlspecialchars($categoryName) ?></span>
-                </div>
               </div>
-              <div class="pc-body">
-                <div class="pc-cat"><?= htmlspecialchars($categoryName) ?></div>
-                <div class="pc-name"><?= htmlspecialchars($name) ?></div>
-                <div class="pc-desc"><?= htmlspecialchars($desc) ?></div>
-                <div class="pc-foot">
-                  <div>
-                    <div class="pc-from">Starting from</div>
-                    <div class="pc-price"><?= $minP > 0 ? ('₹' . number_format($minP)) : 'Price on request' ?></div>
-                  </div>
-                  <div class="pc-arr">
-                    <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                  </div>
-                </div>
+              <div class="all-cat-body">
+                <span class="all-cat-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span>
+                <h2><?= htmlspecialchars($name) ?></h2>
+                <p><?= htmlspecialchars($desc) ?></p>
+                <strong><?= $minP > 0 ? ('Starting from ₹' . number_format($minP)) : 'Price on request' ?></strong>
               </div>
             </a>
           <?php endforeach; ?>
