@@ -269,55 +269,34 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
 
   <!-- RELATED PRODUCTS -->
   <?php if ($related): ?>
-  <div style="margin-top:52px;padding-top:36px;border-top:1px solid var(--border)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px">
-      <div>
-        <div class="sec-ey">More From Us</div>
-        <div style="font-family:var(--fd);font-size:22px;font-weight:700;color:var(--ink)">You May Also Like</div>
-      </div>
-      <a href="/products" class="btn btn-outline btn-sm">View All Products →</a>
+  <section class="ym-section">
+    <div class="ym-head">
+      <h2 class="ym-title">You May <span>Also Like</span></h2>
+      <a href="/products" class="ym-view-all">View All Products</a>
     </div>
 
-    <div class="prod-grid related-grid" style="grid-template-columns:repeat(<?= min(count($related), 4) ?>,1fr)">
-      <?php foreach (array_slice($related, 0, 4) as $rp):
+    <div class="ym-grid">
+      <?php foreach (array_slice($related, 0, 5) as $rp):
         $rimg = $rp['primary_image'] ?? '';
         $rmin = (float)($rp['min_price'] ?? 0);
       ?>
-      <div class="pc" style="cursor:default" data-reveal data-reveal-delay="<?= ((int)($rp['id'] ?? 0) % 3) * 60 ?>">
-        <a href="/product/<?= htmlspecialchars($rp['slug']) ?>" style="display:contents;text-decoration:none">
-          <div class="pc-img">
-            <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" loading="lazy"
-                 onerror="this.src='https://placehold.co/400x300/EEF3FD/1A56E8?text=<?= urlencode($rp['name']) ?>'">
-            <div class="pc-img-badge"><span class="badge b-blue"><?= htmlspecialchars($rp['category_name'] ?? '') ?></span></div>
-          </div>
+      <article class="ym-card" data-reveal data-reveal-delay="<?= ((int)($rp['id'] ?? 0) % 3) * 60 ?>">
+        <a class="ym-img" href="/product/<?= htmlspecialchars($rp['slug']) ?>">
+          <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" loading="lazy"
+               onerror="this.src='https://placehold.co/400x260/EEF3FD/1A56E8?text=<?= urlencode($rp['name']) ?>'">
         </a>
-        <div class="pc-body">
-          <div class="pc-cat"><?= htmlspecialchars($rp['category_name'] ?? '') ?></div>
-          <div class="pc-name"><?= htmlspecialchars($rp['name']) ?></div>
-          <div class="pc-desc"><?= htmlspecialchars($rp['description'] ?? '') ?></div>
-          <div class="pc-foot" style="flex-direction:column;align-items:stretch;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div>
-                <div class="pc-from">Starting from</div>
-                <div class="pc-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>
-              </div>
-            </div>
-            <div style="display:flex;gap:7px">
-              <a href="/product/<?= htmlspecialchars($rp['slug']) ?>"
-                 class="btn btn-blue btn-sm btn-full" style="font-size:12px">
-                Order Now →
-              </a>
-              <button onclick="window.open('https://wa.me/<?= htmlspecialchars($bizWa) ?>?text=<?= urlencode('Hi! I\'m interested in ' . $rp['name']) ?>','_blank')"
-                      class="btn btn-outline btn-sm" style="font-size:12px;padding:7px 10px" title="WHATSAPP SUPPORT">
-                💬
-              </button>
-            </div>
+        <div class="ym-body">
+          <div class="ym-cat"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><?= htmlspecialchars($rp['category_name'] ?? '') ?></div>
+          <div class="ym-from">Starting from</div>
+          <div class="ym-foot">
+            <div class="ym-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>
+            <a href="/product/<?= htmlspecialchars($rp['slug']) ?>" class="ym-order">ORDER NOW</a>
           </div>
         </div>
-      </div>
+      </article>
       <?php endforeach; ?>
     </div>
-  </div>
+  </section>
   <?php endif; ?>
 
 </div><!-- /container -->

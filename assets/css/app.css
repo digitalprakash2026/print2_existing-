@@ -4775,3 +4775,25 @@ body:has(#siteHeader) .banner-slider {
 .btn.btn-green{background:#4f46e5;border-color:#4f46e5}
 .btn.btn-outline{background:#22c55e;color:#fff;border-color:#22c55e}
 @media (max-width:900px){.pd-grid{grid-template-columns:1fr}.pd-name{font-size:34px}.pd-price-now{font-size:34px}.pd-price-old{font-size:22px}}
+
+/* You may also like section - match provided reference */
+.ym-section{margin-top:28px}
+.ym-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.ym-title{margin:0;font-family:var(--fd);font-size:38px;font-weight:800;color:#111827;line-height:1.1}
+.ym-title span{color:#f97316}
+.ym-view-all{padding:8px 14px;border:1px solid #d1d5db;border-radius:999px;background:#f8fafc;color:#111827;text-decoration:none;font-size:12px;font-weight:700}
+.ym-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.ym-card{border:1px solid #eceff3;border-radius:10px;background:#fff;overflow:hidden;display:flex;flex-direction:column}
+.ym-img{display:block;aspect-ratio:1.5/1;background:#f8fafc}
+.ym-img img{width:100%;height:100%;object-fit:cover}
+.ym-body{padding:10px 10px 12px}
+.ym-cat{display:flex;align-items:center;gap:6px;color:#1f2937;font-size:18px;font-weight:700;line-height:1.2;margin-bottom:8px}
+.ym-cat i{font-size:14px;color:#7c3aed}
+.ym-from{font-size:18px;color:#475569;margin-bottom:2px}
+.ym-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ym-price{font-size:44px;line-height:1;color:#f97316;font-weight:800}
+.ym-order{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:6px;background:#ff7a00;color:#fff;text-decoration:none;font-size:11px;font-weight:800}
+@media (max-width:1300px){.ym-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:1024px){.ym-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.ym-title{font-size:30px}.ym-price{font-size:34px}.ym-cat{font-size:15px}.ym-from{font-size:14px}}
+@media (max-width:700px){.ym-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-title{font-size:24px}.ym-view-all{font-size:11px}}
+@media (max-width:460px){.ym-grid{grid-template-columns:1fr}}
