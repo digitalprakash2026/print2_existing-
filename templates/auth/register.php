@@ -75,4 +75,4 @@ function togglePass(inputId, btn) {
   btn.textContent = show ? '🙈' : '👁️';
 }
 </script>
-</body></html>
+<?php include INCLUDE_PATH . '/partials/footer.php'; ?>

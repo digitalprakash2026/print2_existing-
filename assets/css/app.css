@@ -4883,3 +4883,19 @@ body:has(#siteHeader) .banner-slider {
   .subcat-page .subcat-hero-bg{min-height:auto;}
   .subcat-page .subcat-hero-bg .all-cat-hero-copy{padding:20px 0 16px;}
 }
+
+/* Responsive polish for key pages with footer now enabled */
+@media (max-width:768px){
+  .auth-page{padding:18px 12px 28px}
+  .auth-card{width:100%;max-width:100%;padding:18px;border-radius:14px}
+  .f2{grid-template-columns:1fr}
+  .myord-hdr .container{padding-top:16px;padding-bottom:16px}
+  .ord-card{padding:14px}
+  .confirm-card{width:100%;max-width:520px;padding:16px;border-radius:14px}
+}
+@media (max-width:520px){
+  .myord-hdr-t{font-size:24px}
+  .ord-meta{font-size:11px}
+  .ord-timeline{overflow-x:auto;padding-bottom:6px}
+  .confirm-oid{font-size:13px}
+}
