@@ -34,13 +34,6 @@ include INCLUDE_PATH . '/partials/header.php';
       <h1 id="categoryTitle"><?= htmlspecialchars($categoryName) ?> Products</h1>
       <p><?= $categoryDescription !== '' ? htmlspecialchars($categoryDescription) : 'Premium quality printing products for every business need.' ?></p>
     </div>
-    <div class="all-cat-hero-visual" aria-hidden="true">
-      <?php if ($categoryImage !== ''): ?>
-        <img src="<?= htmlspecialchars($categoryImage) ?>" alt="<?= htmlspecialchars($categoryImageAlt) ?>" loading="eager">
-      <?php else: ?>
-        <img src="/assets/img/categories/all-categories-hero.svg" alt="" loading="eager">
-      <?php endif; ?>
-    </div>
   </section>
 
   <div class="container all-cat-content">

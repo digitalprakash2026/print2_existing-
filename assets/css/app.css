@@ -4808,3 +4808,13 @@ body:has(#siteHeader) .banner-slider {
 .subcat-page .all-cat-hero-visual,.subcat-page .all-cat-hero-visual img{min-height:220px;}
 .subcat-page .all-cat-hero-visual img{object-fit:contain;object-position:center right;padding:10px 14px 10px 0;}
 @media (max-width:900px){.subcat-page .all-cat-hero-banner{min-height:unset;grid-template-columns:1fr}.subcat-page .all-cat-hero-copy{padding:20px 0 10px}.subcat-page .all-cat-hero-copy h1{font-size:32px}.subcat-page .all-cat-hero-visual,.subcat-page .all-cat-hero-visual img{min-height:160px}.subcat-page .all-cat-hero-visual img{padding:0}}
+
+
+/* Sub-category hero without right image, aligned with all-categories heading structure */
+.subcat-page .all-cat-hero-banner{grid-template-columns:1fr;min-height:auto;padding-block:0;}
+.subcat-page .all-cat-hero-copy{padding:34px 0 30px;max-width:860px;}
+.subcat-page .all-cat-crumb{margin-bottom:20px;}
+.subcat-page .all-cat-hero-copy h1{font-size:clamp(34px,4.2vw,48px);line-height:1.04;margin-bottom:10px;}
+.subcat-page .all-cat-hero-copy p{font-size:clamp(14px,1.25vw,18px);max-width:760px;}
+.subcat-page .all-cat-hero-visual{display:none!important;}
+@media (max-width:900px){.subcat-page .all-cat-hero-copy{padding:24px 0 18px}.subcat-page .all-cat-hero-copy h1{font-size:34px}}
