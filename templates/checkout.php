@@ -8,8 +8,10 @@ $razKeyId = Database::setting('razorpay_key_id', env('RAZORPAY_KEY_ID', ''));
 $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
 ?>
 <div style="margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));min-height:calc(100vh - var(--site-hh, var(--hh)) - var(--post-header-gap,50px));background:var(--bg);padding:32px 0 80px">
-  <div class="container" style="max-width:760px">
-    <div style="font-family:var(--fd);font-size:24px;font-weight:700;margin-bottom:22px">Checkout</div>
+  <div class="container cart-page">
+    <div class="cart-hero"><h1>Your Cart <span><?= count($cartItems) ?> Items</span></h1><p>Review your items and proceed to checkout.</p></div>
+    <div class="cart-layout">
+      <div class="cart-main">
 
     <?php if (empty($user['id'])): ?>
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
@@ -88,6 +90,8 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
       <?php endforeach; ?>
     </div>
 
+      </div>
+      <aside class="cart-side">
     <!-- Coupon -->
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
       <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">🎟️ Coupon Code</div>
@@ -99,10 +103,13 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
     </div>
 
     <!-- Totals -->
-    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:20px" id="totalsBox">
+    <div class="cart-summary-card" id="totalsBox">
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--text2)">Subtotal</span><span>₹<?= number_format($totals['subtotal']) ?></span></div>
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--text2)">GST (<?= $totals['gst_pct'] ?>%)</span><span>₹<?= number_format($totals['gst_amt']) ?></span></div>
       <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding-top:8px;border-top:1px solid var(--border)"><span>Total</span><span style="color:var(--blue);font-family:var(--fd)">₹<?= number_format($totals['total']) ?></span></div>
+    </div>
+
+      </aside>
     </div>
 
     <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:14px 16px;margin-bottom:14px">
@@ -137,7 +144,6 @@ $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
       🔒 Secured by Razorpay · GST Invoice included · Your data is safe
     </div>
   </div>
-</div>
 
 <script>
 const CSRF = '<?= $csrf ?>';
