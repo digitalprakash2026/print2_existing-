@@ -301,7 +301,7 @@ function renderCartDrawer() {
       <div class="cart-sum-row"><span style="color:var(--text2)">Shipping</span><span>${Number(totals.shipping||0) > 0 ? fmt(totals.shipping) : 'Free'}</span></div>
       <div class="cart-sum-row total"><span>Total</span><span style="color:var(--blue)">${fmt(totals.total)}</span></div>
     </div>
-    <a href="/checkout" class="btn btn-blue btn-full" style="border-radius:10px;padding:14px;font-size:15px">Proceed to Checkout →</a>
+    <a href="/cart" class="btn btn-blue btn-full" style="border-radius:10px;padding:14px;font-size:15px">View Cart</a>
     <button onclick="closeCart()" class="btn btn-ghost btn-full" style="padding:10px;margin-top:6px;font-size:13px">Continue Shopping</button>`;
 }
 

@@ -263,6 +263,20 @@ if ($uri === '/terms-and-conditions' && $method === 'GET') {
     exit;
 }
 
+
+// Cart Page
+if ($uri === '/cart' && $method === 'GET') {
+    try {
+        $cartItems = \Cart\Cart::get();
+        $totals    = \Cart\Cart::totals($cartItems);
+    } catch (\Throwable) {
+        $cartItems = [];
+        $totals = ['subtotal'=>0,'discount'=>0,'gst_pct'=>18,'gst_amt'=>0,'total'=>0];
+    }
+    view('cart', compact('cartItems', 'totals'));
+    exit;
+}
+
 // Checkout
 if ($uri === '/checkout' && $method === 'GET') {
     try {
