@@ -52,4 +52,4 @@ function shareConfirm() {
 }
 </script>
 <script src="/assets/js/app.js"></script>
-</body></html>
+<?php include INCLUDE_PATH . '/partials/footer.php'; ?>

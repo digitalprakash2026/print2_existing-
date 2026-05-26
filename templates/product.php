@@ -57,6 +57,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
 
       <!-- Square main image -->
       <div class="pd-main" id="pdMainWrap">
+        <span class="pd-badge">🔥 Bestseller</span>
         <img id="pdMainImg"
              src="<?= htmlspecialchars($primaryImg) ?>"
              alt="<?= htmlspecialchars($product['name']) ?>"
@@ -86,25 +87,21 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
     <!-- ════ RIGHT — INFO + CONFIGURATOR ════ -->
     <div class="pd-info-col" data-reveal data-reveal-delay="80">
 
-      <!-- Category tag -->
-      <div class="pd-cat"><?= htmlspecialchars($product['category_name'] ?? '') ?></div>
-
       <h1 class="pd-name"><?= htmlspecialchars($product['name']) ?></h1>
       <div class="pd-rating-row" aria-label="Product rating">
         <span class="pd-stars" aria-hidden="true">★★★★★</span>
         <strong>4.8</strong>
-        <span>126 reviews</span>
-        <span>500+ orders</span>
+        <span>(124 Reviews)</span>
+        <span class="pd-viewing-dot">•</span>
+        <span>23 people are viewing this product</span>
       </div>
-      <?php if (!empty($product['product_code'])): ?>
-      <div class="pd-code">Product Code: <?= htmlspecialchars((string)$product['product_code']) ?></div>
-      <?php endif; ?>
-      <p class="pd-desc"><?= htmlspecialchars($product['description'] ?? '') ?></p>
-      <div class="pd-trust-grid" aria-label="Order benefits">
-        <span><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Fast delivery</span>
-        <span><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Premium print</span>
-        <span><i class="fa-solid fa-file-invoice" aria-hidden="true"></i> GST invoice</span>
-        <span><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp support</span>
+
+
+      <div class="pd-price-strip">
+        <span class="pd-price-now" id="heroPrice">₹199</span>
+        <span class="pd-price-label">Starting Price</span>
+        <span class="pd-price-old">₹299</span>
+        <span class="pd-discount">Save 33%</span>
       </div>
 
       <!-- ── SPECIFICATIONS ── -->
@@ -114,7 +111,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       ?>
       <?php if ($filledSpecs): ?>
       <div class="cfg" style="margin-bottom:20px">
-        <div class="cfg-title">📋 Specifications</div>
+        <div class="cfg-title">Product Details</div>
         <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px">
           <?php foreach ($filledSpecs as $spec): ?>
           <li style="display:flex;align-items:baseline;gap:8px;font-size:13px;
@@ -164,7 +161,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
 
       <!-- ── QUANTITY ── -->
       <div class="cfg">
-        <div class="cfg-title">Quantity</div>
+        <div class="cfg-title cfg-title-qty">QUANTITY</div>
         <select class="fi fi-sel" id="pdQty" onchange="onQtyChange()" style="font-size:15px;font-weight:600">
           <option value="">— Select Quantity —</option>
           <!-- Populated by JS from API based on selected quality -->
@@ -179,7 +176,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
 
       <!-- ── DESIGN OPTION ── -->
       <div class="cfg">
-        <div class="cfg-title">Design Option</div>
+        <div class="cfg-title">Upload Your Design</div>
         <div class="pd-design-grid">
 
           <div class="design-opt sel" id="dopt-upload" onclick="selDesignOpt('upload')">
@@ -247,23 +244,23 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <div style="display:flex;flex-direction:column;gap:10px">
         <button class="btn btn-blue btn-full" onclick="addToCart()" id="addCartBtn"
                 style="padding:15px;font-size:15px;border-radius:12px">
-          🛒 Add to Cart
+          ADD TO CART
         </button>
         <div style="display:flex;gap:9px">
           <button class="btn btn-green btn-full" onclick="buyNow()" style="padding:13px">
-            ⚡ Buy Now
+            GET FREE DESIGN
           </button>
           <button class="btn btn-outline" onclick="waOrder()" style="padding:13px;flex-shrink:0"
-                  title="Order via WhatsApp">
+                  title="Order via WHATSAPP SUPPORT">
             <svg viewBox="0 0 24 24" style="width:17px;height:17px;fill:currentColor">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
             </svg>
-            WhatsApp
+            WHATSAPP SUPPORT
           </button>
         </div>
-        <div class="pd-checkout-note">
-          <span id="orderHint">Select quantity to enable Add to Cart / Buy Now.</span>
-          <small>Secure checkout • GST invoice • Artwork support</small>
+        <div class="pd-checkout-note pd-delivery-row">
+          <span id="orderHint">🚚 Delivery in 3 - 5 Working Days</span>
+          <small>✅ Free Delivery on Orders Above ₹999</small>
         </div>
       </div>
 
@@ -272,55 +269,34 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
 
   <!-- RELATED PRODUCTS -->
   <?php if ($related): ?>
-  <div style="margin-top:52px;padding-top:36px;border-top:1px solid var(--border)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px">
-      <div>
-        <div class="sec-ey">More From Us</div>
-        <div style="font-family:var(--fd);font-size:22px;font-weight:700;color:var(--ink)">You May Also Like</div>
-      </div>
-      <a href="/products" class="btn btn-outline btn-sm">View All Products →</a>
+  <section class="ym-section">
+    <div class="ym-head">
+      <h2 class="ym-title">You May <span>Also Like</span></h2>
+      <a href="/products" class="ym-view-all">View All Products</a>
     </div>
 
-    <div class="prod-grid related-grid" style="grid-template-columns:repeat(<?= min(count($related), 4) ?>,1fr)">
-      <?php foreach (array_slice($related, 0, 4) as $rp):
+    <div class="ym-grid">
+      <?php foreach (array_slice($related, 0, 5) as $rp):
         $rimg = $rp['primary_image'] ?? '';
         $rmin = (float)($rp['min_price'] ?? 0);
       ?>
-      <div class="pc" style="cursor:default" data-reveal data-reveal-delay="<?= ((int)($rp['id'] ?? 0) % 3) * 60 ?>">
-        <a href="/product/<?= htmlspecialchars($rp['slug']) ?>" style="display:contents;text-decoration:none">
-          <div class="pc-img">
-            <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" loading="lazy"
-                 onerror="this.src='https://placehold.co/400x300/EEF3FD/1A56E8?text=<?= urlencode($rp['name']) ?>'">
-            <div class="pc-img-badge"><span class="badge b-blue"><?= htmlspecialchars($rp['category_name'] ?? '') ?></span></div>
-          </div>
+      <article class="ym-card" data-reveal data-reveal-delay="<?= ((int)($rp['id'] ?? 0) % 3) * 60 ?>">
+        <a class="ym-img" href="/product/<?= htmlspecialchars($rp['slug']) ?>">
+          <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" loading="lazy"
+               onerror="this.src='https://placehold.co/400x260/EEF3FD/1A56E8?text=<?= urlencode($rp['name']) ?>'">
         </a>
-        <div class="pc-body">
-          <div class="pc-cat"><?= htmlspecialchars($rp['category_name'] ?? '') ?></div>
-          <div class="pc-name"><?= htmlspecialchars($rp['name']) ?></div>
-          <div class="pc-desc"><?= htmlspecialchars($rp['description'] ?? '') ?></div>
-          <div class="pc-foot" style="flex-direction:column;align-items:stretch;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div>
-                <div class="pc-from">Starting from</div>
-                <div class="pc-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>
-              </div>
-            </div>
-            <div style="display:flex;gap:7px">
-              <a href="/product/<?= htmlspecialchars($rp['slug']) ?>"
-                 class="btn btn-blue btn-sm btn-full" style="font-size:12px">
-                Order Now →
-              </a>
-              <button onclick="window.open('https://wa.me/<?= htmlspecialchars($bizWa) ?>?text=<?= urlencode('Hi! I\'m interested in ' . $rp['name']) ?>','_blank')"
-                      class="btn btn-outline btn-sm" style="font-size:12px;padding:7px 10px" title="WhatsApp">
-                💬
-              </button>
-            </div>
+        <div class="ym-body">
+          <div class="ym-cat"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><?= htmlspecialchars($rp['category_name'] ?? '') ?></div>
+          <div class="ym-from">Starting from</div>
+          <div class="ym-foot">
+            <div class="ym-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>
+            <a href="/product/<?= htmlspecialchars($rp['slug']) ?>" class="ym-order">ORDER NOW</a>
           </div>
         </div>
-      </div>
+      </article>
       <?php endforeach; ?>
     </div>
-  </div>
+  </section>
   <?php endif; ?>
 
 </div><!-- /container -->
@@ -616,7 +592,7 @@ async function addToCart(opts = {}) {
     return false;
   } finally {
     btn.disabled = false;
-    btn.textContent = '🛒 Add to Cart';
+    btn.textContent = 'ADD TO CART';
   }
 }
 
@@ -641,7 +617,7 @@ function validateOrder() {
   return { ok: true };
 }
 
-// WhatsApp Quick Order
+// WHATSAPP SUPPORT Quick Order
 function waOrder() {
   const totalEl = document.getElementById('ppTotal').textContent || '₹ —';
   const qname   = QUALITIES[selectedQualityIdx]?.name || 'Standard';

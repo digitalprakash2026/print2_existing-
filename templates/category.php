@@ -20,14 +20,13 @@ $categoryName = (string)($category['name'] ?? 'Category');
 $categoryImage = trim((string)($category['image_path'] ?? ''));
 $categoryImageAlt = trim((string)($category['image_alt'] ?? '')) ?: ($categoryName . ' printing');
 $categoryDescription = trim((string)($category['description'] ?? ''));
-$themeClasses = ['purple', 'orange', 'green', 'purple', 'orange', 'green'];
 
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 ?>
 
-<main class="all-cat-page cat-detail-page">
-  <section class="all-cat-hero-banner cat-detail-hero" aria-labelledby="categoryTitle">
+<main class="all-cat-page subcat-page">
+  <section class="all-cat-hero-banner subcat-hero-bg" aria-labelledby="categoryTitle">
     <div class="all-cat-hero-copy">
       <nav class="all-cat-crumb" aria-label="Breadcrumb">
         <a href="/">Home</a><span>›</span><a href="/categories">All Categories</a><span>›</span><span><?= htmlspecialchars($categoryName) ?></span>
@@ -35,29 +34,9 @@ include INCLUDE_PATH . '/partials/header.php';
       <h1 id="categoryTitle"><?= htmlspecialchars($categoryName) ?> Products</h1>
       <p><?= $categoryDescription !== '' ? htmlspecialchars($categoryDescription) : 'Premium quality printing products for every business need.' ?></p>
     </div>
-    <div class="all-cat-hero-visual cat-detail-hero-visual" aria-hidden="true">
-      <?php if ($categoryImage !== ''): ?>
-        <img src="<?= htmlspecialchars($categoryImage) ?>" alt="<?= htmlspecialchars($categoryImageAlt) ?>" loading="eager">
-      <?php else: ?>
-        <img src="/assets/img/categories/all-categories-hero.svg" alt="" loading="eager">
-      <?php endif; ?>
-    </div>
   </section>
 
-  <div class="container all-cat-content cat-detail-content">
-    <?php if (!empty($categories)): ?>
-      <nav class="cat-detail-browse" aria-label="Browse categories">
-        <span>Browse:</span>
-        <?php foreach ($categories as $cat):
-          $isActive = ((int)($cat['id'] ?? 0) === (int)($category['id'] ?? 0));
-        ?>
-          <a href="/category/<?= htmlspecialchars($cat['slug'] ?? '') ?>" class="chip <?= $isActive ? 'on' : '' ?>">
-            <?= htmlspecialchars($cat['icon'] ?? '') ?> <?= htmlspecialchars($cat['name'] ?? 'Category') ?>
-          </a>
-        <?php endforeach; ?>
-      </nav>
-    <?php endif; ?>
-
+  <div class="container all-cat-content">
     <?php if (empty($products)): ?>
       <div class="cat-detail-empty">
         <div class="cat-detail-empty-icon">🖨️</div>
@@ -69,7 +48,7 @@ include INCLUDE_PATH . '/partials/header.php';
         </div>
       </div>
     <?php else: ?>
-      <section class="all-cat-results cat-detail-results" aria-label="<?= htmlspecialchars($categoryName) ?> products">
+      <section class="all-cat-results" aria-label="Browse <?= htmlspecialchars($categoryName) ?> products">
         <div class="all-cat-toolbar">
           <p>Showing 1–<?= (int)$productCount ?> of <?= (int)$productCount ?> products</p>
           <label>Sort by:
@@ -81,21 +60,20 @@ include INCLUDE_PATH . '/partials/header.php';
           </label>
         </div>
 
-        <div class="all-cat-grid cat-product-grid">
-          <?php foreach ($products as $idx => $p):
+        <div class="all-cat-grid" id="catProductsGrid">
+          <?php foreach ($products as $p):
             $img = trim((string)($p['primary_image'] ?? ''));
             $name = (string)($p['name'] ?? 'Product');
             $slug = (string)($p['slug'] ?? '');
             $desc = trim((string)($p['description'] ?? '')) ?: ('Premium ' . strtolower($name) . ' printing with custom sizes and finishing options.');
             $minP = (float)($p['min_price'] ?? 0);
-            $theme = $themeClasses[$idx % count($themeClasses)];
           ?>
-            <a class="all-cat-card all-cat-card-<?= htmlspecialchars($theme) ?> cat-product-card" href="/product/<?= htmlspecialchars($slug) ?>">
+            <a class="all-cat-card all-cat-card-orange" href="/product/<?= htmlspecialchars($slug) ?>">
               <div class="all-cat-img">
                 <?php if ($img !== ''): ?>
                   <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($name) ?>" loading="lazy" onerror="this.src='https://placehold.co/400x300/EEF3FD/1A56E8?text=<?= urlencode($name) ?>'">
                 <?php else: ?>
-                  <div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($category['icon'] ?? '📦') ?></div>
+                  <div class="shop-cat-fallback" aria-hidden="true">📦</div>
                 <?php endif; ?>
               </div>
               <div class="all-cat-body">
@@ -109,14 +87,14 @@ include INCLUDE_PATH . '/partials/header.php';
         </div>
       </section>
 
-      <section class="cat-detail-whatsapp" aria-label="Custom print help">
-        <div>
-          <h2>Need a custom <?= htmlspecialchars($categoryName) ?> print?</h2>
-          <p>Tell us your requirements — bulk pricing, custom sizes, special finishes.</p>
+      <section class="all-cat-usp" aria-label="RCS Print benefits">
+        <div class="why-print-panel">
+          <article class="why-print-item"><div class="why-print-icon why-print-purple"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Fast Delivery</h3><p>On-time delivery always guaranteed.</p></div></article>
+          <article class="why-print-item"><div class="why-print-icon why-print-orange"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Free Design Support</h3><p>Professional design support at no extra cost.</p></div></article>
+          <article class="why-print-item"><div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Premium Quality</h3><p>Best quality materials and printing.</p></div></article>
+          <article class="why-print-item"><div class="why-print-icon why-print-purple"><i class="fa-solid fa-tags" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Affordable Pricing</h3><p>Low price with the best value.</p></div></article>
+          <article class="why-print-item"><div class="why-print-icon why-print-orange"><i class="fa-solid fa-cube" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Bulk Order Specialist</h3><p>Special prices for bulk requirements.</p></div></article>
         </div>
-        <a href="https://wa.me/<?= htmlspecialchars($bizWa) ?>?text=<?= urlencode('Hi! I need custom ' . $categoryName . ' printing. Please share details.') ?>" target="_blank" rel="noopener" class="btn btn-green">
-          💬 Chat on WhatsApp
-        </a>
       </section>
     <?php endif; ?>
   </div>
