@@ -14,13 +14,19 @@ try {
     $settingsMap = array_column($settings, 'value', 'key');
 } catch (\Throwable) {}
 
-$bizWa = $settingsMap['biz_whatsapp'] ?? '919876543210';
+$bizName  = htmlspecialchars($settingsMap['biz_name']    ?? 'RCS Graphic');
+$bizPhone = htmlspecialchars($settingsMap['biz_phone']   ?? '+91 98765 43210');
+$bizWa    = htmlspecialchars($settingsMap['biz_whatsapp']?? '919876543210');
+$bizEmail = htmlspecialchars($settingsMap['biz_email']   ?? 'hello@rcsgraphic.in');
+$bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 $productCount = count($products ?? []);
 $categoryName = (string)($category['name'] ?? 'Category');
 $categorySlug = (string)($category['slug'] ?? '');
 $categoryImage = trim((string)($category['image_path'] ?? ''));
 $categoryImageAlt = trim((string)($category['image_alt'] ?? '')) ?: ($categoryName . ' printing');
 $categoryDescription = trim((string)($category['description'] ?? ''));
+$heroBgImage = $categoryImage !== '' ? $categoryImage : '/assets/img/categories/all-categories-hero.svg';
+$heroBgImageCss = htmlspecialchars(addcslashes($heroBgImage, "\\'"), ENT_QUOTES);
 $activeCategories = array_values(array_filter($categories ?? [], static fn($cat) => (int)($cat['is_active'] ?? 1) === 1));
 $categoryThemeClasses = ['purple', 'orange', 'orange', 'orange', 'purple', 'orange', 'purple', 'green'];
 
@@ -29,7 +35,7 @@ include INCLUDE_PATH . '/partials/header.php';
 ?>
 
 <main class="all-cat-page subcat-page">
-  <section class="all-cat-hero-banner subcat-hero-bg" aria-labelledby="categoryTitle">
+  <section class="all-cat-hero-banner subcat-hero-bg" aria-labelledby="categoryTitle" style="--subcat-hero-image:url('<?= $heroBgImageCss ?>')">
     <div class="all-cat-hero-copy">
       <nav class="all-cat-crumb" aria-label="Breadcrumb">
         <a href="/">Home</a><span>›</span><a href="/categories">All Categories</a><span>›</span><span><?= htmlspecialchars($categoryName) ?></span>
@@ -167,5 +173,144 @@ include INCLUDE_PATH . '/partials/header.php';
     <?php endif; ?>
   </div>
 </main>
+
+
+<!-- QUICK HELP STRIP -->
+<section class="quick-help-section" id="quick-help-sec" aria-label="Quick help and bulk order actions" data-reveal>
+  <div class="quick-help-container">
+    <div class="quick-help-bar">
+      <a class="quick-help-item quick-help-call" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
+        <span class="quick-help-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
+        <span class="quick-help-copy">
+          <span>Need Help? Call Us</span>
+          <strong><?= $bizPhone ?></strong>
+        </span>
+      </a>
+
+      <button class="quick-help-item quick-help-whatsapp" type="button" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">
+        <span class="quick-help-icon"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span>
+        <span class="quick-help-copy">
+          <strong>Chat with us on WhatsApp</strong>
+          <span>We are here to help!</span>
+        </span>
+      </button>
+
+      <a class="quick-help-item quick-help-download" href="/products" aria-label="Download our brochure for all products">
+        <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
+        <span class="quick-help-copy">
+          <strong>Download Our Brochure</strong>
+          <span>For All Products</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer" aria-label="Site footer">
+  <div class="footer-container">
+    <div class="footer-main">
+      <div class="footer-brand-col">
+        <a href="/" class="footer-logo" aria-label="RCS Print home">
+          <span class="footer-logo-main">RCS</span>
+          <span class="footer-logo-sub">PRINT</span>
+        </a>
+        <p class="footer-desc">Your one-stop solution for all your printing needs. Quality prints that represent your brand perfectly.</p>
+        <div class="footer-social" aria-label="Social links">
+          <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+          <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+          <a href="https://wa.me/<?= $bizWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
+          <a href="/#quick-help-sec" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+        </div>
+      </div>
+
+      <nav class="footer-col" aria-label="Quick links">
+        <h3>Quick Links</h3>
+        <a href="/">Home</a>
+        <a href="/#why-sec">About Us</a>
+        <a href="/products">Products</a>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
+        <a href="/#quick-help-sec">Contact Us</a>
+      </nav>
+
+      <nav class="footer-col" aria-label="Products">
+        <h3>Products</h3>
+        <a href="/products">Business Cards</a>
+        <a href="/products">Flyers</a>
+        <a href="/products">Brochures</a>
+        <a href="/products">Posters</a>
+        <a href="/products">Diaries</a>
+        <a href="/products">Calendars</a>
+        <a href="/products">Stationery &amp; More</a>
+      </nav>
+
+      <nav class="footer-col" aria-label="Customer service">
+        <h3>Customer Service</h3>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
+        <a href="/my-orders">Track Order</a>
+        <a href="/products">Shipping Policy</a>
+        <a href="/products">Refund &amp; Return</a>
+        <a href="/terms-and-conditions">Terms &amp; Conditions</a>
+        <a href="/terms-and-conditions">Privacy Policy</a>
+      </nav>
+
+      <div class="footer-col footer-contact-col">
+        <h3>Contact Us</h3>
+        <div class="footer-contact-item">
+          <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+          <span><?= $bizAddr ?></span>
+        </div>
+        <a class="footer-contact-item" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span><?= $bizPhone ?></span>
+        </a>
+        <a class="footer-contact-item" href="mailto:<?= $bizEmail ?>">
+          <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+          <span><?= $bizEmail ?></span>
+        </a>
+        <div class="footer-contact-item">
+          <i class="fa-regular fa-clock" aria-hidden="true"></i>
+          <span>Mon - Sat: 10:00 AM - 7:00 PM</span>
+        </div>
+      </div>
+
+      <div class="footer-col footer-newsletter-col">
+        <h3>Newsletter</h3>
+        <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
+        <form class="footer-newsletter" action="/products" method="get">
+          <label class="sr-only" for="footerEmail">Enter your email</label>
+          <input id="footerEmail" name="email" type="email" placeholder="Enter your email" autocomplete="email">
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">© <?= date('Y') ?> RCS PRINT. All Rights Reserved.</div>
+      <div class="footer-developed">Developed By Prakash Karena</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const panel = document.querySelector('.all-cat-filter-panel');
+  if (!panel) return;
+  const mobileQuery = window.matchMedia('(max-width: 820px)');
+  const syncFilterPanel = (event) => {
+    if (mobileQuery.matches) {
+      if (!event) panel.open = false;
+    } else {
+      panel.open = true;
+    }
+  };
+  syncFilterPanel();
+  if (typeof mobileQuery.addEventListener === 'function') {
+    mobileQuery.addEventListener('change', syncFilterPanel);
+  } else if (typeof mobileQuery.addListener === 'function') {
+    mobileQuery.addListener(syncFilterPanel);
+  }
+})();
+</script>
 
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
