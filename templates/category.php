@@ -82,6 +82,12 @@ include INCLUDE_PATH . '/partials/header.php';
                 <label><input type="checkbox"> Standard</label>
                 <label><input type="checkbox"> Premium</label>
                 <label><input type="checkbox"> Luxury</label>
+                <select class="all-cat-mobile-filter-select" aria-label="Filter by product type">
+                  <option>All product types</option>
+                  <option>Standard</option>
+                  <option>Premium</option>
+                  <option>Luxury</option>
+                </select>
               </div>
               <div class="all-cat-filter-group">
                 <h3>Paper Type</h3>
@@ -89,6 +95,13 @@ include INCLUDE_PATH . '/partials/header.php';
                 <label><input type="checkbox"> Matte</label>
                 <label><input type="checkbox"> Glossy</label>
                 <label><input type="checkbox"> Textured</label>
+                <select class="all-cat-mobile-filter-select" aria-label="Filter by paper type">
+                  <option>All paper types</option>
+                  <option>Art Paper</option>
+                  <option>Matte</option>
+                  <option>Glossy</option>
+                  <option>Textured</option>
+                </select>
               </div>
               <div class="all-cat-filter-group">
                 <h3>Finishing</h3>
@@ -97,6 +110,14 @@ include INCLUDE_PATH . '/partials/header.php';
                 <label><input type="checkbox"> UV Coating</label>
                 <label><input type="checkbox"> Spot UV</label>
                 <label><input type="checkbox"> Foil Stamping</label>
+                <select class="all-cat-mobile-filter-select" aria-label="Filter by finishing">
+                  <option>All finishing</option>
+                  <option>Matt Lamination</option>
+                  <option>Gloss Lamination</option>
+                  <option>UV Coating</option>
+                  <option>Spot UV</option>
+                  <option>Foil Stamping</option>
+                </select>
               </div>
               <div class="all-cat-filter-group all-cat-price-filter">
                 <h3>Price Range</h3>
