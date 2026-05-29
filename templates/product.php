@@ -281,6 +281,115 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
     </div><!-- /pd-info-col -->
   </div><!-- /pd-grid -->
 
+  <!-- PRODUCT DETAILS / REVIEWS SECTION -->
+  <section class="pd-tabs-section" data-reveal data-reveal-delay="120" aria-label="Product information and customer reviews">
+    <div class="pd-tabs-card">
+      <div class="pd-tabs-nav" role="tablist" aria-label="Product detail tabs">
+        <button type="button" class="pd-tab-btn is-active" id="pd-tab-description" role="tab" aria-selected="true" aria-controls="pd-panel-description" onclick="switchProductTab('description', this)">Description</button>
+        <button type="button" class="pd-tab-btn" id="pd-tab-specifications" role="tab" aria-selected="false" aria-controls="pd-panel-specifications" onclick="switchProductTab('specifications', this)">Specifications</button>
+        <button type="button" class="pd-tab-btn" id="pd-tab-reviews" role="tab" aria-selected="false" aria-controls="pd-panel-reviews" onclick="switchProductTab('reviews', this)">Reviews (124)</button>
+        <button type="button" class="pd-tab-btn" id="pd-tab-faqs" role="tab" aria-selected="false" aria-controls="pd-panel-faqs" onclick="switchProductTab('faqs', this)">FAQs</button>
+      </div>
+
+      <div class="pd-tabs-content">
+        <div class="pd-tabs-left">
+          <div class="pd-tab-panel is-active" id="pd-panel-description" role="tabpanel" aria-labelledby="pd-tab-description" data-tab-panel="description">
+            <h2>High Quality. Perfect Impression.</h2>
+            <p>
+              <?= !empty(trim((string)($product['description'] ?? '')))
+                ? nl2br(htmlspecialchars((string)$product['description']))
+                : 'Our ' . htmlspecialchars($product['name']) . ' are designed to leave a lasting impact. Printed on high-quality paper with professional finishing options, they reflect your brand identity with clarity and style.' ?>
+            </p>
+            <ul class="pd-check-list">
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Perfect for business branding and networking</li>
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> High resolution printing with vibrant colors</li>
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Multiple paper types and finishing options</li>
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Fast turnaround and free delivery above ₹999</li>
+            </ul>
+          </div>
+
+          <div class="pd-tab-panel" id="pd-panel-specifications" role="tabpanel" aria-labelledby="pd-tab-specifications" data-tab-panel="specifications" hidden>
+            <h2>Specifications</h2>
+            <?php if ($filledSpecs || $productCode): ?>
+            <div class="pd-tab-spec-grid">
+              <?php if ($productCode): ?>
+              <div><span>Product Code</span><strong><?= htmlspecialchars($productCode) ?></strong></div>
+              <?php endif; ?>
+              <?php foreach ($filledSpecs as $spec): ?>
+              <div><span><?= htmlspecialchars($spec['label']) ?></span><strong><?= htmlspecialchars($spec['value']) ?></strong></div>
+              <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <p>Specifications for this product will be confirmed by our print expert after your enquiry.</p>
+            <?php endif; ?>
+          </div>
+
+          <div class="pd-tab-panel" id="pd-panel-reviews" role="tabpanel" aria-labelledby="pd-tab-reviews" data-tab-panel="reviews" hidden>
+            <h2>Customer Reviews</h2>
+            <p>Customers trust RCS Graphic for sharp printing, dependable finishing, and quick support from design to delivery.</p>
+            <ul class="pd-check-list">
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> 4.8 average customer rating</li>
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> 124 verified customer reviews</li>
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Loved for print quality and fast communication</li>
+            </ul>
+          </div>
+
+          <div class="pd-tab-panel" id="pd-panel-faqs" role="tabpanel" aria-labelledby="pd-tab-faqs" data-tab-panel="faqs" hidden>
+            <h2>FAQs</h2>
+            <div class="pd-faq-list">
+              <details open>
+                <summary>Can I upload my own design?</summary>
+                <p>Yes, you can upload PDF, AI, PSD, PNG, JPG and other supported artwork files up to 50MB.</p>
+              </details>
+              <details>
+                <summary>Can RCS Graphic create the design for me?</summary>
+                <p>Yes, select the free design option and our team will connect with you for the design brief and confirmation.</p>
+              </details>
+              <details>
+                <summary>How long does delivery take?</summary>
+                <p>Standard delivery usually takes 3 - 5 working days after artwork and order confirmation.</p>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <aside class="pd-reviews-panel" aria-label="What our customers say">
+          <div class="pd-reviews-head">
+            <h2>What Our Customers Say</h2>
+            <a href="#pd-panel-reviews" onclick="switchProductTab('reviews', document.getElementById('pd-tab-reviews'))">View All Reviews <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+          </div>
+          <div class="pd-review-cards">
+            <article class="pd-review-card">
+              <div class="pd-review-person">
+                <span class="pd-review-avatar" aria-hidden="true">RM</span>
+                <div><strong>Rakesh Mehta</strong><span>Business Owner</span></div>
+              </div>
+              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p>Excellent quality and fast delivery. Highly recommended!</p>
+            </article>
+            <article class="pd-review-card">
+              <div class="pd-review-person">
+                <span class="pd-review-avatar" aria-hidden="true">KS</span>
+                <div><strong>Khushbu Shah</strong><span>Marketing Head</span></div>
+              </div>
+              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p>Very professional team and amazing print quality.</p>
+            </article>
+            <article class="pd-review-card">
+              <div class="pd-review-person">
+                <span class="pd-review-avatar" aria-hidden="true">JP</span>
+                <div><strong>Jigar Patel</strong><span>Event Organizer</span></div>
+              </div>
+              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p>Best experience for bulk printing. Great pricing and support.</p>
+            </article>
+          </div>
+          <button type="button" class="pd-review-next" aria-label="Next review" onclick="document.querySelector('.pd-review-cards')?.scrollBy({left:220, behavior:'smooth'})">›</button>
+        </aside>
+      </div>
+    </div>
+  </section>
+
   <!-- RELATED PRODUCTS -->
   <?php if ($related): ?>
   <section class="ym-section">
@@ -657,6 +766,19 @@ function waOrder() {
   ].join('\n');
 
   window.open(`https://wa.me/${BIZ_WA}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function switchProductTab(tab, btn) {
+  document.querySelectorAll('.pd-tab-btn').forEach(el => {
+    const active = el === btn;
+    el.classList.toggle('is-active', active);
+    el.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('[data-tab-panel]').forEach(panel => {
+    const active = panel.dataset.tabPanel === tab;
+    panel.classList.toggle('is-active', active);
+    panel.hidden = !active;
+  });
 }
 
 // Init
