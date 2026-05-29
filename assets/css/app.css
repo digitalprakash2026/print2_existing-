@@ -4631,16 +4631,25 @@ body:has(#siteHeader) .banner-slider {
   .all-cat-hero-copy h1 { margin-top:22px; }
 }
 
-/* Category detail product listing: reuse All Categories card rhythm without sidebar */
+/* Category detail product listing: match the All Categories shop layout */
+.subcat-page .all-cat-hero-copy h1,
 .cat-detail-page .all-cat-hero-copy h1 {
   max-width:760px;
 }
+.subcat-hero-visual,
 .cat-detail-hero-visual {
   background:linear-gradient(135deg, rgba(109,40,217,.08), rgba(234,88,12,.08));
 }
+.subcat-hero-visual img,
 .cat-detail-hero-visual img {
   object-fit:contain;
   padding:24px clamp(24px, 4vw, 58px);
+}
+.subcat-page .all-cat-shop {
+  align-items:start;
+}
+.subcat-page .all-cat-results {
+  min-width:0;
 }
 .cat-detail-content {
   padding-top:30px;

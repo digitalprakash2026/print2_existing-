@@ -17,9 +17,12 @@ try {
 $bizWa = $settingsMap['biz_whatsapp'] ?? '919876543210';
 $productCount = count($products ?? []);
 $categoryName = (string)($category['name'] ?? 'Category');
+$categorySlug = (string)($category['slug'] ?? '');
 $categoryImage = trim((string)($category['image_path'] ?? ''));
 $categoryImageAlt = trim((string)($category['image_alt'] ?? '')) ?: ($categoryName . ' printing');
 $categoryDescription = trim((string)($category['description'] ?? ''));
+$activeCategories = array_values(array_filter($categories ?? [], static fn($cat) => (int)($cat['is_active'] ?? 1) === 1));
+$categoryThemeClasses = ['purple', 'orange', 'orange', 'orange', 'purple', 'orange', 'purple', 'green'];
 
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
@@ -33,6 +36,13 @@ include INCLUDE_PATH . '/partials/header.php';
       </nav>
       <h1 id="categoryTitle"><?= htmlspecialchars($categoryName) ?> Products</h1>
       <p><?= $categoryDescription !== '' ? htmlspecialchars($categoryDescription) : 'Premium quality printing products for every business need.' ?></p>
+    </div>
+    <div class="all-cat-hero-visual subcat-hero-visual" aria-hidden="true">
+      <?php if ($categoryImage !== ''): ?>
+        <img src="<?= htmlspecialchars($categoryImage) ?>" alt="<?= htmlspecialchars($categoryImageAlt) ?>" loading="eager">
+      <?php else: ?>
+        <img src="/assets/img/categories/all-categories-hero.svg" alt="" loading="eager">
+      <?php endif; ?>
     </div>
   </section>
 
@@ -48,42 +58,100 @@ include INCLUDE_PATH . '/partials/header.php';
         </div>
       </div>
     <?php else: ?>
-      <section class="all-cat-results" aria-label="Browse <?= htmlspecialchars($categoryName) ?> products">
-        <div class="all-cat-toolbar">
-          <p>Showing 1–<?= (int)$productCount ?> of <?= (int)$productCount ?> products</p>
-          <label>Sort by:
-            <select aria-label="Sort <?= htmlspecialchars($categoryName) ?> products">
-              <option>Popularity</option>
-              <option>Newest</option>
-              <option>Price Low to High</option>
-            </select>
-          </label>
-        </div>
+      <section class="all-cat-shop" aria-label="Browse <?= htmlspecialchars($categoryName) ?> products">
+        <details class="all-cat-filter-panel" open>
+          <summary><span>Categories &amp; Filters</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+          <aside class="all-cat-sidebar" aria-label="Category filters">
+            <div class="all-cat-side-box all-cat-side-categories">
+              <h2>Categories</h2>
+              <nav class="all-cat-side-list" aria-label="Category quick links">
+                <a href="/categories" class="<?= $categorySlug === '' ? 'is-active' : '' ?>">All Categories</a>
+                <?php foreach ($activeCategories as $cat):
+                  $sideSlug = (string)($cat['slug'] ?? '');
+                  $sideName = (string)($cat['name'] ?? 'Category');
+                ?>
+                  <a href="/category/<?= htmlspecialchars($sideSlug) ?>" class="<?= $sideSlug === $categorySlug ? 'is-active' : '' ?>">
+                    <?= htmlspecialchars($sideName) ?>
+                  </a>
+                <?php endforeach; ?>
+              </nav>
+            </div>
 
-        <div class="all-cat-grid" id="catProductsGrid">
-          <?php foreach ($products as $p):
-            $img = trim((string)($p['primary_image'] ?? ''));
-            $name = (string)($p['name'] ?? 'Product');
-            $slug = (string)($p['slug'] ?? '');
-            $desc = trim((string)($p['description'] ?? '')) ?: ('Premium ' . strtolower($name) . ' printing with custom sizes and finishing options.');
-            $minP = (float)($p['min_price'] ?? 0);
-          ?>
-            <a class="all-cat-card all-cat-card-orange" href="/product/<?= htmlspecialchars($slug) ?>">
-              <div class="all-cat-img">
-                <?php if ($img !== ''): ?>
-                  <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($name) ?>" loading="lazy" onerror="this.src='https://placehold.co/400x300/EEF3FD/1A56E8?text=<?= urlencode($name) ?>'">
-                <?php else: ?>
-                  <div class="shop-cat-fallback" aria-hidden="true">📦</div>
-                <?php endif; ?>
+            <div class="all-cat-side-box all-cat-filter-box">
+              <h2>Filter By</h2>
+              <div class="all-cat-filter-group">
+                <h3>Product Type</h3>
+                <label><input type="checkbox"> Standard</label>
+                <label><input type="checkbox"> Premium</label>
+                <label><input type="checkbox"> Luxury</label>
               </div>
-              <div class="all-cat-body">
-                <span class="all-cat-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span>
-                <h2><?= htmlspecialchars($name) ?></h2>
-                <p><?= htmlspecialchars($desc) ?></p>
-                <strong><?= $minP > 0 ? ('Starting from ₹' . number_format($minP)) : 'Price on request' ?></strong>
+              <div class="all-cat-filter-group">
+                <h3>Paper Type</h3>
+                <label><input type="checkbox"> Art Paper</label>
+                <label><input type="checkbox"> Matte</label>
+                <label><input type="checkbox"> Glossy</label>
+                <label><input type="checkbox"> Textured</label>
               </div>
-            </a>
-          <?php endforeach; ?>
+              <div class="all-cat-filter-group">
+                <h3>Finishing</h3>
+                <label><input type="checkbox"> Matt Lamination</label>
+                <label><input type="checkbox"> Gloss Lamination</label>
+                <label><input type="checkbox"> UV Coating</label>
+                <label><input type="checkbox"> Spot UV</label>
+                <label><input type="checkbox"> Foil Stamping</label>
+              </div>
+              <div class="all-cat-filter-group all-cat-price-filter">
+                <h3>Price Range</h3>
+                <div class="all-cat-price-line" aria-hidden="true"><span></span></div>
+                <div class="all-cat-price-values"><span>₹0</span><span>₹5000+</span></div>
+              </div>
+              <button type="button" class="all-cat-apply-btn">Apply Filters <i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
+            </div>
+          </aside>
+        </details>
+
+        <div class="all-cat-results">
+          <div class="all-cat-toolbar">
+            <p>Showing 1–<?= (int)$productCount ?> of <?= (int)$productCount ?> products</p>
+            <label>Sort by:
+              <select aria-label="Sort <?= htmlspecialchars($categoryName) ?> products">
+                <option>Popularity</option>
+                <option>Newest</option>
+                <option>Price Low to High</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="all-cat-grid" id="catProductsGrid">
+            <?php foreach ($products as $idx => $p):
+              $img = trim((string)($p['primary_image'] ?? ''));
+              $name = (string)($p['name'] ?? 'Product');
+              $slug = (string)($p['slug'] ?? '');
+              $desc = trim((string)($p['description'] ?? '')) ?: ('Premium ' . strtolower($name) . ' printing with custom sizes and finishing options.');
+              $minP = (float)($p['min_price'] ?? 0);
+              $theme = $categoryThemeClasses[$idx % count($categoryThemeClasses)];
+            ?>
+              <a class="all-cat-card all-cat-card-<?= htmlspecialchars($theme) ?>" href="/product/<?= htmlspecialchars($slug) ?>">
+                <div class="all-cat-img">
+                  <?php if ($img !== ''): ?>
+                    <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($name) ?>" loading="lazy" onerror="this.src='https://placehold.co/400x300/EEF3FD/1A56E8?text=<?= urlencode($name) ?>'">
+                  <?php else: ?>
+                    <div class="shop-cat-fallback" aria-hidden="true">📦</div>
+                  <?php endif; ?>
+                </div>
+                <div class="all-cat-body">
+                  <span class="all-cat-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span>
+                  <h2><?= htmlspecialchars($name) ?></h2>
+                  <p><?= htmlspecialchars($desc) ?></p>
+                  <strong><?= $minP > 0 ? ('Starting from ₹' . number_format($minP)) : 'Price on request' ?></strong>
+                </div>
+              </a>
+            <?php endforeach; ?>
+          </div>
+
+          <nav class="all-cat-pagination" aria-label="<?= htmlspecialchars($categoryName) ?> pagination">
+            <span class="is-muted">←</span><strong>1</strong><span>2</span><span>3</span><span>4</span><span>→</span>
+          </nav>
         </div>
       </section>
 
