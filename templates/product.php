@@ -409,7 +409,7 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
                onerror="this.src='https://placehold.co/400x260/EEF3FD/1A56E8?text=<?= urlencode($rp['name']) ?>'">
         </a>
         <div class="ym-body">
-          <div class="ym-cat"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><?= htmlspecialchars($rp['category_name'] ?? '') ?></div>
+          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><?= htmlspecialchars($rp['name'] ?? ($rp['category_name'] ?? 'Product')) ?></div>
           <div class="ym-from">Starting from</div>
           <div class="ym-foot">
             <div class="ym-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>

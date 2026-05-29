@@ -6270,3 +6270,164 @@ body:has(#siteHeader) .banner-slider {
   .pd-tab-panel p { font-size:12px; }
   .pd-review-next { display:none; }
 }
+
+/* You May Also Like compact product cards */
+.ym-section {
+  margin-top:34px;
+  padding-bottom:8px;
+}
+.ym-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:14px;
+}
+.ym-title {
+  margin:0;
+  color:#0f172a;
+  font-family:var(--fd);
+  font-size:clamp(24px, 2vw, 32px);
+  font-weight:900;
+  letter-spacing:-.025em;
+  line-height:1.12;
+}
+.ym-title span { color:#f97316; }
+.ym-view-all {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:32px;
+  padding:8px 18px;
+  border:0;
+  border-radius:999px;
+  background:#f8fafc;
+  color:#111827;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:900;
+  box-shadow:inset 0 0 0 1px #eef2f7;
+  white-space:nowrap;
+}
+.ym-grid {
+  display:grid;
+  grid-template-columns:repeat(5, minmax(0, 1fr));
+  gap:18px;
+}
+.ym-card {
+  overflow:hidden;
+  border:1px solid #edf0f4;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 8px 20px rgba(15,23,42,.035);
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.ym-card:hover {
+  border-color:#fed7aa;
+  box-shadow:0 12px 24px rgba(15,23,42,.07);
+  transform:translateY(-2px);
+}
+.ym-img {
+  display:block;
+  aspect-ratio:1.72 / 1;
+  background:#f8fafc;
+}
+.ym-img img {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.ym-body {
+  padding:9px 12px 12px;
+}
+.ym-cat {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  margin-bottom:10px;
+  color:#111827;
+  font-size:13px;
+  font-weight:900;
+  line-height:1.25;
+}
+.ym-cat i {
+  display:grid;
+  place-items:center;
+  width:18px;
+  height:18px;
+  flex:0 0 18px;
+  border-radius:999px;
+  background:#4f1db7;
+  color:#fff;
+  font-size:9px;
+}
+.ym-cat {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ym-from {
+  margin-bottom:3px;
+  color:#64748b;
+  font-size:12px;
+  font-weight:600;
+  line-height:1.2;
+}
+.ym-foot {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:10px;
+}
+.ym-price {
+  color:#f97316;
+  font-size:clamp(19px, 1.65vw, 24px);
+  font-weight:900;
+  line-height:1;
+  letter-spacing:-.02em;
+}
+.ym-order {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:84px;
+  height:30px;
+  padding:0 12px;
+  border-radius:6px;
+  background:#ff7900;
+  color:#fff;
+  text-decoration:none;
+  font-size:10px;
+  font-weight:900;
+  line-height:1;
+  white-space:nowrap;
+  box-shadow:0 6px 12px rgba(255,121,0,.18);
+}
+@media (max-width:1180px) {
+  .ym-grid { grid-template-columns:repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width:900px) {
+  .ym-section { margin-top:28px; }
+  .ym-grid { grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px; }
+  .ym-foot { align-items:flex-start; flex-direction:column; gap:7px; }
+  .ym-order { width:100%; min-width:0; }
+}
+@media (max-width:640px) {
+  .ym-head { align-items:center; margin-bottom:12px; }
+  .ym-title { font-size:22px; }
+  .ym-view-all { min-height:30px; padding:7px 12px; font-size:10px; }
+  .ym-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+  .ym-body { padding:8px 9px 10px; }
+  .ym-cat { gap:6px; margin-bottom:8px; font-size:11.5px; }
+  .ym-cat i { width:16px; height:16px; flex-basis:16px; font-size:8px; }
+  .ym-from { font-size:10.5px; }
+  .ym-price { font-size:18px; }
+  .ym-order { height:28px; font-size:9px; }
+}
+@media (max-width:360px) {
+  .ym-head { align-items:flex-start; flex-direction:column; gap:8px; }
+  .ym-grid { grid-template-columns:minmax(0, 1fr); }
+  .ym-foot { flex-direction:row; align-items:center; }
+  .ym-order { width:auto; min-width:88px; }
+}
