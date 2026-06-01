@@ -241,12 +241,12 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       </div>
 
       <!-- ── ACTION BUTTONS ── -->
-      <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="pd-action-stack" style="display:flex;flex-direction:column;gap:10px">
         <button class="btn btn-blue btn-full" onclick="addToCart()" id="addCartBtn"
                 style="padding:15px;font-size:15px;border-radius:12px">
           ADD TO CART
         </button>
-        <div style="display:flex;gap:9px">
+        <div class="pd-action-row" style="display:flex;gap:9px">
           <button class="btn btn-green btn-full" onclick="buyNow()" style="padding:13px">
             GET FREE DESIGN
           </button>
@@ -308,7 +308,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
     <div class="sp-sub">Total Price</div>
     <div class="sp-price" id="spTotal">₹ —</div>
   </div>
-  <div style="display:flex;gap:8px">
+  <div class="sticky-price-actions" style="display:flex;gap:8px">
     <button class="btn btn-blue" onclick="addToCart()" style="padding:11px 18px">Add to Cart</button>
     <button class="btn btn-green" onclick="buyNow()" style="padding:11px 16px">Buy Now</button>
   </div>

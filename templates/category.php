@@ -14,25 +14,33 @@ try {
     $settingsMap = array_column($settings, 'value', 'key');
 } catch (\Throwable) {}
 
-$bizWa = $settingsMap['biz_whatsapp'] ?? '919876543210';
+$bizName  = htmlspecialchars($settingsMap['biz_name']    ?? 'RCS Graphic');
+$bizPhone = htmlspecialchars($settingsMap['biz_phone']   ?? '+91 98765 43210');
+$bizWa    = htmlspecialchars($settingsMap['biz_whatsapp']?? '919876543210');
+$bizEmail = htmlspecialchars($settingsMap['biz_email']   ?? 'hello@rcsgraphic.in');
+$bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
 $productCount = count($products ?? []);
 $categoryName = (string)($category['name'] ?? 'Category');
-$categoryImage = trim((string)($category['image_path'] ?? ''));
-$categoryImageAlt = trim((string)($category['image_alt'] ?? '')) ?: ($categoryName . ' printing');
+$categorySlug = (string)($category['slug'] ?? '');
 $categoryDescription = trim((string)($category['description'] ?? ''));
+$activeCategories = array_values(array_filter($categories ?? [], static fn($cat) => (int)($cat['is_active'] ?? 1) === 1));
+$categoryThemeClasses = ['purple', 'orange', 'orange', 'orange', 'purple', 'orange', 'purple', 'green'];
 
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 ?>
 
 <main class="all-cat-page subcat-page">
-  <section class="all-cat-hero-banner subcat-hero-bg" aria-labelledby="categoryTitle">
+  <section class="all-cat-hero-banner" aria-labelledby="categoryTitle">
     <div class="all-cat-hero-copy">
       <nav class="all-cat-crumb" aria-label="Breadcrumb">
         <a href="/">Home</a><span>›</span><a href="/categories">All Categories</a><span>›</span><span><?= htmlspecialchars($categoryName) ?></span>
       </nav>
       <h1 id="categoryTitle"><?= htmlspecialchars($categoryName) ?> Products</h1>
       <p><?= $categoryDescription !== '' ? htmlspecialchars($categoryDescription) : 'Premium quality printing products for every business need.' ?></p>
+    </div>
+    <div class="all-cat-hero-visual" aria-hidden="true">
+      <img src="/assets/img/categories/all-categories-hero.svg" alt="" loading="eager">
     </div>
   </section>
 
@@ -48,42 +56,121 @@ include INCLUDE_PATH . '/partials/header.php';
         </div>
       </div>
     <?php else: ?>
-      <section class="all-cat-results" aria-label="Browse <?= htmlspecialchars($categoryName) ?> products">
-        <div class="all-cat-toolbar">
-          <p>Showing 1–<?= (int)$productCount ?> of <?= (int)$productCount ?> products</p>
-          <label>Sort by:
-            <select aria-label="Sort <?= htmlspecialchars($categoryName) ?> products">
-              <option>Popularity</option>
-              <option>Newest</option>
-              <option>Price Low to High</option>
-            </select>
-          </label>
-        </div>
+      <section class="all-cat-shop" aria-label="Browse <?= htmlspecialchars($categoryName) ?> products">
+        <details class="all-cat-filter-panel" open>
+          <summary><span>Categories &amp; Filters</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+          <aside class="all-cat-sidebar" aria-label="Category filters">
+            <div class="all-cat-side-box all-cat-side-categories">
+              <h2>Categories</h2>
+              <nav class="all-cat-side-list" aria-label="Category quick links">
+                <a href="/categories" class="<?= $categorySlug === '' ? 'is-active' : '' ?>">All Categories</a>
+                <?php foreach ($activeCategories as $cat):
+                  $sideSlug = (string)($cat['slug'] ?? '');
+                  $sideName = (string)($cat['name'] ?? 'Category');
+                ?>
+                  <a href="/category/<?= htmlspecialchars($sideSlug) ?>" class="<?= $sideSlug === $categorySlug ? 'is-active' : '' ?>">
+                    <?= htmlspecialchars($sideName) ?>
+                  </a>
+                <?php endforeach; ?>
+              </nav>
+            </div>
 
-        <div class="all-cat-grid" id="catProductsGrid">
-          <?php foreach ($products as $p):
-            $img = trim((string)($p['primary_image'] ?? ''));
-            $name = (string)($p['name'] ?? 'Product');
-            $slug = (string)($p['slug'] ?? '');
-            $desc = trim((string)($p['description'] ?? '')) ?: ('Premium ' . strtolower($name) . ' printing with custom sizes and finishing options.');
-            $minP = (float)($p['min_price'] ?? 0);
-          ?>
-            <a class="all-cat-card all-cat-card-orange" href="/product/<?= htmlspecialchars($slug) ?>">
-              <div class="all-cat-img">
-                <?php if ($img !== ''): ?>
-                  <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($name) ?>" loading="lazy" onerror="this.src='https://placehold.co/400x300/EEF3FD/1A56E8?text=<?= urlencode($name) ?>'">
-                <?php else: ?>
-                  <div class="shop-cat-fallback" aria-hidden="true">📦</div>
-                <?php endif; ?>
+            <div class="all-cat-side-box all-cat-filter-box">
+              <h2>Filter By</h2>
+              <div class="all-cat-filter-group">
+                <h3>Product Type</h3>
+                <label><input type="checkbox"> Standard</label>
+                <label><input type="checkbox"> Premium</label>
+                <label><input type="checkbox"> Luxury</label>
+                <select class="all-cat-mobile-filter-select" aria-label="Filter by product type">
+                  <option>All product types</option>
+                  <option>Standard</option>
+                  <option>Premium</option>
+                  <option>Luxury</option>
+                </select>
               </div>
-              <div class="all-cat-body">
-                <span class="all-cat-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span>
-                <h2><?= htmlspecialchars($name) ?></h2>
-                <p><?= htmlspecialchars($desc) ?></p>
-                <strong><?= $minP > 0 ? ('Starting from ₹' . number_format($minP)) : 'Price on request' ?></strong>
+              <div class="all-cat-filter-group">
+                <h3>Paper Type</h3>
+                <label><input type="checkbox"> Art Paper</label>
+                <label><input type="checkbox"> Matte</label>
+                <label><input type="checkbox"> Glossy</label>
+                <label><input type="checkbox"> Textured</label>
+                <select class="all-cat-mobile-filter-select" aria-label="Filter by paper type">
+                  <option>All paper types</option>
+                  <option>Art Paper</option>
+                  <option>Matte</option>
+                  <option>Glossy</option>
+                  <option>Textured</option>
+                </select>
               </div>
-            </a>
-          <?php endforeach; ?>
+              <div class="all-cat-filter-group">
+                <h3>Finishing</h3>
+                <label><input type="checkbox"> Matt Lamination</label>
+                <label><input type="checkbox"> Gloss Lamination</label>
+                <label><input type="checkbox"> UV Coating</label>
+                <label><input type="checkbox"> Spot UV</label>
+                <label><input type="checkbox"> Foil Stamping</label>
+                <select class="all-cat-mobile-filter-select" aria-label="Filter by finishing">
+                  <option>All finishing</option>
+                  <option>Matt Lamination</option>
+                  <option>Gloss Lamination</option>
+                  <option>UV Coating</option>
+                  <option>Spot UV</option>
+                  <option>Foil Stamping</option>
+                </select>
+              </div>
+              <div class="all-cat-filter-group all-cat-price-filter">
+                <h3>Price Range</h3>
+                <div class="all-cat-price-line" aria-hidden="true"><span></span></div>
+                <div class="all-cat-price-values"><span>₹0</span><span>₹5000+</span></div>
+              </div>
+              <button type="button" class="all-cat-apply-btn">Apply Filters <i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
+            </div>
+          </aside>
+        </details>
+
+        <div class="all-cat-results">
+          <div class="all-cat-toolbar">
+            <p>Showing 1–<?= (int)$productCount ?> of <?= (int)$productCount ?> products</p>
+            <label>Sort by:
+              <select aria-label="Sort <?= htmlspecialchars($categoryName) ?> products">
+                <option>Popularity</option>
+                <option>Newest</option>
+                <option>Price Low to High</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="all-cat-grid" id="catProductsGrid">
+            <?php foreach ($products as $idx => $p):
+              $img = trim((string)($p['primary_image'] ?? ''));
+              $name = (string)($p['name'] ?? 'Product');
+              $slug = (string)($p['slug'] ?? '');
+              $desc = trim((string)($p['description'] ?? '')) ?: ('Premium ' . strtolower($name) . ' printing with custom sizes and finishing options.');
+              $minP = (float)($p['min_price'] ?? 0);
+              $theme = $categoryThemeClasses[$idx % count($categoryThemeClasses)];
+            ?>
+              <a class="all-cat-card all-cat-card-<?= htmlspecialchars($theme) ?>" href="/product/<?= htmlspecialchars($slug) ?>">
+                <div class="all-cat-img">
+                  <?php if ($img !== ''): ?>
+                    <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($name) ?>" loading="lazy" onerror="this.src='https://placehold.co/400x300/EEF3FD/1A56E8?text=<?= urlencode($name) ?>'">
+                  <?php else: ?>
+                    <div class="shop-cat-fallback" aria-hidden="true">📦</div>
+                  <?php endif; ?>
+                </div>
+                <div class="all-cat-body">
+                  <span class="all-cat-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span>
+                  <h2><?= htmlspecialchars($name) ?></h2>
+                  <p><?= htmlspecialchars($desc) ?></p>
+                  <strong><?= $minP > 0 ? ('Starting from ₹' . number_format($minP)) : 'Price on request' ?></strong>
+                </div>
+              </a>
+            <?php endforeach; ?>
+          </div>
+
+          <nav class="all-cat-pagination" aria-label="<?= htmlspecialchars($categoryName) ?> pagination">
+            <span class="is-muted">←</span><strong>1</strong><span>2</span><span>3</span><span>4</span><span>→</span>
+          </nav>
         </div>
       </section>
 
@@ -99,5 +186,144 @@ include INCLUDE_PATH . '/partials/header.php';
     <?php endif; ?>
   </div>
 </main>
+
+
+<!-- QUICK HELP STRIP -->
+<section class="quick-help-section" id="quick-help-sec" aria-label="Quick help and bulk order actions" data-reveal>
+  <div class="quick-help-container">
+    <div class="quick-help-bar">
+      <a class="quick-help-item quick-help-call" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
+        <span class="quick-help-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
+        <span class="quick-help-copy">
+          <span>Need Help? Call Us</span>
+          <strong><?= $bizPhone ?></strong>
+        </span>
+      </a>
+
+      <button class="quick-help-item quick-help-whatsapp" type="button" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">
+        <span class="quick-help-icon"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span>
+        <span class="quick-help-copy">
+          <strong>Chat with us on WhatsApp</strong>
+          <span>We are here to help!</span>
+        </span>
+      </button>
+
+      <a class="quick-help-item quick-help-download" href="/products" aria-label="Download our brochure for all products">
+        <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
+        <span class="quick-help-copy">
+          <strong>Download Our Brochure</strong>
+          <span>For All Products</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer" aria-label="Site footer">
+  <div class="footer-container">
+    <div class="footer-main">
+      <div class="footer-brand-col">
+        <a href="/" class="footer-logo" aria-label="RCS Print home">
+          <span class="footer-logo-main">RCS</span>
+          <span class="footer-logo-sub">PRINT</span>
+        </a>
+        <p class="footer-desc">Your one-stop solution for all your printing needs. Quality prints that represent your brand perfectly.</p>
+        <div class="footer-social" aria-label="Social links">
+          <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+          <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+          <a href="https://wa.me/<?= $bizWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
+          <a href="/#quick-help-sec" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+        </div>
+      </div>
+
+      <nav class="footer-col" aria-label="Quick links">
+        <h3>Quick Links</h3>
+        <a href="/">Home</a>
+        <a href="/#why-sec">About Us</a>
+        <a href="/products">Products</a>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
+        <a href="/#quick-help-sec">Contact Us</a>
+      </nav>
+
+      <nav class="footer-col" aria-label="Products">
+        <h3>Products</h3>
+        <a href="/products">Business Cards</a>
+        <a href="/products">Flyers</a>
+        <a href="/products">Brochures</a>
+        <a href="/products">Posters</a>
+        <a href="/products">Diaries</a>
+        <a href="/products">Calendars</a>
+        <a href="/products">Stationery &amp; More</a>
+      </nav>
+
+      <nav class="footer-col" aria-label="Customer service">
+        <h3>Customer Service</h3>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
+        <a href="/my-orders">Track Order</a>
+        <a href="/products">Shipping Policy</a>
+        <a href="/products">Refund &amp; Return</a>
+        <a href="/terms-and-conditions">Terms &amp; Conditions</a>
+        <a href="/terms-and-conditions">Privacy Policy</a>
+      </nav>
+
+      <div class="footer-col footer-contact-col">
+        <h3>Contact Us</h3>
+        <div class="footer-contact-item">
+          <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+          <span><?= $bizAddr ?></span>
+        </div>
+        <a class="footer-contact-item" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span><?= $bizPhone ?></span>
+        </a>
+        <a class="footer-contact-item" href="mailto:<?= $bizEmail ?>">
+          <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+          <span><?= $bizEmail ?></span>
+        </a>
+        <div class="footer-contact-item">
+          <i class="fa-regular fa-clock" aria-hidden="true"></i>
+          <span>Mon - Sat: 10:00 AM - 7:00 PM</span>
+        </div>
+      </div>
+
+      <div class="footer-col footer-newsletter-col">
+        <h3>Newsletter</h3>
+        <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
+        <form class="footer-newsletter" action="/products" method="get">
+          <label class="sr-only" for="footerEmail">Enter your email</label>
+          <input id="footerEmail" name="email" type="email" placeholder="Enter your email" autocomplete="email">
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">© <?= date('Y') ?> RCS PRINT. All Rights Reserved.</div>
+      <div class="footer-developed">Developed By Prakash Karena</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const panel = document.querySelector('.all-cat-filter-panel');
+  if (!panel) return;
+  const mobileQuery = window.matchMedia('(max-width: 820px)');
+  const syncFilterPanel = (event) => {
+    if (mobileQuery.matches) {
+      if (!event) panel.open = false;
+    } else {
+      panel.open = true;
+    }
+  };
+  syncFilterPanel();
+  if (typeof mobileQuery.addEventListener === 'function') {
+    mobileQuery.addEventListener('change', syncFilterPanel);
+  } else if (typeof mobileQuery.addListener === 'function') {
+    mobileQuery.addListener(syncFilterPanel);
+  }
+})();
+</script>
 
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
