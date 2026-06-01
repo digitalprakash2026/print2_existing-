@@ -29,10 +29,21 @@ $itemCount = count($cartItems ?? []);
           $itemId = (string)($item['id'] ?? '');
           $itemQty = (int)($item['quantity'] ?? 0);
           $lineTotal = (float)($item['total_price'] ?? 0);
-          $linePrice = (float)($item['unit_price'] ?? $lineTotal);
-          $quality = trim((string)($item['quality_name'] ?? ''));
-          $designChoice = (string)($item['design_choice'] ?? 'upload');
-          $qtyOptions = range(1000, 10000, 1000);
+          $breakdownRaw = $item['price_breakdown'] ?? '{}';
+          $priceBreakdown = is_array($breakdownRaw) ? $breakdownRaw : (json_decode((string)$breakdownRaw, true) ?: []);
+          $basePrice = (float)($priceBreakdown['base_price'] ?? $lineTotal);
+          $designFee = (float)($priceBreakdown['design_fee'] ?? 0);
+          $linePrice = $basePrice;
+          $quality = trim((string)($item['quality_name'] ?? ($priceBreakdown['quality_name'] ?? '')));
+          $designChoice = (string)($item['design_choice'] ?? ($priceBreakdown['design_choice'] ?? 'upload'));
+          try {
+              $pricingData = \Cart\Pricing::productPricingData((int)($item['product_id'] ?? 0));
+              $qtyOptions = array_values(array_unique(array_map('intval', array_column($pricingData['tiers'] ?? [], 'quantity'))));
+              sort($qtyOptions);
+          } catch (\Throwable) {
+              $qtyOptions = [];
+          }
+          if (!$qtyOptions) $qtyOptions = range(1000, 10000, 1000);
           if ($itemQty > 0 && !in_array($itemQty, $qtyOptions, true)) {
               $qtyOptions[] = $itemQty;
               sort($qtyOptions);
@@ -47,13 +58,16 @@ $itemCount = count($cartItems ?? []);
               <h3><?= htmlspecialchars($item['product_name'] ?? '') ?></h3>
               <p><?= number_format($itemQty) ?> pcs<?= $quality !== '' ? ', ' . htmlspecialchars($quality) : '' ?></p>
               <?php if ($designChoice === 'rcs'): ?>
-                <small>Design by RCS Graphic</small>
+                <small>Design by RCS Graphic<?= $designFee > 0 ? ' (+₹' . number_format($designFee) . ')' : '' ?></small>
               <?php else: ?>
-                <small>Customer artwork upload</small>
+                <small>Customer artwork upload (No design fee)</small>
               <?php endif; ?>
             </div>
           </div>
-          <div class="cartp-price" data-label="Price">₹<?= number_format($linePrice) ?></div>
+          <div class="cartp-price" data-label="Price">
+            <strong>₹<?= number_format($linePrice) ?></strong>
+            <small>Base price</small>
+          </div>
           <div class="cartp-qty" data-label="Quantity">
             <select class="cartp-qty-select" onchange="updateCartQty('<?= htmlspecialchars($itemId, ENT_QUOTES) ?>', this.value, this)" aria-label="Select quantity for <?= htmlspecialchars($item['product_name'] ?? '', ENT_QUOTES) ?>">
               <?php foreach ($qtyOptions as $qty): ?>
@@ -61,7 +75,10 @@ $itemCount = count($cartItems ?? []);
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="cartp-total" data-label="Total">₹<?= number_format($lineTotal) ?></div>
+          <div class="cartp-total" data-label="Total">
+            <strong>₹<?= number_format($lineTotal) ?></strong>
+            <?php if ($designFee > 0): ?><small>Includes ₹<?= number_format($designFee) ?> design fee</small><?php endif; ?>
+          </div>
           <button class="cartp-del" onclick="removeCartItem('<?= htmlspecialchars($itemId, ENT_QUOTES) ?>')" aria-label="Remove <?= htmlspecialchars($item['product_name'] ?? 'item', ENT_QUOTES) ?>">
             <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
           </button>

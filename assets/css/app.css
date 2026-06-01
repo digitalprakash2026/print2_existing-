@@ -6994,3 +6994,49 @@ body:has(#siteHeader) .banner-slider {
     width:132px;
   }
 }
+
+/* Cart pricing breakdown alignment */
+.cartp-price strong,
+.cartp-total strong {
+  display:block;
+  color:#4f1db7;
+  font-size:clamp(18px, 1.5vw, 24px);
+  font-weight:900;
+  line-height:1;
+  white-space:nowrap;
+}
+.cartp-price small,
+.cartp-total small {
+  display:block;
+  margin-top:5px;
+  color:#64748b;
+  font-size:11px;
+  font-weight:700;
+  line-height:1.25;
+  white-space:normal;
+}
+@media (max-width:820px) {
+  .cartp-price,
+  .cartp-total {
+    align-items:flex-start;
+  }
+  .cartp-price strong,
+  .cartp-total strong {
+    font-size:18px;
+  }
+  .cartp-price small,
+  .cartp-total small {
+    font-size:10px;
+  }
+}
+@media (max-width:820px) {
+  .cartp-price,
+  .cartp-total {
+    flex-wrap:wrap;
+  }
+  .cartp-price small,
+  .cartp-total small {
+    flex-basis:100%;
+    text-align:right;
+  }
+}
