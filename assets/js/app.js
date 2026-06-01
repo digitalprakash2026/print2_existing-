@@ -199,11 +199,11 @@ async function loadCart() {
 }
 
 function updateCartCount() {
-  const cnt = document.getElementById('cartCount');
-  if (!cnt) return;
   const n = _cartData.items?.length || 0;
-  cnt.textContent = n;
-  cnt.classList.toggle('hidden', n === 0);
+  document.querySelectorAll('#cartCount, .rcs-cart-badge, .md-cart-badge').forEach(cnt => {
+    cnt.textContent = n;
+    cnt.classList.toggle('hidden', n === 0);
+  });
 }
 
 function openCart()  {

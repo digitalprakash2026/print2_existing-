@@ -155,10 +155,10 @@ foreach ($navProducts as $p) {
         <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="action-btn rcs-action-btn" aria-label="My Account">
           <i class="fa-regular fa-user"></i>
         </a>
-        <button class="action-btn cart-btn rcs-action-btn rcs-cart-btn" onclick="toggleCart()" aria-label="Cart" type="button">
+        <a href="/cart" class="action-btn cart-btn rcs-action-btn rcs-cart-btn" aria-label="Cart">
           <i class="fa-solid fa-cart-shopping"></i>
-          <span class="cart-badge rcs-cart-badge" id="cartCount">2</span>
-        </button>
+          <span class="cart-badge rcs-cart-badge" id="cartCount">0</span>
+        </a>
         <button class="menu-toggle rcs-menu-toggle" id="hamBtn" onclick="toggleDrawer()" aria-label="Toggle menu" aria-expanded="false" type="button">
           <i class="fa-solid fa-bars"></i>
         </button>
@@ -217,9 +217,9 @@ foreach ($navProducts as $p) {
     <a href="/#quick-help-sec" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
     <a href="/#blogs-sec"    class="md-item" onclick="closeDrawer()">📝 Blog</a>
     <a href="/products"      class="md-item" onclick="closeDrawer()">🔎 Search Products</a>
-    <button type="button" class="md-item md-action" onclick="toggleCart();closeDrawer()">
-      🛒 Cart <span class="md-cart-badge">2</span>
-    </button>
+    <a href="/cart" class="md-item md-action" onclick="closeDrawer()">
+      🛒 Cart <span class="md-cart-badge">0</span>
+    </a>
 
     <?php if ($user ?? null): ?>
       <a href="/my-orders" class="md-item">📋 My Orders</a>

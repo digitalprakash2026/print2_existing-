@@ -108,6 +108,63 @@ class Cart
         return ['ok' => true];
     }
 
+    public static function updateQuantity(string $itemId, int $quantity): array
+    {
+        if ($quantity <= 0) {
+            return ['ok' => false, 'msg' => 'Invalid quantity'];
+        }
+
+        $userId = \Auth\Auth::user()['id'] ?? null;
+
+        if ($userId) {
+            $item = \Database::row(
+                "SELECT ci.* FROM cart_items ci
+                 JOIN carts c ON ci.cart_id = c.id
+                 WHERE ci.id = ? AND c.user_id = ?",
+                [$itemId, $userId]
+            );
+            if (!$item) return ['ok' => false, 'msg' => 'Item not found'];
+
+            $priceInfo = Pricing::calculate(
+                (int)$item['product_id'],
+                (int)($item['quality_id'] ?? 1),
+                $quantity,
+                json_decode((string)($item['attribute_selections'] ?? '[]'), true) ?: [],
+                (string)($item['design_choice'] ?? 'upload')
+            );
+            if (!$priceInfo['ok']) return $priceInfo;
+
+            \Database::query(
+                "UPDATE cart_items SET quantity = ?, price_breakdown = ?, total_price = ? WHERE id = ?",
+                [$quantity, json_encode($priceInfo['breakdown']), $priceInfo['total'], $itemId]
+            );
+
+            return ['ok' => true, 'price' => $priceInfo];
+        }
+
+        $items = $_SESSION['cart'] ?? [];
+        foreach ($items as $idx => $item) {
+            if (($item['id'] ?? '') !== $itemId) continue;
+
+            $priceInfo = Pricing::calculate(
+                (int)$item['product_id'],
+                (int)($item['quality_id'] ?? 1),
+                $quantity,
+                json_decode((string)($item['attribute_selections'] ?? '[]'), true) ?: [],
+                (string)($item['design_choice'] ?? 'upload')
+            );
+            if (!$priceInfo['ok']) return $priceInfo;
+
+            $_SESSION['cart'][$idx]['quantity'] = $quantity;
+            $_SESSION['cart'][$idx]['price_breakdown'] = json_encode($priceInfo['breakdown']);
+            $_SESSION['cart'][$idx]['total_price'] = $priceInfo['total'];
+
+            return ['ok' => true, 'price' => $priceInfo];
+        }
+
+        return ['ok' => false, 'msg' => 'Item not found'];
+    }
+
     public static function get(): array
     {
         $userId = \Auth\Auth::user()['id'] ?? null;
