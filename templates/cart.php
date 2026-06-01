@@ -2,8 +2,12 @@
 $pageTitle = 'Your Cart — RCS Graphic';
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
-$bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
+$settingsMap = $settingsMap ?? [];
+$bizPhone = htmlspecialchars($settingsMap['biz_phone'] ?? Database::setting('biz_phone', '+91 8980000023'));
+$bizWaRaw = $settingsMap['biz_whatsapp'] ?? Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', '918980000023'));
+$bizWa = htmlspecialchars(preg_replace('/\D+/', '', (string)$bizWaRaw));
 $itemCount = count($cartItems ?? []);
+$cartRecommendations = $cartRecommendations ?? [];
 ?>
 <div class="cartp-wrap">
   <div class="container cartp-page">
@@ -124,6 +128,70 @@ $itemCount = count($cartItems ?? []);
       </aside>
     </div>
     <?php endif; ?>
+
+    <?php if (!empty($cartRecommendations)): ?>
+    <section class="ym-section cartp-recommendations" aria-labelledby="cartRecommendationsTitle">
+      <div class="ym-head">
+        <h2 class="ym-title" id="cartRecommendationsTitle">You May <span>Also Like</span></h2>
+        <a href="/categories" class="ym-view-all">View All Products</a>
+      </div>
+
+      <div class="ym-grid">
+        <?php foreach ($cartRecommendations as $rp):
+          $rimg = trim((string)($rp['primary_image'] ?? ''));
+          $rname = trim((string)($rp['name'] ?? 'Product'));
+          $rslug = trim((string)($rp['slug'] ?? ''));
+          $rmin = (float)($rp['min_price'] ?? 0);
+        ?>
+        <article class="ym-card">
+          <a class="ym-img" href="/product/<?= htmlspecialchars($rslug) ?>">
+            <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rname) ?>" loading="lazy"
+                 onerror="this.src='https://placehold.co/400x260/EEF3FD/1A56E8?text=<?= urlencode($rname) ?>'">
+          </a>
+          <div class="ym-body">
+            <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><?= htmlspecialchars($rname) ?></div>
+            <div class="ym-from">Starting from</div>
+            <div class="ym-foot">
+              <div class="ym-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>
+              <a href="/product/<?= htmlspecialchars($rslug) ?>" class="ym-order">ORDER NOW</a>
+            </div>
+          </div>
+        </article>
+        <?php endforeach; ?>
+      </div>
+    </section>
+    <?php endif; ?>
+
+    <section class="quick-help-section cartp-help-section" aria-label="Quick help and bulk order actions">
+      <div class="quick-help-container">
+        <div class="quick-help-bar">
+          <a class="quick-help-item quick-help-call" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
+            <span class="quick-help-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
+            <span class="quick-help-copy">
+              <span>Need Help? Call Us</span>
+              <strong><?= $bizPhone ?></strong>
+            </span>
+          </a>
+
+          <button class="quick-help-item quick-help-whatsapp" type="button" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">
+            <span class="quick-help-icon"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span>
+            <span class="quick-help-copy">
+              <strong>Chat with us on WhatsApp</strong>
+              <span>We are here to help!</span>
+            </span>
+          </button>
+
+          <a class="quick-help-item quick-help-download" href="/categories" aria-label="Download our brochure for all products">
+            <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
+            <span class="quick-help-copy">
+              <strong>Download Our Brochure</strong>
+              <span>For All Products</span>
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+
   </div>
 </div>
 <script>

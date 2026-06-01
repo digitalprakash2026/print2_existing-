@@ -273,7 +273,28 @@ if ($uri === '/cart' && $method === 'GET') {
         $cartItems = [];
         $totals = ['subtotal'=>0,'discount'=>0,'gst_pct'=>18,'gst_amt'=>0,'total'=>0];
     }
-    view('cart', compact('cartItems', 'totals'));
+
+    try {
+        $cartProductIds = array_map('intval', array_column($cartItems, 'product_id'));
+        $cartRecommendations = array_values(array_filter(
+            \Catalog\ProductCatalog::all(),
+            static fn($product) => !in_array((int)($product['id'] ?? 0), $cartProductIds, true)
+        ));
+        $cartRecommendations = array_slice($cartRecommendations, 0, 5);
+    } catch (\Throwable $e) {
+        error_log('Cart recommendations unavailable: ' . $e->getMessage());
+        $cartRecommendations = [];
+    }
+
+    try {
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable $e) {
+        error_log('Cart settings unavailable: ' . $e->getMessage());
+        $settingsMap = [];
+    }
+
+    view('cart', compact('cartItems', 'totals', 'cartRecommendations', 'settingsMap'));
     exit;
 }
 
