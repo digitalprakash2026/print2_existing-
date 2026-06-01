@@ -199,11 +199,11 @@ async function loadCart() {
 }
 
 function updateCartCount() {
-  const cnt = document.getElementById('cartCount');
-  if (!cnt) return;
   const n = _cartData.items?.length || 0;
-  cnt.textContent = n;
-  cnt.classList.toggle('hidden', n === 0);
+  document.querySelectorAll('#cartCount, .rcs-cart-badge, .md-cart-badge').forEach(cnt => {
+    cnt.textContent = n;
+    cnt.classList.toggle('hidden', n === 0);
+  });
 }
 
 function openCart()  {
@@ -264,7 +264,7 @@ function renderCartDrawer() {
       <div style="font-size:40px;margin-bottom:10px">🛒</div>
       <div style="font-size:15px;font-weight:600;margin-bottom:4px">Your cart is empty</div>
       <div style="font-size:13px">Browse products and add items to cart</div></div>`;
-    footer.innerHTML = `<a href="/products" class="btn btn-blue btn-full" style="border-radius:10px;padding:13px">Browse Products</a>`;
+    footer.innerHTML = `<a href="/categories" class="btn btn-blue btn-full" style="border-radius:10px;padding:13px">Browse Products</a>`;
     return;
   }
 

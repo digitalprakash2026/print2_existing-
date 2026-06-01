@@ -34,6 +34,21 @@ $specs      = $product['specs']      ?? [];
 $qualities  = $product['qualities']  ?? [];
 $attrGroups = []; // Attribute pricing retired from customer flow
 $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
+$startingPrice = (float)($product['min_price'] ?? 0);
+if ($startingPrice <= 0 && $qualities) {
+    foreach ($qualities as $q) {
+        $qMin = (float)($q['min_price'] ?? 0);
+        if ($qMin > 0 && ($startingPrice <= 0 || $qMin < $startingPrice)) {
+            $startingPrice = $qMin;
+        }
+    }
+}
+$comparePrice = $startingPrice > 0 ? ceil($startingPrice * 1.5) : 0;
+$discountPct  = ($startingPrice > 0 && $comparePrice > $startingPrice)
+    ? max(1, (int)round((($comparePrice - $startingPrice) / $comparePrice) * 100))
+    : 0;
+$productCode = trim((string)($product['product_code'] ?? ''));
+$categoryName = trim((string)($product['category_name'] ?? 'Products'));
 ?>
 
 <div class="pd-page-wrap">
@@ -42,7 +57,8 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
   <!-- Breadcrumb -->
   <div class="breadcrumb">
     <a href="/">Home</a><span>/</span>
-    <a href="/products">Products</a><span>/</span>
+    <a href="/categories">Products</a><span>/</span>
+    <span><?= htmlspecialchars($categoryName) ?></span><span>/</span>
     <span style="color:var(--ink);font-weight:600"><?= htmlspecialchars($product['name']) ?></span>
   </div>
 
@@ -55,9 +71,11 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
     <!-- ════ LEFT — GALLERY ════ -->
     <div class="pd-gallery" data-reveal>
 
-      <!-- Square main image -->
       <div class="pd-main" id="pdMainWrap">
         <span class="pd-badge">🔥 Bestseller</span>
+        <button class="pd-zoom-btn" type="button" onclick="window.open(document.getElementById('pdMainImg').src, '_blank')" aria-label="Open product image">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        </button>
         <img id="pdMainImg"
              src="<?= htmlspecialchars($primaryImg) ?>"
              alt="<?= htmlspecialchars($product['name']) ?>"
@@ -82,6 +100,11 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       </div>
       <?php endif; ?>
 
+      <div class="pd-gallery-actions" aria-label="Product previews">
+        <button type="button"><i class="fa-solid fa-rotate" aria-hidden="true"></i> 360° View</button>
+        <button type="button"><i class="fa-regular fa-circle-play" aria-hidden="true"></i> Video Preview</button>
+      </div>
+
     </div><!-- /pd-gallery -->
 
     <!-- ════ RIGHT — INFO + CONFIGURATOR ════ -->
@@ -98,10 +121,14 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
 
 
       <div class="pd-price-strip">
-        <span class="pd-price-now" id="heroPrice">₹199</span>
+        <span class="pd-price-now" id="heroPrice"><?= $startingPrice > 0 ? '₹' . number_format($startingPrice) : '₹ —' ?></span>
         <span class="pd-price-label">Starting Price</span>
-        <span class="pd-price-old">₹299</span>
-        <span class="pd-discount">Save 33%</span>
+        <?php if ($comparePrice > 0): ?>
+        <span class="pd-price-old">₹<?= number_format($comparePrice) ?></span>
+        <?php endif; ?>
+        <?php if ($discountPct > 0): ?>
+        <span class="pd-discount">Save <?= $discountPct ?>%</span>
+        <?php endif; ?>
       </div>
 
       <!-- ── SPECIFICATIONS ── -->
@@ -109,30 +136,26 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       // Only show specs that have a value filled in
       $filledSpecs = array_filter($specs, fn($s) => !empty(trim($s['value'] ?? '')));
       ?>
-      <?php if ($filledSpecs): ?>
-      <div class="cfg" style="margin-bottom:20px">
-        <div class="cfg-title">Product Details</div>
-        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px">
-          <?php foreach ($filledSpecs as $spec): ?>
-          <li style="display:flex;align-items:baseline;gap:8px;font-size:13px;
-                     padding:6px 0;border-bottom:1px solid var(--border)">
-            <strong style="color:var(--text2);font-size:11px;text-transform:uppercase;
-                           letter-spacing:.05em;font-weight:700;white-space:nowrap">
-              <?= htmlspecialchars($spec['label']) ?>
-            </strong>
-            <span style="color:var(--text3)">-</span>
-            <span style="color:var(--ink);font-weight:600;line-height:1.4">
-              <?= htmlspecialchars($spec['value']) ?>
-            </span>
-          </li>
-          <?php endforeach; ?>
-        </ul>
+      <?php if ($filledSpecs || $productCode): ?>
+      <div class="pd-spec-table" aria-label="Product details">
+        <?php if ($productCode): ?>
+        <div class="pd-spec-row">
+          <div class="pd-spec-label">Product Code</div>
+          <div class="pd-spec-value"><?= htmlspecialchars($productCode) ?></div>
+        </div>
+        <?php endif; ?>
+        <?php foreach ($filledSpecs as $spec): ?>
+        <div class="pd-spec-row">
+          <div class="pd-spec-label"><?= htmlspecialchars($spec['label']) ?></div>
+          <div class="pd-spec-value"><?= htmlspecialchars($spec['value']) ?></div>
+        </div>
+        <?php endforeach; ?>
       </div>
       <?php endif; ?>
 
       <!-- ── QUALITY SELECTOR (shown only when multiple qualities exist) ── -->
       <?php if (count($qualities) > 1): ?>
-      <div class="cfg" style="margin-bottom:14px">
+      <div class="cfg pd-quality-panel" style="margin-bottom:10px">
         <div class="cfg-title">Paper / Quality</div>
         <?php foreach ($qualities as $qi => $q): ?>
         <div class="qual-opt <?= $qi === 0 ? 'sel' : '' ?>"
@@ -160,14 +183,14 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <?php endif; ?>
 
       <!-- ── QUANTITY ── -->
-      <div class="cfg">
-        <div class="cfg-title cfg-title-qty">QUANTITY</div>
-        <select class="fi fi-sel" id="pdQty" onchange="onQtyChange()" style="font-size:15px;font-weight:600">
-          <option value="">— Select Quantity —</option>
-          <!-- Populated by JS from API based on selected quality -->
-        </select>
-        <div style="margin-top:7px;font-size:11px;color:var(--text3)">
-          Price varies by quantity — more pieces = better rate per unit.
+      <div class="pd-qty-row">
+        <label class="pd-qty-label" for="pdQty">QUANTITY</label>
+        <div class="pd-qty-control">
+          <select class="fi fi-sel" id="pdQty" onchange="onQtyChange()">
+            <option value="">Select Quantity</option>
+            <!-- Populated by JS from API based on selected quality -->
+          </select>
+          <span>Price varies by quantity - more pieces = better rate per unit</span>
         </div>
       </div>
 
@@ -175,50 +198,42 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       <!-- Attribute groups hidden in customer flow -->
 
       <!-- ── DESIGN OPTION ── -->
-      <div class="cfg">
-        <div class="cfg-title">Upload Your Design</div>
+      <div class="pd-design-section">
+        <div class="pd-design-heading">Upload Your Design</div>
         <div class="pd-design-grid">
 
           <div class="design-opt sel" id="dopt-upload" onclick="selDesignOpt('upload')">
-            <div class="design-opt-icon">📁</div>
-            <div class="design-opt-title">I'll Upload My Design</div>
-            <div class="design-opt-copy">PDF, AI, PNG, JPG etc.</div>
-            <div class="design-opt-note is-free">No extra charge</div>
+            <div id="panel-upload">
+              <div class="upload-zone" id="uploadZone"
+                   onclick="event.stopPropagation();document.getElementById('artworkFile').click()"
+                   ondragover="event.preventDefault();this.classList.add('drag')"
+                   ondragleave="this.classList.remove('drag')"
+                   ondrop="handleFileDrop(event)">
+                <input type="file" id="artworkFile"
+                       accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip"
+                       onchange="handleFileSelect(event)">
+                <div class="design-opt-icon"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></div>
+                <div class="design-opt-title">Upload File</div>
+                <div class="design-opt-copy">PDF, AI, PSD, PNG, JPG (Max 50MB)</div>
+              </div>
+              <div id="uploadPreview"></div>
+            </div>
           </div>
 
+          <div class="pd-design-or">OR</div>
+
           <div class="design-opt" id="dopt-rcs" onclick="selDesignOpt('rcs')">
-            <div class="design-opt-icon">🎨</div>
-            <div class="design-opt-title">Design by RCS Graphic</div>
-            <div class="design-opt-copy">We'll create your design</div>
+            <div class="design-opt-icon"><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i></div>
+            <div class="design-opt-title">Get Free Design</div>
+            <div class="design-opt-copy">Let our experts design for you</div>
             <?php if ($designFee > 0): ?>
-            <div class="design-opt-note is-paid">
-              +₹<?= number_format($designFee) ?> design fee
-            </div>
+            <div class="design-opt-note is-paid">+₹<?= number_format($designFee) ?> design fee</div>
             <?php else: ?>
-            <div class="design-opt-note">Fee confirmed on enquiry</div>
+            <div class="design-opt-note is-free">No upfront design charge</div>
             <?php endif; ?>
           </div>
 
         </div>
-
-        <!-- Upload panel -->
-        <div id="panel-upload">
-          <div class="upload-zone" id="uploadZone"
-               onclick="document.getElementById('artworkFile').click()"
-               ondragover="event.preventDefault();this.classList.add('drag')"
-               ondragleave="this.classList.remove('drag')"
-               ondrop="handleFileDrop(event)">
-            <input type="file" id="artworkFile"
-                   accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip"
-                   onchange="handleFileSelect(event)">
-            <div style="font-size:26px;margin-bottom:7px">📤</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:3px">Click to upload or drag & drop</div>
-            <div style="font-size:11px;color:var(--text3)">PDF, AI, EPS, PNG, JPG, PSD, CDR — Max 50MB</div>
-          </div>
-          <div id="uploadPreview"></div>
-        </div>
-
-        <!-- RCS Design panel kept empty intentionally -->
         <div id="panel-rcs" style="display:none"></div>
       </div>
 
@@ -241,38 +256,146 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
       </div>
 
       <!-- ── ACTION BUTTONS ── -->
-      <div class="pd-action-stack" style="display:flex;flex-direction:column;gap:10px">
-        <button class="btn btn-blue btn-full" onclick="addToCart()" id="addCartBtn"
-                style="padding:15px;font-size:15px;border-radius:12px">
-          ADD TO CART
-        </button>
-        <div class="pd-action-row" style="display:flex;gap:9px">
-          <button class="btn btn-green btn-full" onclick="buyNow()" style="padding:13px">
+      <div class="pd-action-stack">
+        <div class="pd-action-row">
+          <button class="btn btn-blue btn-full" onclick="addToCart()" id="addCartBtn">
+            <i class="fa-solid fa-cart-plus" aria-hidden="true"></i> ADD TO CART
+          </button>
+          <button class="btn btn-green btn-full" onclick="buyNow()">
             GET FREE DESIGN
           </button>
-          <button class="btn btn-outline" onclick="waOrder()" style="padding:13px;flex-shrink:0"
-                  title="Order via WHATSAPP SUPPORT">
-            <svg viewBox="0 0 24 24" style="width:17px;height:17px;fill:currentColor">
+          <button class="btn btn-outline" onclick="waOrder()" title="Order via WHATSAPP SUPPORT">
+            <svg viewBox="0 0 24 24" style="width:17px;height:17px;fill:currentColor" aria-hidden="true">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
             </svg>
             WHATSAPP SUPPORT
           </button>
         </div>
         <div class="pd-checkout-note pd-delivery-row">
-          <span id="orderHint">🚚 Delivery in 3 - 5 Working Days</span>
-          <small>✅ Free Delivery on Orders Above ₹999</small>
+          <span><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Delivery in 3 - 5 Working Days</span>
+          <small><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Free Delivery on Orders Above ₹999</small>
+          <em id="orderHint" class="pd-order-hint" aria-live="polite"></em>
         </div>
       </div>
 
     </div><!-- /pd-info-col -->
   </div><!-- /pd-grid -->
 
+  <!-- PRODUCT DETAILS / REVIEWS SECTION -->
+  <section class="pd-tabs-section" data-reveal data-reveal-delay="120" aria-label="Product information and customer reviews">
+    <div class="pd-tabs-card">
+      <div class="pd-tabs-nav" role="tablist" aria-label="Product detail tabs">
+        <button type="button" class="pd-tab-btn is-active" id="pd-tab-description" role="tab" aria-selected="true" aria-controls="pd-panel-description" onclick="switchProductTab('description', this)">Description</button>
+        <button type="button" class="pd-tab-btn" id="pd-tab-specifications" role="tab" aria-selected="false" aria-controls="pd-panel-specifications" onclick="switchProductTab('specifications', this)">Specifications</button>
+        <button type="button" class="pd-tab-btn" id="pd-tab-reviews" role="tab" aria-selected="false" aria-controls="pd-panel-reviews" onclick="switchProductTab('reviews', this)">Reviews (124)</button>
+        <button type="button" class="pd-tab-btn" id="pd-tab-faqs" role="tab" aria-selected="false" aria-controls="pd-panel-faqs" onclick="switchProductTab('faqs', this)">FAQs</button>
+      </div>
+
+      <div class="pd-tabs-content">
+        <div class="pd-tabs-left">
+          <div class="pd-tab-panel is-active" id="pd-panel-description" role="tabpanel" aria-labelledby="pd-tab-description" data-tab-panel="description">
+            <h2>High Quality. Perfect Impression.</h2>
+            <p>
+              <?= !empty(trim((string)($product['description'] ?? '')))
+                ? nl2br(htmlspecialchars((string)$product['description']))
+                : 'Our ' . htmlspecialchars($product['name']) . ' are designed to leave a lasting impact. Printed on high-quality paper with professional finishing options, they reflect your brand identity with clarity and style.' ?>
+            </p>
+            <ul class="pd-check-list">
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Perfect for business branding and networking</li>
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> High resolution printing with vibrant colors</li>
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Multiple paper types and finishing options</li>
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Fast turnaround and free delivery above ₹999</li>
+            </ul>
+          </div>
+
+          <div class="pd-tab-panel" id="pd-panel-specifications" role="tabpanel" aria-labelledby="pd-tab-specifications" data-tab-panel="specifications" hidden>
+            <h2>Specifications</h2>
+            <?php if ($filledSpecs || $productCode): ?>
+            <div class="pd-tab-spec-grid">
+              <?php if ($productCode): ?>
+              <div><span>Product Code</span><strong><?= htmlspecialchars($productCode) ?></strong></div>
+              <?php endif; ?>
+              <?php foreach ($filledSpecs as $spec): ?>
+              <div><span><?= htmlspecialchars($spec['label']) ?></span><strong><?= htmlspecialchars($spec['value']) ?></strong></div>
+              <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <p>Specifications for this product will be confirmed by our print expert after your enquiry.</p>
+            <?php endif; ?>
+          </div>
+
+          <div class="pd-tab-panel" id="pd-panel-reviews" role="tabpanel" aria-labelledby="pd-tab-reviews" data-tab-panel="reviews" hidden>
+            <h2>Customer Reviews</h2>
+            <p>Customers trust RCS Graphic for sharp printing, dependable finishing, and quick support from design to delivery.</p>
+            <ul class="pd-check-list">
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> 4.8 average customer rating</li>
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> 124 verified customer reviews</li>
+              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Loved for print quality and fast communication</li>
+            </ul>
+          </div>
+
+          <div class="pd-tab-panel" id="pd-panel-faqs" role="tabpanel" aria-labelledby="pd-tab-faqs" data-tab-panel="faqs" hidden>
+            <h2>FAQs</h2>
+            <div class="pd-faq-list">
+              <details open>
+                <summary>Can I upload my own design?</summary>
+                <p>Yes, you can upload PDF, AI, PSD, PNG, JPG and other supported artwork files up to 50MB.</p>
+              </details>
+              <details>
+                <summary>Can RCS Graphic create the design for me?</summary>
+                <p>Yes, select the free design option and our team will connect with you for the design brief and confirmation.</p>
+              </details>
+              <details>
+                <summary>How long does delivery take?</summary>
+                <p>Standard delivery usually takes 3 - 5 working days after artwork and order confirmation.</p>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <aside class="pd-reviews-panel" aria-label="What our customers say">
+          <div class="pd-reviews-head">
+            <h2>What Our Customers Say</h2>
+            <a href="#pd-panel-reviews" onclick="switchProductTab('reviews', document.getElementById('pd-tab-reviews'))">View All Reviews <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+          </div>
+          <div class="pd-review-cards">
+            <article class="pd-review-card">
+              <div class="pd-review-person">
+                <span class="pd-review-avatar" aria-hidden="true">RM</span>
+                <div><strong>Rakesh Mehta</strong><span>Business Owner</span></div>
+              </div>
+              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p>Excellent quality and fast delivery. Highly recommended!</p>
+            </article>
+            <article class="pd-review-card">
+              <div class="pd-review-person">
+                <span class="pd-review-avatar" aria-hidden="true">KS</span>
+                <div><strong>Khushbu Shah</strong><span>Marketing Head</span></div>
+              </div>
+              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p>Very professional team and amazing print quality.</p>
+            </article>
+            <article class="pd-review-card">
+              <div class="pd-review-person">
+                <span class="pd-review-avatar" aria-hidden="true">JP</span>
+                <div><strong>Jigar Patel</strong><span>Event Organizer</span></div>
+              </div>
+              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p>Best experience for bulk printing. Great pricing and support.</p>
+            </article>
+          </div>
+          <button type="button" class="pd-review-next" aria-label="Next review" onclick="document.querySelector('.pd-review-cards')?.scrollBy({left:220, behavior:'smooth'})">›</button>
+        </aside>
+      </div>
+    </div>
+  </section>
+
   <!-- RELATED PRODUCTS -->
   <?php if ($related): ?>
   <section class="ym-section">
     <div class="ym-head">
       <h2 class="ym-title">You May <span>Also Like</span></h2>
-      <a href="/products" class="ym-view-all">View All Products</a>
+      <a href="/categories" class="ym-view-all">View All Products</a>
     </div>
 
     <div class="ym-grid">
@@ -286,7 +409,7 @@ $bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
                onerror="this.src='https://placehold.co/400x260/EEF3FD/1A56E8?text=<?= urlencode($rp['name']) ?>'">
         </a>
         <div class="ym-body">
-          <div class="ym-cat"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><?= htmlspecialchars($rp['category_name'] ?? '') ?></div>
+          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><?= htmlspecialchars($rp['name'] ?? ($rp['category_name'] ?? 'Product')) ?></div>
           <div class="ym-from">Starting from</div>
           <div class="ym-foot">
             <div class="ym-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>
@@ -643,6 +766,19 @@ function waOrder() {
   ].join('\n');
 
   window.open(`https://wa.me/${BIZ_WA}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function switchProductTab(tab, btn) {
+  document.querySelectorAll('.pd-tab-btn').forEach(el => {
+    const active = el === btn;
+    el.classList.toggle('is-active', active);
+    el.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('[data-tab-panel]').forEach(panel => {
+    const active = panel.dataset.tabPanel === tab;
+    panel.classList.toggle('is-active', active);
+    panel.hidden = !active;
+  });
 }
 
 // Init

@@ -63,7 +63,7 @@ include __DIR__ . '/layout.php';
 
   <div class="f2">
     <div class="fg"><label>CTA Text</label><input class="fi" id="deal-cta-text" placeholder="Order Now"></div>
-    <div class="fg"><label>CTA URL</label><input class="fi" id="deal-cta-url" placeholder="/products"></div>
+    <div class="fg"><label>CTA URL</label><input class="fi" id="deal-cta-url" placeholder="/categories"></div>
   </div>
 
   <div class="fg">
@@ -172,7 +172,7 @@ function collectForm() {
   };
 }
 
-function resetForm(){ editId = 0; fillForm({deal_type:'deal', color_theme:'green', subtitle:'Starting from', cta_text:'Order Now', cta_url:'/products', is_active:1}); showErr(''); }
+function resetForm(){ editId = 0; fillForm({deal_type:'deal', color_theme:'green', subtitle:'Starting from', cta_text:'Order Now', cta_url:'/categories', is_active:1}); showErr(''); }
 function newDeal(){ resetForm(); window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
 function editDeal(id){ const d = deals.find(x=>Number(x.id)===Number(id)); if (!d) return; fillForm(d); window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
 

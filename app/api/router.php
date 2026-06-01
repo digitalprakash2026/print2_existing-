@@ -128,6 +128,10 @@ if (preg_match('#^/api/cart/remove/(.+)$#', $uri, $m) && $method === 'DELETE') {
     json(\Cart\Cart::remove($m[1]));
 }
 
+if (preg_match('#^/api/cart/update/(.+)$#', $uri, $m) && $method === 'POST') {
+    json(\Cart\Cart::updateQuantity($m[1], (int)($body['quantity'] ?? 0)));
+}
+
 if ($uri === '/api/cart/clear' && $method === 'POST') {
     \Cart\Cart::clear();
     json(['ok' => true]);

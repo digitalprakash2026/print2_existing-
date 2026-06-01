@@ -217,7 +217,7 @@ include INCLUDE_PATH . '/partials/header.php';
         </span>
       </button>
 
-      <a class="quick-help-item quick-help-download" href="/products" aria-label="Download our brochure for all products">
+      <a class="quick-help-item quick-help-download" href="/categories" aria-label="Download our brochure for all products">
         <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
         <span class="quick-help-copy">
           <strong>Download Our Brochure</strong>
@@ -250,28 +250,28 @@ include INCLUDE_PATH . '/partials/header.php';
         <h3>Quick Links</h3>
         <a href="/">Home</a>
         <a href="/#why-sec">About Us</a>
-        <a href="/products">Products</a>
+        <a href="/categories">Products</a>
         <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
         <a href="/#quick-help-sec">Contact Us</a>
       </nav>
 
       <nav class="footer-col" aria-label="Products">
         <h3>Products</h3>
-        <a href="/products">Business Cards</a>
-        <a href="/products">Flyers</a>
-        <a href="/products">Brochures</a>
-        <a href="/products">Posters</a>
-        <a href="/products">Diaries</a>
-        <a href="/products">Calendars</a>
-        <a href="/products">Stationery &amp; More</a>
+        <a href="/categories">Business Cards</a>
+        <a href="/categories">Flyers</a>
+        <a href="/categories">Brochures</a>
+        <a href="/categories">Posters</a>
+        <a href="/categories">Diaries</a>
+        <a href="/categories">Calendars</a>
+        <a href="/categories">Stationery &amp; More</a>
       </nav>
 
       <nav class="footer-col" aria-label="Customer service">
         <h3>Customer Service</h3>
         <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
         <a href="/my-orders">Track Order</a>
-        <a href="/products">Shipping Policy</a>
-        <a href="/products">Refund &amp; Return</a>
+        <a href="/categories">Shipping Policy</a>
+        <a href="/categories">Refund &amp; Return</a>
         <a href="/terms-and-conditions">Terms &amp; Conditions</a>
         <a href="/terms-and-conditions">Privacy Policy</a>
       </nav>
@@ -299,7 +299,7 @@ include INCLUDE_PATH . '/partials/header.php';
       <div class="footer-col footer-newsletter-col">
         <h3>Newsletter</h3>
         <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
-        <form class="footer-newsletter" action="/products" method="get">
+        <form class="footer-newsletter" action="/categories" method="get">
           <label class="sr-only" for="footerEmail">Enter your email</label>
           <input id="footerEmail" name="email" type="email" placeholder="Enter your email" autocomplete="email">
           <button type="submit">Subscribe</button>
