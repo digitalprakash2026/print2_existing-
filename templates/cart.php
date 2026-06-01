@@ -164,6 +164,14 @@ $cartRecommendations = $cartRecommendations ?? [];
     </section>
     <?php endif; ?>
 
+    <?php
+    $siteEndingShowBlogs = true;
+    $siteEndingShowQuickHelp = false;
+    $siteEndingShowFooter = false;
+    include INCLUDE_PATH . '/partials/site-ending.php';
+    unset($siteEndingShowBlogs, $siteEndingShowQuickHelp, $siteEndingShowFooter);
+    ?>
+
     <section class="quick-help-section cartp-help-section" id="quick-help-sec" aria-label="Quick help and bulk order actions">
       <div class="quick-help-container">
         <div class="quick-help-bar">

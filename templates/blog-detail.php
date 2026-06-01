@@ -72,15 +72,5 @@ $content = $sanitizeBlogHtml((string)($blog['content'] ?? ''));
     </div>
   </section>
 </main>
-
-<footer class="footer" aria-label="Site footer">
-  <div class="footer-container">
-    <div class="footer-bottom" style="border-top:0">
-      <div class="footer-copy">© <?= date('Y') ?> <?= $bizName ?>. All Rights Reserved.</div>
-      <div class="footer-payments" aria-label="Accepted payments"><span>VISA</span><span>UPI</span><span>Paytm</span></div>
-      <div class="footer-developed">Developed By Prakash Karena</div>
-    </div>
-  </div>
-</footer>
-
+<?php include INCLUDE_PATH . '/partials/site-ending.php'; ?>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
