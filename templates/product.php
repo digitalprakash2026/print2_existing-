@@ -57,7 +57,7 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
   <!-- Breadcrumb -->
   <div class="breadcrumb">
     <a href="/">Home</a><span>/</span>
-    <a href="/products">Products</a><span>/</span>
+    <a href="/categories">Products</a><span>/</span>
     <span><?= htmlspecialchars($categoryName) ?></span><span>/</span>
     <span style="color:var(--ink);font-weight:600"><?= htmlspecialchars($product['name']) ?></span>
   </div>
@@ -395,7 +395,7 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
   <section class="ym-section">
     <div class="ym-head">
       <h2 class="ym-title">You May <span>Also Like</span></h2>
-      <a href="/products" class="ym-view-all">View All Products</a>
+      <a href="/categories" class="ym-view-all">View All Products</a>
     </div>
 
     <div class="ym-grid">

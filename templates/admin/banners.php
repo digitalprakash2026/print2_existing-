@@ -33,7 +33,7 @@ include __DIR__ . '/layout.php';
   </div>
   <div class="f2">
     <div class="fg"><label>Primary CTA Text <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-ptext" placeholder="Order Now"></div>
-    <div class="fg"><label>Banner Click / Primary CTA URL <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-purl" placeholder="/products"></div>
+    <div class="fg"><label>Banner Click / Primary CTA URL <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-purl" placeholder="/categories"></div>
   </div>
   <div class="f2">
     <div class="fg"><label>Secondary CTA Text <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-stext" placeholder="Get Free Design"></div>

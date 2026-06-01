@@ -135,7 +135,7 @@ foreach ($navProducts as $p) {
                 </div>
                 <div class="dd-divider rcs-dd-divider"></div>
               <?php endif; ?>
-              <a href="/products" class="dd-item dd-item-all rcs-dd-item rcs-dd-item-all" role="menuitem">
+              <a href="/categories" class="dd-item dd-item-all rcs-dd-item rcs-dd-item-all" role="menuitem">
                 <span class="dd-item-ic rcs-dd-item-ic">→</span>
                 <span>See All Products</span>
               </a>
@@ -149,7 +149,7 @@ foreach ($navProducts as $p) {
       </div>
 
       <div class="navbar-actions rcs-navbar-actions">
-        <a href="/products" class="action-btn rcs-action-btn" aria-label="Search">
+        <a href="/categories" class="action-btn rcs-action-btn" aria-label="Search">
           <i class="fa-solid fa-magnifying-glass"></i>
         </a>
         <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="action-btn rcs-action-btn" aria-label="My Account">
@@ -208,7 +208,7 @@ foreach ($navProducts as $p) {
         <?php endif; ?>
       </div>
       <?php endforeach; ?>
-      <a href="/products" class="md-item md-sub md-all" onclick="closeDrawer()">
+      <a href="/categories" class="md-item md-sub md-all" onclick="closeDrawer()">
         → See All Products
       </a>
     </div>
@@ -216,7 +216,7 @@ foreach ($navProducts as $p) {
     <a href="/#why-sec"     class="md-item" onclick="closeDrawer()">⭐ About Us</a>
     <a href="/#quick-help-sec" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
     <a href="/#blogs-sec"    class="md-item" onclick="closeDrawer()">📝 Blog</a>
-    <a href="/products"      class="md-item" onclick="closeDrawer()">🔎 Search Products</a>
+    <a href="/categories"      class="md-item" onclick="closeDrawer()">🔎 Search Products</a>
     <a href="/cart" class="md-item md-action" onclick="closeDrawer()">
       🛒 Cart <span class="md-cart-badge">0</span>
     </a>

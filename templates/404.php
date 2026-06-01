@@ -6,7 +6,7 @@
     <div style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6">The page you're looking for doesn't exist or has been moved.</div>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <a href="/" class="btn btn-blue">← Back to Home</a>
-      <a href="/products" class="btn btn-outline">Browse Products</a>
+      <a href="/categories" class="btn btn-outline">Browse Products</a>
     </div>
   </div>
 </div>

@@ -17,7 +17,7 @@ $itemCount = count($cartItems ?? []);
         <div class="cartp-empty-icon">🛒</div>
         <h2>Your cart is empty</h2>
         <p>Browse our products and add your print items to continue.</p>
-        <a href="/products" class="btn btn-blue">Browse Products</a>
+        <a href="/categories" class="btn btn-blue">Browse Products</a>
       </section>
     <?php else: ?>
     <div class="cartp-grid">
@@ -86,7 +86,7 @@ $itemCount = count($cartItems ?? []);
         <?php endforeach; ?>
 
         <div class="cartp-actions">
-          <a href="/products" class="cartp-continue"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Continue Shopping</a>
+          <a href="/categories" class="cartp-continue"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Continue Shopping</a>
           <button class="cartp-clear" onclick="clearCartPage()"><i class="fa-regular fa-trash-can" aria-hidden="true"></i> Clear Cart</button>
         </div>
       </section>
