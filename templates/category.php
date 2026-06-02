@@ -188,6 +188,14 @@ include INCLUDE_PATH . '/partials/header.php';
 </main>
 
 
+<?php
+$siteEndingShowBlogs = true;
+$siteEndingShowQuickHelp = false;
+$siteEndingShowFooter = false;
+include INCLUDE_PATH . '/partials/site-ending.php';
+unset($siteEndingShowBlogs, $siteEndingShowQuickHelp, $siteEndingShowFooter);
+?>
+
 <!-- QUICK HELP STRIP -->
 <section class="quick-help-section" id="quick-help-sec" aria-label="Quick help and bulk order actions" data-reveal>
   <div class="quick-help-container">

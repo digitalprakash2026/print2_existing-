@@ -2,8 +2,14 @@
 $pageTitle = 'Your Cart — RCS Graphic';
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
-$bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
+$settingsMap = $settingsMap ?? [];
+$bizPhone = htmlspecialchars($settingsMap['biz_phone'] ?? Database::setting('biz_phone', '+91 8980000023'));
+$bizWaRaw = $settingsMap['biz_whatsapp'] ?? Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', '918980000023'));
+$bizWa = htmlspecialchars(preg_replace('/\D+/', '', (string)$bizWaRaw));
+$bizEmail = htmlspecialchars($settingsMap['biz_email'] ?? Database::setting('biz_email', 'hello@rcsgraphic.in'));
+$bizAddr = htmlspecialchars($settingsMap['biz_address'] ?? Database::setting('biz_address', 'Rajkot, Gujarat'));
 $itemCount = count($cartItems ?? []);
+$cartRecommendations = $cartRecommendations ?? [];
 ?>
 <div class="cartp-wrap">
   <div class="container cartp-page">
@@ -124,8 +130,166 @@ $itemCount = count($cartItems ?? []);
       </aside>
     </div>
     <?php endif; ?>
+
+    <?php if (!empty($cartRecommendations)): ?>
+    <section class="ym-section cartp-recommendations" aria-labelledby="cartRecommendationsTitle">
+      <div class="ym-head">
+        <h2 class="ym-title" id="cartRecommendationsTitle">You May <span>Also Like</span></h2>
+        <a href="/categories" class="ym-view-all">View All Products</a>
+      </div>
+
+      <div class="ym-grid">
+        <?php foreach ($cartRecommendations as $rp):
+          $rimg = trim((string)($rp['primary_image'] ?? ''));
+          $rname = trim((string)($rp['name'] ?? 'Product'));
+          $rslug = trim((string)($rp['slug'] ?? ''));
+          $rmin = (float)($rp['min_price'] ?? 0);
+        ?>
+        <article class="ym-card">
+          <a class="ym-img" href="/product/<?= htmlspecialchars($rslug) ?>">
+            <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rname) ?>" loading="lazy"
+                 onerror="this.src='https://placehold.co/400x260/EEF3FD/1A56E8?text=<?= urlencode($rname) ?>'">
+          </a>
+          <div class="ym-body">
+            <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><?= htmlspecialchars($rname) ?></div>
+            <div class="ym-from">Starting from</div>
+            <div class="ym-foot">
+              <div class="ym-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>
+              <a href="/product/<?= htmlspecialchars($rslug) ?>" class="ym-order">ORDER NOW</a>
+            </div>
+          </div>
+        </article>
+        <?php endforeach; ?>
+      </div>
+    </section>
+    <?php endif; ?>
+
+    <?php
+    $siteEndingShowBlogs = true;
+    $siteEndingShowQuickHelp = false;
+    $siteEndingShowFooter = false;
+    include INCLUDE_PATH . '/partials/site-ending.php';
+    unset($siteEndingShowBlogs, $siteEndingShowQuickHelp, $siteEndingShowFooter);
+    ?>
+
+    <section class="quick-help-section cartp-help-section" id="quick-help-sec" aria-label="Quick help and bulk order actions">
+      <div class="quick-help-container">
+        <div class="quick-help-bar">
+          <a class="quick-help-item quick-help-call" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
+            <span class="quick-help-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
+            <span class="quick-help-copy">
+              <span>Need Help? Call Us</span>
+              <strong><?= $bizPhone ?></strong>
+            </span>
+          </a>
+
+          <button class="quick-help-item quick-help-whatsapp" type="button" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">
+            <span class="quick-help-icon"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span>
+            <span class="quick-help-copy">
+              <strong>Chat with us on WhatsApp</strong>
+              <span>We are here to help!</span>
+            </span>
+          </button>
+
+          <a class="quick-help-item quick-help-download" href="/categories" aria-label="Download our brochure for all products">
+            <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
+            <span class="quick-help-copy">
+              <strong>Download Our Brochure</strong>
+              <span>For All Products</span>
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+
   </div>
 </div>
+
+<footer class="footer" aria-label="Site footer">
+  <div class="footer-container">
+    <div class="footer-main">
+      <div class="footer-brand-col">
+        <a href="/" class="footer-logo" aria-label="RCS Print home">
+          <span class="footer-logo-main">RCS</span>
+          <span class="footer-logo-sub">PRINT</span>
+        </a>
+        <p class="footer-desc">Your one-stop solution for all your printing needs. Quality prints that represent your brand perfectly.</p>
+        <div class="footer-social" aria-label="Social links">
+          <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+          <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+          <a href="https://wa.me/<?= $bizWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
+          <a href="/#quick-help-sec" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+        </div>
+      </div>
+
+      <nav class="footer-col" aria-label="Quick links">
+        <h3>Quick Links</h3>
+        <a href="/">Home</a>
+        <a href="/#why-sec">About Us</a>
+        <a href="/categories">Products</a>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
+        <a href="#quick-help-sec">Contact Us</a>
+      </nav>
+
+      <nav class="footer-col" aria-label="Products">
+        <h3>Products</h3>
+        <a href="/categories">Business Cards</a>
+        <a href="/categories">Flyers</a>
+        <a href="/categories">Brochures</a>
+        <a href="/categories">Posters</a>
+        <a href="/categories">Diaries</a>
+        <a href="/categories">Calendars</a>
+        <a href="/categories">Stationery &amp; More</a>
+      </nav>
+
+      <nav class="footer-col" aria-label="Customer service">
+        <h3>Customer Service</h3>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
+        <a href="/my-orders">Track Order</a>
+        <a href="/categories">Shipping Policy</a>
+        <a href="/categories">Refund &amp; Return</a>
+        <a href="/terms-and-conditions">Terms &amp; Conditions</a>
+        <a href="/terms-and-conditions">Privacy Policy</a>
+      </nav>
+
+      <div class="footer-col footer-contact-col">
+        <h3>Contact Us</h3>
+        <div class="footer-contact-item">
+          <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+          <span><?= $bizAddr ?></span>
+        </div>
+        <a class="footer-contact-item" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span><?= $bizPhone ?></span>
+        </a>
+        <a class="footer-contact-item" href="mailto:<?= $bizEmail ?>">
+          <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+          <span><?= $bizEmail ?></span>
+        </a>
+        <div class="footer-contact-item">
+          <i class="fa-regular fa-clock" aria-hidden="true"></i>
+          <span>Mon - Sat: 10:00 AM - 7:00 PM</span>
+        </div>
+      </div>
+
+      <div class="footer-col footer-newsletter-col">
+        <h3>Newsletter</h3>
+        <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
+        <form class="footer-newsletter" action="/categories" method="get">
+          <label class="sr-only" for="cartFooterEmail">Enter your email</label>
+          <input id="cartFooterEmail" name="email" type="email" placeholder="Enter your email" autocomplete="email">
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">© <?= date('Y') ?> RCS PRINT. All Rights Reserved.</div>
+      <div class="footer-developed">Developed By Prakash Karena</div>
+    </div>
+  </div>
+</footer>
+
 <script>
 const CSRF='<?= $csrf ?>';
 async function removeCartItem(id){

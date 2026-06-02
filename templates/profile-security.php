@@ -100,4 +100,5 @@ function togglePassField(id, btn) {
   btn.textContent = show ? '🙈' : '👁️';
 }
 </script>
+<?php include INCLUDE_PATH . '/partials/site-ending.php'; ?>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
