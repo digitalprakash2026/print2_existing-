@@ -160,15 +160,27 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
     if (!frame.contentWindow) return;
     frame.contentWindow.postMessage({type:'RCS_THEME_ENABLE_INSPECTOR', elements: elementSchema}, window.location.origin);
   }
+  async function apiJson(url, options) {
+    const res = await fetch(url, options);
+    const text = await res.text();
+    let json = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch (err) {
+      throw new Error('Server returned non-JSON response (' + res.status + '). Please check login/session and PHP error logs.');
+    }
+    if (!res.ok || !json || json.ok === false) {
+      throw new Error((json && json.msg) ? json.msg : ('Request failed with status ' + res.status));
+    }
+    return json;
+  }
   async function previewNow() {
     try {
-      const res = await fetch('/admin/api/theme/preview', {
+      const json = await apiJson('/admin/api/theme/preview', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify(collect())
       });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.msg || 'Preview failed');
       elementStyles = json.element_styles || elementStyles;
       latestCss = json.css;
       sendPreview(latestCss);
@@ -289,9 +301,7 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
     saveBtn.disabled = true;
     setStatus('Saving design…');
     try {
-      const res = await fetch('/admin/api/theme', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(collect())});
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.msg || 'Save failed');
+      const json = await apiJson('/admin/api/theme', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(collect())});
       elementStyles = json.element_styles || elementStyles;
       latestCss = json.css;
       sendPreview(latestCss);
@@ -308,9 +318,7 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
     resetBtn.disabled = true;
     setStatus('Resetting theme…');
     try {
-      const res = await fetch('/admin/api/theme/reset', {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.msg || 'Reset failed');
+      const json = await apiJson('/admin/api/theme/reset', {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
       elementStyles = json.element_styles || {};
       Object.entries(json.theme).forEach(([key, value]) => {
         const input = root.querySelector('[name="' + key + '"]');

@@ -64,8 +64,8 @@ class SiteTheme
         'header.nav_links' => ['label' => 'Navigation Links', 'selector' => '.nav-link', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color']],
         'home.banner' => ['label' => 'Home Banner Slider', 'selector' => '.banner-slider', 'controls' => ['borderRadius', 'boxShadow', 'marginBottom']],
         'home.banner.title' => ['label' => 'Banner Title', 'selector' => '.bs-title', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
-        'home.banner.subtitle' => ['label' => 'Banner Subtitle', 'selector' => '.bs-subtitle', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
-        'site.buttons' => ['label' => 'All Buttons', 'selector' => '.btn,.bs-cta,.deal-promo-btn,.deal-order-btn,.all-cat-apply-btn', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color', 'backgroundColor', 'borderRadius', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight']],
+        'home.banner.subtitle' => ['label' => 'Banner Subtitle', 'selector' => '.bs-sub', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'site.buttons' => ['label' => 'All Buttons', 'selector' => '.btn,.bs-cta-primary,.bs-cta-wa,.deal-promo-btn,.deal-order-btn,.all-cat-apply-btn', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color', 'backgroundColor', 'borderRadius', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight']],
         'home.categories.section' => ['label' => 'Category Section', 'selector' => '.shop-cat-section', 'controls' => ['backgroundColor', 'paddingTop', 'paddingBottom']],
         'home.categories.title' => ['label' => 'Category Section Title', 'selector' => '.shop-cat-title', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
         'home.category.card' => ['label' => 'Category Cards', 'selector' => '.shop-cat-link,.all-cat-card', 'controls' => ['backgroundColor', 'borderColor', 'borderRadius', 'boxShadow', 'paddingTop', 'paddingBottom']],
@@ -151,6 +151,25 @@ class SiteTheme
     public static function loadElementStyles(): array
     {
         try {
+            self::ensureElementStylesTable();
+            $rows = \Database::rows(
+                'SELECT target_key, styles_json FROM theme_element_styles WHERE is_active = 1 ORDER BY target_key ASC'
+            );
+            $styles = [];
+            foreach ($rows as $row) {
+                $decoded = json_decode((string)($row['styles_json'] ?? '{}'), true);
+                if (is_array($decoded)) {
+                    $styles[(string)$row['target_key']] = $decoded;
+                }
+            }
+            if ($styles !== []) {
+                return self::sanitizeElementStyles($styles);
+            }
+        } catch (\Throwable) {
+            // Fallback to the legacy settings JSON below.
+        }
+
+        try {
             $raw = (string)\Database::setting(self::ELEMENT_STYLES_KEY, '{}');
             $decoded = json_decode($raw, true);
             return self::sanitizeElementStyles(is_array($decoded) ? $decoded : []);
@@ -162,13 +181,50 @@ class SiteTheme
     public static function saveElementStyles(array $styles): array
     {
         $clean = self::sanitizeElementStyles($styles);
-        \Database::setSetting(self::ELEMENT_STYLES_KEY, json_encode($clean, JSON_UNESCAPED_SLASHES));
+        $encodedAll = json_encode($clean, JSON_UNESCAPED_SLASHES) ?: '{}';
+
+        try {
+            self::ensureElementStylesTable();
+            $pdo = \Database::get();
+            $pdo->beginTransaction();
+            \Database::query('DELETE FROM theme_element_styles');
+            foreach ($clean as $target => $values) {
+                \Database::query(
+                    'INSERT INTO theme_element_styles (target_key, styles_json, generated_css, is_active, updated_at) VALUES (?, ?, ?, 1, NOW())',
+                    [$target, json_encode($values, JSON_UNESCAPED_SLASHES) ?: '{}', self::elementCss([$target => $values])]
+                );
+            }
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            try {
+                if (isset($pdo) && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+            } catch (\Throwable) {}
+            \Database::setSetting(self::ELEMENT_STYLES_KEY, $encodedAll);
+            return $clean;
+        }
+
+        try {
+            \Database::setSetting(self::ELEMENT_STYLES_KEY, $encodedAll);
+        } catch (\Throwable) {
+            // The dedicated table is authoritative; this legacy backup is optional.
+        }
         return $clean;
     }
 
     public static function resetElementStyles(): array
     {
-        \Database::setSetting(self::ELEMENT_STYLES_KEY, '{}');
+        try {
+            self::ensureElementStylesTable();
+            \Database::query('DELETE FROM theme_element_styles');
+        } catch (\Throwable) {
+            // Fall back to the legacy settings key below.
+        }
+
+        try {
+            \Database::setSetting(self::ELEMENT_STYLES_KEY, '{}');
+        } catch (\Throwable) {}
         return [];
     }
 
@@ -329,6 +385,23 @@ class SiteTheme
     public static function shadowOptions(): array
     {
         return array_keys(self::SHADOWS);
+    }
+
+    private static function ensureElementStylesTable(): void
+    {
+        \Database::query(
+            'CREATE TABLE IF NOT EXISTS theme_element_styles (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                target_key VARCHAR(191) NOT NULL,
+                styles_json LONGTEXT NOT NULL,
+                generated_css LONGTEXT NULL,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uniq_theme_element_target (target_key)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
     }
 
     private static function elementCss(array $elementStyles): string

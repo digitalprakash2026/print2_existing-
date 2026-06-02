@@ -872,27 +872,47 @@ if (str_starts_with($uri, '/admin/api/')) {
 
 
     if ($uri === '/admin/api/theme' && $method === 'GET') {
-        $theme = \Theme\SiteTheme::load();
-        json(['ok'=>true,'theme'=>$theme,'defaults'=>\Theme\SiteTheme::defaults(),'element_styles'=>\Theme\SiteTheme::loadElementStyles(),'element_schema'=>\Theme\SiteTheme::elementSchema(),'css'=>\Theme\SiteTheme::css($theme)]);
+        try {
+            $theme = \Theme\SiteTheme::load();
+            json(['ok'=>true,'theme'=>$theme,'defaults'=>\Theme\SiteTheme::defaults(),'element_styles'=>\Theme\SiteTheme::loadElementStyles(),'element_schema'=>\Theme\SiteTheme::elementSchema(),'css'=>\Theme\SiteTheme::css($theme)]);
+        } catch (\Throwable $e) {
+            error_log('Theme load failed: ' . $e->getMessage());
+            json(['ok'=>false,'msg'=>'Theme load failed. Check database settings/theme_element_styles tables.'], 500);
+        }
     }
     if ($uri === '/admin/api/theme' && $method === 'POST') {
-        $saved = \Theme\SiteTheme::save(is_array($body) ? $body : []);
-        $elementStyles = \Theme\SiteTheme::saveElementStyles(is_array($body['element_styles'] ?? null) ? $body['element_styles'] : \Theme\SiteTheme::loadElementStyles());
-        $theme = array_merge(\Theme\SiteTheme::load(), $saved);
-        \Orders\AdminAudit::log('theme_updated','Website design theme updated');
-        json(['ok'=>true,'theme'=>$theme,'element_styles'=>$elementStyles,'css'=>\Theme\SiteTheme::css($theme, $elementStyles)]);
+        try {
+            $saved = \Theme\SiteTheme::save(is_array($body) ? $body : []);
+            $elementStyles = \Theme\SiteTheme::saveElementStyles(is_array($body['element_styles'] ?? null) ? $body['element_styles'] : \Theme\SiteTheme::loadElementStyles());
+            $theme = array_merge(\Theme\SiteTheme::load(), $saved);
+            \Orders\AdminAudit::log('theme_updated','Website design theme updated');
+            json(['ok'=>true,'theme'=>$theme,'element_styles'=>$elementStyles,'css'=>\Theme\SiteTheme::css($theme, $elementStyles)]);
+        } catch (\Throwable $e) {
+            error_log('Theme save failed: ' . $e->getMessage());
+            json(['ok'=>false,'msg'=>'Theme save failed. Run database/sql/add_theme_element_styles.sql and try again.'], 500);
+        }
     }
     if ($uri === '/admin/api/theme/preview' && $method === 'POST') {
-        $theme = array_merge(\Theme\SiteTheme::defaults(), is_array($body) ? $body : []);
-        $theme = \Theme\SiteTheme::sanitizeValues($theme);
-        $elementStyles = \Theme\SiteTheme::sanitizeElementStyles(is_array($body['element_styles'] ?? null) ? $body['element_styles'] : \Theme\SiteTheme::loadElementStyles());
-        json(['ok'=>true,'theme'=>$theme,'element_styles'=>$elementStyles,'css'=>\Theme\SiteTheme::css($theme, $elementStyles)]);
+        try {
+            $theme = array_merge(\Theme\SiteTheme::defaults(), is_array($body) ? $body : []);
+            $theme = \Theme\SiteTheme::sanitizeValues($theme);
+            $elementStyles = \Theme\SiteTheme::sanitizeElementStyles(is_array($body['element_styles'] ?? null) ? $body['element_styles'] : \Theme\SiteTheme::loadElementStyles());
+            json(['ok'=>true,'theme'=>$theme,'element_styles'=>$elementStyles,'css'=>\Theme\SiteTheme::css($theme, $elementStyles)]);
+        } catch (\Throwable $e) {
+            error_log('Theme preview failed: ' . $e->getMessage());
+            json(['ok'=>false,'msg'=>'Theme preview failed. Check generated style values.'], 500);
+        }
     }
     if ($uri === '/admin/api/theme/reset' && $method === 'POST') {
-        $theme = \Theme\SiteTheme::reset();
-        $elementStyles = \Theme\SiteTheme::resetElementStyles();
-        \Orders\AdminAudit::log('theme_reset','Website design theme reset to defaults');
-        json(['ok'=>true,'theme'=>$theme,'element_styles'=>$elementStyles,'css'=>\Theme\SiteTheme::css($theme, $elementStyles)]);
+        try {
+            $theme = \Theme\SiteTheme::reset();
+            $elementStyles = \Theme\SiteTheme::resetElementStyles();
+            \Orders\AdminAudit::log('theme_reset','Website design theme reset to defaults');
+            json(['ok'=>true,'theme'=>$theme,'element_styles'=>$elementStyles,'css'=>\Theme\SiteTheme::css($theme, $elementStyles)]);
+        } catch (\Throwable $e) {
+            error_log('Theme reset failed: ' . $e->getMessage());
+            json(['ok'=>false,'msg'=>'Theme reset failed. Check database permissions.'], 500);
+        }
     }
 
     if ($uri === '/admin/api/settings' && $method === 'GET') {
