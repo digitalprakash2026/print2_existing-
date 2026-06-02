@@ -870,6 +870,28 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true,'path'=>'/uploads/blogs/' . $name]);
     }
 
+
+    if ($uri === '/admin/api/theme' && $method === 'GET') {
+        $theme = \Theme\SiteTheme::load();
+        json(['ok'=>true,'theme'=>$theme,'defaults'=>\Theme\SiteTheme::defaults(),'css'=>\Theme\SiteTheme::css($theme)]);
+    }
+    if ($uri === '/admin/api/theme' && $method === 'POST') {
+        $saved = \Theme\SiteTheme::save(is_array($body) ? $body : []);
+        $theme = array_merge(\Theme\SiteTheme::load(), $saved);
+        \Orders\AdminAudit::log('theme_updated','Website design theme updated');
+        json(['ok'=>true,'theme'=>$theme,'css'=>\Theme\SiteTheme::css($theme)]);
+    }
+    if ($uri === '/admin/api/theme/preview' && $method === 'POST') {
+        $theme = array_merge(\Theme\SiteTheme::defaults(), is_array($body) ? $body : []);
+        $theme = \Theme\SiteTheme::sanitizeValues($theme);
+        json(['ok'=>true,'theme'=>$theme,'css'=>\Theme\SiteTheme::css($theme)]);
+    }
+    if ($uri === '/admin/api/theme/reset' && $method === 'POST') {
+        $theme = \Theme\SiteTheme::reset();
+        \Orders\AdminAudit::log('theme_reset','Website design theme reset to defaults');
+        json(['ok'=>true,'theme'=>$theme,'css'=>\Theme\SiteTheme::css($theme)]);
+    }
+
     if ($uri === '/admin/api/settings' && $method === 'GET') {
         $rows = Database::rows("SELECT `key`,value FROM settings");
         json(['ok'=>true,'settings'=>array_column($rows,'value','key')]);
@@ -1104,6 +1126,7 @@ $adminPage = match(true) {
     $uri === '/admin/customers'  => 'admin/customers',
     $uri === '/admin/admins'     => 'admin/admins',
     $uri === '/admin/settings'   => 'admin/settings',
+    $uri === '/admin/design'     => 'admin/design',
     $uri === '/admin/integrations' => 'admin/integrations',
     $uri === '/admin/audit-logs' => 'admin/audit-logs',
     default                      => null,
