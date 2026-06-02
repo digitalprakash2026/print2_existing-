@@ -21,14 +21,56 @@
 <script>
 window.RCS_THEME_DEFAULTS = <?= json_encode(\Theme\SiteTheme::defaults(), JSON_UNESCAPED_SLASHES) ?>;
 window.addEventListener('message', function (event) {
-  if (event.origin !== window.location.origin || !event.data || event.data.type !== 'RCS_THEME_PREVIEW') return;
-  var style = document.getElementById('rcs-theme-vars');
-  if (!style) {
-    style = document.createElement('style');
-    style.id = 'rcs-theme-vars';
-    document.head.appendChild(style);
+  if (event.origin !== window.location.origin || !event.data) return;
+  if (event.data.type === 'RCS_THEME_PREVIEW') {
+    var style = document.getElementById('rcs-theme-vars');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'rcs-theme-vars';
+      document.head.appendChild(style);
+    }
+    if (typeof event.data.css === 'string') style.textContent = event.data.css;
   }
-  if (typeof event.data.css === 'string') style.textContent = event.data.css;
+  if (event.data.type === 'RCS_THEME_ENABLE_INSPECTOR') {
+    window.RCS_THEME_INSPECTOR_ELEMENTS = event.data.elements || {};
+    if (window.RCS_THEME_INSPECTOR_READY) return;
+    window.RCS_THEME_INSPECTOR_READY = true;
+    var inspectorStyle = document.createElement('style');
+    inspectorStyle.textContent = '.rcs-inspector-hover{outline:2px dashed #2563eb!important;outline-offset:3px!important;cursor:crosshair!important}.rcs-inspector-selected{outline:3px solid #ea580c!important;outline-offset:4px!important}';
+    document.head.appendChild(inspectorStyle);
+    var selected = null;
+    var findTarget = function (node) {
+      var map = window.RCS_THEME_INSPECTOR_ELEMENTS || {};
+      while (node && node !== document.body) {
+        for (var key in map) {
+          if (map[key] && map[key].selector && node.matches && node.matches(map[key].selector)) {
+            return {key:key, label:map[key].label || key, el:node};
+          }
+        }
+        node = node.parentElement;
+      }
+      return null;
+    };
+    document.addEventListener('mouseover', function (e) {
+      var found = findTarget(e.target);
+      if (found && found.el !== selected) found.el.classList.add('rcs-inspector-hover');
+    }, true);
+    document.addEventListener('mouseout', function (e) {
+      var found = findTarget(e.target);
+      if (found) found.el.classList.remove('rcs-inspector-hover');
+    }, true);
+    document.addEventListener('click', function (e) {
+      var found = findTarget(e.target);
+      if (!found) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (selected) selected.classList.remove('rcs-inspector-selected');
+      selected = found.el;
+      selected.classList.remove('rcs-inspector-hover');
+      selected.classList.add('rcs-inspector-selected');
+      window.parent.postMessage({type:'RCS_THEME_ELEMENT_SELECTED', target:found.key, label:found.label}, window.location.origin);
+    }, true);
+  }
 });
 </script>
 </head>

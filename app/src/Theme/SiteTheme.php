@@ -7,6 +7,7 @@ namespace Theme;
 class SiteTheme
 {
     public const PREFIX = 'theme_';
+    public const ELEMENT_STYLES_KEY = 'theme_element_styles';
 
     private const FIELDS = [
         'theme_primary_color' => ['type' => 'color', 'default' => '#2563EB'],
@@ -32,10 +33,51 @@ class SiteTheme
 
     private const FONTS = ['Inter', 'Poppins', 'Merriweather'];
     private const HEADING_FONTS = ['Merriweather', 'Poppins', 'Inter'];
+    private const FONT_WEIGHTS = ['400', '500', '600', '700', '800', '900'];
     private const SHADOWS = [
         'none' => 'none',
         'soft' => '0 8px 20px rgba(15,23,42,.04)',
         'premium' => '0 16px 36px rgba(37,99,235,.13)',
+    ];
+
+    private const STYLE_FIELDS = [
+        'fontFamily' => ['type' => 'font', 'css' => 'font-family', 'label' => 'Font family'],
+        'fontSize' => ['type' => 'px', 'css' => 'font-size', 'label' => 'Font size', 'min' => 10, 'max' => 90],
+        'fontWeight' => ['type' => 'weight', 'css' => 'font-weight', 'label' => 'Font weight'],
+        'lineHeight' => ['type' => 'number', 'css' => 'line-height', 'label' => 'Line height', 'min' => 1, 'max' => 2, 'step' => 0.05],
+        'color' => ['type' => 'color', 'css' => 'color', 'label' => 'Text color'],
+        'backgroundColor' => ['type' => 'color', 'css' => 'background-color', 'label' => 'Background'],
+        'borderColor' => ['type' => 'color', 'css' => 'border-color', 'label' => 'Border color'],
+        'borderRadius' => ['type' => 'px', 'css' => 'border-radius', 'label' => 'Border radius', 'min' => 0, 'max' => 48],
+        'paddingTop' => ['type' => 'px', 'css' => 'padding-top', 'label' => 'Padding top', 'min' => 0, 'max' => 120],
+        'paddingBottom' => ['type' => 'px', 'css' => 'padding-bottom', 'label' => 'Padding bottom', 'min' => 0, 'max' => 120],
+        'paddingLeft' => ['type' => 'px', 'css' => 'padding-left', 'label' => 'Padding left', 'min' => 0, 'max' => 120],
+        'paddingRight' => ['type' => 'px', 'css' => 'padding-right', 'label' => 'Padding right', 'min' => 0, 'max' => 120],
+        'marginBottom' => ['type' => 'px', 'css' => 'margin-bottom', 'label' => 'Bottom space', 'min' => 0, 'max' => 90],
+        'boxShadow' => ['type' => 'shadow', 'css' => 'box-shadow', 'label' => 'Shadow'],
+    ];
+
+    private const ELEMENTS = [
+        'header.topbar' => ['label' => 'Header Topbar', 'selector' => '.topbar', 'controls' => ['backgroundColor', 'color', 'fontSize', 'paddingTop', 'paddingBottom']],
+        'header.navbar' => ['label' => 'Header Navbar', 'selector' => '.navbar', 'controls' => ['backgroundColor', 'paddingTop', 'paddingBottom', 'boxShadow']],
+        'header.logo' => ['label' => 'Header Logo', 'selector' => '.brand-img', 'controls' => ['borderRadius']],
+        'header.nav_links' => ['label' => 'Navigation Links', 'selector' => '.nav-link', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color']],
+        'home.banner' => ['label' => 'Home Banner Slider', 'selector' => '.banner-slider', 'controls' => ['borderRadius', 'boxShadow', 'marginBottom']],
+        'home.banner.title' => ['label' => 'Banner Title', 'selector' => '.bs-title', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'home.banner.subtitle' => ['label' => 'Banner Subtitle', 'selector' => '.bs-subtitle', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'site.buttons' => ['label' => 'All Buttons', 'selector' => '.btn,.bs-cta,.deal-promo-btn,.deal-order-btn,.all-cat-apply-btn', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color', 'backgroundColor', 'borderRadius', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight']],
+        'home.categories.section' => ['label' => 'Category Section', 'selector' => '.shop-cat-section', 'controls' => ['backgroundColor', 'paddingTop', 'paddingBottom']],
+        'home.categories.title' => ['label' => 'Category Section Title', 'selector' => '.shop-cat-title', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'home.category.card' => ['label' => 'Category Cards', 'selector' => '.shop-cat-link,.all-cat-card', 'controls' => ['backgroundColor', 'borderColor', 'borderRadius', 'boxShadow', 'paddingTop', 'paddingBottom']],
+        'home.category.name' => ['label' => 'Category Card Text', 'selector' => '.shop-cat-name,.all-cat-body h3', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color']],
+        'product.card' => ['label' => 'Product Cards', 'selector' => '.pc,.cat-product-card', 'controls' => ['backgroundColor', 'borderColor', 'borderRadius', 'boxShadow']],
+        'product.card.title' => ['label' => 'Product Card Title', 'selector' => '.pc-name,.cat-product-card h3', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'product.card.description' => ['label' => 'Product Card Description', 'selector' => '.pc-desc,.cat-product-card p', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'product.card.price' => ['label' => 'Product Card Price', 'selector' => '.pc-price,.cat-price', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color']],
+        'home.deal.card' => ['label' => 'Deal Cards', 'selector' => '.deal-card-link,.deal-promo-card', 'controls' => ['backgroundColor', 'borderRadius', 'boxShadow']],
+        'home.blog.card' => ['label' => 'Blog Cards', 'selector' => '.blog-card-link', 'controls' => ['backgroundColor', 'borderRadius', 'boxShadow']],
+        'footer.section' => ['label' => 'Footer Section', 'selector' => '.footer', 'controls' => ['backgroundColor', 'color', 'paddingTop', 'paddingBottom']],
+        'footer.links' => ['label' => 'Footer Links/Text', 'selector' => '.footer-col a,.footer-col p,.footer-contact-item,.footer-desc', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color']],
     ];
 
     public static function defaults(): array
@@ -106,9 +148,57 @@ class SiteTheme
         return $defaults;
     }
 
-    public static function css(array $theme = []): string
+    public static function loadElementStyles(): array
+    {
+        try {
+            $raw = (string)\Database::setting(self::ELEMENT_STYLES_KEY, '{}');
+            $decoded = json_decode($raw, true);
+            return self::sanitizeElementStyles(is_array($decoded) ? $decoded : []);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    public static function saveElementStyles(array $styles): array
+    {
+        $clean = self::sanitizeElementStyles($styles);
+        \Database::setSetting(self::ELEMENT_STYLES_KEY, json_encode($clean, JSON_UNESCAPED_SLASHES));
+        return $clean;
+    }
+
+    public static function resetElementStyles(): array
+    {
+        \Database::setSetting(self::ELEMENT_STYLES_KEY, '{}');
+        return [];
+    }
+
+    public static function sanitizeElementStyles(array $styles): array
+    {
+        $clean = [];
+        foreach ($styles as $target => $values) {
+            $target = (string)$target;
+            if (!isset(self::ELEMENTS[$target]) || !is_array($values)) {
+                continue;
+            }
+            $allowed = array_flip(self::ELEMENTS[$target]['controls']);
+            foreach ($values as $property => $value) {
+                $property = (string)$property;
+                if (!isset($allowed[$property], self::STYLE_FIELDS[$property])) {
+                    continue;
+                }
+                $sanitized = self::sanitizeStyleValue($property, (string)$value);
+                if ($sanitized !== '') {
+                    $clean[$target][$property] = $sanitized;
+                }
+            }
+        }
+        return $clean;
+    }
+
+    public static function css(array $theme = [], ?array $elementStyles = null): string
     {
         $theme = array_merge(self::defaults(), $theme ?: self::load());
+        $elementStyles = $elementStyles === null ? self::loadElementStyles() : self::sanitizeElementStyles($elementStyles);
         $shadow = self::SHADOWS[$theme['theme_card_shadow']] ?? self::SHADOWS['soft'];
         $font = self::fontStack($theme['theme_font_family']);
         $headingFont = self::fontStack($theme['theme_heading_font']);
@@ -155,7 +245,8 @@ class SiteTheme
             '.hero-h1{font-size:clamp(28px,4vw,var(--theme-hero-title-size));}' .
             '.pc,.shop-cat-link,.deal-card-link,.blog-card-link,.all-cat-card,.cartp-card{border-radius:var(--theme-card-radius);box-shadow:var(--theme-card-shadow);}' .
             '.footer{background:radial-gradient(680px 180px at 4% 0%, rgba(255,255,255,.09), transparent 60%),linear-gradient(90deg,var(--theme-footer-bg) 0%,var(--theme-footer-bg) 42%,var(--theme-footer-end) 100%);}' .
-            '.footer-social a{color:var(--theme-footer-bg);}';
+            '.footer-social a{color:var(--theme-footer-bg);}' .
+            self::elementCss($elementStyles);
     }
 
     public static function designSchema(): array
@@ -191,6 +282,30 @@ class SiteTheme
         ];
     }
 
+    public static function elementSchema(): array
+    {
+        $schema = [];
+        foreach (self::ELEMENTS as $target => $element) {
+            $controls = [];
+            foreach ($element['controls'] as $property) {
+                $field = self::STYLE_FIELDS[$property];
+                $controls[$property] = [
+                    'label' => $field['label'],
+                    'type' => $field['type'],
+                    'min' => $field['min'] ?? null,
+                    'max' => $field['max'] ?? null,
+                    'step' => $field['step'] ?? null,
+                ];
+            }
+            $schema[$target] = [
+                'label' => $element['label'],
+                'selector' => $element['selector'],
+                'controls' => $controls,
+            ];
+        }
+        return $schema;
+    }
+
     public static function fieldMeta(string $key): array
     {
         return self::FIELDS[$key] ?? ['type' => 'text', 'default' => ''];
@@ -206,9 +321,39 @@ class SiteTheme
         return self::HEADING_FONTS;
     }
 
+    public static function fontWeightOptions(): array
+    {
+        return self::FONT_WEIGHTS;
+    }
+
     public static function shadowOptions(): array
     {
         return array_keys(self::SHADOWS);
+    }
+
+    private static function elementCss(array $elementStyles): string
+    {
+        $css = '';
+        foreach ($elementStyles as $target => $styles) {
+            if (!isset(self::ELEMENTS[$target]) || empty($styles)) {
+                continue;
+            }
+            $rules = '';
+            foreach ($styles as $property => $value) {
+                if (!isset(self::STYLE_FIELDS[$property])) {
+                    continue;
+                }
+                $cssProperty = self::STYLE_FIELDS[$property]['css'];
+                $cssValue = self::cssStyleValue($property, (string)$value);
+                if ($cssValue !== '') {
+                    $rules .= $cssProperty . ':' . $cssValue . ' !important;';
+                }
+            }
+            if ($rules !== '') {
+                $css .= self::ELEMENTS[$target]['selector'] . '{' . $rules . '}';
+            }
+        }
+        return $css;
     }
 
     private static function sanitize(string $key, string $value): string
@@ -224,6 +369,35 @@ class SiteTheme
             'px' => self::sanitizePx($value, (int)$field['min'], (int)$field['max'], $field['default']),
             'shadow' => array_key_exists($value, self::SHADOWS) ? $value : $field['default'],
             default => $field['default'],
+        };
+    }
+
+    private static function sanitizeStyleValue(string $property, string $value): string
+    {
+        $field = self::STYLE_FIELDS[$property] ?? null;
+        if (!$field) return '';
+        $value = trim($value);
+        if ($value === '') return '';
+
+        return match ($field['type']) {
+            'color' => self::sanitizeColor($value, ''),
+            'font' => in_array($value, self::FONTS, true) || in_array($value, self::HEADING_FONTS, true) ? $value : '',
+            'weight' => in_array($value, self::FONT_WEIGHTS, true) ? $value : '',
+            'px' => self::sanitizePx($value, (int)$field['min'], (int)$field['max'], ''),
+            'number' => self::sanitizeNumber($value, (float)$field['min'], (float)$field['max']),
+            'shadow' => array_key_exists($value, self::SHADOWS) ? $value : '',
+            default => '',
+        };
+    }
+
+    private static function cssStyleValue(string $property, string $value): string
+    {
+        $field = self::STYLE_FIELDS[$property] ?? null;
+        if (!$field) return '';
+        return match ($field['type']) {
+            'font' => self::fontStack($value),
+            'shadow' => self::SHADOWS[$value] ?? '',
+            default => $value,
         };
     }
 
@@ -244,6 +418,15 @@ class SiteTheme
         $num = max($min, min($max, $num));
         $out = rtrim(rtrim(number_format($num, 2, '.', ''), '0'), '.');
         return $out . 'px';
+    }
+
+    private static function sanitizeNumber(string $value, float $min, float $max): string
+    {
+        if (!preg_match('/^\d+(?:\.\d+)?$/', $value)) {
+            return '';
+        }
+        $num = max($min, min($max, (float)$value));
+        return rtrim(rtrim(number_format($num, 2, '.', ''), '0'), '.');
     }
 
     private static function fontStack(string $font): string
