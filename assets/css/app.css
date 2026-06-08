@@ -6439,7 +6439,9 @@ body:has(#siteHeader) .banner-slider {
   background:#fff;
 }
 .cartp-page {
-  max-width:1220px;
+  width:min(var(--page-max), calc(100vw - var(--page-gutter)));
+  max-width:var(--page-max);
+  margin-inline:auto;
 }
 .cartp-head {
   margin-bottom:28px;
@@ -6469,8 +6471,8 @@ body:has(#siteHeader) .banner-slider {
 }
 .cartp-grid {
   display:grid;
-  grid-template-columns:minmax(0, 1fr) 330px;
-  gap:34px;
+  grid-template-columns:minmax(0, 1fr) minmax(340px, 380px);
+  gap:40px;
   align-items:start;
 }
 .cartp-main,
@@ -6863,6 +6865,9 @@ body:has(#siteHeader) .banner-slider {
 @media (max-width:820px) {
   .cartp-wrap {
     padding-top:22px;
+  }
+  .cartp-page {
+    width:min(100%, calc(100vw - 28px));
   }
   .cartp-head {
     margin-bottom:20px;
