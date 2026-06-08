@@ -257,9 +257,36 @@ if ($uri === '/profile/security' && $method === 'GET') {
     exit;
 }
 
-// Terms & Conditions
-if ($uri === '/terms-and-conditions' && $method === 'GET') {
-    view('terms-and-conditions');
+// Static information pages
+$sitePageRoutes = [
+    '/about' => 'about',
+    '/shipping-policy' => 'shipping-policy',
+    '/refund-return-policy' => 'refund-return-policy',
+    '/terms-and-conditions' => 'terms-and-conditions',
+    '/privacy-policy' => 'privacy-policy',
+];
+if (isset($sitePageRoutes[$uri]) && $method === 'GET') {
+    $sitePages = require APP_PATH . '/data/site_pages.php';
+    $page = $sitePages[$sitePageRoutes[$uri]] ?? null;
+    if (!$page) { http_response_code(404); view('404'); exit; }
+    try {
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable) {
+        $settingsMap = [];
+    }
+    view('info-page', compact('page', 'settingsMap'));
+    exit;
+}
+
+if ($uri === '/contact' && $method === 'GET') {
+    try {
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable) {
+        $settingsMap = [];
+    }
+    view('contact', compact('settingsMap'));
     exit;
 }
 

@@ -30,7 +30,7 @@ $content = $sanitizeBlogHtml((string)($blog['content'] ?? ''));
 <main class="blog-detail-page">
   <section class="blog-detail-hero">
     <div class="blog-detail-container">
-      <a href="/#blogs-sec" class="blog-back-link">← Back to Blogs</a>
+      <a href="/blogs" class="blog-back-link">← Back to Blogs</a>
       <div class="blog-detail-meta-row">
         <span class="blog-detail-badge"><?= $category ?></span>
         <span><i class="fa-regular fa-calendar" aria-hidden="true"></i> <?= htmlspecialchars($published, ENT_QUOTES, 'UTF-8') ?></span>
@@ -73,14 +73,5 @@ $content = $sanitizeBlogHtml((string)($blog['content'] ?? ''));
   </section>
 </main>
 
-<footer class="footer" aria-label="Site footer">
-  <div class="footer-container">
-    <div class="footer-bottom" style="border-top:0">
-      <div class="footer-copy">© <?= date('Y') ?> <?= $bizName ?>. All Rights Reserved.</div>
-      <div class="footer-payments" aria-label="Accepted payments"><span>VISA</span><span>UPI</span><span>Paytm</span></div>
-      <div class="footer-developed">Developed By Prakash Karena</div>
-    </div>
-  </div>
-</footer>
-
+<?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>

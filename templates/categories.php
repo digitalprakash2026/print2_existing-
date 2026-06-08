@@ -249,10 +249,11 @@ include INCLUDE_PATH . '/partials/header.php';
       <nav class="footer-col" aria-label="Quick links">
         <h3>Quick Links</h3>
         <a href="/">Home</a>
-        <a href="/#why-sec">About Us</a>
+        <a href="/about">About Us</a>
         <a href="/categories">Products</a>
+        <a href="/blogs">Blog</a>
         <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
-        <a href="/#quick-help-sec">Contact Us</a>
+        <a href="/contact">Contact Us</a>
       </nav>
 
       <nav class="footer-col" aria-label="Products">
@@ -270,10 +271,10 @@ include INCLUDE_PATH . '/partials/header.php';
         <h3>Customer Service</h3>
         <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
         <a href="/my-orders">Track Order</a>
-        <a href="/categories">Shipping Policy</a>
-        <a href="/categories">Refund &amp; Return</a>
+        <a href="/shipping-policy">Shipping Policy</a>
+        <a href="/refund-return-policy">Refund &amp; Return</a>
         <a href="/terms-and-conditions">Terms &amp; Conditions</a>
-        <a href="/terms-and-conditions">Privacy Policy</a>
+        <a href="/privacy-policy">Privacy Policy</a>
       </nav>
 
       <div class="footer-col footer-contact-col">

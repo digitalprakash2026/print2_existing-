@@ -141,9 +141,9 @@ foreach ($navProducts as $p) {
               </a>
             </div>
           </li>
-          <li><a href="/#why-sec" class="nav-link rcs-nav-link" data-design-target="header.nav_links">About Us</a></li>
-          <li><a href="/#quick-help-sec" class="nav-link rcs-nav-link" data-design-target="header.nav_links">Contact Us</a></li>
-          <li><a href="/#blogs-sec" class="nav-link rcs-nav-link" data-design-target="header.nav_links">Blog</a></li>
+          <li><a href="/about" class="nav-link rcs-nav-link" data-design-target="header.nav_links">About Us</a></li>
+          <li><a href="/contact" class="nav-link rcs-nav-link" data-design-target="header.nav_links">Contact Us</a></li>
+          <li><a href="/blogs" class="nav-link rcs-nav-link" data-design-target="header.nav_links">Blog</a></li>
           <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link rcs-nav-link" data-design-target="header.nav_links">My Account</a></li>
         </ul>
       </div>
@@ -213,9 +213,9 @@ foreach ($navProducts as $p) {
       </a>
     </div>
 
-    <a href="/#why-sec"     class="md-item" onclick="closeDrawer()">⭐ About Us</a>
-    <a href="/#quick-help-sec" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
-    <a href="/#blogs-sec"    class="md-item" onclick="closeDrawer()">📝 Blog</a>
+    <a href="/about"     class="md-item" onclick="closeDrawer()">⭐ About Us</a>
+    <a href="/contact" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
+    <a href="/blogs"    class="md-item" onclick="closeDrawer()">📝 Blog</a>
     <a href="/categories"      class="md-item" onclick="closeDrawer()">🔎 Search Products</a>
     <a href="/cart" class="md-item md-action" onclick="closeDrawer()">
       🛒 Cart <span class="md-cart-badge">0</span>
