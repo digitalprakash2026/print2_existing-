@@ -56,6 +56,70 @@ while (count($recentDesigns) < 4) {
     $recentDesigns[] = $designFallbacks[count($recentDesigns)];
 }
 $helpPhone = $phone !== '' ? $phone : '+91 98765 43210';
+$phoneHref = preg_replace('/\D+/', '', $helpPhone);
+
+$renderOrders = static function (array $list, bool $compact = false) use ($h, $statusLabels): void {
+    if (empty($list)) {
+        ?>
+        <div class="account-empty-state">
+          <i class="fa-solid fa-box-open"></i>
+          <strong>No orders yet</strong>
+          <span>Your print orders will appear here after checkout.</span>
+          <a href="/categories" class="btn btn-blue btn-sm">Browse Products</a>
+        </div>
+        <?php
+        return;
+    }
+    ?>
+    <div class="account-order-table" role="table" aria-label="<?= $compact ? 'Recent orders' : 'All orders' ?>">
+      <div class="account-order-row account-order-head" role="row">
+        <span>Order ID</span><span>Date</span><span>Products</span><span>Amount</span><span>Status</span><span>Action</span>
+      </div>
+      <?php foreach ($list as $order):
+        $items = is_array($order['items'] ?? null) ? $order['items'] : [];
+        $status = (string)($order['status'] ?? 'received');
+        $statusClass = preg_replace('/[^a-z0-9_-]/i', '', $status);
+        $productTitle = implode(', ', array_filter(array_map(static fn($item) => (string)($item['product_name'] ?? ''), $items)));
+      ?>
+        <details class="account-order-detail">
+          <summary class="account-order-row" role="row">
+            <strong>#<?= $h($order['order_id'] ?? $order['id'] ?? '') ?></strong>
+            <span><?= !empty($order['created_at']) ? date('d M, Y', strtotime((string)$order['created_at'])) : '—' ?></span>
+            <span class="account-product-mini" title="<?= $h($productTitle) ?>">
+              <?php foreach (array_slice($items, 0, 3) as $idx => $item): ?>
+                <i style="--mini:<?= (int)$idx ?>"><?= $h(strtoupper(substr((string)($item['product_name'] ?? 'P'), 0, 1))) ?></i>
+              <?php endforeach; ?>
+              <?php if (count($items) > 3): ?><em>+<?= count($items) - 3 ?></em><?php endif; ?>
+              <?php if (empty($items)): ?><em>0</em><?php endif; ?>
+            </span>
+            <b>₹<?= number_format((float)($order['total_amount'] ?? 0)) ?></b>
+            <span class="account-status status-<?= $h($statusClass) ?>"><?= $h($statusLabels[$status] ?? ucfirst($status)) ?></span>
+            <span class="account-mini-btn"><?= $compact ? 'View Details' : 'Details' ?></span>
+          </summary>
+          <div class="account-order-expanded">
+            <div>
+              <strong>Products</strong>
+              <?php if (empty($items)): ?>
+                <p>No product items found for this order.</p>
+              <?php else: ?>
+                <ul>
+                  <?php foreach ($items as $item): ?>
+                    <li><?= $h($item['product_name'] ?? 'Product') ?> — <?= number_format((float)($item['quantity'] ?? 0)) ?> × <?= $h($item['quality_name'] ?? 'Standard') ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              <?php endif; ?>
+            </div>
+            <div>
+              <strong>Payment</strong>
+              <p><?= $h(ucfirst((string)($order['payment_status'] ?? 'pending'))) ?> · <?= $h(ucfirst((string)($order['payment_method'] ?? ''))) ?></p>
+              <?php if (!empty($order['payment_id'])): ?><small>Payment ID: <?= $h($order['payment_id']) ?></small><?php endif; ?>
+            </div>
+          </div>
+        </details>
+      <?php endforeach; ?>
+    </div>
+    <?php
+};
 ?>
 <main class="account-page" data-design-target="account.page">
   <section class="account-hero" aria-labelledby="accountTitle">
@@ -84,189 +148,202 @@ $helpPhone = $phone !== '' ? $phone : '+91 98765 43210';
 
   <section class="account-dashboard container" aria-label="Account dashboard">
     <aside class="account-sidebar" aria-label="My account menu">
-      <a class="account-nav-item is-active" href="/profile"><i class="fa-solid fa-shapes"></i><span>Dashboard</span></a>
-      <a class="account-nav-item" href="/my-orders"><i class="fa-regular fa-clipboard"></i><span>My Orders</span></a>
-      <a class="account-nav-item" href="#myDesigns"><i class="fa-regular fa-pen-to-square"></i><span>My Designs</span></a>
-      <a class="account-nav-item" href="#savedAddresses"><i class="fa-solid fa-location-dot"></i><span>Saved Addresses</span></a>
-      <a class="account-nav-item" href="#wishlist"><i class="fa-regular fa-heart"></i><span>My Wishlist</span></a>
-      <a class="account-nav-item" href="#wallet"><i class="fa-regular fa-wallet"></i><span>My Wallet</span></a>
-      <a class="account-nav-item" href="#accountDetails"><i class="fa-regular fa-user"></i><span>Account Details</span></a>
-      <a class="account-nav-item" href="/profile/security"><i class="fa-solid fa-lock"></i><span>Change Password</span></a>
-      <a class="account-nav-item" href="#notifications"><i class="fa-regular fa-bell"></i><span>Notifications</span></a>
-      <a class="account-nav-item" href="/contact"><i class="fa-regular fa-handshake"></i><span>Refer &amp; Earn</span></a>
+      <button class="account-nav-item is-active" type="button" data-account-tab="dashboard"><i class="fa-solid fa-shapes"></i><span>Dashboard</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="orders"><i class="fa-regular fa-clipboard"></i><span>My Orders</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="designs"><i class="fa-regular fa-pen-to-square"></i><span>My Designs</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="addresses"><i class="fa-solid fa-location-dot"></i><span>Saved Addresses</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="wishlist"><i class="fa-regular fa-heart"></i><span>My Wishlist</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="wallet"><i class="fa-regular fa-wallet"></i><span>My Wallet</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="details"><i class="fa-regular fa-user"></i><span>Account Details</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="security"><i class="fa-solid fa-lock"></i><span>Change Password</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="notifications"><i class="fa-regular fa-bell"></i><span>Notifications</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="refer"><i class="fa-regular fa-handshake"></i><span>Refer &amp; Earn</span></button>
       <a class="account-nav-item" href="/logout"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Logout</span></a>
 
       <div class="account-help-card">
         <strong>Need Help?</strong>
         <span>We are here to help you!</span>
-        <a href="tel:<?= $h(preg_replace('/\D+/', '', $helpPhone)) ?>"><i class="fa-solid fa-phone"></i><?= $h($helpPhone) ?></a>
+        <a href="tel:<?= $h($phoneHref) ?>"><i class="fa-solid fa-phone"></i><?= $h($helpPhone) ?></a>
         <small>Mon - Sat: 10:00 AM - 7:00 PM</small>
       </div>
     </aside>
 
     <div class="account-main">
-      <div class="account-stats-grid" id="wallet">
-        <article class="account-stat-card stat-purple">
-          <span class="account-stat-icon"><i class="fa-solid fa-bag-shopping"></i></span>
-          <div><small>Total Orders</small><strong><?= number_format($totalOrders) ?></strong><a href="/my-orders">View Orders <i class="fa-solid fa-arrow-right"></i></a></div>
-        </article>
-        <article class="account-stat-card stat-orange">
-          <span class="account-stat-icon"><i class="fa-regular fa-rectangle-list"></i></span>
-          <div><small>Orders in Progress</small><strong><?= str_pad((string)$progressOrders, 2, '0', STR_PAD_LEFT) ?></strong><a href="/my-orders">Track Now <i class="fa-solid fa-arrow-right"></i></a></div>
-        </article>
-        <article class="account-stat-card stat-green">
-          <span class="account-stat-icon"><i class="fa-solid fa-bag-shopping"></i></span>
-          <div><small>Completed Orders</small><strong><?= str_pad((string)$completedOrders, 2, '0', STR_PAD_LEFT) ?></strong><a href="/my-orders">View History <i class="fa-solid fa-arrow-right"></i></a></div>
-        </article>
-        <article class="account-stat-card stat-wallet">
-          <span class="account-stat-icon"><i class="fa-regular fa-wallet"></i></span>
-          <div><small>Wallet Balance</small><strong>₹0.00</strong><a href="/contact">Add Money <i class="fa-solid fa-arrow-right"></i></a></div>
-        </article>
-      </div>
+      <section class="account-tab-panel is-active" data-account-panel="dashboard" aria-label="Account dashboard overview">
+        <div class="account-stats-grid">
+          <article class="account-stat-card stat-purple">
+            <span class="account-stat-icon"><i class="fa-solid fa-bag-shopping"></i></span>
+            <div><small>Total Orders</small><strong><?= number_format($totalOrders) ?></strong><button type="button" data-account-tab="orders">View Orders <i class="fa-solid fa-arrow-right"></i></button></div>
+          </article>
+          <article class="account-stat-card stat-orange">
+            <span class="account-stat-icon"><i class="fa-regular fa-rectangle-list"></i></span>
+            <div><small>Orders in Progress</small><strong><?= str_pad((string)$progressOrders, 2, '0', STR_PAD_LEFT) ?></strong><button type="button" data-account-tab="orders">Track Now <i class="fa-solid fa-arrow-right"></i></button></div>
+          </article>
+          <article class="account-stat-card stat-green">
+            <span class="account-stat-icon"><i class="fa-solid fa-bag-shopping"></i></span>
+            <div><small>Completed Orders</small><strong><?= str_pad((string)$completedOrders, 2, '0', STR_PAD_LEFT) ?></strong><button type="button" data-account-tab="orders">View History <i class="fa-solid fa-arrow-right"></i></button></div>
+          </article>
+          <article class="account-stat-card stat-wallet">
+            <span class="account-stat-icon"><i class="fa-regular fa-wallet"></i></span>
+            <div><small>Wallet Balance</small><strong>₹0.00</strong><button type="button" data-account-tab="wallet">View Wallet <i class="fa-solid fa-arrow-right"></i></button></div>
+          </article>
+        </div>
 
-      <section class="account-card account-profile-card" aria-label="Profile summary">
-        <div class="account-avatar-wrap">
-          <div class="account-avatar" aria-hidden="true"><?= $h($initials) ?></div>
-          <button type="button" onclick="document.getElementById('p-name')?.focus()" aria-label="Edit profile photo"><i class="fa-solid fa-camera"></i></button>
-        </div>
-        <div class="account-profile-copy">
-          <h2><?= $h($name) ?></h2>
-          <?php if ($company !== ''): ?><p><i class="fa-regular fa-building"></i><?= $h($company) ?></p><?php endif; ?>
-          <p><i class="fa-regular fa-envelope"></i><?= $email !== '' ? $h($email) : 'Add email address' ?></p>
-          <p><i class="fa-solid fa-phone"></i><?= $phone !== '' ? $h($phone) : 'Add phone number' ?></p>
-          <p><i class="fa-solid fa-location-dot"></i><?= $h($location) ?></p>
-        </div>
-        <a class="account-edit-btn" href="#accountDetails">Edit Profile</a>
+        <section class="account-card account-profile-card" aria-label="Profile summary">
+          <div class="account-avatar-wrap">
+            <div class="account-avatar" aria-hidden="true"><?= $h($initials) ?></div>
+            <button type="button" data-account-tab="details" aria-label="Edit profile photo"><i class="fa-solid fa-camera"></i></button>
+          </div>
+          <div class="account-profile-copy">
+            <h2><?= $h($name) ?></h2>
+            <?php if ($company !== ''): ?><p><i class="fa-regular fa-building"></i><?= $h($company) ?></p><?php endif; ?>
+            <p><i class="fa-regular fa-envelope"></i><?= $email !== '' ? $h($email) : 'Add email address' ?></p>
+            <p><i class="fa-solid fa-phone"></i><?= $phone !== '' ? $h($phone) : 'Add phone number' ?></p>
+            <p><i class="fa-solid fa-location-dot"></i><?= $h($location) ?></p>
+          </div>
+          <button class="account-edit-btn" type="button" data-account-tab="details">Edit Profile</button>
+        </section>
+
+        <section class="account-card account-orders-card" aria-labelledby="recentOrdersTitle">
+          <div class="account-section-head">
+            <h2 id="recentOrdersTitle">Recent Orders</h2>
+            <button type="button" data-account-tab="orders">View All Orders <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+          <?php $renderOrders($recentOrders, true); ?>
+        </section>
+
+        <section class="account-card account-actions-card" aria-labelledby="quickActionsTitle">
+          <h2 id="quickActionsTitle">Quick Actions</h2>
+          <div class="account-action-grid">
+            <a href="/categories"><i class="fa-solid fa-repeat"></i><strong>Reorder</strong><span>Quickly</span></a>
+            <a href="/categories"><i class="fa-solid fa-cloud-arrow-up"></i><strong>Upload</strong><span>New Design</span></a>
+            <button type="button" data-account-tab="orders"><i class="fa-regular fa-file-lines"></i><strong>Download</strong><span>Invoice</span></button>
+            <button type="button" data-account-tab="orders"><i class="fa-solid fa-truck-fast"></i><strong>Track</strong><span>Order</span></button>
+            <button type="button" data-account-tab="refer"><i class="fa-solid fa-gift"></i><strong>Refer &amp;</strong><span>Earn</span></button>
+            <button type="button" data-account-tab="notifications"><i class="fa-solid fa-headset"></i><strong>Help</strong><span>Center</span></button>
+          </div>
+        </section>
       </section>
 
-      <section class="account-card account-orders-card" aria-labelledby="recentOrdersTitle">
-        <div class="account-section-head">
-          <h2 id="recentOrdersTitle">Recent Orders</h2>
-          <a href="/my-orders">View All Orders <i class="fa-solid fa-arrow-right"></i></a>
-        </div>
-        <?php if (empty($recentOrders)): ?>
-          <div class="account-empty-state">
-            <i class="fa-solid fa-box-open"></i>
-            <strong>No orders yet</strong>
-            <span>Your recent print orders will appear here.</span>
-            <a href="/categories" class="btn btn-blue btn-sm">Browse Products</a>
+      <section class="account-tab-panel" data-account-panel="orders" aria-labelledby="ordersPanelTitle">
+        <section class="account-card account-orders-card">
+          <div class="account-section-head">
+            <div><h2 id="ordersPanelTitle">My Orders</h2><p>All your print orders and payment/status information in one place.</p></div>
+            <a href="/categories">Place New Order <i class="fa-solid fa-arrow-right"></i></a>
           </div>
-        <?php else: ?>
-          <div class="account-order-table" role="table" aria-label="Recent orders">
-            <div class="account-order-row account-order-head" role="row">
-              <span>Order ID</span><span>Date</span><span>Products</span><span>Amount</span><span>Status</span><span>Action</span>
-            </div>
-            <?php foreach ($recentOrders as $order):
-              $items = $order['items'] ?? [];
-              $status = (string)($order['status'] ?? 'received');
-              $statusClass = preg_replace('/[^a-z0-9_-]/i', '', $status);
-            ?>
-              <div class="account-order-row" role="row">
-                <strong>#<?= $h($order['order_id'] ?? $order['id'] ?? '') ?></strong>
-                <span><?= !empty($order['created_at']) ? date('d M, Y', strtotime((string)$order['created_at'])) : '—' ?></span>
-                <span class="account-product-mini" title="<?= $h(implode(', ', array_filter(array_column($items, 'product_name')))) ?>">
-                  <?php foreach (array_slice($items, 0, 3) as $idx => $item): ?>
-                    <i style="--mini:<?= (int)$idx ?>"><?= strtoupper(substr((string)($item['product_name'] ?? 'P'), 0, 1)) ?></i>
-                  <?php endforeach; ?>
-                  <?php if (count($items) > 3): ?><em>+<?= count($items) - 3 ?></em><?php endif; ?>
-                </span>
-                <b>₹<?= number_format((float)($order['total_amount'] ?? 0)) ?></b>
-                <span class="account-status status-<?= $h($statusClass) ?>"><?= $h($statusLabels[$status] ?? ucfirst($status)) ?></span>
-                <a class="account-mini-btn" href="/my-orders">View Details</a>
+          <?php $renderOrders($orders, false); ?>
+        </section>
+      </section>
+
+      <section class="account-tab-panel" data-account-panel="designs" aria-labelledby="designsPanelTitle">
+        <section class="account-card account-designs-card">
+          <div class="account-section-head">
+            <div><h2 id="designsPanelTitle">My Designs</h2><p>Designs are based on your recent orders and uploaded artwork where available.</p></div>
+            <a href="/categories">Upload New Design <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+          <div class="account-design-grid">
+            <?php foreach ($recentDesigns as $idx => $design): ?>
+            <article class="account-design-card">
+              <div class="account-design-thumb design-thumb-<?= ($idx % 4) + 1 ?>">
+                <span></span><b></b><em></em>
+                <button type="button" aria-label="Design options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
               </div>
+              <strong><?= $h($design['name']) ?></strong>
+              <small>Updated on <?= date('d M, Y', strtotime((string)$design['date'])) ?></small>
+            </article>
             <?php endforeach; ?>
           </div>
-        <?php endif; ?>
+        </section>
       </section>
 
-      <section class="account-card account-designs-card" id="myDesigns" aria-labelledby="myDesignsTitle">
-        <div class="account-section-head">
-          <h2 id="myDesignsTitle">My Designs</h2>
-          <a href="/categories">Upload New Design <i class="fa-solid fa-arrow-right"></i></a>
-        </div>
-        <div class="account-design-grid">
-          <?php foreach ($recentDesigns as $idx => $design): ?>
-          <article class="account-design-card">
-            <div class="account-design-thumb design-thumb-<?= ($idx % 4) + 1 ?>">
-              <span></span><b></b><em></em>
-              <button type="button" aria-label="Design options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+      <section class="account-tab-panel" data-account-panel="addresses" aria-labelledby="addressesPanelTitle">
+        <section class="account-card account-form-card">
+          <div class="account-section-head"><div><h2 id="addressesPanelTitle">Saved Addresses</h2><p>Manage default delivery and billing addresses used during checkout.</p></div></div>
+          <div class="account-form-block">
+            <h3><i class="fa-solid fa-location-dot"></i> Default Delivery Address</h3>
+            <div class="fg"><label>Address Line 1</label><input id="ps-add1" class="fi" value="<?= $h($shipping['address_line1'] ?? '') ?>"></div>
+            <div class="fg"><label>Address Line 2</label><input id="ps-add2" class="fi" value="<?= $h($shipping['address_line2'] ?? '') ?>"></div>
+            <div class="f2">
+              <div class="fg"><label>City</label><input id="ps-city" class="fi" value="<?= $h($shipping['city'] ?? '') ?>"></div>
+              <div class="fg"><label>State</label><input id="ps-state" class="fi" value="<?= $h($shipping['state'] ?? '') ?>"></div>
             </div>
-            <strong><?= $h($design['name']) ?></strong>
-            <small>Updated on <?= date('d M, Y', strtotime((string)$design['date'])) ?></small>
-          </article>
-          <?php endforeach; ?>
-        </div>
+            <div class="fg" style="margin-bottom:0"><label>Pincode</label><input id="ps-pin" class="fi" value="<?= $h($shipping['pincode'] ?? '') ?>"></div>
+          </div>
+          <div class="account-form-block">
+            <h3><i class="fa-regular fa-file-lines"></i> Default Billing Details (GST Invoice)</h3>
+            <?php if (!empty($profile['migration_required'])): ?>
+            <div class="account-warning">Billing fields are not available yet. Please run the SQL migration shared in the implementation notes.</div>
+            <?php endif; ?>
+            <div class="fg"><label>Legal Business Name</label><input id="pb-legal" class="fi" value="<?= $h($billing['legal_name'] ?? '') ?>" placeholder="ABC Pvt Ltd"></div>
+            <div class="fg"><label>GSTIN</label><input id="pb-gst" class="fi" value="<?= $h($billing['gst_no'] ?? '') ?>" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+            <div class="fg"><label>Billing Address Line 1</label><input id="pb-add1" class="fi" value="<?= $h($billing['address_line1'] ?? '') ?>"></div>
+            <div class="fg"><label>Billing Address Line 2</label><input id="pb-add2" class="fi" value="<?= $h($billing['address_line2'] ?? '') ?>"></div>
+            <div class="f2">
+              <div class="fg"><label>City</label><input id="pb-city" class="fi" value="<?= $h($billing['city'] ?? '') ?>"></div>
+              <div class="fg"><label>State</label><input id="pb-state" class="fi" value="<?= $h($billing['state'] ?? '') ?>"></div>
+            </div>
+            <div class="fg" style="margin-bottom:0"><label>Pincode</label><input id="pb-pin" class="fi" value="<?= $h($billing['pincode'] ?? '') ?>"></div>
+          </div>
+          <div class="account-form-actions"><button class="btn btn-blue" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> Save Addresses</button></div>
+        </section>
       </section>
 
-      <section class="account-card account-actions-card" aria-labelledby="quickActionsTitle">
-        <h2 id="quickActionsTitle">Quick Actions</h2>
-        <div class="account-action-grid">
-          <a href="/categories"><i class="fa-solid fa-repeat"></i><strong>Reorder</strong><span>Quickly</span></a>
-          <a href="/categories"><i class="fa-solid fa-cloud-arrow-up"></i><strong>Upload</strong><span>New Design</span></a>
-          <a href="/my-orders"><i class="fa-regular fa-file-lines"></i><strong>Download</strong><span>Invoice</span></a>
-          <a href="/my-orders"><i class="fa-solid fa-truck-fast"></i><strong>Track</strong><span>Order</span></a>
-          <a href="/contact"><i class="fa-solid fa-gift"></i><strong>Refer &amp;</strong><span>Earn</span></a>
-          <a href="/contact"><i class="fa-solid fa-headset"></i><strong>Help</strong><span>Center</span></a>
-        </div>
+      <section class="account-tab-panel" data-account-panel="wishlist" aria-labelledby="wishlistPanelTitle">
+        <section class="account-card account-placeholder-card"><i class="fa-regular fa-heart"></i><h2 id="wishlistPanelTitle">My Wishlist</h2><p>Wishlist storage is not enabled yet. Products you save later will appear here.</p><a href="/categories" class="btn btn-blue btn-sm">Browse Products</a></section>
       </section>
 
-      <section class="account-card account-form-card" id="accountDetails" aria-labelledby="accountDetailsTitle">
-        <div class="account-section-head">
-          <div>
-            <h2 id="accountDetailsTitle">Account Details</h2>
-            <p>Update your profile, saved address and default billing details.</p>
-          </div>
-          <a href="/profile/security">Change Password</a>
-        </div>
+      <section class="account-tab-panel" data-account-panel="wallet" aria-labelledby="walletPanelTitle">
+        <section class="account-card account-placeholder-card"><i class="fa-regular fa-wallet"></i><h2 id="walletPanelTitle">My Wallet</h2><p>Your current wallet balance is <strong>₹0.00</strong>. Wallet transactions can be connected once wallet storage is added.</p><a href="/contact" class="btn btn-outline btn-sm">Contact Support</a></section>
+      </section>
 
-        <div class="account-form-block">
-          <h3><i class="fa-regular fa-user"></i> Basic Details</h3>
-          <div class="fg"><label>Full Name *</label><input id="p-name" class="fi" value="<?= $h($name) ?>"></div>
-          <div class="f2">
-            <div class="fg"><label>Email *</label><input id="p-email" type="email" class="fi" value="<?= $h($email) ?>"></div>
-            <div class="fg"><label>Phone *</label><input id="p-phone" type="tel" class="fi" value="<?= $h($phone) ?>"></div>
+      <section class="account-tab-panel" data-account-panel="details" aria-labelledby="detailsPanelTitle">
+        <section class="account-card account-form-card">
+          <div class="account-section-head"><div><h2 id="detailsPanelTitle">Account Details</h2><p>Update your name, email, phone and company details.</p></div></div>
+          <div class="account-form-block">
+            <h3><i class="fa-regular fa-user"></i> Basic Details</h3>
+            <div class="fg"><label>Full Name *</label><input id="p-name" class="fi" value="<?= $h($name) ?>"></div>
+            <div class="f2">
+              <div class="fg"><label>Email *</label><input id="p-email" type="email" class="fi" value="<?= $h($email) ?>"></div>
+              <div class="fg"><label>Phone *</label><input id="p-phone" type="tel" class="fi" value="<?= $h($phone) ?>"></div>
+            </div>
+            <div class="fg" style="margin-bottom:0"><label>Company (optional)</label><input id="p-company" class="fi" value="<?= $h($company) ?>"></div>
           </div>
-          <div class="fg" style="margin-bottom:0"><label>Company (optional)</label><input id="p-company" class="fi" value="<?= $h($company) ?>"></div>
-        </div>
-
-        <div class="account-form-block" id="savedAddresses">
-          <h3><i class="fa-solid fa-location-dot"></i> Default Delivery Address</h3>
-          <div class="fg"><label>Address Line 1</label><input id="ps-add1" class="fi" value="<?= $h($shipping['address_line1'] ?? '') ?>"></div>
-          <div class="fg"><label>Address Line 2</label><input id="ps-add2" class="fi" value="<?= $h($shipping['address_line2'] ?? '') ?>"></div>
-          <div class="f2">
-            <div class="fg"><label>City</label><input id="ps-city" class="fi" value="<?= $h($shipping['city'] ?? '') ?>"></div>
-            <div class="fg"><label>State</label><input id="ps-state" class="fi" value="<?= $h($shipping['state'] ?? '') ?>"></div>
+          <div id="profErr" class="account-alert is-error" style="display:none"></div>
+          <div id="profOk" class="account-alert is-ok" style="display:none"></div>
+          <div class="account-form-actions">
+            <button class="btn btn-blue" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> Save Profile</button>
+            <button type="button" class="btn btn-outline" data-account-tab="security"><i class="fa-solid fa-lock"></i> Password Settings</button>
           </div>
-          <div class="fg" style="margin-bottom:0"><label>Pincode</label><input id="ps-pin" class="fi" value="<?= $h($shipping['pincode'] ?? '') ?>"></div>
-        </div>
+        </section>
+      </section>
 
-        <div class="account-form-block">
-          <h3><i class="fa-regular fa-file-lines"></i> Default Billing Details (GST Invoice)</h3>
-          <?php if (!empty($profile['migration_required'])): ?>
-          <div class="account-warning">Billing fields are not available yet. Please run the SQL migration shared in the implementation notes.</div>
-          <?php endif; ?>
-          <div class="fg"><label>Legal Business Name</label><input id="pb-legal" class="fi" value="<?= $h($billing['legal_name'] ?? '') ?>" placeholder="ABC Pvt Ltd"></div>
-          <div class="fg"><label>GSTIN</label><input id="pb-gst" class="fi" value="<?= $h($billing['gst_no'] ?? '') ?>" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-          <div class="fg"><label>Billing Address Line 1</label><input id="pb-add1" class="fi" value="<?= $h($billing['address_line1'] ?? '') ?>"></div>
-          <div class="fg"><label>Billing Address Line 2</label><input id="pb-add2" class="fi" value="<?= $h($billing['address_line2'] ?? '') ?>"></div>
-          <div class="f2">
-            <div class="fg"><label>City</label><input id="pb-city" class="fi" value="<?= $h($billing['city'] ?? '') ?>"></div>
-            <div class="fg"><label>State</label><input id="pb-state" class="fi" value="<?= $h($billing['state'] ?? '') ?>"></div>
+      <section class="account-tab-panel" data-account-panel="security" aria-labelledby="securityPanelTitle">
+        <section class="account-card account-form-card">
+          <div class="account-section-head"><div><h2 id="securityPanelTitle">Change Password</h2><p>Set a new password without leaving My Account.</p></div></div>
+          <div class="account-form-block">
+            <h3><i class="fa-solid fa-lock"></i> Security</h3>
+            <p class="account-muted">Existing passwords are stored securely in hashed form and cannot be shown in plain text.</p>
+            <div class="fg"><label>Current Password *</label><div class="account-pass-wrap"><input id="pw-current" type="password" class="fi" placeholder="Enter current password"><button type="button" onclick="togglePassField('pw-current', this)">👁️</button></div></div>
+            <div class="fg"><label>New Password *</label><div class="account-pass-wrap"><input id="pw-new" type="password" class="fi" placeholder="Minimum 6 characters"><button type="button" onclick="togglePassField('pw-new', this)">👁️</button></div></div>
+            <div class="fg"><label>Confirm New Password *</label><div class="account-pass-wrap"><input id="pw-confirm" type="password" class="fi" placeholder="Retype new password"><button type="button" onclick="togglePassField('pw-confirm', this)">👁️</button></div></div>
+            <div id="pwErr" class="account-alert is-error" style="display:none"></div>
+            <div id="pwOk" class="account-alert is-ok" style="display:none"></div>
+            <div class="account-form-actions"><button class="btn btn-blue" type="button" onclick="changePassword()">Update Password</button></div>
           </div>
-          <div class="fg" style="margin-bottom:0"><label>Pincode</label><input id="pb-pin" class="fi" value="<?= $h($billing['pincode'] ?? '') ?>"></div>
-        </div>
+        </section>
+      </section>
 
-        <div id="profErr" class="account-alert is-error" style="display:none"></div>
-        <div id="profOk" class="account-alert is-ok" style="display:none"></div>
-        <div class="account-form-actions">
-          <button class="btn btn-blue" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> Save Profile</button>
-          <a href="/profile/security" class="btn btn-outline"><i class="fa-solid fa-lock"></i> Password Settings</a>
-        </div>
+      <section class="account-tab-panel" data-account-panel="notifications" aria-labelledby="notificationsPanelTitle">
+        <section class="account-card account-placeholder-card"><i class="fa-regular fa-bell"></i><h2 id="notificationsPanelTitle">Notifications</h2><p>No account notifications yet. Order updates and important messages will appear here once notifications are connected.</p><button type="button" class="btn btn-outline btn-sm" data-account-tab="orders">Check Orders</button></section>
+      </section>
+
+      <section class="account-tab-panel" data-account-panel="refer" aria-labelledby="referPanelTitle">
+        <section class="account-card account-placeholder-card"><i class="fa-regular fa-handshake"></i><h2 id="referPanelTitle">Refer &amp; Earn</h2><p>Referral tracking is not enabled yet. For bulk or referral benefits, contact our support team.</p><a href="/contact" class="btn btn-blue btn-sm">Contact Support</a></section>
       </section>
     </div>
   </section>
 
-  <section class="account-benefits container" id="wishlist" aria-label="Account benefits">
+  <section class="account-benefits container" aria-label="Account benefits">
     <div><i class="fa-solid fa-crown"></i><strong>Premium Quality</strong><span>Best quality materials and printing.</span></div>
     <div><i class="fa-solid fa-bag-shopping"></i><strong>Affordable Pricing</strong><span>Low price with the best value.</span></div>
     <div><i class="fa-solid fa-truck-fast"></i><strong>Fast Delivery</strong><span>On-time delivery with guarantees.</span></div>
@@ -274,20 +351,50 @@ $helpPhone = $phone !== '' ? $phone : '+91 98765 43210';
     <div><i class="fa-solid fa-cube"></i><strong>Design Support</strong><span>Professional artwork guidance.</span></div>
   </section>
 
-  <section class="account-contact-strip container" id="notifications" aria-label="Contact support">
+  <section class="account-contact-strip container" aria-label="Contact support">
     <div><strong>Have Questions?</strong><span>We're here to help!</span></div>
-    <a href="tel:<?= $h(preg_replace('/\D+/', '', $helpPhone)) ?>"><i class="fa-solid fa-phone-volume"></i><strong><?= $h($helpPhone) ?></strong><span>Mon - Sat: 10:00 AM - 7:00 PM</span></a>
-    <a href="https://wa.me/<?= $h(preg_replace('/\D+/', '', $helpPhone)) ?>" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i><strong>Chat with us on WhatsApp</strong><span>We are here to help!</span></a>
+    <a href="tel:<?= $h($phoneHref) ?>"><i class="fa-solid fa-phone-volume"></i><strong><?= $h($helpPhone) ?></strong><span>Mon - Sat: 10:00 AM - 7:00 PM</span></a>
+    <a href="https://wa.me/<?= $h($phoneHref) ?>" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i><strong>Chat with us on WhatsApp</strong><span>We are here to help!</span></a>
     <a class="account-download" href="/contact"><i class="fa-solid fa-download"></i><strong>Download Brochure</strong><span>For Bulk Orders</span></a>
   </section>
 </main>
 
 <script>
+const ACCOUNT_TABS = ['dashboard','orders','designs','addresses','wishlist','wallet','details','security','notifications','refer'];
+
+function setAccountTab(tab, pushHash = true, scrollToPanel = true) {
+  const safeTab = ACCOUNT_TABS.includes(tab) ? tab : 'dashboard';
+  document.querySelectorAll('[data-account-tab]').forEach(el => {
+    const active = el.dataset.accountTab === safeTab;
+    el.classList.toggle('is-active', active && el.classList.contains('account-nav-item'));
+    if (el.classList.contains('account-nav-item')) el.setAttribute('aria-current', active ? 'page' : 'false');
+  });
+  document.querySelectorAll('[data-account-panel]').forEach(panel => {
+    const active = panel.dataset.accountPanel === safeTab;
+    panel.classList.toggle('is-active', active);
+    panel.toggleAttribute('hidden', !active);
+  });
+  if (pushHash) history.replaceState(null, '', safeTab === 'dashboard' ? '/profile' : `/profile#${safeTab}`);
+  if (scrollToPanel) document.querySelector('.account-main')?.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+document.querySelectorAll('[data-account-tab]').forEach(el => {
+  el.addEventListener('click', event => {
+    const tab = el.dataset.accountTab;
+    if (!tab) return;
+    event.preventDefault();
+    setAccountTab(tab);
+  });
+});
+
+window.addEventListener('hashchange', () => setAccountTab(location.hash.replace('#', ''), false));
+setAccountTab(location.hash.replace('#', ''), false, false);
+
 async function saveProfile() {
   const err = document.getElementById('profErr');
   const ok = document.getElementById('profOk');
-  err.style.display = 'none';
-  ok.style.display = 'none';
+  if (err) err.style.display = 'none';
+  if (ok) ok.style.display = 'none';
 
   const payload = {
     name: document.getElementById('p-name')?.value.trim() || '',
@@ -313,8 +420,10 @@ async function saveProfile() {
   };
 
   if (!payload.name || !payload.email || !payload.phone) {
-    err.textContent = 'Name, email and phone are required.';
-    err.style.display = 'block';
+    setAccountTab('details');
+    const target = document.getElementById('profErr');
+    target.textContent = 'Name, email and phone are required.';
+    target.style.display = 'block';
     return;
   }
 
@@ -327,18 +436,75 @@ async function saveProfile() {
     });
     const data = await resp.json();
     if (!data.ok) {
-      err.textContent = data.msg || 'Could not update profile.';
+      setAccountTab('details');
+      const target = document.getElementById('profErr');
+      target.textContent = data.msg || 'Could not update profile.';
+      target.style.display = 'block';
+      return;
+    }
+    const target = document.getElementById('profOk');
+    target.textContent = data.migration_required
+      ? 'Basic profile updated. Billing fields will work after DB migration is applied.'
+      : 'Profile updated successfully.';
+    setAccountTab('details');
+    target.style.display = 'block';
+  } catch (e) {
+    setAccountTab('details');
+    const target = document.getElementById('profErr');
+    target.textContent = 'Could not update profile right now.';
+    target.style.display = 'block';
+  }
+}
+
+async function changePassword() {
+  const err = document.getElementById('pwErr');
+  const ok = document.getElementById('pwOk');
+  err.style.display = 'none';
+  ok.style.display = 'none';
+
+  const current_password = document.getElementById('pw-current')?.value || '';
+  const new_password = document.getElementById('pw-new')?.value || '';
+  const confirm_password = document.getElementById('pw-confirm')?.value || '';
+
+  if (!current_password || !new_password || !confirm_password) {
+    err.textContent = 'Please fill all password fields.';
+    err.style.display = 'block';
+    return;
+  }
+  if (new_password !== confirm_password) {
+    err.textContent = 'New password and confirm password must match.';
+    err.style.display = 'block';
+    return;
+  }
+
+  try {
+    const resp = await fetch('/api/profile/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
+      credentials: 'same-origin',
+      body: JSON.stringify({ current_password, new_password, confirm_password }),
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      err.textContent = data.msg || 'Could not update password.';
       err.style.display = 'block';
       return;
     }
-    ok.textContent = data.migration_required
-      ? 'Basic profile updated. Billing fields will work after DB migration is applied.'
-      : 'Profile updated successfully.';
+    ['pw-current','pw-new','pw-confirm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ok.textContent = 'Password updated successfully.';
     ok.style.display = 'block';
   } catch (e) {
-    err.textContent = 'Could not update profile right now.';
+    err.textContent = 'Could not update password right now.';
     err.style.display = 'block';
   }
+}
+
+function togglePassField(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const show = el.type === 'password';
+  el.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁️';
 }
 </script>
 <?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>

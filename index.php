@@ -235,11 +235,7 @@ if ($uri === '/logout') {
 // My Orders
 if ($uri === '/my-orders' && $method === 'GET') {
     \Auth\Auth::require();
-    $user = \Auth\Auth::user();
-    try { $orders = \Orders\OrderManager::getUserOrders((int)$user['id']); }
-    catch (\Throwable) { $orders = []; }
-    view('my-orders', compact('orders', 'user'));
-    exit;
+    redirect('/profile#orders');
 }
 
 // My Profile
@@ -255,8 +251,7 @@ if ($uri === '/profile' && $method === 'GET') {
 
 if ($uri === '/profile/security' && $method === 'GET') {
     \Auth\Auth::require();
-    view('profile-security');
-    exit;
+    redirect('/profile#security');
 }
 
 // Static information pages
