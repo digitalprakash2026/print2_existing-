@@ -33,7 +33,7 @@ if (!$primaryImg) $primaryImg = 'https://placehold.co/600x600/EEF3FD/1A56E8?text
 $specs      = $product['specs']      ?? [];
 $qualities  = $product['qualities']  ?? [];
 $attrGroups = []; // Attribute pricing retired from customer flow
-$bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
+$bizWa      = preg_replace('/\D+/', '', (string)($settingsMap['biz_whatsapp'] ?? '919876543210'));
 $startingPrice = (float)($product['min_price'] ?? 0);
 if ($startingPrice <= 0 && $qualities) {
     foreach ($qualities as $q) {
@@ -221,22 +221,7 @@ $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug)
               <div id="uploadPreview"></div>
             </div>
           </div>
-
-          <div class="pd-design-or">OR</div>
-
-          <div class="design-opt" id="dopt-rcs" onclick="selDesignOpt('rcs')">
-            <div class="design-opt-icon"><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i></div>
-            <div class="design-opt-title">Get Free Design</div>
-            <div class="design-opt-copy">Let our experts design for you</div>
-            <?php if ($designFee > 0): ?>
-            <div class="design-opt-note is-paid">+₹<?= number_format($designFee) ?> design fee</div>
-            <?php else: ?>
-            <div class="design-opt-note is-free">No upfront design charge</div>
-            <?php endif; ?>
-          </div>
-
         </div>
-        <div id="panel-rcs" style="display:none"></div>
       </div>
 
       <!-- Notes area intentionally empty — kept for spacing -->
@@ -262,9 +247,6 @@ $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug)
         <div class="pd-action-row">
           <button class="btn btn-blue btn-full" onclick="addToCart()" id="addCartBtn">
             <i class="fa-solid fa-cart-plus" aria-hidden="true"></i> ADD TO CART
-          </button>
-          <button class="btn btn-green btn-full" onclick="buyNow()">
-            GET FREE DESIGN
           </button>
           <button class="btn btn-outline" onclick="waOrder()" title="Order via WHATSAPP SUPPORT">
             <svg viewBox="0 0 24 24" style="width:17px;height:17px;fill:currentColor" aria-hidden="true">
@@ -427,22 +409,13 @@ $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug)
 </div><!-- /container -->
 </div><!-- /page-wrap -->
 
-<!-- Sticky Price Bar -->
-<div class="sticky-price show" id="stickyBar">
-  <div>
-    <div class="sp-sub">Total Price</div>
-    <div class="sp-price" id="spTotal">₹ —</div>
-  </div>
-  <div class="sticky-price-actions" style="display:flex;gap:8px">
-    <button class="btn btn-blue" onclick="addToCart()" style="padding:11px 18px">Add to Cart</button>
-    <button class="btn btn-green" onclick="buyNow()" style="padding:11px 16px">Buy Now</button>
-  </div>
-</div>
-
 <script>
 // ── Data from PHP ──────────────────────────────────────────────
 const PRODUCT_ID  = <?= (int)$product['id'] ?>;
-const BIZ_WA      = '<?= htmlspecialchars($bizWa) ?>';
+const BIZ_WA      = '<?= htmlspecialchars($bizWa, ENT_QUOTES, 'UTF-8') ?>';
+const PRODUCT_NAME = <?= json_encode((string)($product['name'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+const PRODUCT_CODE = <?= json_encode((string)$productCode, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+const CATEGORY_NAME = <?= json_encode((string)$categoryName, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 const CSRF        = '<?= htmlspecialchars($csrf ?? '') ?>';
 const QUALITIES   = <?= json_encode($qualities) ?>;
 const DESIGN_FEE  = <?= (float)$designFee ?>;
@@ -464,18 +437,14 @@ let currentBasePrice   = 0;
 function refreshOrderReadiness() {
   const hasQty = !!selectedQty;
   const addBtn = document.getElementById('addCartBtn');
-  const stickyBtns = document.querySelectorAll('#stickyBar .btn.btn-blue, #stickyBar .btn.btn-green');
-  const buyBtn = document.querySelector('.btn.btn-green.btn-full');
   const hint = document.getElementById('orderHint');
 
   if (addBtn) addBtn.disabled = !hasQty;
-  if (buyBtn) buyBtn.disabled = !hasQty;
-  stickyBtns.forEach(btn => btn.disabled = !hasQty);
 
   if (hint) {
     hint.textContent = hasQty
-      ? 'Looks good. You can now add to cart or buy now.'
-      : 'Select quantity to enable Add to Cart / Buy Now.';
+      ? 'Looks good. You can now add to cart.'
+      : 'Select quantity to enable Add to Cart.';
   }
 }
 
@@ -556,7 +525,6 @@ function calcPrice() {
   if (!selectedQualityId || !selectedQty) {
     document.getElementById('ppBase').textContent  = '—';
     document.getElementById('ppTotal').textContent = '₹ —';
-    document.getElementById('spTotal').textContent = '₹ —';
     currentBasePrice = 0;
     refreshOrderReadiness();
     return;
@@ -573,7 +541,6 @@ function calcPrice() {
   const fmt = n => '₹' + Number(n).toLocaleString('en-IN');
   document.getElementById('ppBase').textContent  = fmt(base);
   document.getElementById('ppTotal').textContent = fmt(total);
-  document.getElementById('spTotal').textContent = fmt(total);
   const panel = document.getElementById('pricePanel');
   if (panel) {
     panel.classList.remove('flash');
@@ -600,11 +567,11 @@ function calcPrice() {
 
 // Design Option
 function selDesignOpt(choice) {
-  designChoice = choice;
-  document.getElementById('dopt-upload').classList.toggle('sel', choice === 'upload');
-  document.getElementById('dopt-rcs').classList.toggle('sel', choice === 'rcs');
-  document.getElementById('panel-upload').style.display = choice === 'upload' ? 'block' : 'none';
-  document.getElementById('panel-rcs').style.display    = choice === 'rcs' ? 'block' : 'none';
+  designChoice = 'upload';
+  const uploadOpt = document.getElementById('dopt-upload');
+  if (uploadOpt) uploadOpt.classList.add('sel');
+  const uploadPanel = document.getElementById('panel-upload');
+  if (uploadPanel) uploadPanel.style.display = 'block';
   calcPrice();
   refreshOrderReadiness();
 }
@@ -744,30 +711,40 @@ function validateOrder() {
 
 // WHATSAPP SUPPORT Quick Order
 function waOrder() {
-  const totalEl = document.getElementById('ppTotal').textContent || '₹ —';
-  const qname   = QUALITIES[selectedQualityIdx]?.name || 'Standard';
+  const totalEl = document.getElementById('ppTotal')?.textContent || '₹ —';
+  const baseEl = document.getElementById('ppBase')?.textContent || '—';
+  const qname = QUALITIES[selectedQualityIdx]?.name || 'Standard';
   const qtyText = selectedQty ? Number(selectedQty).toLocaleString('en-IN') + ' pcs' : 'Not selected';
-  const dOpt    = designChoice === 'rcs' ? 'Design by RCS Graphic' : 'Customer Upload';
-  const now     = new Date().toLocaleString('en-IN');
+  const artworkText = uploadedFileName ? uploadedFileName : (artworkId ? 'Artwork uploaded' : 'Not uploaded yet');
+  const now = new Date().toLocaleString('en-IN');
   const pageUrl = window.location.href;
 
   const msg = [
-    '🧾 *Product Enquiry*',
+    '🧾 *Product Enquiry - RCS Graphic*',
     `🕒 ${now}`,
     '',
     '*Product Details*',
-    `• Product: <?= addslashes(htmlspecialchars($product['name'])) ?>`,
+    `• Product: ${PRODUCT_NAME}`,
+    PRODUCT_CODE ? `• Product Code: ${PRODUCT_CODE}` : '',
+    `• Category: ${CATEGORY_NAME || 'Products'}`,
     `• Quantity: ${qtyText}`,
     `• Quality: ${qname}`,
-    `• Design: ${dOpt}`,
+    `• Base Price: ${baseEl}`,
     `• Estimated Total: ${totalEl}`,
+    `• Artwork File: ${artworkText}`,
     '',
-    `Source: Product Page (${pageUrl})`,
+    '*Page Link*',
+    pageUrl,
     '',
-    'Please confirm final costing and next steps.'
-  ].join('\n');
+    'I am interested in this product. Please confirm final costing, artwork requirements and next steps.'
+  ].filter(Boolean).join('\n');
 
-  window.open(`https://wa.me/${BIZ_WA}?text=${encodeURIComponent(msg)}`, '_blank');
+  const waNumber = String(BIZ_WA || '').replace(/\D+/g, '');
+  if (!waNumber) {
+    toast('WhatsApp number is not configured', 'error');
+    return;
+  }
+  window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
 }
 
 function switchProductTab(tab, btn) {
