@@ -40,6 +40,12 @@ class SiteTheme
         'premium' => '0 16px 36px rgba(37,99,235,.13)',
     ];
 
+    private static array $lastElementSaveMeta = [
+        'storage' => 'not_saved',
+        'target_count' => 0,
+        'css_length' => 0,
+    ];
+
     private const STYLE_FIELDS = [
         'fontFamily' => ['type' => 'font', 'css' => 'font-family', 'label' => 'Font family'],
         'fontSize' => ['type' => 'px', 'css' => 'font-size', 'label' => 'Font size', 'min' => 10, 'max' => 90, 'presets' => [12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64]],
@@ -183,6 +189,12 @@ class SiteTheme
     {
         $clean = self::sanitizeElementStyles($styles);
         $encodedAll = json_encode($clean, JSON_UNESCAPED_SLASHES) ?: '{}';
+        $cssLength = strlen(self::elementCss($clean));
+        self::$lastElementSaveMeta = [
+            'storage' => 'theme_element_styles',
+            'target_count' => count($clean),
+            'css_length' => $cssLength,
+        ];
 
         try {
             self::ensureElementStylesTable();
@@ -203,6 +215,8 @@ class SiteTheme
                 }
             } catch (\Throwable) {}
             \Database::setSetting(self::ELEMENT_STYLES_KEY, $encodedAll);
+            self::$lastElementSaveMeta['storage'] = 'settings_fallback';
+            self::$lastElementSaveMeta['error'] = $e->getMessage();
             return $clean;
         }
 
@@ -212,6 +226,11 @@ class SiteTheme
             // The dedicated table is authoritative; this legacy backup is optional.
         }
         return $clean;
+    }
+
+    public static function lastElementSaveMeta(): array
+    {
+        return self::$lastElementSaveMeta;
     }
 
     public static function resetElementStyles(): array
@@ -456,8 +475,8 @@ class SiteTheme
 
         return match ($field['type']) {
             'color' => self::sanitizeColor($value, ''),
-            'font' => in_array($value, self::FONTS, true) || in_array($value, self::HEADING_FONTS, true) ? $value : '',
-            'weight' => in_array($value, self::FONT_WEIGHTS, true) ? $value : '',
+            'font' => self::sanitizeFontName($value),
+            'weight' => self::sanitizeFontWeight($value),
             'px' => self::sanitizePx($value, (int)$field['min'], (int)$field['max'], ''),
             'number' => self::sanitizeNumber($value, (float)$field['min'], (float)$field['max']),
             'shadow' => array_key_exists($value, self::SHADOWS) ? $value : '',
@@ -478,10 +497,43 @@ class SiteTheme
 
     private static function sanitizeColor(string $value, string $default): string
     {
+        $value = trim($value);
         if (preg_match('/^#[0-9a-fA-F]{6}$/', $value)) {
             return strtoupper($value);
         }
+        if (preg_match('/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|0?\.\d+|1(?:\.0)?))?\s*\)$/i', $value, $m)) {
+            if (isset($m[4]) && (float)$m[4] === 0.0) return $default;
+            $r = max(0, min(255, (int)$m[1]));
+            $g = max(0, min(255, (int)$m[2]));
+            $b = max(0, min(255, (int)$m[3]));
+            return sprintf('#%02X%02X%02X', $r, $g, $b);
+        }
         return $default;
+    }
+
+    private static function sanitizeFontName(string $value): string
+    {
+        $value = trim($value, " \t\n\r\0\x0B\"'");
+        $first = trim(explode(',', $value)[0] ?? '', " \t\n\r\0\x0B\"'");
+        foreach (array_merge(self::FONTS, self::HEADING_FONTS) as $font) {
+            if (strcasecmp($font, $value) === 0 || strcasecmp($font, $first) === 0) {
+                return $font;
+            }
+        }
+        return '';
+    }
+
+    private static function sanitizeFontWeight(string $value): string
+    {
+        $value = strtolower(trim($value));
+        if ($value === 'normal') return '400';
+        if ($value === 'bold') return '700';
+        if (preg_match('/^\d+$/', $value)) {
+            $num = (int)$value;
+            $rounded = (string)(max(100, min(900, (int)round($num / 100) * 100)));
+            return in_array($rounded, self::FONT_WEIGHTS, true) ? $rounded : '';
+        }
+        return '';
     }
 
     private static function sanitizePx(string $value, int $min, int $max, string $default): string

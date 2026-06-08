@@ -231,7 +231,10 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
       latestCss = json.css;
       sendPreview(latestCss);
       enableInspector();
-      setStatus(message || 'Live preview updated', 'ok');
+      const meta = json.meta || {};
+      const cssLen = meta.css_length || (latestCss ? latestCss.length : 0);
+      const dropped = meta.dropped_element_style_count ? (' · dropped targets: ' + meta.dropped_element_style_count) : '';
+      setStatus((message || 'Live preview updated') + ' · CSS ' + cssLen + ' chars' + dropped, 'ok');
     } catch (err) { setStatus('Preview error: ' + err.message, 'bad'); }
   }
   function schedulePreview(message) {
@@ -305,6 +308,8 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
     if (!elementStyles[selectedTarget]) elementStyles[selectedTarget] = {};
     let value = String(rawValue ?? '').trim();
     if (type === 'px') value = value === '' ? '' : value + 'px';
+    const current = elementStyles[selectedTarget][property] || '';
+    if (current === value) return;
     if (value === '') delete elementStyles[selectedTarget][property];
     else elementStyles[selectedTarget][property] = value;
     if (Object.keys(elementStyles[selectedTarget]).length === 0) delete elementStyles[selectedTarget];
@@ -335,6 +340,12 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
         if (text) text.value = input.value.toUpperCase();
       }
       schedulePreview();
+    });
+    input.addEventListener('change', () => {
+      if (input.tagName !== 'SELECT') return;
+      armGlobalUndo(input);
+      schedulePreview();
+      input.dataset.undoArmed = '';
     });
   });
   root.querySelectorAll('[data-color-text]').forEach(text => {
@@ -379,6 +390,13 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
     }
     setElementValue(prop, input.value, meta.type);
   });
+  elementFields.addEventListener('change', (event) => {
+    const input = event.target.closest('[data-element-input]');
+    if (!input || !selectedTarget || input.tagName !== 'SELECT') return;
+    const prop = input.dataset.prop;
+    const meta = elementSchema[selectedTarget].controls[prop];
+    setElementValue(prop, input.value, meta.type);
+  });
   elementFields.addEventListener('click', (event) => {
     const clear = event.target.closest('[data-clear-prop]');
     if (clear) { clearProperty(clear.dataset.clearProp); return; }
@@ -401,7 +419,12 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
     schedulePreview('Selected element cleared');
   });
   window.addEventListener('message', (event) => {
-    if (event.origin !== window.location.origin || !event.data || event.data.type !== 'RCS_THEME_ELEMENT_SELECTED') return;
+    if (event.origin !== window.location.origin || !event.data) return;
+    if (event.data.type === 'RCS_THEME_PREVIEW_APPLIED') {
+      setStatus('Preview applied in iframe · CSS ' + (event.data.cssLength || 0) + ' chars', 'ok');
+      return;
+    }
+    if (event.data.type !== 'RCS_THEME_ELEMENT_SELECTED') return;
     selectedTarget = event.data.target;
     computedStyles[selectedTarget] = event.data.computed || {};
     renderElementFields(selectedTarget);
@@ -430,7 +453,10 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
       sendPreview(latestCss);
       enableInspector();
       if (selectedTarget) renderElementFields(selectedTarget);
-      setStatus('Design saved successfully ✓', 'ok');
+      const meta = json.meta || {};
+      const storage = meta.storage ? (' · ' + meta.storage) : '';
+      const count = meta.element_style_count !== undefined ? (' · targets ' + meta.element_style_count) : '';
+      setStatus('Design saved successfully ✓' + storage + count, 'ok');
     } catch (err) { setStatus('Save error: ' + err.message, 'bad'); }
     finally { saveBtn.disabled = false; }
   });

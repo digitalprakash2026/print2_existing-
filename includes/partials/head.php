@@ -29,7 +29,12 @@ window.addEventListener('message', function (event) {
       style.id = 'rcs-theme-vars';
       document.head.appendChild(style);
     }
-    if (typeof event.data.css === 'string') style.textContent = event.data.css;
+    if (typeof event.data.css === 'string') {
+      style.textContent = event.data.css;
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({type:'RCS_THEME_PREVIEW_APPLIED', cssLength:style.textContent.length}, window.location.origin);
+      }
+    }
   }
   if (event.data.type === 'RCS_THEME_ENABLE_INSPECTOR') {
     window.RCS_THEME_INSPECTOR_ELEMENTS = event.data.elements || {};
@@ -62,12 +67,18 @@ window.addEventListener('message', function (event) {
       }
       return String(Math.round(num * 100) / 100);
     };
+    var normalizeWeight = function (value) {
+      value = String(value || '').toLowerCase().trim();
+      if (value === 'normal') return '400';
+      if (value === 'bold') return '700';
+      return value;
+    };
     var computedStyles = function (el) {
       var cs = window.getComputedStyle(el);
       return {
         fontFamily: (cs.fontFamily || '').split(',')[0].replace(/["']/g, '').trim(),
         fontSize: cleanPx(cs.fontSize),
-        fontWeight: String(cs.fontWeight || '').trim(),
+        fontWeight: normalizeWeight(cs.fontWeight),
         lineHeight: normalizeLineHeight(cs.lineHeight, cs.fontSize),
         color: rgbToHex(cs.color),
         backgroundColor: rgbToHex(cs.backgroundColor),
