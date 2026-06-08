@@ -8037,9 +8037,9 @@ body:has(#siteHeader) .banner-slider {
   .blog-content p { font-size:11.8px; line-height:1.45; margin-bottom:11px; }
 }
 
-/* Product detail cleanup: no sticky purchase bar or free-design split option */
+/* Product detail cleanup: no sticky purchase bar; keep two design-choice boxes */
 .pd-design-grid {
-  grid-template-columns:1fr;
+  grid-template-columns:1fr auto 1fr;
 }
 .sticky-price {
   display:none !important;
@@ -8047,5 +8047,8 @@ body:has(#siteHeader) .banner-slider {
 @media (max-width:560px) {
   .pd-page-wrap {
     padding-bottom:32px;
+  }
+  .pd-design-grid {
+    grid-template-columns:1fr;
   }
 }

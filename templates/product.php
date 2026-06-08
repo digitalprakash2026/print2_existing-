@@ -221,7 +221,22 @@ $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug)
               <div id="uploadPreview"></div>
             </div>
           </div>
+
+          <div class="pd-design-or">OR</div>
+
+          <div class="design-opt" id="dopt-rcs" onclick="selDesignOpt('rcs')">
+            <div class="design-opt-icon"><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i></div>
+            <div class="design-opt-title">Design by RCS Graphic</div>
+            <div class="design-opt-copy">Let our experts prepare your artwork for print</div>
+            <?php if ($designFee > 0): ?>
+            <div class="design-opt-note is-paid">+₹<?= number_format($designFee) ?> design fee</div>
+            <?php else: ?>
+            <div class="design-opt-note is-free">Design support included</div>
+            <?php endif; ?>
+          </div>
+
         </div>
+        <div id="panel-rcs" style="display:none"></div>
       </div>
 
       <!-- Notes area intentionally empty — kept for spacing -->
@@ -567,11 +582,17 @@ function calcPrice() {
 
 // Design Option
 function selDesignOpt(choice) {
-  designChoice = 'upload';
+  designChoice = choice === 'rcs' ? 'rcs' : 'upload';
   const uploadOpt = document.getElementById('dopt-upload');
-  if (uploadOpt) uploadOpt.classList.add('sel');
+  const rcsOpt = document.getElementById('dopt-rcs');
   const uploadPanel = document.getElementById('panel-upload');
-  if (uploadPanel) uploadPanel.style.display = 'block';
+  const rcsPanel = document.getElementById('panel-rcs');
+
+  if (uploadOpt) uploadOpt.classList.toggle('sel', designChoice === 'upload');
+  if (rcsOpt) rcsOpt.classList.toggle('sel', designChoice === 'rcs');
+  if (uploadPanel) uploadPanel.style.display = designChoice === 'upload' ? 'block' : 'none';
+  if (rcsPanel) rcsPanel.style.display = designChoice === 'rcs' ? 'block' : 'none';
+
   calcPrice();
   refreshOrderReadiness();
 }
@@ -716,6 +737,7 @@ function waOrder() {
   const qname = QUALITIES[selectedQualityIdx]?.name || 'Standard';
   const qtyText = selectedQty ? Number(selectedQty).toLocaleString('en-IN') + ' pcs' : 'Not selected';
   const artworkText = uploadedFileName ? uploadedFileName : (artworkId ? 'Artwork uploaded' : 'Not uploaded yet');
+  const designText = designChoice === 'rcs' ? 'Design by RCS Graphic' : 'Customer artwork upload';
   const now = new Date().toLocaleString('en-IN');
   const pageUrl = window.location.href;
 
@@ -729,6 +751,7 @@ function waOrder() {
     `• Category: ${CATEGORY_NAME || 'Products'}`,
     `• Quantity: ${qtyText}`,
     `• Quality: ${qname}`,
+    `• Design Option: ${designText}`,
     `• Base Price: ${baseEl}`,
     `• Estimated Total: ${totalEl}`,
     `• Artwork File: ${artworkText}`,
