@@ -38,4 +38,5 @@ function showErr(msg) {
   e.textContent = msg; e.style.display = 'block';
 }
 </script>
+<?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
