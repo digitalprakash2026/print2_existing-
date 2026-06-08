@@ -247,7 +247,9 @@ if ($uri === '/profile' && $method === 'GET') {
     \Auth\Auth::require();
     $user = \Auth\Auth::user();
     $profile = \Auth\Auth::getProfile((int)$user['id']);
-    view('profile', compact('user', 'profile'));
+    try { $orders = \Orders\OrderManager::getUserOrders((int)$user['id']); }
+    catch (\Throwable) { $orders = []; }
+    view('profile', compact('user', 'profile', 'orders'));
     exit;
 }
 
