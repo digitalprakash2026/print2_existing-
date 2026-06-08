@@ -17,6 +17,9 @@ $sections = is_array($page['sections'] ?? null) ? $page['sections'] : [];
 $steps = is_array($page['steps'] ?? null) ? $page['steps'] : [];
 $ctaTitle = htmlspecialchars((string)($page['cta_title'] ?? 'Need help?'), ENT_QUOTES, 'UTF-8');
 $ctaText = htmlspecialchars((string)($page['cta_text'] ?? 'Contact our team for guidance.'), ENT_QUOTES, 'UTF-8');
+$visualImage = htmlspecialchars((string)($page['visual_image'] ?? '/assets/img/categories/print-category.svg'), ENT_QUOTES, 'UTF-8');
+$visualTitle = htmlspecialchars((string)($page['visual_title'] ?? 'Premium print support'), ENT_QUOTES, 'UTF-8');
+$visualText = htmlspecialchars((string)($page['visual_text'] ?? 'Professional print guidance for your business.'), ENT_QUOTES, 'UTF-8');
 ?>
 <main class="info-page">
   <section class="info-hero">
@@ -33,9 +36,13 @@ $ctaText = htmlspecialchars((string)($page['cta_text'] ?? 'Contact our team for 
             </div>
           <?php endif; ?>
         </div>
-        <aside class="info-hero-card" aria-label="Quick actions">
-          <strong>Need print guidance?</strong>
-          <p>Talk to our team for product selection, artwork support, pricing and dispatch planning.</p>
+        <aside class="info-visual-card" aria-label="Page visual">
+          <div class="info-visual-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+          <img src="<?= $visualImage ?>" alt="<?= $visualTitle ?>" loading="eager" decoding="async">
+          <div class="info-visual-caption">
+            <strong><?= $visualTitle ?></strong>
+            <p><?= $visualText ?></p>
+          </div>
           <div class="info-actions">
             <a href="/categories" class="btn btn-blue">Explore Products</a>
             <a href="https://wa.me/<?= $bizWa ?>" class="btn btn-outline" target="_blank" rel="noopener">WhatsApp Us</a>
@@ -46,7 +53,7 @@ $ctaText = htmlspecialchars((string)($page['cta_text'] ?? 'Contact our team for 
   </section>
 
   <?php if (!empty($highlights)): ?>
-  <section class="info-section">
+  <section class="info-section info-section-wide">
     <div class="info-container info-card-grid">
       <?php foreach ($highlights as $item): ?>
         <article class="info-feature-card">
@@ -60,8 +67,14 @@ $ctaText = htmlspecialchars((string)($page['cta_text'] ?? 'Contact our team for 
   <?php endif; ?>
 
   <?php if (!empty($sections)): ?>
-  <section class="info-section info-section-soft">
-    <div class="info-container info-content-wrap">
+  <section class="info-section info-section-soft info-section-wide">
+    <div class="info-container info-content-layout">
+      <div class="info-content-aside">
+        <div class="sec-ey">Page guide</div>
+        <h2><?= $title ?></h2>
+        <p><?= $intro ?></p>
+      </div>
+      <div class="info-content-wrap">
       <?php foreach ($sections as $section): ?>
         <article class="info-content-card">
           <h2><?= htmlspecialchars((string)($section['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></h2>
@@ -70,6 +83,7 @@ $ctaText = htmlspecialchars((string)($page['cta_text'] ?? 'Contact our team for 
           <?php endforeach; ?>
         </article>
       <?php endforeach; ?>
+      </div>
     </div>
   </section>
   <?php endif; ?>

@@ -25,9 +25,13 @@ $waText = rawurlencode('Hello RCS Graphic, I need help with a printing requireme
           <p>Reach out to our team for product selection, artwork checks, pricing guidance, order support and delivery coordination.</p>
           <div class="info-badges"><span>WhatsApp Support</span><span>Bulk Quote Help</span><span>Design Guidance</span></div>
         </div>
-        <aside class="info-hero-card">
-          <strong>Fastest support</strong>
-          <p>For urgent order questions, WhatsApp is usually the quickest way to reach our team.</p>
+        <aside class="info-visual-card contact-visual-card">
+          <div class="info-visual-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+          <img src="/assets/img/categories/all-categories-hero.svg" alt="Print support desk" loading="eager" decoding="async">
+          <div class="info-visual-caption">
+            <strong>Fastest support</strong>
+            <p>For urgent order questions, WhatsApp is usually the quickest way to reach our team.</p>
+          </div>
           <div class="info-actions">
             <a class="btn btn-blue" href="https://wa.me/<?= $bizWa ?>?text=<?= $waText ?>" target="_blank" rel="noopener">Chat on WhatsApp</a>
             <a class="btn btn-outline" href="tel:<?= htmlspecialchars($bizPhoneHref, ENT_QUOTES, 'UTF-8') ?>">Call Now</a>

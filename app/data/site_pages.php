@@ -9,6 +9,9 @@ return [
         'heading' => 'Print solutions that help your business look professional.',
         'intro' => 'RCS Graphic helps businesses, teams and individuals order quality printed material with clear guidance, design support and reliable communication from artwork to dispatch.',
         'breadcrumb' => 'About Us',
+        'visual_image' => '/assets/img/categories/print-category.svg',
+        'visual_title' => 'Brand-ready print studio',
+        'visual_text' => 'Artwork guidance, professional materials and print support for everyday business needs.',
         'hero_badges' => ['Premium Print Quality', 'Design Guidance', 'Bulk Order Support'],
         'highlights' => [
             ['icon' => '🎨', 'title' => 'Design-first support', 'text' => 'We help customers prepare artwork, understand print requirements and choose suitable formats before production.'],
@@ -36,6 +39,9 @@ return [
         'heading' => 'Shipping Policy',
         'intro' => 'This policy explains how print orders are processed, packed and dispatched after artwork and payment confirmation.',
         'breadcrumb' => 'Shipping Policy',
+        'visual_image' => '/assets/img/categories/banners.svg',
+        'visual_title' => 'Packed, tracked and coordinated',
+        'visual_text' => 'Dispatch planning for local delivery, courier and transport-office collection.',
         'hero_badges' => ['Order Processing', 'Dispatch Support', 'Transport Coordination'],
         'highlights' => [
             ['icon' => '✅', 'title' => 'Approval first', 'text' => 'Production and dispatch timelines start after artwork, quantity and payment details are confirmed.'],
@@ -65,6 +71,9 @@ return [
         'heading' => 'Refund & Return Policy',
         'intro' => 'Because printed products are customized for each customer, returns and refunds are handled according to artwork approval and production status.',
         'breadcrumb' => 'Refund & Return',
+        'visual_image' => '/assets/img/categories/stickers.svg',
+        'visual_title' => 'Review-based resolution',
+        'visual_text' => 'Eligible print issues are checked against approved artwork and order details.',
         'hero_badges' => ['Custom Print Policy', 'Reprint Review', 'Support Team'],
         'highlights' => [
             ['icon' => '🧾', 'title' => 'Custom products', 'text' => 'Most printed products are made after customer approval and cannot be returned like ready-made items.'],
@@ -94,6 +103,9 @@ return [
         'heading' => 'Terms & Conditions',
         'intro' => 'By using this website or placing an order with RCS Graphic, you agree to the following terms related to products, artwork, payment, production and delivery.',
         'breadcrumb' => 'Terms & Conditions',
+        'visual_image' => '/assets/img/categories/letterheads.svg',
+        'visual_title' => 'Clear order terms',
+        'visual_text' => 'Artwork approval, payment confirmation and production terms explained simply.',
         'hero_badges' => ['Order Terms', 'Artwork Approval', 'Print Guidelines'],
         'highlights' => [
             ['icon' => '📄', 'title' => 'Artwork responsibility', 'text' => 'Customers must check and approve final artwork before production begins.'],
@@ -124,6 +136,9 @@ return [
         'heading' => 'Privacy Policy',
         'intro' => 'This policy explains how we collect and use information required to process print orders, provide support and improve customer experience.',
         'breadcrumb' => 'Privacy Policy',
+        'visual_image' => '/assets/img/categories/visiting-cards.svg',
+        'visual_title' => 'Customer data with care',
+        'visual_text' => 'Information and uploaded artwork are used for order support and print production.',
         'hero_badges' => ['Customer Data', 'Artwork Privacy', 'Secure Payments'],
         'highlights' => [
             ['icon' => '🔐', 'title' => 'Order-focused use', 'text' => 'Customer information is used mainly to process orders, support requests and delivery coordination.'],
