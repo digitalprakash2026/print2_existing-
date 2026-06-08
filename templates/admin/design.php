@@ -57,6 +57,8 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
       <p class="ds-sub">Right preview me kisi section, text, button ya card par click karo. Left side me us exact element ke font, color, spacing, radius aur shadow controls open ho jayenge.</p>
     </div>
     <div class="ds-actions">
+      <button type="button" class="btn btn-outline" id="dsUndo" disabled>Undo</button>
+      <button type="button" class="btn btn-outline" id="dsRedo" disabled>Redo</button>
       <button type="button" class="btn btn-outline" id="dsRefresh">Refresh Preview</button>
       <button type="button" class="btn btn-red" id="dsReset">Reset All</button>
       <button type="button" class="btn btn-blue" id="dsSave">Save Design ✓</button>
@@ -121,6 +123,8 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
   const saveBtn = document.getElementById('dsSave');
   const resetBtn = document.getElementById('dsReset');
   const refreshBtn = document.getElementById('dsRefresh');
+  const undoBtn = document.getElementById('dsUndo');
+  const redoBtn = document.getElementById('dsRedo');
   const selectedEmpty = document.getElementById('dsSelectedEmpty');
   const selectedActive = document.getElementById('dsSelectedActive');
   const selectedTitle = document.getElementById('dsSelectedTitle');
@@ -131,26 +135,75 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
   const fontOptions = <?= json_encode($themeFonts, JSON_UNESCAPED_SLASHES) ?>;
   const weightOptions = <?= json_encode($themeFontWeights, JSON_UNESCAPED_SLASHES) ?>;
   const shadowOptions = <?= json_encode($themeShadows, JSON_UNESCAPED_SLASHES) ?>;
-  let elementStyles = <?= json_encode($themeElementStyles, JSON_UNESCAPED_SLASHES) ?>;
+  let elementStyles = <?= json_encode($themeElementStyles, JSON_UNESCAPED_SLASHES) ?> || {};
+  let computedStyles = {};
   let selectedTarget = null;
   let timer = null;
   let latestCss = <?= json_encode(\Theme\SiteTheme::css($themeValues, $themeElementStyles), JSON_UNESCAPED_SLASHES) ?>;
+  let undoStack = [];
+  let redoStack = [];
+  let restoringHistory = false;
 
+  function clone(value) { return JSON.parse(JSON.stringify(value || {})); }
   function setStatus(text, mode) {
     status.textContent = text;
     status.className = 'ds-status' + (mode ? ' ' + mode : '');
   }
   function collect() {
-    const data = {element_styles: elementStyles};
+    const data = {element_styles: clone(elementStyles)};
     inputs.forEach(input => {
       data[input.name] = input.hasAttribute('data-px-range') ? input.value + 'px' : input.value;
     });
     return data;
   }
+  function applyState(state) {
+    if (!state) return;
+    elementStyles = clone(state.element_styles);
+    Object.entries(state).forEach(([key, value]) => {
+      if (key === 'element_styles') return;
+      const input = root.querySelector('[name="' + key + '"]');
+      if (!input) return;
+      input.value = input.hasAttribute('data-px-range') ? String(value).replace('px','') : value;
+      syncRange(input);
+      const text = root.querySelector('[data-color-text="' + key + '"]');
+      if (text) text.value = value;
+    });
+    if (selectedTarget) renderElementFields(selectedTarget);
+  }
+  function updateHistoryButtons() {
+    undoBtn.disabled = undoStack.length === 0;
+    redoBtn.disabled = redoStack.length === 0;
+  }
+  function pushUndo() {
+    if (restoringHistory) return;
+    undoStack.push(clone(collect()));
+    if (undoStack.length > 50) undoStack.shift();
+    redoStack = [];
+    updateHistoryButtons();
+  }
+  function undo() {
+    if (!undoStack.length) return;
+    restoringHistory = true;
+    redoStack.push(clone(collect()));
+    applyState(undoStack.pop());
+    restoringHistory = false;
+    updateHistoryButtons();
+    schedulePreview('Undo applied');
+  }
+  function redo() {
+    if (!redoStack.length) return;
+    restoringHistory = true;
+    undoStack.push(clone(collect()));
+    applyState(redoStack.pop());
+    restoringHistory = false;
+    updateHistoryButtons();
+    schedulePreview('Redo applied');
+  }
   function syncRange(input) {
     const out = input.closest('.ds-range-row')?.querySelector('output');
     if (!out) return;
-    out.textContent = input.value + (input.dataset.unit || 'px');
+    const unit = input.dataset.unit || 'px';
+    out.textContent = input.value === '' ? 'Default' : input.value + unit;
   }
   function sendPreview(css) {
     if (!frame.contentWindow) return;
@@ -164,44 +217,51 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
     const res = await fetch(url, options);
     const text = await res.text();
     let json = null;
-    try {
-      json = text ? JSON.parse(text) : null;
-    } catch (err) {
-      throw new Error('Server returned non-JSON response (' + res.status + '). Please check login/session and PHP error logs.');
-    }
-    if (!res.ok || !json || json.ok === false) {
-      throw new Error((json && json.msg) ? json.msg : ('Request failed with status ' + res.status));
-    }
+    try { json = text ? JSON.parse(text) : null; }
+    catch (err) { throw new Error('Server returned non-JSON response (' + res.status + '). Please check login/session and PHP error logs.'); }
+    if (!res.ok || !json || json.ok === false) throw new Error((json && json.msg) ? json.msg : ('Request failed with status ' + res.status));
     return json;
   }
-  async function previewNow() {
+  async function previewNow(message) {
     try {
       const json = await apiJson('/admin/api/theme/preview', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(collect())
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(collect())
       });
       elementStyles = json.element_styles || elementStyles;
       latestCss = json.css;
       sendPreview(latestCss);
       enableInspector();
-      setStatus('Live preview updated', 'ok');
-    } catch (err) {
-      setStatus('Preview error: ' + err.message, 'bad');
-    }
+      setStatus(message || 'Live preview updated', 'ok');
+    } catch (err) { setStatus('Preview error: ' + err.message, 'bad'); }
   }
-  function schedulePreview() {
+  function schedulePreview(message) {
     clearTimeout(timer);
     setStatus('Updating preview…');
-    timer = setTimeout(previewNow, 160);
+    timer = setTimeout(() => previewNow(message), 160);
   }
-  function esc(value) {
-    return String(value || '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  function esc(value) { return String(value ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])); }
+  function pxNumber(value) {
+    const num = parseFloat(String(value || '').replace('px',''));
+    return Number.isFinite(num) ? String(Math.round(num * 100) / 100) : '';
   }
   function currentValue(target, property, meta) {
     const saved = elementStyles[target] && elementStyles[target][property] ? elementStyles[target][property] : '';
-    if (meta.type === 'px') return saved ? String(saved).replace('px','') : '';
-    return saved;
+    if (saved) return meta.type === 'px' ? pxNumber(saved) : saved;
+    const computed = computedStyles[target] && computedStyles[target][property] ? computedStyles[target][property] : '';
+    if (meta.type === 'px') return pxNumber(computed);
+    if (meta.type === 'font') {
+      return fontOptions.includes(computed) ? computed : '';
+    }
+    if (meta.type === 'weight') {
+      return weightOptions.includes(String(computed)) ? String(computed) : '';
+    }
+    if (meta.type === 'shadow') {
+      return shadowOptions.includes(computed) ? computed : '';
+    }
+    return computed || '';
+  }
+  function isOverridden(target, property) {
+    return !!(elementStyles[target] && elementStyles[target][property]);
   }
   function renderElementFields(target) {
     const schema = elementSchema[target];
@@ -213,9 +273,11 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
     elementFields.innerHTML = '';
     Object.entries(schema.controls).forEach(([property, meta]) => {
       const value = currentValue(target, property, meta);
+      const overridden = isOverridden(target, property);
       const field = document.createElement('label');
-      field.className = 'ds-field ds-element-field';
-      field.innerHTML = '<span><strong>' + esc(meta.label) + '</strong><em>Selected</em></span>';
+      field.className = 'ds-field ds-element-field' + (overridden ? ' has-override' : '');
+      const badge = overridden ? 'Override active' : (value ? 'Current style' : 'Keep default');
+      field.innerHTML = '<span><strong>' + esc(meta.label) + '</strong><em>' + esc(badge) + '</em></span>';
       if (meta.type === 'color') {
         field.innerHTML += '<div class="ds-color-row"><input type="color" value="' + esc(value || '#000000') + '" data-element-input data-prop="' + esc(property) + '"><input class="fi ds-color-text" value="' + esc(value) + '" data-element-color-text data-prop="' + esc(property) + '" placeholder="#000000" maxlength="7"></div>';
       } else if (meta.type === 'font' || meta.type === 'weight' || meta.type === 'shadow') {
@@ -225,27 +287,47 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
         field.innerHTML += html + '</select>';
       } else if (meta.type === 'number') {
         field.innerHTML += '<div class="ds-range-row"><input type="range" min="' + esc(meta.min || 1) + '" max="' + esc(meta.max || 2) + '" step="' + esc(meta.step || 0.05) + '" value="' + esc(value || 1.3) + '" data-element-input data-prop="' + esc(property) + '" data-unit=""><output>' + esc(value || 'Default') + '</output></div>';
+      } else if (property === 'fontSize') {
+        const safeValue = value || 16;
+        const presets = Array.isArray(meta.presets) ? meta.presets : [12,14,16,18,20,24,28,32,40,48,56,64];
+        field.innerHTML += '<div class="ds-font-size-control"><div class="ds-range-row"><input type="range" min="' + esc(meta.min || 10) + '" max="' + esc(meta.max || 90) + '" value="' + esc(safeValue) + '" data-element-input data-prop="' + esc(property) + '" data-unit="px"><output>' + esc(safeValue) + 'px</output></div><div class="ds-number-row"><input class="fi" type="number" min="' + esc(meta.min || 10) + '" max="' + esc(meta.max || 90) + '" value="' + esc(safeValue) + '" data-element-number data-prop="' + esc(property) + '"><span>px</span></div><div class="ds-presets">' + presets.map(p => '<button type="button" data-font-preset="' + esc(p) + '" data-prop="' + esc(property) + '">' + esc(p) + '</button>').join('') + '</div></div>';
       } else {
-        field.innerHTML += '<div class="ds-range-row"><input type="range" min="' + esc(meta.min || 0) + '" max="' + esc(meta.max || 100) + '" value="' + esc(value || 0) + '" data-element-input data-prop="' + esc(property) + '" data-unit="px"><output>' + (value ? esc(value + 'px') : 'Default') + '</output></div>';
+        const safeValue = value || 0;
+        field.innerHTML += '<div class="ds-range-row"><input type="range" min="' + esc(meta.min || 0) + '" max="' + esc(meta.max || 100) + '" value="' + esc(safeValue) + '" data-element-input data-prop="' + esc(property) + '" data-unit="px"><output>' + (value ? esc(value + 'px') : 'Default') + '</output></div>';
       }
+      field.innerHTML += '<button type="button" class="ds-clear-prop" data-clear-prop="' + esc(property) + '">Clear override</button>';
       elementFields.appendChild(field);
     });
   }
-  function setElementValue(property, rawValue, type) {
+  function setElementValue(property, rawValue, type, skipHistory) {
     if (!selectedTarget) return;
+    if (!skipHistory) pushUndo();
     if (!elementStyles[selectedTarget]) elementStyles[selectedTarget] = {};
-    let value = rawValue;
-    if (type === 'px') value = rawValue === '' ? '' : rawValue + 'px';
-    if (value === '' || value === '#000000_EMPTY') {
-      delete elementStyles[selectedTarget][property];
-    } else {
-      elementStyles[selectedTarget][property] = value;
-    }
+    let value = String(rawValue ?? '').trim();
+    if (type === 'px') value = value === '' ? '' : value + 'px';
+    if (value === '') delete elementStyles[selectedTarget][property];
+    else elementStyles[selectedTarget][property] = value;
     if (Object.keys(elementStyles[selectedTarget]).length === 0) delete elementStyles[selectedTarget];
     schedulePreview();
   }
+  function clearProperty(property) {
+    if (!selectedTarget || !elementStyles[selectedTarget] || !elementStyles[selectedTarget][property]) return;
+    pushUndo();
+    delete elementStyles[selectedTarget][property];
+    if (Object.keys(elementStyles[selectedTarget]).length === 0) delete elementStyles[selectedTarget];
+    renderElementFields(selectedTarget);
+    schedulePreview('Override cleared');
+  }
 
+  function armGlobalUndo(input) {
+    if (input.dataset.undoArmed === '1') return;
+    pushUndo();
+    input.dataset.undoArmed = '1';
+  }
   inputs.forEach(input => {
+    input.addEventListener('focus', () => armGlobalUndo(input));
+    input.addEventListener('pointerdown', () => armGlobalUndo(input));
+    input.addEventListener('blur', () => { input.dataset.undoArmed = ''; });
     input.addEventListener('input', () => {
       syncRange(input);
       if (input.type === 'color') {
@@ -254,9 +336,11 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
       }
       schedulePreview();
     });
-    input.addEventListener('change', schedulePreview);
   });
   root.querySelectorAll('[data-color-text]').forEach(text => {
+    text.addEventListener('focus', () => armGlobalUndo(text));
+    text.addEventListener('pointerdown', () => armGlobalUndo(text));
+    text.addEventListener('blur', () => { text.dataset.undoArmed = ''; });
     text.addEventListener('input', () => {
       if (!/^#[0-9A-Fa-f]{6}$/.test(text.value)) return;
       const picker = root.querySelector('[name="' + text.dataset.colorText + '"]');
@@ -265,6 +349,14 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
     });
   });
   elementFields.addEventListener('input', (event) => {
+    const number = event.target.closest('[data-element-number]');
+    if (number && selectedTarget) {
+      const prop = number.dataset.prop;
+      const range = elementFields.querySelector('[data-element-input][data-prop="' + prop + '"][type="range"]');
+      if (range) { range.value = number.value; syncRange(range); }
+      setElementValue(prop, number.value, elementSchema[selectedTarget].controls[prop].type);
+      return;
+    }
     const input = event.target.closest('[data-element-input], [data-element-color-text]');
     if (!input || !selectedTarget) return;
     const prop = input.dataset.prop;
@@ -280,23 +372,51 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
       const text = elementFields.querySelector('[data-element-color-text][data-prop="' + prop + '"]');
       if (text) text.value = input.value.toUpperCase();
     }
-    syncRange(input);
+    if (input.type === 'range') {
+      syncRange(input);
+      const num = elementFields.querySelector('[data-element-number][data-prop="' + prop + '"]');
+      if (num) num.value = input.value;
+    }
     setElementValue(prop, input.value, meta.type);
   });
+  elementFields.addEventListener('click', (event) => {
+    const clear = event.target.closest('[data-clear-prop]');
+    if (clear) { clearProperty(clear.dataset.clearProp); return; }
+    const preset = event.target.closest('[data-font-preset]');
+    if (preset && selectedTarget) {
+      const prop = preset.dataset.prop;
+      const value = preset.dataset.fontPreset;
+      const range = elementFields.querySelector('[data-element-input][data-prop="' + prop + '"][type="range"]');
+      const number = elementFields.querySelector('[data-element-number][data-prop="' + prop + '"]');
+      if (range) { range.value = value; syncRange(range); }
+      if (number) number.value = value;
+      setElementValue(prop, value, 'px');
+    }
+  });
   clearElementBtn.addEventListener('click', () => {
-    if (!selectedTarget) return;
+    if (!selectedTarget || !elementStyles[selectedTarget]) return;
+    pushUndo();
     delete elementStyles[selectedTarget];
     renderElementFields(selectedTarget);
-    schedulePreview();
+    schedulePreview('Selected element cleared');
   });
   window.addEventListener('message', (event) => {
     if (event.origin !== window.location.origin || !event.data || event.data.type !== 'RCS_THEME_ELEMENT_SELECTED') return;
     selectedTarget = event.data.target;
+    computedStyles[selectedTarget] = event.data.computed || {};
     renderElementFields(selectedTarget);
     setStatus('Editing: ' + (event.data.label || selectedTarget), 'ok');
   });
   frame.addEventListener('load', () => setTimeout(() => { sendPreview(latestCss); enableInspector(); }, 250));
   refreshBtn.addEventListener('click', () => { frame.contentWindow.location.reload(); setStatus('Preview refreshed'); });
+  undoBtn.addEventListener('click', undo);
+  redoBtn.addEventListener('click', redo);
+  document.addEventListener('keydown', (event) => {
+    if (!(event.ctrlKey || event.metaKey)) return;
+    if (event.key.toLowerCase() === 'z' && event.shiftKey) { event.preventDefault(); redo(); }
+    else if (event.key.toLowerCase() === 'z') { event.preventDefault(); undo(); }
+    else if (event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
+  });
   saveBtn.addEventListener('click', async () => {
     saveBtn.disabled = true;
     setStatus('Saving design…');
@@ -304,17 +424,19 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
       const json = await apiJson('/admin/api/theme', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(collect())});
       elementStyles = json.element_styles || elementStyles;
       latestCss = json.css;
+      undoStack = [];
+      redoStack = [];
+      updateHistoryButtons();
       sendPreview(latestCss);
       enableInspector();
+      if (selectedTarget) renderElementFields(selectedTarget);
       setStatus('Design saved successfully ✓', 'ok');
-    } catch (err) {
-      setStatus('Save error: ' + err.message, 'bad');
-    } finally {
-      saveBtn.disabled = false;
-    }
+    } catch (err) { setStatus('Save error: ' + err.message, 'bad'); }
+    finally { saveBtn.disabled = false; }
   });
   resetBtn.addEventListener('click', async () => {
     if (!confirm('Reset all global and element design settings to default theme?')) return;
+    pushUndo();
     resetBtn.disabled = true;
     setStatus('Resetting theme…');
     try {
@@ -334,11 +456,8 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
       sendPreview(latestCss);
       enableInspector();
       setStatus('Default design restored ✓', 'ok');
-    } catch (err) {
-      setStatus('Reset error: ' + err.message, 'bad');
-    } finally {
-      resetBtn.disabled = false;
-    }
+    } catch (err) { setStatus('Reset error: ' + err.message, 'bad'); }
+    finally { resetBtn.disabled = false; }
   });
   root.querySelectorAll('[data-preview-size]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -347,6 +466,7 @@ $renderField = static function (string $key, string $label) use ($themeValues, $
       root.querySelector('[data-preview-frame-shell]').dataset.size = btn.dataset.previewSize;
     });
   });
+  updateHistoryButtons();
 })();
 </script>
     </div></div></div>

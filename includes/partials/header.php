@@ -53,7 +53,7 @@ foreach ($navProducts as $p) {
      SITE HEADER
 ══════════════════════════════════════════════════ -->
 <header class="site-header rcs-site-header" id="siteHeader">
-  <div class="topbar rcs-topbar">
+  <div class="topbar rcs-topbar" data-design-target="header.topbar">
     <div class="header-container topbar-inner rcs-header-container rcs-topbar-inner">
       <div class="topbar-left rcs-topbar-left">
         <span>
@@ -78,21 +78,21 @@ foreach ($navProducts as $p) {
     </div>
   </div>
 
-  <nav class="navbar rcs-navbar" aria-label="Main navigation">
+  <nav class="navbar rcs-navbar" aria-label="Main navigation" data-design-target="header.navbar">
     <div class="header-container navbar-inner rcs-header-container rcs-navbar-inner">
       <a href="/" class="brand rcs-brand" aria-label="<?= $navBizName ?> Home">
         <img src="/assets/images/rcs-graphic-logo.png"
              alt="<?= $navBizName ?> Logo"
-             class="brand-img rcs-brand-img"
+             class="brand-img rcs-brand-img" data-design-target="header.logo"
              loading="eager"
              decoding="async">
       </a>
 
       <div class="nav-center rcs-nav-center">
         <ul class="nav-menu rcs-nav-menu">
-          <li><a href="/" class="nav-link rcs-nav-link <?= $currentUri === '/' ? 'active' : '' ?>">Home</a></li>
+          <li><a href="/" class="nav-link rcs-nav-link <?= $currentUri === '/' ? 'active' : '' ?>" data-design-target="header.nav_links">Home</a></li>
           <li class="nav-dropdown rcs-nav-dropdown" id="ddWrap">
-            <button class="nav-link nav-link-button rcs-nav-link rcs-nav-link-button" id="ddBtn" type="button" aria-expanded="false" aria-haspopup="true">
+            <button class="nav-link nav-link-button rcs-nav-link rcs-nav-link-button" data-design-target="header.nav_links" id="ddBtn" type="button" aria-expanded="false" aria-haspopup="true">
               Products
               <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
             </button>
@@ -141,10 +141,10 @@ foreach ($navProducts as $p) {
               </a>
             </div>
           </li>
-          <li><a href="/#why-sec" class="nav-link rcs-nav-link">About Us</a></li>
-          <li><a href="/#quick-help-sec" class="nav-link rcs-nav-link">Contact Us</a></li>
-          <li><a href="/#blogs-sec" class="nav-link rcs-nav-link">Blog</a></li>
-          <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link rcs-nav-link">My Account</a></li>
+          <li><a href="/#why-sec" class="nav-link rcs-nav-link" data-design-target="header.nav_links">About Us</a></li>
+          <li><a href="/#quick-help-sec" class="nav-link rcs-nav-link" data-design-target="header.nav_links">Contact Us</a></li>
+          <li><a href="/#blogs-sec" class="nav-link rcs-nav-link" data-design-target="header.nav_links">Blog</a></li>
+          <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link rcs-nav-link" data-design-target="header.nav_links">My Account</a></li>
         </ul>
       </div>
 

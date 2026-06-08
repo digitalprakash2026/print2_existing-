@@ -23,7 +23,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
      render only when filled, so a designed clickable banner image can
      stand on its own across desktop and mobile.
 ═══════════════════════════════════════════════════════════════ -->
-<div class="banner-slider" id="bannerSlider">
+<div class="banner-slider" id="bannerSlider" data-design-target="home.banner">
   <?php
   $fallbackBanners = [
     [
@@ -80,16 +80,16 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
       <div class="bs-overlay" aria-hidden="true"></div>
       <div class="bs-content">
         <?php if ($eyebrow !== ''): ?><div class="bs-eyebrow"><?= htmlspecialchars($eyebrow, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-        <?php if ($title !== ''): ?><div class="bs-title"><?= $title ?></div><?php endif; ?>
-        <?php if ($subtitle !== ''): ?><div class="bs-sub"><?= $subtitle ?></div><?php endif; ?>
+        <?php if ($title !== ''): ?><div class="bs-title" data-design-target="home.banner.title"><?= $title ?></div><?php endif; ?>
+        <?php if ($subtitle !== ''): ?><div class="bs-sub" data-design-target="home.banner.subtitle"><?= $subtitle ?></div><?php endif; ?>
         <?php if ($hasPrimaryCta || $hasSecondaryCta): ?>
           <div class="bs-actions">
-            <?php if ($hasPrimaryCta): ?><a href="<?= $ctaPrimaryUrl ?>" class="bs-cta-primary"><?= $ctaPrimaryText ?></a><?php endif; ?>
+            <?php if ($hasPrimaryCta): ?><a href="<?= $ctaPrimaryUrl ?>" class="bs-cta-primary" data-design-target="home.banner.buttons"><?= $ctaPrimaryText ?></a><?php endif; ?>
             <?php if ($hasSecondaryCta): ?>
               <?php if ($ctaSecondaryType === 'url'): ?>
-                <a href="<?= $ctaSecondaryUrl ?>" class="bs-cta-wa"><?= $ctaSecondaryText ?></a>
+                <a href="<?= $ctaSecondaryUrl ?>" class="bs-cta-wa" data-design-target="home.banner.buttons"><?= $ctaSecondaryText ?></a>
               <?php else: ?>
-                <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')" type="button"><?= $ctaSecondaryText ?></button>
+                <button class="bs-cta-wa" data-design-target="home.banner.buttons" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')" type="button"><?= $ctaSecondaryText ?></button>
               <?php endif; ?>
             <?php endif; ?>
           </div>
@@ -143,17 +143,17 @@ foreach ($categories as $cat) {
 ?>
 
 <?php if (!empty($catSpot)): ?>
-<section class="shop-cat-section" aria-labelledby="shopCatTitle" data-reveal>
+<section class="shop-cat-section" data-design-target="home.categories.section" aria-labelledby="shopCatTitle" data-reveal>
   <div class="shop-cat-container">
     <div class="shop-cat-head">
-      <h2 class="shop-cat-title" id="shopCatTitle">Shop By <span>Category</span></h2>
+      <h2 class="shop-cat-title" id="shopCatTitle" data-design-target="home.categories.title">Shop By <span>Category</span></h2>
       <a href="/categories" class="shop-cat-all">View All Categories</a>
     </div>
 
     <div class="shop-cat-track" id="shopCatTrack" aria-label="Product categories" data-auto-slide="true">
       <?php foreach ($catSpot as $i => $c): ?>
         <article class="shop-cat-card">
-          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="shop-cat-link">
+          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="shop-cat-link" data-design-target="home.category.card">
             <div class="shop-cat-img">
               <?php if (!empty($c['image'])): ?>
                 <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['image_alt'] ?? $c['name']) ?>" loading="lazy">
@@ -163,7 +163,7 @@ foreach ($categories as $cat) {
             </div>
             <div class="shop-cat-body">
               <span class="shop-cat-icon" aria-hidden="true"><?= htmlspecialchars($c['icon']) ?></span>
-              <span class="shop-cat-name"><?= htmlspecialchars($c['name']) ?></span>
+              <span class="shop-cat-name" data-design-target="home.category.name"><?= htmlspecialchars($c['name']) ?></span>
             </div>
           </a>
         </article>
@@ -306,7 +306,7 @@ foreach ($categories as $cat) {
         $ctaUrl = htmlspecialchars($ctaUrlRaw, ENT_QUOTES, 'UTF-8');
       ?>
         <?php if ($dealType === 'promo'): ?>
-          <article class="deal-promo-card">
+          <article class="deal-promo-card" data-design-target="home.deal.card">
             <div class="deal-confetti" aria-hidden="true"></div>
             <div class="deal-promo-copy">
               <h3>
@@ -328,7 +328,7 @@ foreach ($categories as $cat) {
           </article>
         <?php else: ?>
           <article class="deal-card deal-<?= htmlspecialchars($theme, ENT_QUOTES, 'UTF-8') ?>">
-            <a href="<?= $ctaUrl ?>" class="deal-card-link">
+            <a href="<?= $ctaUrl ?>" class="deal-card-link" data-design-target="home.deal.card">
               <div class="deal-card-img">
                 <?php if ($imageRaw !== ''): ?>
                   <img src="<?= $image ?>" alt="<?= $imageAlt ?>" loading="lazy">
@@ -559,7 +559,7 @@ foreach ($categories as $cat) {
         $badgeClass = $blogBadgeClass($blog['badge_theme'] ?? 'purple');
       ?>
       <article class="blog-card" role="listitem">
-        <a href="<?= htmlspecialchars($blogUrl, ENT_QUOTES, 'UTF-8') ?>" class="blog-card-link" aria-label="Read blog: <?= $blogTitle ?>">
+        <a href="<?= htmlspecialchars($blogUrl, ENT_QUOTES, 'UTF-8') ?>" class="blog-card-link" data-design-target="home.blog.card" aria-label="Read blog: <?= $blogTitle ?>">
           <div class="blog-image">
             <?php if ($blogImageRaw !== ''): ?>
               <img src="<?= $blogImage ?>" alt="<?= $blogAlt ?>" loading="lazy">
@@ -621,7 +621,7 @@ foreach ($categories as $cat) {
 
 
 <!-- FOOTER -->
-<footer class="footer" aria-label="Site footer">
+<footer class="footer" aria-label="Site footer" data-design-target="footer.section">
   <div class="footer-container">
     <div class="footer-main">
       <div class="footer-brand-col">
@@ -629,7 +629,7 @@ foreach ($categories as $cat) {
           <span class="footer-logo-main">RCS</span>
           <span class="footer-logo-sub">PRINT</span>
         </a>
-        <p class="footer-desc">Your one-stop solution for all your printing needs. Quality prints that represent your brand perfectly.</p>
+        <p class="footer-desc" data-design-target="footer.links">Your one-stop solution for all your printing needs. Quality prints that represent your brand perfectly.</p>
         <div class="footer-social" aria-label="Social links">
           <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
           <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>

@@ -39,9 +39,55 @@ window.addEventListener('message', function (event) {
     inspectorStyle.textContent = '.rcs-inspector-hover{outline:2px dashed #2563eb!important;outline-offset:3px!important;cursor:crosshair!important}.rcs-inspector-selected{outline:3px solid #ea580c!important;outline-offset:4px!important}';
     document.head.appendChild(inspectorStyle);
     var selected = null;
+    var rgbToHex = function (value) {
+      if (!value || value === 'transparent') return '';
+      if (value.charAt(0) === '#') return value.toUpperCase();
+      var match = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/i);
+      if (!match || (match[4] !== undefined && Number(match[4]) === 0)) return '';
+      return '#' + [match[1], match[2], match[3]].map(function (part) {
+        var hex = Math.max(0, Math.min(255, Number(part))).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      }).join('').toUpperCase();
+    };
+    var cleanPx = function (value) {
+      var num = parseFloat(value || '');
+      return Number.isFinite(num) ? (Math.round(num * 100) / 100) + 'px' : '';
+    };
+    var normalizeLineHeight = function (value, fontSize) {
+      var num = parseFloat(value || '');
+      var font = parseFloat(fontSize || '');
+      if (!Number.isFinite(num)) return '';
+      if (Number.isFinite(font) && font > 0 && String(value).indexOf('px') !== -1) {
+        return String(Math.round((num / font) * 100) / 100);
+      }
+      return String(Math.round(num * 100) / 100);
+    };
+    var computedStyles = function (el) {
+      var cs = window.getComputedStyle(el);
+      return {
+        fontFamily: (cs.fontFamily || '').split(',')[0].replace(/["']/g, '').trim(),
+        fontSize: cleanPx(cs.fontSize),
+        fontWeight: String(cs.fontWeight || '').trim(),
+        lineHeight: normalizeLineHeight(cs.lineHeight, cs.fontSize),
+        color: rgbToHex(cs.color),
+        backgroundColor: rgbToHex(cs.backgroundColor),
+        borderColor: rgbToHex(cs.borderColor),
+        borderRadius: cleanPx(cs.borderRadius),
+        paddingTop: cleanPx(cs.paddingTop),
+        paddingBottom: cleanPx(cs.paddingBottom),
+        paddingLeft: cleanPx(cs.paddingLeft),
+        paddingRight: cleanPx(cs.paddingRight),
+        marginBottom: cleanPx(cs.marginBottom),
+        boxShadow: (cs.boxShadow && cs.boxShadow !== 'none') ? 'premium' : 'none'
+      };
+    };
     var findTarget = function (node) {
       var map = window.RCS_THEME_INSPECTOR_ELEMENTS || {};
       while (node && node !== document.body) {
+        var explicit = node.getAttribute && node.getAttribute('data-design-target');
+        if (explicit && map[explicit]) {
+          return {key:explicit, label:map[explicit].label || explicit, el:node};
+        }
         for (var key in map) {
           if (map[key] && map[key].selector && node.matches && node.matches(map[key].selector)) {
             return {key:key, label:map[key].label || key, el:node};
@@ -68,7 +114,7 @@ window.addEventListener('message', function (event) {
       selected = found.el;
       selected.classList.remove('rcs-inspector-hover');
       selected.classList.add('rcs-inspector-selected');
-      window.parent.postMessage({type:'RCS_THEME_ELEMENT_SELECTED', target:found.key, label:found.label}, window.location.origin);
+      window.parent.postMessage({type:'RCS_THEME_ELEMENT_SELECTED', target:found.key, label:found.label, computed:computedStyles(selected)}, window.location.origin);
     }, true);
   }
 });

@@ -7179,6 +7179,39 @@ body:has(#siteHeader) .banner-slider {
 }
 .ds-frame-shell[data-size="tablet"] iframe { width:820px; }
 .ds-frame-shell[data-size="mobile"] iframe { width:390px; }
+.ds-element-field.has-override {
+  border-left:3px solid var(--blue);
+  padding-left:9px;
+}
+.ds-clear-prop {
+  justify-self:start;
+  padding:6px 9px;
+  border-radius:9px;
+  background:#fff;
+  border:1px solid var(--border2);
+  color:var(--text2);
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.ds-clear-prop:hover { color:var(--red); border-color:var(--red-mid); background:var(--red-bg); }
+.ds-font-size-control { display:grid; gap:9px; }
+.ds-number-row { display:grid; grid-template-columns:1fr 34px; gap:8px; align-items:center; }
+.ds-number-row span { color:var(--text2); font-size:12px; font-weight:900; }
+.ds-presets { display:flex; gap:6px; flex-wrap:wrap; }
+.ds-presets button {
+  padding:5px 8px;
+  border-radius:999px;
+  background:var(--bg);
+  border:1px solid var(--border);
+  color:var(--ink);
+  font-size:11px;
+  font-weight:900;
+  cursor:pointer;
+}
+.ds-presets button:hover { background:var(--blue-bg); border-color:var(--blue-mid); color:var(--blue); }
+.ds-actions .btn:disabled { opacity:.5; cursor:not-allowed; }
+
 @media (max-width:1180px) {
   .ds-grid { grid-template-columns:1fr; }
   .ds-panel { position:relative; top:auto; max-height:none; }
