@@ -83,6 +83,104 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     };
 
+    $adminProductImages = static function (int $productId): array {
+        try {
+            return Database::rows(
+                "SELECT id, product_id, COALESCE(image_path, url) AS url, COALESCE(image_path, url) AS image_path, alt_text, is_primary, sort_order
+                 FROM product_images
+                 WHERE product_id = ?
+                 ORDER BY is_primary DESC, sort_order ASC, id ASC",
+                [$productId]
+            );
+        } catch (\Throwable) {
+            $images = Database::rows(
+                "SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, sort_order ASC, id ASC",
+                [$productId]
+            );
+            foreach ($images as &$img) {
+                if (!isset($img['url']) && isset($img['image_path'])) $img['url'] = $img['image_path'];
+                if (!isset($img['image_path']) && isset($img['url'])) $img['image_path'] = $img['url'];
+            }
+            unset($img);
+            return $images;
+        }
+    };
+
+    $deleteProductImage = static function (int $productId, int $imageId) use ($adminProductImages): array {
+        if ($productId <= 0 || $imageId <= 0) {
+            return ['ok' => false, 'msg' => 'Invalid product image'];
+        }
+
+        try {
+            $image = Database::row(
+                "SELECT id, product_id, COALESCE(image_path, url) AS image_path, COALESCE(image_path, url) AS url, is_primary
+                 FROM product_images
+                 WHERE id = ? AND product_id = ?
+                 LIMIT 1",
+                [$imageId, $productId]
+            );
+        } catch (\Throwable) {
+            $image = Database::row("SELECT * FROM product_images WHERE id = ? AND product_id = ? LIMIT 1", [$imageId, $productId]);
+            if ($image) {
+                if (!isset($image['url']) && isset($image['image_path'])) $image['url'] = $image['image_path'];
+                if (!isset($image['image_path']) && isset($image['url'])) $image['image_path'] = $image['url'];
+            }
+        }
+
+        if (!$image) {
+            return ['ok' => false, 'msg' => 'Image not found'];
+        }
+
+        $path = (string)($image['image_path'] ?? $image['url'] ?? '');
+        $wasPrimary = (int)($image['is_primary'] ?? 0) === 1;
+
+        Database::query("DELETE FROM product_images WHERE id = ? AND product_id = ?", [$imageId, $productId]);
+
+        $remaining = $adminProductImages($productId);
+        $nextPrimary = null;
+        foreach ($remaining as $candidate) {
+            if ((int)($candidate['is_primary'] ?? 0) === 1) {
+                $nextPrimary = $candidate;
+                break;
+            }
+        }
+        if (!$nextPrimary && $remaining) {
+            $nextPrimary = $remaining[0];
+            Database::query("UPDATE product_images SET is_primary = 1 WHERE id = ? AND product_id = ?", [(int)$nextPrimary['id'], $productId]);
+        }
+
+        $primaryPath = $nextPrimary ? (string)($nextPrimary['image_path'] ?? $nextPrimary['url'] ?? '') : null;
+        try {
+            Database::query("UPDATE products SET image_path = ? WHERE id = ?", [$primaryPath, $productId]);
+        } catch (\Throwable) {
+            // Older schemas may not have products.image_path; product_images still stays correct.
+        }
+
+        if ($path !== '' && str_starts_with($path, '/uploads/products/')) {
+            $productUses = 0;
+            $imageUses = 0;
+            try { $productUses = (int)(Database::row("SELECT COUNT(*) c FROM products WHERE image_path = ?", [$path])['c'] ?? 0); } catch (\Throwable) {}
+            try {
+                $imageUses = (int)(Database::row(
+                    "SELECT COUNT(*) c FROM product_images WHERE COALESCE(image_path, url) = ?",
+                    [$path]
+                )['c'] ?? 0);
+            } catch (\Throwable) {
+                try { $imageUses = (int)(Database::row("SELECT COUNT(*) c FROM product_images WHERE url = ?", [$path])['c'] ?? 0); } catch (\Throwable) {}
+            }
+            if ($productUses === 0 && $imageUses === 0) {
+                $file = PUBLIC_PATH . $path;
+                $uploadsRoot = realpath(PUBLIC_PATH . '/uploads/products') ?: (PUBLIC_PATH . '/uploads/products');
+                $realFile = realpath($file);
+                if ($realFile && str_starts_with($realFile, $uploadsRoot) && is_file($realFile)) {
+                    @unlink($realFile);
+                }
+            }
+        }
+
+        return ['ok' => true, 'images' => $adminProductImages($productId), 'deleted_primary' => $wasPrimary];
+    };
+
     if ($uri === '/admin/api/dashboard' && $method === 'GET') {
         $stats = [
             'total_orders'    => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
@@ -168,6 +266,43 @@ if (str_starts_with($uri, '/admin/api/')) {
     if (preg_match('#^/admin/api/products/(\d+)$#', $uri, $m) && $method === 'DELETE') {
         Database::query("DELETE FROM products WHERE id=?", [$m[1]]);
         json(['ok'=>true]);
+    }
+
+    if (preg_match('#^/admin/api/products/(\d+)/image-path$#', $uri, $m) && $method === 'DELETE') {
+        $pid = (int)$m[1];
+        try {
+            $product = Database::row("SELECT id, image_path FROM products WHERE id = ? LIMIT 1", [$pid]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'This product schema does not support a legacy main image field'], 422);
+        }
+        if (!$product) json(['ok'=>false,'msg'=>'Product not found'], 404);
+
+        $path = (string)($product['image_path'] ?? '');
+        try { Database::query("UPDATE products SET image_path = NULL WHERE id = ?", [$pid]); } catch (\Throwable) {}
+
+        if ($path !== '' && str_starts_with($path, '/uploads/products/')) {
+            $productUses = 0;
+            $imageUses = 0;
+            try { $productUses = (int)(Database::row("SELECT COUNT(*) c FROM products WHERE image_path = ?", [$path])['c'] ?? 0); } catch (\Throwable) {}
+            try {
+                $imageUses = (int)(Database::row(
+                    "SELECT COUNT(*) c FROM product_images WHERE COALESCE(image_path, url) = ?",
+                    [$path]
+                )['c'] ?? 0);
+            } catch (\Throwable) {
+                try { $imageUses = (int)(Database::row("SELECT COUNT(*) c FROM product_images WHERE url = ?", [$path])['c'] ?? 0); } catch (\Throwable) {}
+            }
+            if ($productUses === 0 && $imageUses === 0) {
+                $file = PUBLIC_PATH . $path;
+                $uploadsRoot = realpath(PUBLIC_PATH . '/uploads/products') ?: (PUBLIC_PATH . '/uploads/products');
+                $realFile = realpath($file);
+                if ($realFile && str_starts_with($realFile, $uploadsRoot) && is_file($realFile)) {
+                    @unlink($realFile);
+                }
+            }
+        }
+
+        json(['ok'=>true,'images'=>$adminProductImages($pid)]);
     }
 
     if (preg_match('#^/admin/api/products/(\d+)/tiers$#', $uri, $m) && $method === 'GET') {
@@ -307,13 +442,23 @@ if (str_starts_with($uri, '/admin/api/')) {
         if (!empty($body['is_primary'])) Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=? AND id!=?", [$pid,$id]);
         json(['ok'=>true,'id'=>$id]);
     }
+    if (preg_match('#^/admin/api/products/(\d+)/images/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        $result = $deleteProductImage((int)$m[1], (int)$m[2]);
+        json($result, $result['ok'] ? 200 : 404);
+    }
     if (preg_match('#^/admin/api/products/(\d+)/images$#', $uri, $m) && $method === 'DELETE') {
-        Database::query("DELETE FROM product_images WHERE product_id=?", [$m[1]]);
-        json(['ok'=>true]);
+        $pid = (int)$m[1];
+        $images = $adminProductImages($pid);
+        foreach ($images as $image) {
+            if (!empty($image['id'])) $deleteProductImage($pid, (int)$image['id']);
+        }
+        json(['ok'=>true,'images'=>[]]);
     }
     if (preg_match('#^/admin/api/images/(\d+)$#', $uri, $m) && $method === 'DELETE') {
-        Database::query("DELETE FROM product_images WHERE id=?", [$m[1]]);
-        json(['ok'=>true]);
+        $image = Database::row("SELECT product_id FROM product_images WHERE id = ? LIMIT 1", [(int)$m[1]]);
+        if (!$image) json(['ok'=>false,'msg'=>'Image not found'], 404);
+        $result = $deleteProductImage((int)$image['product_id'], (int)$m[1]);
+        json($result, $result['ok'] ? 200 : 404);
     }
 
     if ($uri === '/admin/api/qualities' && $method === 'GET') {
