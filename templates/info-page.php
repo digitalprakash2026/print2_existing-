@@ -17,9 +17,12 @@ $sections = is_array($page['sections'] ?? null) ? $page['sections'] : [];
 $steps = is_array($page['steps'] ?? null) ? $page['steps'] : [];
 $ctaTitle = htmlspecialchars((string)($page['cta_title'] ?? 'Need help?'), ENT_QUOTES, 'UTF-8');
 $ctaText = htmlspecialchars((string)($page['cta_text'] ?? 'Contact our team for guidance.'), ENT_QUOTES, 'UTF-8');
-$visualImage = htmlspecialchars((string)($page['visual_image'] ?? '/assets/img/categories/print-category.svg'), ENT_QUOTES, 'UTF-8');
 $visualTitle = htmlspecialchars((string)($page['visual_title'] ?? 'Premium print support'), ENT_QUOTES, 'UTF-8');
 $visualText = htmlspecialchars((string)($page['visual_text'] ?? 'Professional print guidance for your business.'), ENT_QUOTES, 'UTF-8');
+$mockups = is_array($page['mockups'] ?? null) ? array_values($page['mockups']) : [];
+if (empty($mockups)) {
+    $mockups = [(string)($page['visual_image'] ?? '/assets/img/categories/print-category.svg')];
+}
 ?>
 <main class="info-page">
   <section class="info-hero">
@@ -37,8 +40,11 @@ $visualText = htmlspecialchars((string)($page['visual_text'] ?? 'Professional pr
           <?php endif; ?>
         </div>
         <aside class="info-visual-card" aria-label="Page visual">
-          <div class="info-visual-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
-          <img src="<?= $visualImage ?>" alt="<?= $visualTitle ?>" loading="eager" decoding="async">
+          <div class="info-print-stack" aria-hidden="true">
+            <?php foreach ($mockups as $idx => $mockup): ?>
+              <img class="info-mockup info-mockup-<?= $idx + 1 ?>" src="<?= htmlspecialchars((string)$mockup, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="<?= $idx === 0 ? 'eager' : 'lazy' ?>" decoding="async">
+            <?php endforeach; ?>
+          </div>
           <div class="info-visual-caption">
             <strong><?= $visualTitle ?></strong>
             <p><?= $visualText ?></p>
@@ -81,6 +87,13 @@ $visualText = htmlspecialchars((string)($page['visual_text'] ?? 'Professional pr
           <?php foreach ((array)($section['body'] ?? []) as $paragraph): ?>
             <p><?= htmlspecialchars((string)$paragraph, ENT_QUOTES, 'UTF-8') ?></p>
           <?php endforeach; ?>
+          <?php if (!empty($section['bullets']) && is_array($section['bullets'])): ?>
+            <ul class="info-content-list">
+              <?php foreach ($section['bullets'] as $bullet): ?>
+                <li><?= htmlspecialchars((string)$bullet, ENT_QUOTES, 'UTF-8') ?></li>
+              <?php endforeach; ?>
+            </ul>
+          <?php endif; ?>
         </article>
       <?php endforeach; ?>
       </div>

@@ -26,8 +26,11 @@ $waText = rawurlencode('Hello RCS Graphic, I need help with a printing requireme
           <div class="info-badges"><span>WhatsApp Support</span><span>Bulk Quote Help</span><span>Design Guidance</span></div>
         </div>
         <aside class="info-visual-card contact-visual-card">
-          <div class="info-visual-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
-          <img src="/assets/img/categories/all-categories-hero.svg" alt="Print support desk" loading="eager" decoding="async">
+          <div class="info-print-stack" aria-hidden="true">
+            <img class="info-mockup info-mockup-1" src="/assets/images/sample-products/business-cards/business-cards-1.svg" alt="" loading="eager" decoding="async">
+            <img class="info-mockup info-mockup-2" src="/assets/images/sample-products/brochures/brochures-1.svg" alt="" loading="lazy" decoding="async">
+            <img class="info-mockup info-mockup-3" src="/assets/images/sample-products/banners/banners-1.svg" alt="" loading="lazy" decoding="async">
+          </div>
           <div class="info-visual-caption">
             <strong>Fastest support</strong>
             <p>For urgent order questions, WhatsApp is usually the quickest way to reach our team.</p>
@@ -55,7 +58,7 @@ $waText = rawurlencode('Hello RCS Graphic, I need help with a printing requireme
       <form class="contact-form" id="contactQuickForm" action="https://wa.me/<?= $bizWa ?>" method="get" target="_blank">
         <div class="sec-ey">Quick Enquiry</div>
         <h2>Tell us what you need</h2>
-        <p>Use this quick form to open WhatsApp. You can then share artwork, quantity and delivery details directly with our team.</p>
+        <p>Use this quick form to open WhatsApp. You can then share artwork, quantity, product size, material preference and delivery details directly with our team. Clear information helps us suggest the right product and prepare a faster quote.</p>
         <label>Name<input type="text" name="name" placeholder="Your name"></label>
         <label>Phone<input type="tel" name="phone" placeholder="Your phone number"></label>
         <label>Requirement<select name="requirement"><option>Business Cards</option><option>Flyers / Pamphlets</option><option>Brochures</option><option>Banners / Posters</option><option>Stationery</option><option>Bulk / Custom Print</option></select></label>
@@ -70,6 +73,8 @@ $waText = rawurlencode('Hello RCS Graphic, I need help with a printing requireme
           <li>Share print size, paper/material preference if known.</li>
           <li>Upload final artwork or explain your design brief.</li>
           <li>Mention delivery city and expected timeline.</li>
+          <li>For repeat orders, share an old bill, sample photo or previous artwork reference.</li>
+          <li>For events or campaigns, tell us the deadline so production and dispatch can be planned properly.</li>
         </ul>
         <div class="contact-hours"><strong>Working Hours</strong><span>Monday - Saturday</span><span>10:00 AM - 7:00 PM</span></div>
       </aside>
