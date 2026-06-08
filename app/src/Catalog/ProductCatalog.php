@@ -31,7 +31,7 @@ class ProductCatalog
     {
         try {
             return \Database::rows(
-                "SELECT p.*, c.name as category_name,
+                "SELECT p.*, c.name as category_name, c.slug as category_slug,
                         " . self::primaryImageExpr() . " as primary_image,
                         " . self::minPriceExpr() . " as min_price
                  FROM products p
@@ -41,7 +41,7 @@ class ProductCatalog
             );
         } catch (\Throwable) {
             return \Database::rows(
-                "SELECT p.*, c.name as category_name,
+                "SELECT p.*, c.name as category_name, c.slug as category_slug,
                         (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1) as primary_image,
                         " . self::legacyMinPriceExpr() . " as min_price
                  FROM products p

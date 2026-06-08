@@ -49,6 +49,8 @@ $discountPct  = ($startingPrice > 0 && $comparePrice > $startingPrice)
     : 0;
 $productCode = trim((string)($product['product_code'] ?? ''));
 $categoryName = trim((string)($product['category_name'] ?? 'Products'));
+$categorySlug = trim((string)($product['category_slug'] ?? ''));
+$categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug) : '/categories';
 ?>
 
 <div class="pd-page-wrap">
@@ -58,7 +60,7 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
   <div class="breadcrumb">
     <a href="/">Home</a><span>/</span>
     <a href="/categories">Products</a><span>/</span>
-    <span><?= htmlspecialchars($categoryName) ?></span><span>/</span>
+    <a href="<?= htmlspecialchars($categoryUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($categoryName) ?></a><span>/</span>
     <span style="color:var(--ink);font-weight:600"><?= htmlspecialchars($product['name']) ?></span>
   </div>
 
