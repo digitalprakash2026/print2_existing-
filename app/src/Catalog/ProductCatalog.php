@@ -95,15 +95,21 @@ class ProductCatalog
         );
     }
 
-    public static function relatedFromFixedCategories(int $productId, int $limit = 4): array
+    public static function relatedFromFixedCategories(int $productId, int $limit = 5): array
     {
-        $preferred = ['brochure', 'business-card', 'calendar', 'flyer'];
+        $preferred = [
+            ['business-cards', 'business-card', 'visiting-cards'],
+            ['flyers', 'flyer'],
+            ['brochures', 'brochure'],
+            ['posters', 'poster'],
+            ['calendars', 'calendar'],
+        ];
         $picked = [];
         $usedCategoryIds = [];
 
-        foreach ($preferred as $slug) {
+        foreach ($preferred as $slugGroup) {
             if (count($picked) >= $limit) break;
-            $row = self::fetchOneFromCategorySlug($productId, $slug);
+            $row = self::fetchOneFromCategorySlugs($productId, $slugGroup);
             if (!$row) continue;
             $picked[] = $row;
             $usedCategoryIds[] = (int)($row['category_id'] ?? 0);
@@ -120,11 +126,18 @@ class ProductCatalog
         return array_slice($picked, 0, $limit);
     }
 
-    private static function fetchOneFromCategorySlug(int $productId, string $slug): ?array
+    private static function fetchOneFromCategorySlugs(int $productId, array $slugs): ?array
     {
+        $slugs = array_values(array_filter(array_map('strval', $slugs)));
+        if (empty($slugs)) {
+            return null;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($slugs), '?'));
+        $params = array_merge([$productId], $slugs);
         $rows = self::fetchProductRows(
-            'WHERE p.is_active = 1 AND p.id != ? AND c.slug = ? ORDER BY p.sort_order ASC, p.id DESC LIMIT 1',
-            [$productId, $slug]
+            "WHERE p.is_active = 1 AND p.id != ? AND c.slug IN ($placeholders) ORDER BY p.sort_order ASC, p.id DESC LIMIT 1",
+            $params
         );
         return $rows[0] ?? null;
     }

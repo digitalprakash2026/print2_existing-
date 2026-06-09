@@ -33,6 +33,7 @@ return [
         'cta_text' => 'Explore products or contact our team for custom print guidance and bulk order support.',
     ],
     'shipping-policy' => [
+        'layout' => 'simple',
         'title' => 'Shipping Policy',
         'meta_title' => 'Shipping Policy — RCS Graphic',
         'meta_description' => 'Read RCS Graphic shipping, dispatch, transport collection, local delivery and order processing policies.',
@@ -66,6 +67,7 @@ return [
         'cta_text' => 'Contact our team before placing your order for dispatch planning and shipping guidance.',
     ],
     'refund-return-policy' => [
+        'layout' => 'simple',
         'title' => 'Refund & Return Policy',
         'meta_title' => 'Refund & Return Policy — RCS Graphic',
         'meta_description' => 'Understand RCS Graphic refund, return, reprint and replacement policy for custom printed products.',
@@ -99,6 +101,7 @@ return [
         'cta_text' => 'Share your order details and photos with our support team so we can review quickly.',
     ],
     'terms-and-conditions' => [
+        'layout' => 'simple',
         'title' => 'Terms & Conditions',
         'meta_title' => 'Terms & Conditions — RCS Graphic',
         'meta_description' => 'Read RCS Graphic terms for print orders, artwork approval, payments, delivery, cancellations and customer responsibilities.',
@@ -133,6 +136,7 @@ return [
         'cta_text' => 'Contact us and our team will guide you through product, artwork and delivery details.',
     ],
     'privacy-policy' => [
+        'layout' => 'simple',
         'title' => 'Privacy Policy',
         'meta_title' => 'Privacy Policy — RCS Graphic',
         'meta_description' => 'Learn how RCS Graphic collects, uses and protects customer information, order details and uploaded artwork.',

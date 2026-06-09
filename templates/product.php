@@ -446,7 +446,8 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
                onerror="this.src='https://placehold.co/400x260/EEF3FD/1A56E8?text=<?= urlencode($rp['name']) ?>'">
         </a>
         <div class="ym-body">
-          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><?= htmlspecialchars($rp['name'] ?? ($rp['category_name'] ?? 'Product')) ?></div>
+          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><?= htmlspecialchars($rp['category_name'] ?? 'Product Category') ?></div>
+          <h3 class="ym-name"><?= htmlspecialchars($rp['name'] ?? ($rp['category_name'] ?? 'Product')) ?></h3>
           <div class="ym-from">Starting from</div>
           <div class="ym-foot">
             <div class="ym-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>

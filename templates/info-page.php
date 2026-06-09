@@ -23,7 +23,57 @@ $mockups = is_array($page['mockups'] ?? null) ? array_values($page['mockups']) :
 if (empty($mockups)) {
     $mockups = [(string)($page['visual_image'] ?? '/assets/img/categories/print-category.svg')];
 }
+$isSimple = (($page['layout'] ?? '') === 'simple') || !empty($page['simple']);
+if ($isSimple):
 ?>
+<main class="info-page info-page-simple">
+  <section class="info-simple-hero">
+    <div class="info-container">
+      <nav class="info-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><span><?= $breadcrumb ?></span></nav>
+      <div class="info-simple-hero-copy">
+        <div class="sec-ey"><?= $eyebrow ?></div>
+        <h1><?= $heading ?></h1>
+        <?php if ($intro !== ''): ?><p><?= $intro ?></p><?php endif; ?>
+      </div>
+    </div>
+  </section>
+
+  <?php if (!empty($sections)): ?>
+  <section class="info-simple-section">
+    <div class="info-container info-simple-wrap">
+      <?php foreach ($sections as $section): ?>
+        <article class="info-simple-block">
+          <h2><?= htmlspecialchars((string)($section['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></h2>
+          <?php foreach ((array)($section['body'] ?? []) as $paragraph): ?>
+            <p><?= htmlspecialchars((string)$paragraph, ENT_QUOTES, 'UTF-8') ?></p>
+          <?php endforeach; ?>
+          <?php if (!empty($section['bullets']) && is_array($section['bullets'])): ?>
+            <ul>
+              <?php foreach ($section['bullets'] as $bullet): ?>
+                <li><?= htmlspecialchars((string)$bullet, ENT_QUOTES, 'UTF-8') ?></li>
+              <?php endforeach; ?>
+            </ul>
+          <?php endif; ?>
+        </article>
+      <?php endforeach; ?>
+
+      <aside class="info-simple-help">
+        <div>
+          <h2><?= $ctaTitle ?></h2>
+          <p><?= $ctaText ?></p>
+        </div>
+        <div class="info-simple-actions">
+          <a href="/contact" class="btn btn-blue">Contact Us</a>
+          <a href="https://wa.me/<?= $bizWa ?>" class="btn btn-outline" target="_blank" rel="noopener">WhatsApp Us</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+  <?php endif; ?>
+</main>
+<?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
+<?php include INCLUDE_PATH . '/partials/footer.php'; ?>
+<?php return; endif; ?>
 <main class="info-page">
   <section class="info-hero">
     <div class="info-container">
