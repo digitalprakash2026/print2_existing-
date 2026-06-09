@@ -153,12 +153,12 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 
     if (!$product) { http_response_code(404); view('404'); exit; }
 
-    try { $related = \Catalog\ProductCatalog::relatedFromFixedCategories((int)$product['id'], 5); }
-    catch (\Throwable) { $related = []; }
+    try { $relatedCategories = \Catalog\ProductCatalog::relatedCategories((int)($product['category_id'] ?? 0), 5); }
+    catch (\Throwable) { $relatedCategories = []; }
     $reviewSummary = \Reviews\ProductReview::summaryForProduct((int)$product['id']);
     $productReviews = \Reviews\ProductReview::approvedForProduct((int)$product['id'], 12);
 
-    view('product', compact('product', 'related', 'reviewSummary', 'productReviews'));
+    view('product', compact('product', 'relatedCategories', 'reviewSummary', 'productReviews'));
     exit;
 }
 

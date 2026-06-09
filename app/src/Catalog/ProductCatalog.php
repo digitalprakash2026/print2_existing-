@@ -95,6 +95,61 @@ class ProductCatalog
         );
     }
 
+    public static function relatedCategories(int $currentCategoryId = 0, int $limit = 5): array
+    {
+        $preferred = [
+            ['business-cards', 'business-card', 'visiting-cards'],
+            ['flyers', 'flyer'],
+            ['brochures', 'brochure'],
+            ['posters', 'poster'],
+            ['calendars', 'calendar'],
+        ];
+        $allCategories = array_values(array_filter(self::categories(), static function (array $category): bool {
+            if (array_key_exists('is_active', $category) && (int)$category['is_active'] !== 1) {
+                return false;
+            }
+            return (int)($category['product_count'] ?? 0) > 0;
+        }));
+        $categories = array_values(array_filter($allCategories, static function (array $category) use ($currentCategoryId): bool {
+            return (int)($category['id'] ?? 0) !== $currentCategoryId;
+        }));
+
+        $picked = [];
+        $usedIds = [];
+        foreach ($preferred as $slugGroup) {
+            if (count($picked) >= $limit) break;
+            foreach ($categories as $category) {
+                $categoryId = (int)($category['id'] ?? 0);
+                if ($categoryId <= 0 || isset($usedIds[$categoryId])) continue;
+                if (in_array((string)($category['slug'] ?? ''), $slugGroup, true)) {
+                    $picked[] = $category;
+                    $usedIds[$categoryId] = true;
+                    break;
+                }
+            }
+        }
+
+        foreach ($categories as $category) {
+            if (count($picked) >= $limit) break;
+            $categoryId = (int)($category['id'] ?? 0);
+            if ($categoryId <= 0 || isset($usedIds[$categoryId])) continue;
+            $picked[] = $category;
+            $usedIds[$categoryId] = true;
+        }
+
+        if (count($picked) < $limit) {
+            foreach ($allCategories as $category) {
+                if (count($picked) >= $limit) break;
+                $categoryId = (int)($category['id'] ?? 0);
+                if ($categoryId <= 0 || isset($usedIds[$categoryId])) continue;
+                $picked[] = $category;
+                $usedIds[$categoryId] = true;
+            }
+        }
+
+        return array_slice($picked, 0, $limit);
+    }
+
     public static function relatedFromFixedCategories(int $productId, int $limit = 5): array
     {
         $preferred = [

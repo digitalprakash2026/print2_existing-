@@ -427,31 +427,40 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
     </div>
   </section>
 
-  <!-- RELATED PRODUCTS -->
-  <?php if ($related): ?>
-  <section class="ym-section">
+  <!-- RELATED CATEGORIES -->
+  <?php $relatedCategoryCards = is_array($relatedCategories ?? null) ? array_slice($relatedCategories, 0, 5) : []; ?>
+  <?php if ($relatedCategoryCards): ?>
+  <section class="ym-section" aria-labelledby="relatedCategoryTitle">
     <div class="ym-head">
-      <h2 class="ym-title">You May <span>Also Like</span></h2>
-      <a href="/categories" class="ym-view-all">View All Products</a>
+      <h2 id="relatedCategoryTitle" class="ym-title">You May <span>Also Like</span></h2>
+      <a href="/categories" class="ym-view-all">View All Categories</a>
     </div>
 
-    <div class="ym-grid">
-      <?php foreach (array_slice($related, 0, 5) as $rp):
-        $rimg = $rp['primary_image'] ?? '';
-        $rmin = (float)($rp['min_price'] ?? 0);
+    <div class="ym-grid ym-category-grid">
+      <?php foreach ($relatedCategoryCards as $idx => $cat):
+        $catName = (string)($cat['name'] ?? 'Product Category');
+        $catSlug = (string)($cat['slug'] ?? '');
+        $catImg = trim((string)($cat['image_path'] ?? ''));
+        $catAlt = trim((string)($cat['image_alt'] ?? '')) ?: ($catName . ' category image');
+        $catCount = (int)($cat['product_count'] ?? 0);
+        $catHref = $catSlug !== '' ? '/category/' . rawurlencode($catSlug) : '/categories';
       ?>
-      <article class="ym-card" data-reveal data-reveal-delay="<?= ((int)($rp['id'] ?? 0) % 3) * 60 ?>">
-        <a class="ym-img" href="/product/<?= htmlspecialchars($rp['slug']) ?>">
-          <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" loading="lazy"
-               onerror="this.src='https://placehold.co/400x260/EEF3FD/1A56E8?text=<?= urlencode($rp['name']) ?>'">
+      <article class="ym-card ym-category-card" data-reveal data-reveal-delay="<?= ($idx % 3) * 60 ?>">
+        <a class="ym-img ym-category-img" href="<?= htmlspecialchars($catHref) ?>">
+          <?php if ($catImg !== ''): ?>
+            <img src="<?= htmlspecialchars($catImg) ?>" alt="<?= htmlspecialchars($catAlt) ?>" loading="lazy"
+                 onerror="this.style.display='none';if(this.nextElementSibling){this.nextElementSibling.removeAttribute('hidden');}">
+            <span class="ym-category-fallback" hidden><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+          <?php else: ?>
+            <span class="ym-category-fallback"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+          <?php endif; ?>
         </a>
         <div class="ym-body">
-          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><?= htmlspecialchars($rp['category_name'] ?? 'Product Category') ?></div>
-          <h3 class="ym-name"><?= htmlspecialchars($rp['name'] ?? ($rp['category_name'] ?? 'Product')) ?></h3>
-          <div class="ym-from">Starting from</div>
+          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i>Product Category</div>
+          <h3 class="ym-name"><?= htmlspecialchars($catName) ?></h3>
+          <div class="ym-from"><?= $catCount ?> Product<?= $catCount === 1 ? '' : 's' ?> Available</div>
           <div class="ym-foot">
-            <div class="ym-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>
-            <a href="/product/<?= htmlspecialchars($rp['slug']) ?>" class="ym-order">ORDER NOW</a>
+            <a href="<?= htmlspecialchars($catHref) ?>" class="ym-order">EXPLORE</a>
           </div>
         </div>
       </article>
