@@ -292,34 +292,67 @@ class ProductReview
     public static function moderate(int $reviewId, string $status, ?int $adminId = null, string $note = ''): array
     {
         if (!self::tableReady()) return ['ok' => false, 'msg' => 'Reviews table is not installed.'];
+        if ($reviewId <= 0) return ['ok' => false, 'msg' => 'Invalid review.'];
         if (!in_array($status, [self::APPROVED, self::REJECTED, self::PENDING], true)) {
             return ['ok' => false, 'msg' => 'Invalid review status.'];
         }
+
+        $sets = ['status = ?'];
+        $params = [$status];
+
+        // Some live databases may have an older product_reviews table. Keep moderation
+        // working even if optional metadata columns have not been added yet.
+        if (self::hasColumn('product_reviews', 'admin_note')) {
+            $sets[] = 'admin_note = ?';
+            $params[] = $note !== '' ? $note : null;
+        }
+        if (self::hasColumn('product_reviews', 'approved_by')) {
+            $sets[] = 'approved_by = ?';
+            $params[] = $status === self::APPROVED ? ($adminId ?: null) : null;
+        }
+        if (self::hasColumn('product_reviews', 'approved_at')) {
+            $sets[] = 'approved_at = ?';
+            $params[] = $status === self::APPROVED ? date('Y-m-d H:i:s') : null;
+        }
+        if (self::hasColumn('product_reviews', 'updated_at')) {
+            $sets[] = 'updated_at = NOW()';
+        }
+
+        $params[] = $reviewId;
         try {
-            \Database::query(
-                "UPDATE product_reviews
-                 SET status = ?, admin_note = ?, approved_by = ?, approved_at = CASE WHEN ? = 'approved' THEN NOW() ELSE NULL END, updated_at = NOW()
-                 WHERE id = ?",
-                [$status, $note !== '' ? $note : null, $adminId, $status, $reviewId]
+            $stmt = \Database::query(
+                'UPDATE product_reviews SET ' . implode(', ', $sets) . ' WHERE id = ?',
+                $params
             );
         } catch (\Throwable $e) {
             error_log('Review moderation failed: ' . $e->getMessage());
-            return ['ok' => false, 'msg' => 'Could not update review.'];
+            return ['ok' => false, 'msg' => 'Could not update review. Please check product_reviews table columns/migration.'];
         }
+
+        if ($stmt->rowCount() === 0 && !\Database::row('SELECT id FROM product_reviews WHERE id = ? LIMIT 1', [$reviewId])) {
+            return ['ok' => false, 'msg' => 'Review not found.'];
+        }
+
         return ['ok' => true, 'msg' => 'Review updated.'];
     }
 
     public static function setFeatured(int $reviewId, bool $featured): array
     {
         if (!self::tableReady()) return ['ok' => false, 'msg' => 'Reviews table is not installed.'];
+        $sets = ['is_featured = ?'];
+        $params = [$featured ? 1 : 0];
+        if (self::hasColumn('product_reviews', 'updated_at')) {
+            $sets[] = 'updated_at = NOW()';
+        }
+        $params[] = $reviewId;
         try {
             \Database::query(
-                "UPDATE product_reviews SET is_featured = ?, updated_at = NOW() WHERE id = ?",
-                [$featured ? 1 : 0, $reviewId]
+                'UPDATE product_reviews SET ' . implode(', ', $sets) . ' WHERE id = ?',
+                $params
             );
         } catch (\Throwable $e) {
             error_log('Review feature toggle failed: ' . $e->getMessage());
-            return ['ok' => false, 'msg' => 'Could not update featured flag.'];
+            return ['ok' => false, 'msg' => 'Could not update featured flag. Please check product_reviews table columns/migration.'];
         }
         return ['ok' => true, 'msg' => $featured ? 'Review marked as featured.' : 'Review removed from featured.'];
     }
@@ -334,6 +367,28 @@ class ProductReview
             return ['ok' => false, 'msg' => 'Could not delete review.'];
         }
         return ['ok' => true, 'msg' => 'Review deleted.'];
+    }
+
+
+    private static function hasColumn(string $table, string $column): bool
+    {
+        static $cache = [];
+        $key = $table . '.' . $column;
+        if (array_key_exists($key, $cache)) return $cache[$key];
+        try {
+            $row = \Database::row(
+                "SELECT 1 AS ok
+                 FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = ?
+                   AND COLUMN_NAME = ?
+                 LIMIT 1",
+                [$table, $column]
+            );
+            return $cache[$key] = (bool)$row;
+        } catch (\Throwable) {
+            return $cache[$key] = false;
+        }
     }
 
     private static function verifiedPurchase(int $userId, int $productId, int $orderItemId = 0): ?array

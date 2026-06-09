@@ -23,3 +23,12 @@ CREATE TABLE IF NOT EXISTS product_reviews (
   KEY idx_product_reviews_user_created (user_id, created_at),
   KEY idx_product_reviews_order_item (order_item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Compatibility for databases where product_reviews was created before moderation metadata was added.
+ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending' AFTER comment;
+ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS is_featured TINYINT(1) NOT NULL DEFAULT 0 AFTER status;
+ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS admin_note VARCHAR(255) NULL AFTER is_featured;
+ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS approved_by INT UNSIGNED NULL AFTER admin_note;
+ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS approved_at DATETIME NULL AFTER approved_by;
+ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at;
