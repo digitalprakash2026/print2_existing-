@@ -10498,3 +10498,24 @@ body:has(#siteHeader) .banner-slider {
   .register-form-card { padding-left:18px; padding-right:18px; }
   .register-benefit-strip { margin-left:-18px; margin-right:-18px; padding-left:18px; padding-right:18px; }
 }
+
+/* Align registration content with the global header/homepage container */
+.register-container {
+  width:min(var(--page-max), calc(100vw - var(--page-gutter)));
+  max-width:none;
+}
+.register-hero-grid,
+.register-layout,
+.register-trust-grid {
+  margin-left:0;
+  margin-right:0;
+}
+@media (max-width:1240px) {
+  .register-container { width:min(var(--page-max), calc(100vw - var(--page-gutter))); }
+}
+@media (max-width:1040px) {
+  .register-container { width:min(var(--page-max), calc(100vw - var(--page-gutter))); }
+}
+@media (max-width:720px) {
+  .register-container { width:min(100%, calc(100vw - 24px)); }
+}
