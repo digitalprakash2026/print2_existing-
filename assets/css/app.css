@@ -10451,3 +10451,50 @@ body:has(#siteHeader) .banner-slider {
   .register-input-wrap input { font-size:14px; }
   .register-benefit-strip { gap:12px; }
 }
+
+/* Registration page spacing refinements */
+.register-container {
+  width:min(100% - 48px, 1440px);
+}
+.register-hero {
+  padding-top:56px;
+  padding-bottom:24px;
+}
+.register-hero-grid {
+  grid-template-columns:minmax(0, 1.08fr) minmax(360px, 540px);
+  gap:60px;
+}
+.register-layout {
+  grid-template-columns:minmax(0, 1.42fr) minmax(360px, .88fr);
+  gap:56px;
+}
+.register-form-card {
+  padding-left:44px;
+  padding-right:44px;
+}
+.register-benefit-strip {
+  margin-left:-44px;
+  margin-right:-44px;
+  padding-left:44px;
+  padding-right:44px;
+}
+.register-why-card {
+  padding-left:38px;
+  padding-right:38px;
+}
+@media (max-width:1240px) {
+  .register-container { width:min(100% - 40px, 1180px); }
+  .register-hero-grid { gap:42px; }
+  .register-layout { grid-template-columns:minmax(0, 1.25fr) minmax(330px, .9fr); gap:36px; }
+}
+@media (max-width:1040px) {
+  .register-container { width:min(100% - 32px, 860px); }
+  .register-layout,
+  .register-hero-grid { grid-template-columns:1fr; }
+}
+@media (max-width:720px) {
+  .register-container { width:min(100% - 24px, 1120px); }
+  .register-hero { padding-top:34px; }
+  .register-form-card { padding-left:18px; padding-right:18px; }
+  .register-benefit-strip { margin-left:-18px; margin-right:-18px; padding-left:18px; padding-right:18px; }
+}
