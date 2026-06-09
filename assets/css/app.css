@@ -10520,12 +10520,12 @@ body:has(#siteHeader) .banner-slider {
   .register-container { width:min(100%, calc(100vw - 24px)); }
 }
 
-/* Registration page: align content with the visible header logo edge, not the viewport edge */
+/* Registration page: use the exact header/homepage container gutter, so content aligns with the logo column */
 .register-container {
-  width:min(var(--page-max), calc(100vw - 80px));
-}
-@media (max-width:1240px) {
-  .register-container { width:min(var(--page-max), calc(100vw - 64px)); }
+  width:min(var(--page-max), calc(100vw - var(--page-gutter)));
+  max-width:none;
+  margin-left:auto;
+  margin-right:auto;
 }
 @media (max-width:720px) {
   .register-container { width:min(100%, calc(100vw - 24px)); }
