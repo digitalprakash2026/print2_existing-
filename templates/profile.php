@@ -57,8 +57,6 @@ $designFallbacks = [
 while (count($recentDesigns) < 4) {
     $recentDesigns[] = $designFallbacks[count($recentDesigns)];
 }
-$helpPhone = $phone !== '' ? $phone : '+91 98765 43210';
-$phoneHref = preg_replace('/\D+/', '', $helpPhone);
 $accountSettings = is_array($settingsMap ?? null) ? $settingsMap : [];
 if ($accountSettings === []) {
     try {
@@ -101,6 +99,11 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
         $productTitle = implode(', ', array_filter(array_map(static fn($item) => (string)($item['product_name'] ?? ''), $items)));
         $orderPublicId = (string)($order['order_id'] ?? $order['id'] ?? '');
         $isPaid = in_array((string)($order['payment_status'] ?? ''), ['paid'], true);
+        $trackSteps = ['received', 'processing', 'printing', 'ready', 'delivered'];
+        $trackIndex = array_search($status, $trackSteps, true);
+        $trackIndex = $trackIndex === false ? -1 : (int)$trackIndex;
+        $isCancelled = $status === 'cancelled';
+        $isWhatsappPending = $status === 'whatsapp_pending';
       ?>
         <details class="account-order-detail">
           <summary class="account-order-row" role="row">
@@ -142,6 +145,28 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                 <a href="/invoice/<?= rawurlencode($orderPublicId) ?>" target="_blank" rel="noopener"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Download Invoice</a>
               <?php else: ?>
                 <span class="account-order-action-disabled"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Invoice after payment</span>
+              <?php endif; ?>
+            </div>
+            <div class="account-order-tracking" aria-label="Tracking detail">
+              <div class="account-track-head">
+                <strong>Tracking Detail</strong>
+                <span><?= $h($statusLabels[$status] ?? ucfirst($status)) ?></span>
+              </div>
+              <?php if ($isCancelled): ?>
+                <div class="account-track-alert is-cancelled"><i class="fa-solid fa-circle-xmark" aria-hidden="true"></i> This order has been cancelled.</div>
+              <?php elseif ($isWhatsappPending): ?>
+                <div class="account-track-alert is-pending"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp confirmation is pending. Our team will update this order after confirmation.</div>
+              <?php else: ?>
+                <div class="account-track-steps">
+                  <?php foreach ($trackSteps as $stepIndex => $step):
+                    $stepClass = $stepIndex < $trackIndex ? 'is-done' : ($stepIndex === $trackIndex ? 'is-active' : 'is-pending');
+                  ?>
+                    <div class="account-track-step <?= $stepClass ?>">
+                      <span><?= $stepIndex < $trackIndex ? '✓' : ($stepIndex + 1) ?></span>
+                      <strong><?= $h($statusLabels[$step] ?? ucfirst($step)) ?></strong>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
               <?php endif; ?>
             </div>
           </div>
@@ -186,12 +211,6 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
       <button class="account-nav-item" type="button" data-account-tab="security"><i class="fa-solid fa-lock"></i><span>Change Password</span></button>
       <a class="account-nav-item" href="/logout"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Logout</span></a>
 
-      <div class="account-help-card">
-        <strong>Need Help?</strong>
-        <span>We are here to help you!</span>
-        <a href="tel:<?= $h($phoneHref) ?>"><i class="fa-solid fa-phone"></i><?= $h($helpPhone) ?></a>
-        <small>Mon - Sat: 10:00 AM - 7:00 PM</small>
-      </div>
     </aside>
 
     <div class="account-main">
@@ -428,9 +447,15 @@ setAccountTab(location.hash.replace('#', ''), false, false);
 
 function openAccountOrder(trigger) {
   const detail = trigger?.closest('.account-order-detail');
-  if (detail) {
-    detail.open = true;
-    detail.scrollIntoView({behavior:'smooth', block:'center'});
+  if (!detail) return;
+  detail.open = true;
+  const tracking = detail.querySelector('.account-order-tracking');
+  const target = tracking || detail;
+  tracking?.classList.remove('is-highlighted');
+  target.scrollIntoView({behavior:'smooth', block:'center'});
+  if (tracking) {
+    window.setTimeout(() => tracking.classList.add('is-highlighted'), 220);
+    window.setTimeout(() => tracking.classList.remove('is-highlighted'), 1800);
   }
 }
 

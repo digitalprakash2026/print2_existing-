@@ -8732,43 +8732,6 @@ body:has(#siteHeader) .banner-slider {
 .account-nav-item.is-active i {
   color:#fff;
 }
-.account-help-card {
-  margin:16px 16px 0;
-  padding:20px;
-  border-radius:9px;
-  background:#4f1db7;
-  color:#fff;
-}
-.account-help-card strong,
-.account-help-card span,
-.account-help-card small,
-.account-help-card a {
-  display:block;
-  color:#fff;
-}
-.account-help-card strong {
-  margin-bottom:6px;
-  font-size:18px;
-  font-weight:950;
-}
-.account-help-card span {
-  margin-bottom:18px;
-  font-size:13px;
-  opacity:.9;
-}
-.account-help-card a {
-  margin-bottom:12px;
-  font-size:13px;
-  font-weight:900;
-  text-decoration:none;
-}
-.account-help-card a i {
-  margin-right:8px;
-}
-.account-help-card small {
-  font-size:11.5px;
-  opacity:.9;
-}
 .account-main {
   min-width:0;
   display:flex;
@@ -9288,7 +9251,6 @@ body:has(#siteHeader) .banner-slider {
   .account-sidebar { position:static; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); padding:12px; gap:8px; }
   .account-nav-item,
   .account-nav-item.is-active { min-height:48px; border-radius:8px; padding:0 14px; }
-  .account-help-card { grid-column:1 / -1; margin:8px 0 0; }
   .account-profile-card { grid-template-columns:96px minmax(0, 1fr); }
   .account-edit-btn { grid-column:1 / -1; width:max-content; }
   .account-design-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
@@ -9571,5 +9533,131 @@ body:has(#siteHeader) .banner-slider {
 @media (max-width:640px) {
   .account-order-expanded {
     grid-template-columns:1fr;
+  }
+}
+
+/* My Account order tracking timeline */
+.account-order-tracking {
+  grid-column:1 / -1;
+  padding:14px 16px 16px;
+  border:1px solid #e7ebf0;
+  border-radius:12px;
+  background:#fbfcfe;
+  transition:box-shadow .25s ease, border-color .25s ease, background .25s ease;
+}
+.account-order-tracking.is-highlighted {
+  border-color:#ff7900;
+  background:#fffaf2;
+  box-shadow:0 0 0 4px rgba(255,121,0,.12);
+}
+.account-track-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.account-track-head strong {
+  margin:0;
+  color:#111827;
+  font-size:14px;
+  font-weight:950;
+}
+.account-track-head span {
+  display:inline-flex;
+  min-height:26px;
+  align-items:center;
+  padding:0 11px;
+  border-radius:999px;
+  background:#f5f0ff;
+  color:#4f1db7;
+  font-size:12px;
+  font-weight:900;
+}
+.account-track-steps {
+  display:grid;
+  grid-template-columns:repeat(5, minmax(0, 1fr));
+  gap:8px;
+}
+.account-track-step {
+  position:relative;
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  align-items:center;
+  gap:7px;
+  padding:11px 7px;
+  border:1px solid #e7ebf0;
+  border-radius:10px;
+  background:#fff;
+  color:#94a3b8;
+  text-align:center;
+}
+.account-track-step span {
+  display:flex;
+  width:32px;
+  height:32px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:#e2e8f0;
+  color:#64748b;
+  font-size:12px;
+  font-weight:950;
+}
+.account-track-step strong {
+  color:inherit;
+  font-size:11.5px;
+  font-weight:900;
+  line-height:1.2;
+}
+.account-track-step.is-done {
+  border-color:#bbf7d0;
+  background:#f0fdf4;
+  color:#15803d;
+}
+.account-track-step.is-done span {
+  background:#23a33d;
+  color:#fff;
+}
+.account-track-step.is-active {
+  border-color:#fed7aa;
+  background:#fff7ed;
+  color:#ff7900;
+}
+.account-track-step.is-active span {
+  background:#ff7900;
+  color:#fff;
+}
+.account-track-alert {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:800;
+}
+.account-track-alert.is-cancelled {
+  background:#fee2e2;
+  color:#dc2626;
+}
+.account-track-alert.is-pending {
+  background:#f0fdf4;
+  color:#15803d;
+}
+@media (max-width:720px) {
+  .account-track-steps {
+    grid-template-columns:1fr;
+  }
+  .account-track-step {
+    align-items:flex-start;
+    flex-direction:row;
+    justify-content:flex-start;
+    text-align:left;
+  }
+  .account-track-head {
+    align-items:flex-start;
+    flex-direction:column;
   }
 }
