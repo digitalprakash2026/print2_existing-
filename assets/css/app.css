@@ -10519,3 +10519,14 @@ body:has(#siteHeader) .banner-slider {
 @media (max-width:720px) {
   .register-container { width:min(100%, calc(100vw - 24px)); }
 }
+
+/* Registration page: align content with the visible header logo edge, not the viewport edge */
+.register-container {
+  width:min(var(--page-max), calc(100vw - 80px));
+}
+@media (max-width:1240px) {
+  .register-container { width:min(var(--page-max), calc(100vw - 64px)); }
+}
+@media (max-width:720px) {
+  .register-container { width:min(100%, calc(100vw - 24px)); }
+}
