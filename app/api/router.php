@@ -330,6 +330,26 @@ if ($uri === '/api/orders/whatsapp' && $method === 'POST') {
     json($result);
 }
 
+
+// ── Product Reviews ─────────────────────────────────────────
+
+if ($uri === '/api/reviews/my' && $method === 'GET') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    json([
+        'ok' => true,
+        'reviewable_items' => \Reviews\ProductReview::reviewableItemsForUser((int)$user['id']),
+        'reviews' => \Reviews\ProductReview::userReviews((int)$user['id']),
+    ]);
+}
+
+if ($uri === '/api/reviews' && $method === 'POST') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $result = \Reviews\ProductReview::createOrUpdate((int)$user['id'], $body);
+    json($result, ($result['ok'] ?? false) ? 200 : 422);
+}
+
 // ── Settings (public read-only) ───────────────────────────────
 
 if ($uri === '/api/settings/public' && $method === 'GET') {

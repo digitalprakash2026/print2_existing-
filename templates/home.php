@@ -406,64 +406,43 @@ foreach ($categories as $cat) {
 
     <div class="customer-say-shell">
       <div class="customer-say-track" id="customerSayTrack" role="list" data-auto-slide="true">
-        <article class="customer-card" role="listitem">
-          <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
-          <p class="customer-text">Excellent quality printing and super fast service. Highly recommended!</p>
-          <div class="customer-stars" aria-label="5 out of 5 stars">
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-          </div>
-          <div class="customer-profile">
-            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&q=80&fit=crop&crop=faces" alt="Rakesh Mehta" loading="lazy">
-            <div>
-              <h3>– Rakesh Mehta</h3>
-              <span>Business Owner</span>
+        <?php if (!empty($homeReviews ?? [])): ?>
+          <?php foreach ($homeReviews as $review):
+            $productName = trim((string)($review['product_name'] ?? 'RCS Product')) ?: 'RCS Product';
+            $productUrl = !empty($review['product_slug']) ? '/product/' . rawurlencode((string)$review['product_slug']) : '/categories';
+          ?>
+          <article class="customer-card" role="listitem">
+            <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
+            <p class="customer-text"><?= htmlspecialchars($review['comment'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
+            <div class="customer-stars" aria-label="<?= (int)($review['rating'] ?? 0) ?> out of 5 stars">
+              <?php for ($i = 1; $i <= 5; $i++): ?>
+                <i class="fa-<?= $i <= (int)($review['rating'] ?? 0) ? 'solid' : 'regular' ?> fa-star" aria-hidden="true"></i>
+              <?php endfor; ?>
             </div>
-          </div>
-        </article>
-
-        <article class="customer-card" role="listitem">
-          <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
-          <p class="customer-text">Very professional design support and premium quality prints.</p>
-          <div class="customer-stars" aria-label="5 out of 5 stars">
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-          </div>
-          <div class="customer-profile">
-            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&q=80&fit=crop&crop=faces" alt="Khushbu Shah" loading="lazy">
-            <div>
-              <h3>– Khushbu Shah</h3>
-              <span>Marketing Head</span>
+            <div class="customer-profile">
+              <span class="customer-initials" aria-hidden="true"><?= htmlspecialchars($review['customer_initials'] ?? 'RC', ENT_QUOTES, 'UTF-8') ?></span>
+              <div>
+                <h3>– <?= htmlspecialchars($review['customer_name'] ?? 'RCS Customer', ENT_QUOTES, 'UTF-8') ?></h3>
+                <span><a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?></a></span>
+              </div>
             </div>
-          </div>
-        </article>
-
-        <article class="customer-card" role="listitem">
-          <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
-          <p class="customer-text">Best experience for bulk printing. Great price and on-time delivery.</p>
-          <div class="customer-stars" aria-label="5 out of 5 stars">
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-          </div>
-          <div class="customer-profile">
-            <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=160&q=80&fit=crop&crop=faces" alt="Jigar Patel" loading="lazy">
-            <div>
-              <h3>– Jigar Patel</h3>
-              <span>Event Organizer</span>
+          </article>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <article class="customer-card customer-card-empty" role="listitem">
+            <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
+            <p class="customer-text">Verified customer reviews will appear here after delivered orders are reviewed and approved.</p>
+            <div class="customer-stars" aria-label="0 out of 5 stars">
+              <i class="fa-regular fa-star" aria-hidden="true"></i>
+              <i class="fa-regular fa-star" aria-hidden="true"></i>
+              <i class="fa-regular fa-star" aria-hidden="true"></i>
+              <i class="fa-regular fa-star" aria-hidden="true"></i>
+              <i class="fa-regular fa-star" aria-hidden="true"></i>
             </div>
-          </div>
-        </article>
+            <div class="customer-profile"><span class="customer-initials" aria-hidden="true">★</span><div><h3>No approved reviews yet</h3><span>Verified customers only</span></div></div>
+          </article>
+        <?php endif; ?>
       </div>
-
     </div>
 
     <div class="customer-dots" aria-label="Testimonials pagination">

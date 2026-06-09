@@ -81,6 +81,7 @@ if ($uri === '/' && $method === 'GET') {
         }
         $settings    = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
+        $homeReviews = \Reviews\ProductReview::featured(6);
     } catch (\Throwable $e) {
         error_log('Home error: ' . $e->getMessage());
         $categories = $products = [];
@@ -88,8 +89,9 @@ if ($uri === '/' && $method === 'GET') {
         $homeDeals = [];
         $homeBlogs = [];
         $settingsMap = [];
+        $homeReviews = [];
     }
-    view('home', compact('categories', 'products', 'settingsMap', 'homeBanners', 'homeDeals', 'homeBlogs'));
+    view('home', compact('categories', 'products', 'settingsMap', 'homeBanners', 'homeDeals', 'homeBlogs', 'homeReviews'));
     exit;
 }
 
@@ -153,8 +155,10 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 
     try { $related = \Catalog\ProductCatalog::relatedFromFixedCategories((int)$product['id'], 4); }
     catch (\Throwable) { $related = []; }
+    $reviewSummary = \Reviews\ProductReview::summaryForProduct((int)$product['id']);
+    $productReviews = \Reviews\ProductReview::approvedForProduct((int)$product['id'], 12);
 
-    view('product', compact('product', 'related'));
+    view('product', compact('product', 'related', 'reviewSummary', 'productReviews'));
     exit;
 }
 
@@ -245,7 +249,9 @@ if ($uri === '/profile' && $method === 'GET') {
     $profile = \Auth\Auth::getProfile((int)$user['id']);
     try { $orders = \Orders\OrderManager::getUserOrders((int)$user['id']); }
     catch (\Throwable) { $orders = []; }
-    view('profile', compact('user', 'profile', 'orders'));
+    $reviewableItems = \Reviews\ProductReview::reviewableItemsForUser((int)$user['id']);
+    $myReviews = \Reviews\ProductReview::userReviews((int)$user['id']);
+    view('profile', compact('user', 'profile', 'orders', 'reviewableItems', 'myReviews'));
     exit;
 }
 

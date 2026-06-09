@@ -8,6 +8,8 @@ $profile = $profile ?? [];
 $billing = $profile['billing'] ?? [];
 $shipping = $profile['shipping'] ?? [];
 $orders = is_array($orders ?? null) ? $orders : [];
+$reviewableItems = is_array($reviewableItems ?? null) ? $reviewableItems : [];
+$myReviews = is_array($myReviews ?? null) ? $myReviews : [];
 
 $h = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 $name = trim((string)($profile['name'] ?? $user['name'] ?? 'RCS Customer'));
@@ -206,6 +208,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
       <button class="account-nav-item is-active" type="button" data-account-tab="dashboard"><i class="fa-solid fa-shapes"></i><span>Dashboard</span></button>
       <button class="account-nav-item" type="button" data-account-tab="orders"><i class="fa-regular fa-clipboard"></i><span>My Orders</span></button>
       <button class="account-nav-item" type="button" data-account-tab="designs"><i class="fa-regular fa-pen-to-square"></i><span>My Designs</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="reviews"><i class="fa-regular fa-star"></i><span>My Reviews</span></button>
       <button class="account-nav-item" type="button" data-account-tab="addresses"><i class="fa-solid fa-location-dot"></i><span>Saved Addresses</span></button>
       <button class="account-nav-item" type="button" data-account-tab="details"><i class="fa-regular fa-user"></i><span>Account Details</span></button>
       <button class="account-nav-item" type="button" data-account-tab="security"><i class="fa-solid fa-lock"></i><span>Change Password</span></button>
@@ -286,6 +289,83 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
               <small>Updated on <?= date('d M, Y', strtotime((string)$design['date'])) ?></small>
             </article>
             <?php endforeach; ?>
+          </div>
+        </section>
+      </section>
+
+
+      <section class="account-tab-panel" data-account-panel="reviews" aria-labelledby="reviewsPanelTitle">
+        <section class="account-card account-reviews-card">
+          <div class="account-section-head">
+            <div><h2 id="reviewsPanelTitle">My Reviews</h2><p>Review delivered products and track approval status for your submitted feedback.</p></div>
+            <a href="/categories">Explore More Products <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+
+          <div class="account-review-block">
+            <h3><i class="fa-regular fa-star"></i> Products ready for review</h3>
+            <?php if (empty($reviewableItems)): ?>
+              <div class="account-empty-state compact"><i class="fa-regular fa-face-smile"></i><strong>No pending reviews</strong><span>Delivered products that are ready for review will appear here.</span></div>
+            <?php else: ?>
+              <div class="account-reviewable-list">
+                <?php foreach ($reviewableItems as $item):
+                  $img = trim((string)($item['product_image'] ?? ''));
+                  $productUrl = !empty($item['product_slug']) ? '/product/' . rawurlencode((string)$item['product_slug']) : '#';
+                ?>
+                <article class="account-reviewable-card" data-review-product="<?= (int)($item['product_id'] ?? 0) ?>">
+                  <div class="account-review-product">
+                    <div class="account-review-thumb">
+                      <?php if ($img !== ''): ?><img src="<?= $h($img) ?>" alt="<?= $h($item['product_name'] ?? 'Product') ?>" loading="lazy"><?php else: ?><i class="fa-solid fa-box-open"></i><?php endif; ?>
+                    </div>
+                    <div>
+                      <strong><?= $h($item['product_name'] ?? 'Product') ?></strong>
+                      <span>Order #<?= $h($item['public_order_id'] ?? '') ?><?= !empty($item['order_created_at']) ? ' · ' . date('d M, Y', strtotime((string)$item['order_created_at'])) : '' ?></span>
+                      <?php if ($productUrl !== '#'): ?><a href="<?= $h($productUrl) ?>">View product</a><?php endif; ?>
+                    </div>
+                  </div>
+                  <form class="account-review-form" onsubmit="submitAccountReview(event, this)">
+                    <input type="hidden" name="product_id" value="<?= (int)($item['product_id'] ?? 0) ?>">
+                    <input type="hidden" name="order_item_id" value="<?= (int)($item['order_item_id'] ?? 0) ?>">
+                    <label>Rating</label>
+                    <select name="rating" class="fi" required>
+                      <option value="5">★★★★★ Excellent</option>
+                      <option value="4">★★★★☆ Good</option>
+                      <option value="3">★★★☆☆ Average</option>
+                      <option value="2">★★☆☆☆ Needs improvement</option>
+                      <option value="1">★☆☆☆☆ Poor</option>
+                    </select>
+                    <label>Comment</label>
+                    <textarea name="comment" class="fi" rows="3" minlength="10" maxlength="1000" placeholder="Share print quality, delivery and support experience…" required></textarea>
+                    <div class="account-review-msg" aria-live="polite"></div>
+                    <button class="btn btn-blue btn-sm" type="submit"><i class="fa-regular fa-paper-plane"></i> Submit Review</button>
+                  </form>
+                </article>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+
+          <div class="account-review-block">
+            <h3><i class="fa-solid fa-list-check"></i> Submitted reviews</h3>
+            <?php if (empty($myReviews)): ?>
+              <div class="account-empty-state compact"><i class="fa-regular fa-comment-dots"></i><strong>No reviews submitted yet</strong><span>Your submitted reviews and approval status will show here.</span></div>
+            <?php else: ?>
+              <div class="account-submitted-reviews">
+                <?php foreach ($myReviews as $review):
+                  $status = (string)($review['status'] ?? 'pending');
+                  $productUrl = !empty($review['product_slug']) ? '/product/' . rawurlencode((string)$review['product_slug']) : '#';
+                ?>
+                <article class="account-submitted-review">
+                  <div>
+                    <strong><?= $h($review['product_name'] ?? 'Product') ?></strong>
+                    <span class="account-review-stars" aria-label="<?= (int)($review['rating'] ?? 0) ?> out of 5 stars"><?= $h($review['stars'] ?? '') ?></span>
+                    <p><?= $h($review['comment'] ?? '') ?></p>
+                    <?php if ($productUrl !== '#'): ?><a href="<?= $h($productUrl) ?>">View product</a><?php endif; ?>
+                  </div>
+                  <span class="account-review-status is-<?= $h($status) ?>"><?= $h(ucfirst($status)) ?></span>
+                </article>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
           </div>
         </section>
       </section>
@@ -414,7 +494,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
 </main>
 
 <script>
-const ACCOUNT_TABS = ['dashboard','orders','designs','addresses','details','security'];
+const ACCOUNT_TABS = ['dashboard','orders','designs','reviews','addresses','details','security'];
 
 function setAccountTab(tab, pushHash = true, scrollToPanel = true) {
   const safeTab = ACCOUNT_TABS.includes(tab) ? tab : 'dashboard';
@@ -456,6 +536,44 @@ function openAccountOrder(trigger) {
   if (tracking) {
     window.setTimeout(() => tracking.classList.add('is-highlighted'), 220);
     window.setTimeout(() => tracking.classList.remove('is-highlighted'), 1800);
+  }
+}
+
+
+async function submitAccountReview(event, form) {
+  event.preventDefault();
+  const msg = form.querySelector('.account-review-msg');
+  const btn = form.querySelector('button[type="submit"]');
+  if (msg) { msg.textContent = ''; msg.className = 'account-review-msg'; }
+  const payload = {
+    product_id: Number(form.product_id?.value || 0),
+    order_item_id: Number(form.order_item_id?.value || 0),
+    rating: Number(form.rating?.value || 0),
+    comment: form.comment?.value.trim() || '',
+  };
+  if (!payload.comment || payload.comment.length < 10) {
+    if (msg) { msg.textContent = 'Please write at least 10 characters.'; msg.classList.add('is-error'); }
+    return;
+  }
+  try {
+    if (btn) btn.disabled = true;
+    const resp = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      if (msg) { msg.textContent = data.msg || 'Could not submit review.'; msg.classList.add('is-error'); }
+      return;
+    }
+    if (msg) { msg.textContent = data.msg || 'Review submitted for approval.'; msg.classList.add('is-ok'); }
+    window.setTimeout(() => window.location.reload(), 900);
+  } catch (e) {
+    if (msg) { msg.textContent = 'Could not submit review right now.'; msg.classList.add('is-error'); }
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 

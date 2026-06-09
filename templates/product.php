@@ -51,6 +51,13 @@ $productCode = trim((string)($product['product_code'] ?? ''));
 $categoryName = trim((string)($product['category_name'] ?? 'Products'));
 $categorySlug = trim((string)($product['category_slug'] ?? ''));
 $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug) : '/categories';
+$reviewSummary = is_array($reviewSummary ?? null) ? $reviewSummary : ['average' => 0, 'average_display' => '0.0', 'count' => 0, 'breakdown' => [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0]];
+$productReviews = is_array($productReviews ?? null) ? $productReviews : [];
+$reviewAverage = (float)($reviewSummary['average'] ?? 0);
+$reviewAverageDisplay = (string)($reviewSummary['average_display'] ?? number_format($reviewAverage, 1));
+$reviewCount = (int)($reviewSummary['count'] ?? 0);
+$reviewStarCount = $reviewCount > 0 ? max(1, min(5, (int)round($reviewAverage))) : 0;
+$reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $reviewStarCount);
 ?>
 
 <div class="pd-page-wrap">
@@ -114,9 +121,14 @@ $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug)
 
       <h1 class="pd-name"><?= htmlspecialchars($product['name']) ?></h1>
       <div class="pd-rating-row" aria-label="Product rating">
-        <span class="pd-stars" aria-hidden="true">★★★★★</span>
-        <strong>4.8</strong>
-        <span>(124 Reviews)</span>
+        <span class="pd-stars" aria-hidden="true"><?= htmlspecialchars($reviewStars) ?></span>
+        <?php if ($reviewCount > 0): ?>
+          <strong><?= htmlspecialchars($reviewAverageDisplay) ?></strong>
+          <span>(<?= number_format($reviewCount) ?> Reviews)</span>
+        <?php else: ?>
+          <strong>New</strong>
+          <span>(No reviews yet)</span>
+        <?php endif; ?>
         <span class="pd-viewing-dot">•</span>
         <span>23 people are viewing this product</span>
       </div>
@@ -286,7 +298,7 @@ $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug)
       <div class="pd-tabs-nav" role="tablist" aria-label="Product detail tabs">
         <button type="button" class="pd-tab-btn is-active" id="pd-tab-description" role="tab" aria-selected="true" aria-controls="pd-panel-description" onclick="switchProductTab('description', this)">Description</button>
         <button type="button" class="pd-tab-btn" id="pd-tab-specifications" role="tab" aria-selected="false" aria-controls="pd-panel-specifications" onclick="switchProductTab('specifications', this)">Specifications</button>
-        <button type="button" class="pd-tab-btn" id="pd-tab-reviews" role="tab" aria-selected="false" aria-controls="pd-panel-reviews" onclick="switchProductTab('reviews', this)">Reviews (124)</button>
+        <button type="button" class="pd-tab-btn" id="pd-tab-reviews" role="tab" aria-selected="false" aria-controls="pd-panel-reviews" onclick="switchProductTab('reviews', this)">Reviews (<?= number_format($reviewCount) ?>)</button>
         <button type="button" class="pd-tab-btn" id="pd-tab-faqs" role="tab" aria-selected="false" aria-controls="pd-panel-faqs" onclick="switchProductTab('faqs', this)">FAQs</button>
       </div>
 
@@ -325,12 +337,30 @@ $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug)
 
           <div class="pd-tab-panel" id="pd-panel-reviews" role="tabpanel" aria-labelledby="pd-tab-reviews" data-tab-panel="reviews" hidden>
             <h2>Customer Reviews</h2>
-            <p>Customers trust RCS Graphic for sharp printing, dependable finishing, and quick support from design to delivery.</p>
-            <ul class="pd-check-list">
-              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> 4.8 average customer rating</li>
-              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> 124 verified customer reviews</li>
-              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Loved for print quality and fast communication</li>
-            </ul>
+            <?php if ($reviewCount > 0): ?>
+              <div class="pd-review-summary-box">
+                <div class="pd-review-score"><strong><?= htmlspecialchars($reviewAverageDisplay) ?></strong><span><?= htmlspecialchars($reviewStars) ?></span><small><?= number_format($reviewCount) ?> verified review<?= $reviewCount === 1 ? '' : 's' ?></small></div>
+                <div class="pd-review-breakdown">
+                  <?php foreach ([5,4,3,2,1] as $rating):
+                    $ratingCount = (int)($reviewSummary['breakdown'][$rating] ?? 0);
+                    $pct = $reviewCount > 0 ? round(($ratingCount / $reviewCount) * 100) : 0;
+                  ?>
+                  <div><span><?= $rating ?>★</span><b><i style="width:<?= (int)$pct ?>%"></i></b><em><?= $ratingCount ?></em></div>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+              <div class="pd-review-list">
+                <?php foreach ($productReviews as $review): ?>
+                <article class="pd-review-list-card">
+                  <div class="pd-review-person"><span class="pd-review-avatar" aria-hidden="true"><?= htmlspecialchars($review['customer_initials'] ?? 'RC') ?></span><div><strong><?= htmlspecialchars($review['customer_name'] ?? 'RCS Customer') ?></strong><span>Verified customer<?= !empty($review['created_display']) ? ' · ' . htmlspecialchars($review['created_display']) : '' ?></span></div></div>
+                  <div class="pd-review-stars" aria-label="<?= (int)($review['rating'] ?? 0) ?> out of 5 stars"><?= htmlspecialchars($review['stars'] ?? '') ?></div>
+                  <p><?= htmlspecialchars($review['comment'] ?? '') ?></p>
+                </article>
+                <?php endforeach; ?>
+              </div>
+            <?php else: ?>
+              <div class="pd-review-empty"><i class="fa-regular fa-star" aria-hidden="true"></i><strong>No reviews yet</strong><span>Verified customer reviews will appear here after delivered orders are reviewed.</span></div>
+            <?php endif; ?>
           </div>
 
           <div class="pd-tab-panel" id="pd-panel-faqs" role="tabpanel" aria-labelledby="pd-tab-faqs" data-tab-panel="faqs" hidden>
@@ -358,30 +388,24 @@ $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug)
             <a href="#pd-panel-reviews" onclick="switchProductTab('reviews', document.getElementById('pd-tab-reviews'))">View All Reviews <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
           </div>
           <div class="pd-review-cards">
-            <article class="pd-review-card">
-              <div class="pd-review-person">
-                <span class="pd-review-avatar" aria-hidden="true">RM</span>
-                <div><strong>Rakesh Mehta</strong><span>Business Owner</span></div>
-              </div>
-              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
-              <p>Excellent quality and fast delivery. Highly recommended!</p>
-            </article>
-            <article class="pd-review-card">
-              <div class="pd-review-person">
-                <span class="pd-review-avatar" aria-hidden="true">KS</span>
-                <div><strong>Khushbu Shah</strong><span>Marketing Head</span></div>
-              </div>
-              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
-              <p>Very professional team and amazing print quality.</p>
-            </article>
-            <article class="pd-review-card">
-              <div class="pd-review-person">
-                <span class="pd-review-avatar" aria-hidden="true">JP</span>
-                <div><strong>Jigar Patel</strong><span>Event Organizer</span></div>
-              </div>
-              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
-              <p>Best experience for bulk printing. Great pricing and support.</p>
-            </article>
+            <?php if (!empty($productReviews)): ?>
+              <?php foreach (array_slice($productReviews, 0, 3) as $review): ?>
+              <article class="pd-review-card">
+                <div class="pd-review-person">
+                  <span class="pd-review-avatar" aria-hidden="true"><?= htmlspecialchars($review['customer_initials'] ?? 'RC') ?></span>
+                  <div><strong><?= htmlspecialchars($review['customer_name'] ?? 'RCS Customer') ?></strong><span>Verified Customer</span></div>
+                </div>
+                <div class="pd-review-stars" aria-label="<?= (int)($review['rating'] ?? 0) ?> out of 5 stars"><?= htmlspecialchars($review['stars'] ?? '') ?></div>
+                <p><?= htmlspecialchars($review['comment'] ?? '') ?></p>
+              </article>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <article class="pd-review-card pd-review-card-empty">
+                <div class="pd-review-person"><span class="pd-review-avatar" aria-hidden="true">★</span><div><strong>No reviews yet</strong><span>Verified customer feedback</span></div></div>
+                <div class="pd-review-stars" aria-label="0 out of 5 stars">☆☆☆☆☆</div>
+                <p>Reviews from customers who purchased this product will appear here after approval.</p>
+              </article>
+            <?php endif; ?>
           </div>
           <button type="button" class="pd-review-next" aria-label="Next review" onclick="document.querySelector('.pd-review-cards')?.scrollBy({left:220, behavior:'smooth'})">›</button>
         </aside>

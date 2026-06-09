@@ -181,6 +181,28 @@ if (str_starts_with($uri, '/admin/api/')) {
         return ['ok' => true, 'images' => $adminProductImages($productId), 'deleted_primary' => $wasPrimary];
     };
 
+
+    // ── Product Reviews Moderation ────────────────────────────
+    if ($uri === '/admin/api/reviews' && $method === 'GET') {
+        $status = trim((string)($_GET['status'] ?? 'all'));
+        $search = trim((string)($_GET['search'] ?? ''));
+        json(['ok' => true, 'reviews' => \Reviews\ProductReview::adminList($status, $search, 200)]);
+    }
+
+    if (preg_match('#^/admin/api/reviews/(\d+)/(approve|reject|pending)$#', $uri, $m) && $method === 'POST') {
+        $admin = \Auth\Auth::admin();
+        $status = $m[2] === 'approve' ? 'approved' : ($m[2] === 'reject' ? 'rejected' : 'pending');
+        json(\Reviews\ProductReview::moderate((int)$m[1], $status, (int)($admin['id'] ?? 0), trim((string)($body['note'] ?? ''))));
+    }
+
+    if (preg_match('#^/admin/api/reviews/(\d+)/feature$#', $uri, $m) && $method === 'POST') {
+        json(\Reviews\ProductReview::setFeatured((int)$m[1], !empty($body['featured'])));
+    }
+
+    if (preg_match('#^/admin/api/reviews/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        json(\Reviews\ProductReview::delete((int)$m[1]));
+    }
+
     if ($uri === '/admin/api/dashboard' && $method === 'GET') {
         $stats = [
             'total_orders'    => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
@@ -1295,6 +1317,7 @@ $adminPage = match(true) {
     $uri === '/admin/blogs'      => 'admin/blogs',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
+    $uri === '/admin/reviews'    => 'admin/reviews',
     $uri === '/admin/customers'  => 'admin/customers',
     $uri === '/admin/admins'     => 'admin/admins',
     $uri === '/admin/settings'   => 'admin/settings',
