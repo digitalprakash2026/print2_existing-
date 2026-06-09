@@ -20,6 +20,8 @@ $pincode = trim((string)($shipping['pincode'] ?? $billing['pincode'] ?? ''));
 $locationParts = array_filter([$city, $state, $pincode]);
 $location = $locationParts ? implode(', ', $locationParts) : 'Add your default address';
 $initials = strtoupper(substr(trim($name), 0, 1) ?: 'R');
+$hasSavedAddress = trim((string)($shipping['address_line1'] ?? '')) !== '' || trim((string)($billing['address_line1'] ?? '')) !== '';
+$savedAddressCount = $hasSavedAddress ? 1 : 0;
 
 $statusLabels = [
     'received' => 'Received',
@@ -97,6 +99,8 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
         $status = (string)($order['status'] ?? 'received');
         $statusClass = preg_replace('/[^a-z0-9_-]/i', '', $status);
         $productTitle = implode(', ', array_filter(array_map(static fn($item) => (string)($item['product_name'] ?? ''), $items)));
+        $orderPublicId = (string)($order['order_id'] ?? $order['id'] ?? '');
+        $isPaid = in_array((string)($order['payment_status'] ?? ''), ['paid'], true);
       ?>
         <details class="account-order-detail">
           <summary class="account-order-row" role="row">
@@ -111,7 +115,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
             </span>
             <b>₹<?= number_format((float)($order['total_amount'] ?? 0)) ?></b>
             <span class="account-status status-<?= $h($statusClass) ?>"><?= $h($statusLabels[$status] ?? ucfirst($status)) ?></span>
-            <span class="account-mini-btn"><?= $compact ? 'View Details' : 'Details' ?></span>
+            <span class="account-mini-btn">Actions <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
           </summary>
           <div class="account-order-expanded">
             <div>
@@ -130,6 +134,15 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
               <strong>Payment</strong>
               <p><?= $h(ucfirst((string)($order['payment_status'] ?? 'pending'))) ?> · <?= $h(ucfirst((string)($order['payment_method'] ?? ''))) ?></p>
               <?php if (!empty($order['payment_id'])): ?><small>Payment ID: <?= $h($order['payment_id']) ?></small><?php endif; ?>
+            </div>
+            <div class="account-order-actions-list" aria-label="Order actions">
+              <strong>Actions</strong>
+              <button type="button" onclick="openAccountOrder(this)"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Track Order</button>
+              <?php if ($isPaid && $orderPublicId !== ''): ?>
+                <a href="/invoice/<?= rawurlencode($orderPublicId) ?>" target="_blank" rel="noopener"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Download Invoice</a>
+              <?php else: ?>
+                <span class="account-order-action-disabled"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Invoice after payment</span>
+              <?php endif; ?>
             </div>
           </div>
         </details>
@@ -169,12 +182,8 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
       <button class="account-nav-item" type="button" data-account-tab="orders"><i class="fa-regular fa-clipboard"></i><span>My Orders</span></button>
       <button class="account-nav-item" type="button" data-account-tab="designs"><i class="fa-regular fa-pen-to-square"></i><span>My Designs</span></button>
       <button class="account-nav-item" type="button" data-account-tab="addresses"><i class="fa-solid fa-location-dot"></i><span>Saved Addresses</span></button>
-      <button class="account-nav-item" type="button" data-account-tab="wishlist"><i class="fa-regular fa-heart"></i><span>My Wishlist</span></button>
-      <button class="account-nav-item" type="button" data-account-tab="wallet"><i class="fa-regular fa-wallet"></i><span>My Wallet</span></button>
       <button class="account-nav-item" type="button" data-account-tab="details"><i class="fa-regular fa-user"></i><span>Account Details</span></button>
       <button class="account-nav-item" type="button" data-account-tab="security"><i class="fa-solid fa-lock"></i><span>Change Password</span></button>
-      <button class="account-nav-item" type="button" data-account-tab="notifications"><i class="fa-regular fa-bell"></i><span>Notifications</span></button>
-      <button class="account-nav-item" type="button" data-account-tab="refer"><i class="fa-regular fa-handshake"></i><span>Refer &amp; Earn</span></button>
       <a class="account-nav-item" href="/logout"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Logout</span></a>
 
       <div class="account-help-card">
@@ -201,8 +210,8 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
             <div><small>Completed Orders</small><strong><?= str_pad((string)$completedOrders, 2, '0', STR_PAD_LEFT) ?></strong><button type="button" data-account-tab="orders">View History <i class="fa-solid fa-arrow-right"></i></button></div>
           </article>
           <article class="account-stat-card stat-wallet">
-            <span class="account-stat-icon"><i class="fa-regular fa-wallet"></i></span>
-            <div><small>Wallet Balance</small><strong>₹0.00</strong><button type="button" data-account-tab="wallet">View Wallet <i class="fa-solid fa-arrow-right"></i></button></div>
+            <span class="account-stat-icon"><i class="fa-solid fa-location-dot"></i></span>
+            <div><small>Saved Addresses</small><strong><?= str_pad((string)$savedAddressCount, 2, '0', STR_PAD_LEFT) ?></strong><button type="button" data-account-tab="addresses">Manage Address <i class="fa-solid fa-arrow-right"></i></button></div>
           </article>
         </div>
 
@@ -229,17 +238,6 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
           <?php $renderOrders($recentOrders, true); ?>
         </section>
 
-        <section class="account-card account-actions-card" aria-labelledby="quickActionsTitle">
-          <h2 id="quickActionsTitle">Quick Actions</h2>
-          <div class="account-action-grid">
-            <a href="/categories"><i class="fa-solid fa-repeat"></i><strong>Reorder</strong><span>Quickly</span></a>
-            <a href="/categories"><i class="fa-solid fa-cloud-arrow-up"></i><strong>Upload</strong><span>New Design</span></a>
-            <button type="button" data-account-tab="orders"><i class="fa-regular fa-file-lines"></i><strong>Download</strong><span>Invoice</span></button>
-            <button type="button" data-account-tab="orders"><i class="fa-solid fa-truck-fast"></i><strong>Track</strong><span>Order</span></button>
-            <button type="button" data-account-tab="refer"><i class="fa-solid fa-gift"></i><strong>Refer &amp;</strong><span>Earn</span></button>
-            <button type="button" data-account-tab="notifications"><i class="fa-solid fa-headset"></i><strong>Help</strong><span>Center</span></button>
-          </div>
-        </section>
       </section>
 
       <section class="account-tab-panel" data-account-panel="orders" aria-labelledby="ordersPanelTitle">
@@ -305,13 +303,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
         </section>
       </section>
 
-      <section class="account-tab-panel" data-account-panel="wishlist" aria-labelledby="wishlistPanelTitle">
-        <section class="account-card account-placeholder-card"><i class="fa-regular fa-heart"></i><h2 id="wishlistPanelTitle">My Wishlist</h2><p>Wishlist storage is not enabled yet. Products you save later will appear here.</p><a href="/categories" class="btn btn-blue btn-sm">Browse Products</a></section>
-      </section>
 
-      <section class="account-tab-panel" data-account-panel="wallet" aria-labelledby="walletPanelTitle">
-        <section class="account-card account-placeholder-card"><i class="fa-regular fa-wallet"></i><h2 id="walletPanelTitle">My Wallet</h2><p>Your current wallet balance is <strong>₹0.00</strong>. Wallet transactions can be connected once wallet storage is added.</p><a href="/contact" class="btn btn-outline btn-sm">Contact Support</a></section>
-      </section>
 
       <section class="account-tab-panel" data-account-panel="details" aria-labelledby="detailsPanelTitle">
         <section class="account-card account-form-card">
@@ -350,13 +342,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
         </section>
       </section>
 
-      <section class="account-tab-panel" data-account-panel="notifications" aria-labelledby="notificationsPanelTitle">
-        <section class="account-card account-placeholder-card"><i class="fa-regular fa-bell"></i><h2 id="notificationsPanelTitle">Notifications</h2><p>No account notifications yet. Order updates and important messages will appear here once notifications are connected.</p><button type="button" class="btn btn-outline btn-sm" data-account-tab="orders">Check Orders</button></section>
-      </section>
 
-      <section class="account-tab-panel" data-account-panel="refer" aria-labelledby="referPanelTitle">
-        <section class="account-card account-placeholder-card"><i class="fa-regular fa-handshake"></i><h2 id="referPanelTitle">Refer &amp; Earn</h2><p>Referral tracking is not enabled yet. For bulk or referral benefits, contact our support team.</p><a href="/contact" class="btn btn-blue btn-sm">Contact Support</a></section>
-      </section>
     </div>
   </section>
 
@@ -409,7 +395,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
 </main>
 
 <script>
-const ACCOUNT_TABS = ['dashboard','orders','designs','addresses','wishlist','wallet','details','security','notifications','refer'];
+const ACCOUNT_TABS = ['dashboard','orders','designs','addresses','details','security'];
 
 function setAccountTab(tab, pushHash = true, scrollToPanel = true) {
   const safeTab = ACCOUNT_TABS.includes(tab) ? tab : 'dashboard';
@@ -438,6 +424,15 @@ document.querySelectorAll('[data-account-tab]').forEach(el => {
 
 window.addEventListener('hashchange', () => setAccountTab(location.hash.replace('#', ''), false));
 setAccountTab(location.hash.replace('#', ''), false, false);
+
+
+function openAccountOrder(trigger) {
+  const detail = trigger?.closest('.account-order-detail');
+  if (detail) {
+    detail.open = true;
+    detail.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
 
 async function saveProfile() {
   const err = document.getElementById('profErr');

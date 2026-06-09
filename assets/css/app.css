@@ -9522,3 +9522,54 @@ body:has(#siteHeader) .banner-slider {
     width:min(100%, calc(100vw - 24px));
   }
 }
+
+/* My Account order action menu cleanup */
+.account-order-expanded {
+  grid-template-columns:1.35fr .9fr .9fr;
+}
+.account-mini-btn i {
+  margin-left:6px;
+  font-size:10px;
+}
+.account-order-actions-list {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.account-order-actions-list a,
+.account-order-actions-list button,
+.account-order-action-disabled {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:34px;
+  width:max-content;
+  max-width:100%;
+  padding:0 13px;
+  border:1px solid #e7ebf0;
+  border-radius:999px;
+  background:#fff;
+  color:#4f1db7;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:900;
+  text-decoration:none;
+}
+.account-order-actions-list button {
+  cursor:pointer;
+}
+.account-order-actions-list a:hover,
+.account-order-actions-list button:hover {
+  border-color:#4f1db7;
+  background:#f5f0ff;
+}
+.account-order-action-disabled {
+  color:#94a3b8;
+  background:#f8fafc;
+}
+@media (max-width:640px) {
+  .account-order-expanded {
+    grid-template-columns:1fr;
+  }
+}
