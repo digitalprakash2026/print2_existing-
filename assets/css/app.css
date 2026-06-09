@@ -9502,3 +9502,23 @@ body:has(#siteHeader) .banner-slider {
     grid-template-columns:1fr;
   }
 }
+
+/* My Account bottom sections now reuse Home-page Why RCS + Quick Help strips */
+.account-why-section {
+  padding-top:32px;
+  padding-bottom:26px;
+}
+.account-why-section .why-print-container,
+.account-quick-help-section .quick-help-container {
+  width:min(var(--page-max, 1180px), calc(100vw - var(--page-gutter, 48px)));
+}
+.account-quick-help-section {
+  padding-top:0;
+  padding-bottom:46px;
+}
+@media (max-width:640px) {
+  .account-why-section .why-print-container,
+  .account-quick-help-section .quick-help-container {
+    width:min(100%, calc(100vw - 24px));
+  }
+}

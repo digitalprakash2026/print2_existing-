@@ -57,6 +57,23 @@ while (count($recentDesigns) < 4) {
 }
 $helpPhone = $phone !== '' ? $phone : '+91 98765 43210';
 $phoneHref = preg_replace('/\D+/', '', $helpPhone);
+$accountSettings = is_array($settingsMap ?? null) ? $settingsMap : [];
+if ($accountSettings === []) {
+    try {
+        $settingsRows = Database::rows("SELECT `key`, value FROM settings");
+        $accountSettings = array_column($settingsRows, 'value', 'key');
+    } catch (\Throwable) {
+        $accountSettings = [];
+    }
+}
+$accountBizPhoneRaw = trim((string)($accountSettings['biz_phone'] ?? '+91 8980000023')) ?: '+91 8980000023';
+$accountBizPhone = $h($accountBizPhoneRaw);
+$accountBizPhoneHref = preg_replace('/\D+/', '', $accountBizPhoneRaw);
+$accountBizWaRaw = trim((string)($accountSettings['biz_whatsapp'] ?? $accountBizPhoneRaw));
+$accountBizWa = preg_replace('/\D+/', '', $accountBizWaRaw);
+if ($accountBizWa === '') {
+    $accountBizWa = $accountBizPhoneHref;
+}
 
 $renderOrders = static function (array $list, bool $compact = false) use ($h, $statusLabels): void {
     if (empty($list)) {
@@ -343,19 +360,51 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
     </div>
   </section>
 
-  <section class="account-benefits container" aria-label="Account benefits">
-    <div><i class="fa-solid fa-crown"></i><strong>Premium Quality</strong><span>Best quality materials and printing.</span></div>
-    <div><i class="fa-solid fa-bag-shopping"></i><strong>Affordable Pricing</strong><span>Low price with the best value.</span></div>
-    <div><i class="fa-solid fa-truck-fast"></i><strong>Fast Delivery</strong><span>On-time delivery with guarantees.</span></div>
-    <div><i class="fa-solid fa-tags"></i><strong>Bulk Order Specialist</strong><span>Special prices for bulk requirements.</span></div>
-    <div><i class="fa-solid fa-cube"></i><strong>Design Support</strong><span>Professional artwork guidance.</span></div>
+  <section class="why-print-section account-why-section" aria-labelledby="accountWhyTitle" data-reveal>
+    <div class="why-print-container">
+      <h2 class="why-print-heading" id="accountWhyTitle">Why Choose <span>RCS PRINT?</span></h2>
+      <div class="why-print-panel" aria-label="Why choose RCS Print">
+        <article class="why-print-item">
+          <div class="why-print-icon why-print-purple"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></div>
+          <div class="why-print-copy"><h3>Fast Delivery</h3><p>On-time delivery always guaranteed.</p></div>
+        </article>
+        <article class="why-print-item">
+          <div class="why-print-icon why-print-orange"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div>
+          <div class="why-print-copy"><h3>Free Design Support</h3><p>Professional design support at no extra cost.</p></div>
+        </article>
+        <article class="why-print-item">
+          <div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div>
+          <div class="why-print-copy"><h3>Premium Quality</h3><p>Best quality materials and printing.</p></div>
+        </article>
+        <article class="why-print-item">
+          <div class="why-print-icon why-print-purple"><i class="fa-solid fa-tags" aria-hidden="true"></i></div>
+          <div class="why-print-copy"><h3>Affordable Pricing</h3><p>Low price with the best value.</p></div>
+        </article>
+        <article class="why-print-item">
+          <div class="why-print-icon why-print-orange"><i class="fa-solid fa-cube" aria-hidden="true"></i></div>
+          <div class="why-print-copy"><h3>Bulk Order Specialist</h3><p>Special prices for bulk requirements.</p></div>
+        </article>
+      </div>
+    </div>
   </section>
 
-  <section class="account-contact-strip container" aria-label="Contact support">
-    <div><strong>Have Questions?</strong><span>We're here to help!</span></div>
-    <a href="tel:<?= $h($phoneHref) ?>"><i class="fa-solid fa-phone-volume"></i><strong><?= $h($helpPhone) ?></strong><span>Mon - Sat: 10:00 AM - 7:00 PM</span></a>
-    <a href="https://wa.me/<?= $h($phoneHref) ?>" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i><strong>Chat with us on WhatsApp</strong><span>We are here to help!</span></a>
-    <a class="account-download" href="/contact"><i class="fa-solid fa-download"></i><strong>Download Brochure</strong><span>For Bulk Orders</span></a>
+  <section class="quick-help-section account-quick-help-section" aria-label="Quick help and bulk order actions" data-reveal>
+    <div class="quick-help-container">
+      <div class="quick-help-bar">
+        <a class="quick-help-item quick-help-call" href="tel:<?= $h($accountBizPhoneHref) ?>">
+          <span class="quick-help-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><span>Need Help? Call Us</span><strong><?= $accountBizPhone ?></strong></span>
+        </a>
+        <button class="quick-help-item quick-help-whatsapp" type="button" onclick="window.open('https://wa.me/<?= $h($accountBizWa) ?>','_blank')">
+          <span class="quick-help-icon"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><strong>Chat with us on WhatsApp</strong><span>We are here to help!</span></span>
+        </button>
+        <a class="quick-help-item quick-help-download" href="/categories" aria-label="Download our brochure for all products">
+          <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><strong>Download Our Brochure</strong><span>For All Products</span></span>
+        </a>
+      </div>
+    </div>
   </section>
 </main>
 
