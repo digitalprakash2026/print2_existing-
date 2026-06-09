@@ -75,6 +75,7 @@ class ProductReview
     {
         if ($productId <= 0 || !self::tableReady()) return [];
         $limit = max(1, min(50, $limit));
+        $orderSql = self::reviewOrderSql();
         try {
             $rows = \Database::rows(
                 "SELECT pr.*, u.name AS customer_name, p.name AS product_name, p.slug AS product_slug
@@ -82,12 +83,25 @@ class ProductReview
                  LEFT JOIN users u ON u.id = pr.user_id
                  LEFT JOIN products p ON p.id = pr.product_id
                  WHERE pr.product_id = ? AND pr.status = ?
-                 ORDER BY pr.is_featured DESC, pr.created_at DESC, pr.id DESC
+                 {$orderSql}
                  LIMIT {$limit}",
                 [$productId, self::APPROVED]
             );
-        } catch (\Throwable) {
-            return [];
+        } catch (\Throwable $e) {
+            error_log('Approved review fetch failed, retrying without joins: ' . $e->getMessage());
+            try {
+                $rows = \Database::rows(
+                    "SELECT pr.*
+                     FROM product_reviews pr
+                     WHERE pr.product_id = ? AND pr.status = ?
+                     {$orderSql}
+                     LIMIT {$limit}",
+                    [$productId, self::APPROVED]
+                );
+            } catch (\Throwable $fallbackError) {
+                error_log('Approved review fallback fetch failed: ' . $fallbackError->getMessage());
+                return [];
+            }
         }
         return array_map([self::class, 'normalizeReview'], $rows);
     }
@@ -96,6 +110,7 @@ class ProductReview
     {
         if (!self::tableReady()) return [];
         $limit = max(1, min(12, $limit));
+        $orderSql = self::reviewOrderSql();
         try {
             $rows = \Database::rows(
                 "SELECT pr.*, u.name AS customer_name, p.name AS product_name, p.slug AS product_slug
@@ -103,12 +118,25 @@ class ProductReview
                  LEFT JOIN users u ON u.id = pr.user_id
                  LEFT JOIN products p ON p.id = pr.product_id
                  WHERE pr.status = ?
-                 ORDER BY pr.is_featured DESC, pr.created_at DESC, pr.id DESC
+                 {$orderSql}
                  LIMIT {$limit}",
                 [self::APPROVED]
             );
-        } catch (\Throwable) {
-            return [];
+        } catch (\Throwable $e) {
+            error_log('Featured review fetch failed, retrying without joins: ' . $e->getMessage());
+            try {
+                $rows = \Database::rows(
+                    "SELECT pr.*
+                     FROM product_reviews pr
+                     WHERE pr.status = ?
+                     {$orderSql}
+                     LIMIT {$limit}",
+                    [self::APPROVED]
+                );
+            } catch (\Throwable $fallbackError) {
+                error_log('Featured review fallback fetch failed: ' . $fallbackError->getMessage());
+                return [];
+            }
         }
         return array_map([self::class, 'normalizeReview'], $rows);
     }
@@ -369,6 +397,20 @@ class ProductReview
         return ['ok' => true, 'msg' => 'Review deleted.'];
     }
 
+
+
+    private static function reviewOrderSql(): string
+    {
+        $parts = [];
+        if (self::hasColumn('product_reviews', 'is_featured')) {
+            $parts[] = 'pr.is_featured DESC';
+        }
+        if (self::hasColumn('product_reviews', 'created_at')) {
+            $parts[] = 'pr.created_at DESC';
+        }
+        $parts[] = 'pr.id DESC';
+        return 'ORDER BY ' . implode(', ', $parts);
+    }
 
     private static function hasColumn(string $table, string $column): bool
     {

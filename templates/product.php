@@ -56,6 +56,20 @@ $productReviews = is_array($productReviews ?? null) ? $productReviews : [];
 $reviewAverage = (float)($reviewSummary['average'] ?? 0);
 $reviewAverageDisplay = (string)($reviewSummary['average_display'] ?? number_format($reviewAverage, 1));
 $reviewCount = (int)($reviewSummary['count'] ?? 0);
+if ($reviewCount === 0 && !empty($productReviews)) {
+    $reviewCount = count($productReviews);
+    $ratingTotal = array_sum(array_map(static fn($review) => (int)($review['rating'] ?? 0), $productReviews));
+    $reviewAverage = $reviewCount > 0 ? round($ratingTotal / $reviewCount, 1) : 0.0;
+    $reviewAverageDisplay = number_format($reviewAverage, 1);
+    $reviewSummary['count'] = $reviewCount;
+    $reviewSummary['average'] = $reviewAverage;
+    $reviewSummary['average_display'] = $reviewAverageDisplay;
+    $reviewSummary['breakdown'] = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+    foreach ($productReviews as $review) {
+        $rating = max(1, min(5, (int)($review['rating'] ?? 0)));
+        $reviewSummary['breakdown'][$rating]++;
+    }
+}
 $reviewStarCount = $reviewCount > 0 ? max(1, min(5, (int)round($reviewAverage))) : 0;
 $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $reviewStarCount);
 ?>
