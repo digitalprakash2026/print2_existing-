@@ -10036,3 +10036,24 @@ body:has(#siteHeader) .banner-slider {
 .pd-page-wrap .ym-category-card .ym-order {
   min-width:100px;
 }
+
+/* Keep related category thumbnails uniform and square, matching the old product-card rhythm */
+.pd-page-wrap .ym-category-img {
+  aspect-ratio:1 / 1;
+  padding:0;
+  overflow:hidden;
+  background:#f8fafc;
+}
+.pd-page-wrap .ym-category-img img {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.pd-page-wrap .ym-category-fallback {
+  width:100%;
+  height:100%;
+  border-radius:0;
+  box-shadow:none;
+  background:linear-gradient(135deg, #f8fafc 0%, #eef4ff 100%);
+}
