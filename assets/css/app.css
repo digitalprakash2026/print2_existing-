@@ -10530,3 +10530,55 @@ body:has(#siteHeader) .banner-slider {
 @media (max-width:720px) {
   .register-container { width:min(100%, calc(100vw - 24px)); }
 }
+
+/* Login page uses the registration visual system with login-specific balance */
+.login-layout {
+  grid-template-columns:minmax(420px, .92fr) minmax(420px, 1.08fr);
+  align-items:start;
+}
+.login-form-card {
+  padding-bottom:0;
+}
+.login-form-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:2px 0 18px;
+  color:#64748b;
+  font-size:13px;
+  font-weight:800;
+}
+.login-form-row a {
+  color:#4f1db7;
+  font-weight:900;
+  text-decoration:none;
+}
+.login-remember {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.login-remember input {
+  width:16px;
+  height:16px;
+  accent-color:#4f1db7;
+}
+.login-side-panel .register-why-card {
+  min-height:auto;
+}
+.login-why-card .register-why-item {
+  padding:20px 0;
+}
+.login-benefit-strip {
+  margin-top:28px;
+}
+.login-hero .register-hero-copy p {
+  max-width:620px;
+}
+@media (max-width:1040px) {
+  .login-layout { grid-template-columns:1fr; }
+}
+@media (max-width:720px) {
+  .login-form-row { align-items:flex-start; flex-direction:column; }
+}
