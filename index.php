@@ -166,14 +166,18 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 if ($uri === '/categories' && $method === 'GET') {
     try {
         $categories = \Catalog\ProductCatalog::categories();
+        $filterOptions = \Catalog\ProductCatalog::filterOptions();
+        $selectedFilters = \Catalog\ProductCatalog::normalizeFilterSelections($_GET['filters'] ?? []);
+        $products = \Catalog\ProductCatalog::filteredProducts($selectedFilters);
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {
         error_log('Categories page error: ' . $e->getMessage());
-        $categories = [];
+        $categories = $products = [];
+        $filterOptions = $selectedFilters = [];
         $settingsMap = [];
     }
-    view('categories', compact('categories', 'settingsMap'));
+    view('categories', compact('categories', 'products', 'filterOptions', 'selectedFilters', 'settingsMap'));
     exit;
 }
 

@@ -263,6 +263,10 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     }
 
+    if ($uri === '/admin/api/product-filters' && $method === 'GET') {
+        json(['ok' => true, 'filters' => \Catalog\ProductCatalog::filterOptions()]);
+    }
+
     if ($uri === '/admin/api/products' && $method === 'GET') {
         try {
             json(['ok'=>true,'products'=>\Catalog\ProductCatalog::all(false)]);

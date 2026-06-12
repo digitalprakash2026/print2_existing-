@@ -28,6 +28,12 @@ $editId = (int)($_GET['id'] ?? 0);
   <div class="fg"><label>Specifications (Label: Value per line)</label><textarea class="fi" id="ep-specs" style="height:96px"></textarea></div>
 
   <div class="fg">
+    <label>Product Filters (used on All Categories page)</label>
+    <div id="ep-filter-options" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px"></div>
+    <div style="font-size:12px;color:var(--text3);margin-top:6px">Select every paper, lamination and finishing option this product supports.</div>
+  </div>
+
+  <div class="fg">
     <label>Product Images (multiple allowed, jpg/png/webp, max 5MB each)</label>
     <input type="file" class="fi" id="ep-images" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple>
     <div id="imagePreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px"></div>
@@ -57,6 +63,7 @@ let allCats = [];
 let currentImages = [];
 let pendingImages = [];
 let autoCodePreview = '';
+let productFilters = {};
 
 function renderPreview(images = currentImages, newImages = pendingImages) {
   const box = document.getElementById('imagePreview');
@@ -109,9 +116,48 @@ function collectFixedTiers() {
   return {ok:true, tiers};
 }
 
+function renderProductFilters(selected = {}) {
+  const box = document.getElementById('ep-filter-options');
+  if (!box) return;
+  const groups = Object.values(productFilters || {});
+  if (!groups.length) {
+    box.innerHTML = '<div style="grid-column:1/-1;padding:12px;border:1px dashed var(--border);border-radius:10px;color:var(--text2);background:#fff;font-size:12px">Filter options unavailable.</div>';
+    return;
+  }
+  box.innerHTML = groups.map(group => {
+    const opts = group.options || [];
+    return `<div style="border:1px solid var(--border);border-radius:12px;background:#fff;padding:12px">
+      <div style="font-size:13px;font-weight:900;color:var(--text);margin-bottom:9px">${escH(group.label || group.slug)}</div>
+      <div style="display:grid;gap:8px">
+        ${opts.map(opt => {
+          const checked = (selected[group.slug] || []).includes(opt.slug) ? 'checked' : '';
+          return `<label style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--text2);font-weight:700">
+            <input type="checkbox" class="ep-filter-check" data-group="${escAttr(group.slug)}" value="${escAttr(opt.slug)}" ${checked}> ${escH(opt.label)}
+          </label>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function collectProductFilters() {
+  const out = {};
+  document.querySelectorAll('.ep-filter-check:checked').forEach(input => {
+    const group = input.dataset.group || '';
+    const value = input.value || '';
+    if (!group || !value) return;
+    if (!out[group]) out[group] = [];
+    out[group].push(value);
+  });
+  return out;
+}
+
 async function boot() {
   const catsRes = await fetch('/admin/api/categories').then(r=>r.json());
   allCats = catsRes.categories || [];
+  const filtersRes = await fetch('/admin/api/product-filters').then(r=>r.json()).catch(()=>({filters:{}}));
+  productFilters = filtersRes.filters || {};
+  renderProductFilters();
   document.getElementById('ep-cat').innerHTML = allCats.map(c=>`<option value="${c.id}">${escH(c.name)}</option>`).join('');
   document.getElementById('ep-cat').addEventListener('change', updateCatPrefixHint);
   document.getElementById('ep-code').addEventListener('input', updateCodeHelp);
@@ -138,6 +184,7 @@ async function boot() {
   document.getElementById('ep-active').value = p.is_active ? '1' : '0';
   document.getElementById('ep-desc').value = p.description || '';
   document.getElementById('ep-specs').value = (p.specs||[]).map(s=>`${s.label}: ${s.value||''}`).join('\n');
+  renderProductFilters(p.filter_options || {});
 
   currentImages = p.images || (p.image_path ? [{image_path:p.image_path, is_primary: 1}] : []);
   pendingImages = [];
@@ -264,6 +311,7 @@ async function saveProd() {
     is_active: parseInt(document.getElementById('ep-active').value || '1',10),
     specs,
     quantity_tiers: tierCheck.tiers,
+    filter_options: collectProductFilters(),
   };
 
   const saveBtn = document.getElementById('saveBtn');

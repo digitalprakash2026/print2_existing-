@@ -4350,6 +4350,21 @@ body:has(#siteHeader) .banner-slider {
   text-transform:uppercase;
   cursor:pointer;
 }
+.all-cat-clear-btn {
+  width:calc(100% - 36px);
+  min-height:36px;
+  margin:9px 18px 0;
+  border:1px solid #e5e7eb;
+  border-radius:7px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#4f1db7;
+  background:#fff;
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+}
 .all-cat-toolbar {
   min-height:42px;
   display:flex;

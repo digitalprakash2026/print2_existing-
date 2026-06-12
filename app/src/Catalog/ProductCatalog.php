@@ -11,6 +11,7 @@ class ProductCatalog
 {
     private static ?bool $hasProductCodeColumn = null;
     private static ?bool $hasCategoryCodePrefixColumn = null;
+    private static bool $filterSchemaReady = false;
 
     private static function minPriceExpr(): string
     {
@@ -65,6 +66,180 @@ class ProductCatalog
     {
         $where = $activeOnly ? 'WHERE p.is_active = 1' : '';
         return self::fetchProductRows($where . ' ORDER BY c.sort_order ASC, p.sort_order ASC');
+    }
+
+    private static function defaultFilterGroups(): array
+    {
+        return [
+            'paper_type' => [
+                'label' => 'Paper Type',
+                'options' => [
+                    ['slug' => 'non-tearable', 'label' => 'Non Tearable'],
+                    ['slug' => 'glossy-paper', 'label' => 'Glossy Paper'],
+                    ['slug' => 'matt-paper', 'label' => 'Matt Paper'],
+                    ['slug' => 'texture-paper', 'label' => 'Texture Paper'],
+                    ['slug' => 'craft-paper', 'label' => 'Craft Paper'],
+                ],
+            ],
+            'lamination' => [
+                'label' => 'Lamination',
+                'options' => [
+                    ['slug' => 'glossy', 'label' => 'Glossy'],
+                    ['slug' => 'matt', 'label' => 'Matt'],
+                    ['slug' => 'velvet', 'label' => 'Velvet'],
+                ],
+            ],
+            'finishing' => [
+                'label' => 'Finishing',
+                'options' => [
+                    ['slug' => 'spot-uv', 'label' => 'Spot UV'],
+                    ['slug' => 'dripoff-uv', 'label' => 'Dripoff UV'],
+                    ['slug' => 'foil-stamping', 'label' => 'Foil Stamping'],
+                    ['slug' => 'die-cutting', 'label' => 'Die Cutting'],
+                ],
+            ],
+        ];
+    }
+
+    private static function ensureFilterSchema(): void
+    {
+        if (self::$filterSchemaReady) return;
+
+        \Database::query(
+            "CREATE TABLE IF NOT EXISTS product_filter_options (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                group_slug VARCHAR(64) NOT NULL,
+                group_label VARCHAR(100) NOT NULL,
+                option_slug VARCHAR(64) NOT NULL,
+                label VARCHAR(100) NOT NULL,
+                sort_order INT NOT NULL DEFAULT 0,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                UNIQUE KEY uq_product_filter_option (group_slug, option_slug),
+                KEY idx_product_filter_group (group_slug, is_active, sort_order)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+        );
+
+        \Database::query(
+            "CREATE TABLE IF NOT EXISTS product_filter_map (
+                product_id INT UNSIGNED NOT NULL,
+                option_id INT UNSIGNED NOT NULL,
+                PRIMARY KEY (product_id, option_id),
+                KEY idx_product_filter_map_option (option_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+        );
+
+        foreach (self::defaultFilterGroups() as $groupSlug => $group) {
+            foreach (array_values($group['options']) as $idx => $option) {
+                \Database::query(
+                    "INSERT INTO product_filter_options (group_slug, group_label, option_slug, label, sort_order, is_active)
+                     VALUES (?, ?, ?, ?, ?, 1)
+                     ON DUPLICATE KEY UPDATE group_label=VALUES(group_label), label=VALUES(label), sort_order=VALUES(sort_order), is_active=1",
+                    [$groupSlug, $group['label'], $option['slug'], $option['label'], ($idx + 1) * 10]
+                );
+            }
+        }
+
+        self::$filterSchemaReady = true;
+    }
+
+    public static function filterOptions(): array
+    {
+        try {
+            self::ensureFilterSchema();
+            $rows = \Database::rows(
+                "SELECT * FROM product_filter_options WHERE is_active = 1 ORDER BY group_slug ASC, sort_order ASC, label ASC"
+            );
+        } catch (\Throwable $e) {
+            error_log('Filter options unavailable: ' . $e->getMessage());
+            $rows = [];
+        }
+
+        $groups = [];
+        foreach (self::defaultFilterGroups() as $slug => $group) {
+            $groups[$slug] = ['slug' => $slug, 'label' => $group['label'], 'options' => []];
+        }
+
+        foreach ($rows as $row) {
+            $groupSlug = (string)($row['group_slug'] ?? '');
+            if (!isset($groups[$groupSlug])) {
+                $groups[$groupSlug] = [
+                    'slug' => $groupSlug,
+                    'label' => (string)($row['group_label'] ?? $groupSlug),
+                    'options' => [],
+                ];
+            }
+            $groups[$groupSlug]['options'][] = [
+                'id' => (int)($row['id'] ?? 0),
+                'slug' => (string)($row['option_slug'] ?? ''),
+                'label' => (string)($row['label'] ?? ''),
+            ];
+        }
+
+        if (!$rows) {
+            foreach (self::defaultFilterGroups() as $groupSlug => $group) {
+                foreach ($group['options'] as $idx => $option) {
+                    $groups[$groupSlug]['options'][] = [
+                        'id' => 0,
+                        'slug' => $option['slug'],
+                        'label' => $option['label'],
+                    ];
+                }
+            }
+        }
+
+        return $groups;
+    }
+
+    public static function normalizeFilterSelections(array $input): array
+    {
+        $allowedGroups = array_keys(self::defaultFilterGroups());
+        $out = [];
+        foreach ($allowedGroups as $groupSlug) {
+            $values = $input[$groupSlug] ?? [];
+            if (!is_array($values)) $values = [$values];
+            foreach ($values as $value) {
+                $slug = strtolower(trim((string)$value));
+                $slug = preg_replace('/[^a-z0-9\-]/', '', $slug) ?: '';
+                if ($slug === '') continue;
+                $out[$groupSlug][$slug] = $slug;
+            }
+            if (!empty($out[$groupSlug])) $out[$groupSlug] = array_values($out[$groupSlug]);
+            else unset($out[$groupSlug]);
+        }
+        return $out;
+    }
+
+    public static function filteredProducts(array $filters = []): array
+    {
+        $filters = self::normalizeFilterSelections($filters);
+        if (!$filters) return self::all(true);
+
+        try {
+            self::ensureFilterSchema();
+        } catch (\Throwable $e) {
+            error_log('Product filters unavailable: ' . $e->getMessage());
+            return self::all(true);
+        }
+
+        $where = ['p.is_active = 1'];
+        $params = [];
+        foreach ($filters as $groupSlug => $slugs) {
+            if (!$slugs) continue;
+            $placeholders = implode(',', array_fill(0, count($slugs), '?'));
+            $where[] = "EXISTS (
+                SELECT 1
+                FROM product_filter_map pfm
+                JOIN product_filter_options pfo ON pfo.id = pfm.option_id
+                WHERE pfm.product_id = p.id
+                  AND pfo.group_slug = ?
+                  AND pfo.option_slug IN ({$placeholders})
+                  AND pfo.is_active = 1
+            )";
+            $params[] = $groupSlug;
+            array_push($params, ...$slugs);
+        }
+
+        return self::fetchProductRows('WHERE ' . implode(' AND ', $where) . ' ORDER BY c.sort_order ASC, p.sort_order ASC', $params);
     }
 
     public static function bySlug(string $slug): ?array
@@ -324,6 +499,7 @@ class ProductCatalog
             "SELECT * FROM product_specs WHERE product_id = ? ORDER BY sort_order ASC",
             [$product['id']]
         );
+        $product['filter_options'] = self::productFilterSelections((int)$product['id']);
 
         $pricing = \Cart\Pricing::productPricingData((int)$product['id']);
         $product['qualities']      = $pricing['qualities'];
@@ -348,6 +524,7 @@ class ProductCatalog
                 self::updateProduct((int)$editId, $data, $slug, $productCode);
                 self::syncSpecs($editId, $data['specs'] ?? []);
                 self::syncQuantityTiers($editId, $data['quantity_tiers'] ?? []);
+                self::syncProductFilters($editId, $data['filter_options'] ?? []);
                 \Orders\AdminAudit::log('product_updated', "Product #{$editId}: {$data['name']}");
                 return ['ok' => true, 'id' => $editId];
             }
@@ -356,6 +533,7 @@ class ProductCatalog
 
             self::syncSpecs((int)$id, $data['specs'] ?? []);
             self::syncQuantityTiers((int)$id, $data['quantity_tiers'] ?? []);
+            self::syncProductFilters((int)$id, $data['filter_options'] ?? []);
             \Orders\AdminAudit::log('product_created', "Product #{$id}: {$data['name']}");
             return ['ok' => true, 'id' => (int)$id];
         } catch (\Throwable $e) {
@@ -569,6 +747,67 @@ class ProductCatalog
             self::$hasCategoryCodePrefixColumn = false;
         }
         return self::$hasCategoryCodePrefixColumn;
+    }
+
+    private static function productFilterSelections(int $productId): array
+    {
+        if ($productId <= 0) return [];
+        try {
+            self::ensureFilterSchema();
+            $rows = \Database::rows(
+                "SELECT pfo.group_slug, pfo.option_slug
+                 FROM product_filter_map pfm
+                 JOIN product_filter_options pfo ON pfo.id = pfm.option_id
+                 WHERE pfm.product_id = ? AND pfo.is_active = 1
+                 ORDER BY pfo.group_slug ASC, pfo.sort_order ASC",
+                [$productId]
+            );
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $selected = [];
+        foreach ($rows as $row) {
+            $group = (string)($row['group_slug'] ?? '');
+            $option = (string)($row['option_slug'] ?? '');
+            if ($group !== '' && $option !== '') $selected[$group][] = $option;
+        }
+        return $selected;
+    }
+
+    private static function syncProductFilters(int $productId, array $input): void
+    {
+        if ($productId <= 0) return;
+        try {
+            self::ensureFilterSchema();
+            $selected = self::normalizeFilterSelections($input);
+            \Database::query("DELETE FROM product_filter_map WHERE product_id = ?", [$productId]);
+            if (!$selected) return;
+
+            $allSlugs = [];
+            foreach ($selected as $slugs) {
+                foreach ($slugs as $slug) $allSlugs[$slug] = $slug;
+            }
+            if (!$allSlugs) return;
+
+            $placeholders = implode(',', array_fill(0, count($allSlugs), '?'));
+            $rows = \Database::rows(
+                "SELECT id, group_slug, option_slug FROM product_filter_options WHERE option_slug IN ({$placeholders}) AND is_active = 1",
+                array_values($allSlugs)
+            );
+
+            foreach ($rows as $row) {
+                $group = (string)($row['group_slug'] ?? '');
+                $slug = (string)($row['option_slug'] ?? '');
+                if (!in_array($slug, $selected[$group] ?? [], true)) continue;
+                \Database::query(
+                    "INSERT IGNORE INTO product_filter_map (product_id, option_id) VALUES (?, ?)",
+                    [$productId, (int)$row['id']]
+                );
+            }
+        } catch (\Throwable $e) {
+            error_log('Product filter sync failed: ' . $e->getMessage());
+        }
     }
 
     private static function syncSpecs(int $productId, array $specs): void
