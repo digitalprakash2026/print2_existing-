@@ -28,7 +28,7 @@ if ($isSimple):
 ?>
 <main class="info-page info-page-simple">
   <section class="info-simple-hero">
-    <div class="info-container">
+    <div class="info-container info-simple-wrap">
       <nav class="info-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><span><?= $breadcrumb ?></span></nav>
       <div class="info-simple-hero-copy">
         <div class="sec-ey"><?= $eyebrow ?></div>
@@ -41,21 +41,23 @@ if ($isSimple):
   <?php if (!empty($sections)): ?>
   <section class="info-simple-section">
     <div class="info-container info-simple-wrap">
-      <?php foreach ($sections as $section): ?>
-        <article class="info-simple-block">
-          <h2><?= htmlspecialchars((string)($section['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></h2>
-          <?php foreach ((array)($section['body'] ?? []) as $paragraph): ?>
-            <p><?= htmlspecialchars((string)$paragraph, ENT_QUOTES, 'UTF-8') ?></p>
-          <?php endforeach; ?>
-          <?php if (!empty($section['bullets']) && is_array($section['bullets'])): ?>
-            <ul>
-              <?php foreach ($section['bullets'] as $bullet): ?>
-                <li><?= htmlspecialchars((string)$bullet, ENT_QUOTES, 'UTF-8') ?></li>
-              <?php endforeach; ?>
-            </ul>
-          <?php endif; ?>
-        </article>
-      <?php endforeach; ?>
+      <article class="info-simple-document" aria-label="<?= $title ?> details">
+        <?php foreach ($sections as $idx => $section): ?>
+          <section class="info-simple-block">
+            <h2><span><?= str_pad((string)($idx + 1), 2, '0', STR_PAD_LEFT) ?></span><?= htmlspecialchars((string)($section['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></h2>
+            <?php foreach ((array)($section['body'] ?? []) as $paragraph): ?>
+              <p><?= htmlspecialchars((string)$paragraph, ENT_QUOTES, 'UTF-8') ?></p>
+            <?php endforeach; ?>
+            <?php if (!empty($section['bullets']) && is_array($section['bullets'])): ?>
+              <ul>
+                <?php foreach ($section['bullets'] as $bullet): ?>
+                  <li><?= htmlspecialchars((string)$bullet, ENT_QUOTES, 'UTF-8') ?></li>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
+          </section>
+        <?php endforeach; ?>
+      </article>
 
       <aside class="info-simple-help">
         <div>
