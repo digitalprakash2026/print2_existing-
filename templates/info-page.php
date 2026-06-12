@@ -91,17 +91,6 @@ $wa = htmlspecialchars((string)($settingsMap['biz_whatsapp'] ?? '919876543210'),
     </div>
   </section>
 
-  <section class="about-stats-section">
-    <div class="about-showcase-container">
-      <div class="about-stats-bar">
-        <div class="about-stat"><i class="fa-regular fa-face-smile" aria-hidden="true"></i><strong>10K+</strong><span>Happy Customers</span></div>
-        <div class="about-stat"><i class="fa-solid fa-cube" aria-hidden="true"></i><strong>50K+</strong><span>Orders Delivered</span></div>
-        <div class="about-stat"><i class="fa-solid fa-award" aria-hidden="true"></i><strong>99%</strong><span>Quality Satisfaction</span></div>
-        <div class="about-stat"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><strong>24/7</strong><span>Support Available</span></div>
-      </div>
-    </div>
-  </section>
-
   <section class="about-choose-section">
     <div class="about-showcase-container">
       <div class="about-section-head">

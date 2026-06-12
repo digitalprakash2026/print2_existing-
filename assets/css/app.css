@@ -9873,7 +9873,8 @@ body:has(#siteHeader) .banner-slider {
   overflow:hidden;
 }
 .about-showcase-container {
-  width:min(1360px, calc(100vw - 88px));
+  width:min(var(--page-max), calc(100vw - var(--page-gutter)));
+  max-width:var(--page-max);
   margin:0 auto;
 }
 .about-kicker {
@@ -10172,53 +10173,6 @@ body:has(#siteHeader) .banner-slider {
 }
 .about-story-pills div { grid-template-columns:54px 1fr; align-items:center; gap:14px; }
 .about-story-pills i { color:#4b148c; background:#f1e9ff; box-shadow:none; border-radius:16px; }
-.about-stats-section { padding:18px 0 46px; }
-.about-stats-bar {
-  display:grid;
-  grid-template-columns:repeat(4, minmax(0, 1fr));
-  gap:0;
-  align-items:center;
-  min-height:122px;
-  padding:20px 28px;
-  border-radius:18px;
-  color:#fff;
-  background:linear-gradient(135deg, #5016a0 0%, #351080 100%);
-  box-shadow:0 20px 40px rgba(75,20,140,.24);
-}
-.about-stat {
-  position:relative;
-  display:grid;
-  grid-template-columns:74px auto;
-  grid-template-rows:auto auto;
-  column-gap:16px;
-  align-items:center;
-  padding:0 28px;
-}
-.about-stat:not(:last-child)::after {
-  content:"";
-  position:absolute;
-  right:0;
-  top:13px;
-  bottom:13px;
-  width:1px;
-  background:rgba(255,255,255,.24);
-}
-.about-stat i {
-  grid-row:1 / span 2;
-  display:grid;
-  place-items:center;
-  width:70px;
-  height:70px;
-  border-radius:50%;
-  color:#fff;
-  background:linear-gradient(135deg,#7f49f0,#4a19bd);
-  border:3px solid rgba(255,255,255,.22);
-  font-size:32px;
-}
-.about-stat:nth-child(2) i { background:linear-gradient(135deg,#ff7a18,#ff4b00); }
-.about-stat:nth-child(3) i { background:linear-gradient(135deg,#39bb55,#238d37); }
-.about-stat strong { font-size:37px; line-height:1; font-weight:900; letter-spacing:-.04em; }
-.about-stat span { font-size:13px; font-weight:700; color:rgba(255,255,255,.92); }
 .about-choose-section,
 .about-process-section,
 .about-testimonials-section { padding:10px 0 34px; }
@@ -10353,7 +10307,6 @@ body:has(#siteHeader) .banner-slider {
 .about-contact-whatsapp { color:#fff; background:#2ca343; }
 .about-contact-download { color:#fff; background:#ff5b08; }
 @media (max-width:1180px) {
-  .about-showcase-container { width:min(100%, calc(100vw - 40px)); }
   .about-hero-grid,
   .about-story-grid { grid-template-columns:1fr; gap:34px; }
   .about-hero-visual { min-height:480px; transform:none; }
@@ -10361,12 +10314,9 @@ body:has(#siteHeader) .banner-slider {
   .about-choose-grid { grid-template-columns:repeat(3, minmax(0, 1fr)); }
   .about-process-row { grid-template-columns:repeat(2, minmax(0, 1fr)); padding:0; gap:20px; }
   .about-process-row article::after { display:none; }
-  .about-stats-bar { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px 0; }
-  .about-stat:nth-child(2)::after { display:none; }
 }
 @media (max-width:760px) {
   .about-showcase-page { margin-top:calc(var(--site-hh, var(--hh)) + 28px); }
-  .about-showcase-container { width:min(100%, calc(100vw - 24px)); }
   .about-showcase-hero { padding:34px 0 22px; }
   .about-hero-copy h1 { font-size:42px; }
   .about-hero-features { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px; }
@@ -10374,9 +10324,6 @@ body:has(#siteHeader) .banner-slider {
   .about-story-grid { gap:20px; }
   .about-story-media { min-height:320px; transform:scale(.82); transform-origin:top center; margin-bottom:-52px; }
   .about-story-pills { grid-template-columns:1fr; gap:16px; }
-  .about-stats-bar { grid-template-columns:1fr; border-radius:16px; padding:20px 16px; }
-  .about-stat { padding:14px 4px; }
-  .about-stat::after { display:none; }
   .about-choose-grid,
   .about-process-row,
   .about-testimonial-grid,
