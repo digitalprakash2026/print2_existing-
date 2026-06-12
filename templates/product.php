@@ -47,7 +47,16 @@ $comparePrice = $startingPrice > 0 ? ceil($startingPrice * 1.5) : 0;
 $discountPct  = ($startingPrice > 0 && $comparePrice > $startingPrice)
     ? max(1, (int)round((($comparePrice - $startingPrice) / $comparePrice) * 100))
     : 0;
-$productCode = trim((string)($product['product_code'] ?? ''));
+$rawProductCode = strtoupper(trim((string)($product['product_code'] ?? '')));
+$categoryCodePrefix = strtoupper(trim((string)($product['category_code_prefix'] ?? '')));
+$categoryCodePrefix = preg_replace('/[^A-Z0-9]/', '', $categoryCodePrefix) ?: '';
+$productCode = $rawProductCode;
+if ($productCode !== '' && $categoryCodePrefix !== '') {
+    $normalizedCode = preg_replace('/[^A-Z0-9]/', '', $productCode) ?: '';
+    if ($normalizedCode !== '' && strncmp($normalizedCode, $categoryCodePrefix, strlen($categoryCodePrefix)) !== 0) {
+        $productCode = $categoryCodePrefix . $normalizedCode;
+    }
+}
 $categoryName = trim((string)($product['category_name'] ?? 'Products'));
 $categorySlug = trim((string)($product['category_slug'] ?? ''));
 $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug) : '/categories';

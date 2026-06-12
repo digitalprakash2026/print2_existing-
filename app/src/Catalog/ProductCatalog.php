@@ -27,11 +27,19 @@ class ProductCatalog
         return "COALESCE(p.image_path, (SELECT COALESCE(pi.image_path, pi.url) FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1))";
     }
 
+    private static function categoryCodePrefixExpr(): string
+    {
+        return self::categoryCodePrefixColumnReady() ? 'c.code_prefix' : "''";
+    }
+
     private static function fetchProductRows(string $whereSql, array $params = []): array
     {
+        $categoryPrefixExpr = self::categoryCodePrefixExpr();
+
         try {
             return \Database::rows(
                 "SELECT p.*, c.name as category_name, c.slug as category_slug,
+                        {$categoryPrefixExpr} as category_code_prefix,
                         " . self::primaryImageExpr() . " as primary_image,
                         " . self::minPriceExpr() . " as min_price
                  FROM products p
@@ -42,6 +50,7 @@ class ProductCatalog
         } catch (\Throwable) {
             return \Database::rows(
                 "SELECT p.*, c.name as category_name, c.slug as category_slug,
+                        {$categoryPrefixExpr} as category_code_prefix,
                         (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1) as primary_image,
                         " . self::legacyMinPriceExpr() . " as min_price
                  FROM products p
