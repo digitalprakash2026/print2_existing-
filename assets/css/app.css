@@ -11871,3 +11871,18 @@ body:has(#siteHeader) .banner-slider {
 @media (max-width:720px) {
   .login-form-row { align-items:flex-start; flex-direction:column; }
 }
+
+/* Product detail gallery: force the main product image to fill the square box. */
+.pd-page-wrap .pd-main {
+  aspect-ratio:1 / 1;
+}
+.pd-page-wrap .pd-main img#pdMainImg {
+  display:block;
+  width:100% !important;
+  height:100% !important;
+  max-width:none;
+  max-height:none;
+  padding:0 !important;
+  object-fit:cover !important;
+  object-position:center;
+}

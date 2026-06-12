@@ -95,7 +95,6 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
     <div class="pd-gallery" data-reveal>
 
       <div class="pd-main" id="pdMainWrap">
-        <span class="pd-badge">🔥 Bestseller</span>
         <button class="pd-zoom-btn" type="button" onclick="window.open(document.getElementById('pdMainImg').src, '_blank')" aria-label="Open product image">
           <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
         </button>
