@@ -427,40 +427,43 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
     </div>
   </section>
 
-  <!-- RELATED CATEGORIES -->
-  <?php $relatedCategoryCards = is_array($relatedCategories ?? null) ? array_slice($relatedCategories, 0, 5) : []; ?>
-  <?php if ($relatedCategoryCards): ?>
-  <section class="ym-section" aria-labelledby="relatedCategoryTitle">
+  <!-- RANDOM RELATED PRODUCTS -->
+  <?php $relatedProductCards = is_array($relatedProducts ?? null) ? array_slice($relatedProducts, 0, 5) : []; ?>
+  <?php if ($relatedProductCards): ?>
+  <section class="ym-section" aria-labelledby="relatedProductTitle">
     <div class="ym-head">
-      <h2 id="relatedCategoryTitle" class="ym-title">You May <span>Also Like</span></h2>
-      <a href="/categories" class="ym-view-all">View All Categories</a>
+      <h2 id="relatedProductTitle" class="ym-title">You May <span>Also Like</span></h2>
+      <a href="/categories" class="ym-view-all">View All Products</a>
     </div>
 
-    <div class="ym-grid ym-category-grid">
-      <?php foreach ($relatedCategoryCards as $idx => $cat):
-        $catName = (string)($cat['name'] ?? 'Product Category');
-        $catSlug = (string)($cat['slug'] ?? '');
-        $catImg = trim((string)($cat['image_path'] ?? ''));
-        $catAlt = trim((string)($cat['image_alt'] ?? '')) ?: ($catName . ' category image');
-        $catCount = (int)($cat['product_count'] ?? 0);
-        $catHref = $catSlug !== '' ? '/category/' . rawurlencode($catSlug) : '/categories';
+    <div class="ym-grid ym-product-grid">
+      <?php foreach ($relatedProductCards as $idx => $relatedProduct):
+        $relatedName = (string)($relatedProduct['name'] ?? 'Print Product');
+        $relatedSlug = (string)($relatedProduct['slug'] ?? '');
+        $relatedHref = $relatedSlug !== '' ? '/product/' . rawurlencode($relatedSlug) : '/categories';
+        $relatedImg = trim((string)($relatedProduct['primary_image'] ?? ($relatedProduct['image_path'] ?? '')));
+        $relatedCategory = trim((string)($relatedProduct['category_name'] ?? 'Print Product'));
+        $relatedMinPrice = (float)($relatedProduct['min_price'] ?? 0);
       ?>
-      <article class="ym-card ym-category-card" data-reveal data-reveal-delay="<?= ($idx % 3) * 60 ?>">
-        <a class="ym-img ym-category-img" href="<?= htmlspecialchars($catHref) ?>">
-          <?php if ($catImg !== ''): ?>
-            <img src="<?= htmlspecialchars($catImg) ?>" alt="<?= htmlspecialchars($catAlt) ?>" loading="lazy"
+      <article class="ym-card ym-product-card" data-reveal data-reveal-delay="<?= ($idx % 3) * 60 ?>">
+        <a class="ym-img ym-product-img" href="<?= htmlspecialchars($relatedHref) ?>">
+          <?php if ($relatedImg !== ''): ?>
+            <img src="<?= htmlspecialchars($relatedImg) ?>" alt="<?= htmlspecialchars($relatedName) ?>" loading="lazy"
                  onerror="this.style.display='none';if(this.nextElementSibling){this.nextElementSibling.removeAttribute('hidden');}">
-            <span class="ym-category-fallback" hidden><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+            <span class="ym-product-fallback" hidden><i class="fa-solid fa-print" aria-hidden="true"></i></span>
           <?php else: ?>
-            <span class="ym-category-fallback"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+            <span class="ym-product-fallback"><i class="fa-solid fa-print" aria-hidden="true"></i></span>
           <?php endif; ?>
         </a>
         <div class="ym-body">
-          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i>Product Category</div>
-          <h3 class="ym-name"><?= htmlspecialchars($catName) ?></h3>
-          <div class="ym-from"><?= $catCount ?> Product<?= $catCount === 1 ? '' : 's' ?> Available</div>
+          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><?= htmlspecialchars($relatedCategory) ?></div>
+          <h3 class="ym-name"><?= htmlspecialchars($relatedName) ?></h3>
           <div class="ym-foot">
-            <a href="<?= htmlspecialchars($catHref) ?>" class="ym-order">EXPLORE</a>
+            <div>
+              <div class="ym-from">Starting from</div>
+              <div class="ym-price">₹<?= $relatedMinPrice > 0 ? number_format($relatedMinPrice) : '—' ?></div>
+            </div>
+            <a href="<?= htmlspecialchars($relatedHref) ?>" class="ym-order">VIEW</a>
           </div>
         </div>
       </article>

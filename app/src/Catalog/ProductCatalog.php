@@ -95,6 +95,46 @@ class ProductCatalog
         );
     }
 
+    public static function randomRecommendations(int $productId, int $limit = 5): array
+    {
+        $limit = max(1, $limit);
+        $poolLimit = max($limit * 6, 24);
+        $pool = self::fetchProductRows(
+            'WHERE p.is_active = 1 AND p.id != ? ORDER BY RAND() LIMIT ' . (int)$poolLimit,
+            [$productId]
+        );
+
+        if (count($pool) <= $limit) {
+            return $pool;
+        }
+
+        $picked = [];
+        $pickedIds = [];
+        $usedCategoryIds = [];
+
+        foreach ($pool as $row) {
+            if (count($picked) >= $limit) break;
+            $rowId = (int)($row['id'] ?? 0);
+            $categoryId = (int)($row['category_id'] ?? 0);
+            if ($rowId <= 0 || isset($pickedIds[$rowId]) || ($categoryId > 0 && isset($usedCategoryIds[$categoryId]))) {
+                continue;
+            }
+            $picked[] = $row;
+            $pickedIds[$rowId] = true;
+            if ($categoryId > 0) $usedCategoryIds[$categoryId] = true;
+        }
+
+        foreach ($pool as $row) {
+            if (count($picked) >= $limit) break;
+            $rowId = (int)($row['id'] ?? 0);
+            if ($rowId <= 0 || isset($pickedIds[$rowId])) continue;
+            $picked[] = $row;
+            $pickedIds[$rowId] = true;
+        }
+
+        return array_slice($picked, 0, $limit);
+    }
+
     public static function relatedCategories(int $currentCategoryId = 0, int $limit = 5): array
     {
         $preferred = [
