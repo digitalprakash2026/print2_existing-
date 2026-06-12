@@ -5514,8 +5514,8 @@ body:has(#siteHeader) .banner-slider {
 .pd-main img {
   width:100%;
   height:100%;
-  object-fit:contain;
-  padding:22px;
+  object-fit:cover;
+  padding:0;
   background:#fbfbfc;
 }
 .pd-main:hover img {
@@ -6002,8 +6002,8 @@ body:has(#siteHeader) .banner-slider {
   }
   .pd-grid { grid-template-columns:minmax(0,1fr); gap:18px; }
   .pd-gallery { position:static; }
-  .pd-main { aspect-ratio:4/3; }
-  .pd-main img { padding:14px; }
+  .pd-main { aspect-ratio:1/1; }
+  .pd-main img { padding:0; object-fit:cover; }
   .pd-info-col { padding:0; border:0; border-radius:0; }
   .pd-name { font-size:clamp(26px, 7vw, 34px); }
   .pd-spec-row,
