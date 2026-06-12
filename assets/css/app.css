@@ -6656,6 +6656,10 @@ body:has(#siteHeader) .banner-slider {
 .cartp-card .r .is-free {
   color:#16a34a;
 }
+.cartp-card .cartp-discount-row,
+.cartp-card .cartp-discount-row strong {
+  color:#16a34a;
+}
 .cartp-card .link {
   border:0;
   background:transparent;

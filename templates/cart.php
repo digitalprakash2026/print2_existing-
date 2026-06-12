@@ -4,6 +4,12 @@ include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
 $itemCount = count($cartItems ?? []);
+$cartSubtotal = (float)($totals['subtotal'] ?? 0);
+$cartDiscount = (float)($totals['discount'] ?? 0);
+$cartGstPct = (float)($totals['gst_pct'] ?? 18);
+$cartGstAmt = (float)($totals['gst_amt'] ?? 0);
+$cartShipping = (float)($totals['shipping'] ?? 0);
+$cartTotal = (float)($totals['total'] ?? 0);
 ?>
 <div class="cartp-wrap">
   <div class="container cartp-page">
@@ -94,10 +100,11 @@ $itemCount = count($cartItems ?? []);
       <aside class="cartp-side" aria-label="Order summary">
         <div class="cartp-card cartp-summary-card">
           <h2>Order Summary</h2>
-          <div class="r"><span>Subtotal (<?= (int)$itemCount ?> Items)</span><strong>₹<?= number_format((float)$totals['subtotal']) ?></strong></div>
-          <div class="r"><span>Discount</span><button class="link" onclick="document.getElementById('promoInp').focus()">APPLY</button></div>
-          <div class="r"><span>Shipping</span><strong class="is-free">Free</strong></div>
-          <div class="rt"><span>Total</span><strong>₹<?= number_format((float)$totals['total']) ?></strong></div>
+          <div class="r"><span>Subtotal (<?= (int)$itemCount ?> Items)</span><strong id="cartSummarySubtotal">₹<?= number_format($cartSubtotal) ?></strong></div>
+          <div class="r cartp-discount-row" id="cartSummaryDiscountRow"<?= $cartDiscount > 0 ? '' : ' hidden' ?>><span>Discount</span><strong id="cartSummaryDiscount">-₹<?= number_format($cartDiscount) ?></strong></div>
+          <div class="r"><span>GST (<span id="cartSummaryGstPct"><?= htmlspecialchars((string)$cartGstPct, ENT_QUOTES, 'UTF-8') ?></span>%)</span><strong id="cartSummaryGst">₹<?= number_format($cartGstAmt) ?></strong></div>
+          <div class="r"><span>Shipping</span><strong id="cartSummaryShipping" class="<?= $cartShipping > 0 ? '' : 'is-free' ?>"><?= $cartShipping > 0 ? '₹' . number_format($cartShipping) : 'Free' ?></strong></div>
+          <div class="rt"><span>Total</span><strong id="cartSummaryTotal">₹<?= number_format($cartTotal) ?></strong></div>
           <a href="/checkout" class="cartp-checkout">Proceed to Checkout <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
           <div class="cartp-secure"><i class="fa-solid fa-lock" aria-hidden="true"></i> Secure Checkout</div>
         </div>
@@ -160,7 +167,44 @@ async function updateCartQty(id, quantity, el){
 }
 document.querySelectorAll('.cartp-qty-select').forEach(sel => { sel.dataset.previous = sel.value; });
 async function clearCartPage(){ await fetch('/api/cart/clear',{method:'POST',headers:{'X-CSRF-TOKEN':CSRF},credentials:'same-origin'}); location.reload(); }
-async function applyPromoOnCartPage(){ const code=document.getElementById('promoInp').value.trim().toUpperCase(); if(!code) return; const r=await fetch('/api/coupon/validate',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},body:JSON.stringify({code})}); const d=await r.json(); document.getElementById('promoMsg').innerHTML=d.ok?`<div class="coupon-applied">Applied: ${code}</div>`:`<div style="font-size:12px;color:var(--red)">${d.msg||'Invalid'}</div>`; }
+function formatCartMoney(value){ return '₹' + Number(value || 0).toLocaleString('en-IN'); }
+function updateCartPageTotals(totals){
+  if(!totals) return;
+  const discount = Number(totals.discount || 0);
+  document.getElementById('cartSummarySubtotal').textContent = formatCartMoney(totals.subtotal);
+  document.getElementById('cartSummaryGstPct').textContent = totals.gst_pct || 0;
+  document.getElementById('cartSummaryGst').textContent = formatCartMoney(totals.gst_amt);
+  const shippingEl = document.getElementById('cartSummaryShipping');
+  const shipping = Number(totals.shipping || 0);
+  shippingEl.textContent = shipping > 0 ? formatCartMoney(shipping) : 'Free';
+  shippingEl.classList.toggle('is-free', shipping <= 0);
+  document.getElementById('cartSummaryTotal').textContent = formatCartMoney(totals.total);
+  const discountRow = document.getElementById('cartSummaryDiscountRow');
+  document.getElementById('cartSummaryDiscount').textContent = '-' + formatCartMoney(discount);
+  discountRow.hidden = discount <= 0;
+}
+async function applyPromoOnCartPage(){
+  const input = document.getElementById('promoInp');
+  const code = input.value.trim().toUpperCase();
+  if(!code) return;
+  input.value = code;
+  const msg = document.getElementById('promoMsg');
+  msg.innerHTML = '';
+  try {
+    const r = await fetch('/api/coupon/validate',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},credentials:'same-origin',body:JSON.stringify({code})});
+    const d = await r.json();
+    if(!d.ok){
+      msg.innerHTML = `<div style="font-size:12px;color:var(--red)">${d.msg||'Invalid coupon code'}</div>`;
+      return;
+    }
+    const totalsResp = await fetch('/api/cart?coupon=' + encodeURIComponent(code), {credentials:'same-origin'});
+    const totalsData = await totalsResp.json();
+    if(totalsData.ok && totalsData.totals) updateCartPageTotals(totalsData.totals);
+    msg.innerHTML = `<div class="coupon-applied">Applied: ${code}</div>`;
+  } catch(e) {
+    msg.innerHTML = `<div style="font-size:12px;color:var(--red)">Could not apply coupon. Please try again.</div>`;
+  }
+}
 </script>
 <?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
