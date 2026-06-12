@@ -47,7 +47,16 @@ $comparePrice = $startingPrice > 0 ? ceil($startingPrice * 1.5) : 0;
 $discountPct  = ($startingPrice > 0 && $comparePrice > $startingPrice)
     ? max(1, (int)round((($comparePrice - $startingPrice) / $comparePrice) * 100))
     : 0;
-$productCode = trim((string)($product['product_code'] ?? ''));
+$rawProductCode = strtoupper(trim((string)($product['product_code'] ?? '')));
+$categoryCodePrefix = strtoupper(trim((string)($product['category_code_prefix'] ?? '')));
+$categoryCodePrefix = preg_replace('/[^A-Z0-9]/', '', $categoryCodePrefix) ?: '';
+$productCode = $rawProductCode;
+if ($productCode !== '' && $categoryCodePrefix !== '') {
+    $normalizedCode = preg_replace('/[^A-Z0-9]/', '', $productCode) ?: '';
+    if ($normalizedCode !== '' && strncmp($normalizedCode, $categoryCodePrefix, strlen($categoryCodePrefix)) !== 0) {
+        $productCode = $categoryCodePrefix . $normalizedCode;
+    }
+}
 $categoryName = trim((string)($product['category_name'] ?? 'Products'));
 $categorySlug = trim((string)($product['category_slug'] ?? ''));
 $categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug) : '/categories';
@@ -95,7 +104,6 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
     <div class="pd-gallery" data-reveal>
 
       <div class="pd-main" id="pdMainWrap">
-        <span class="pd-badge">🔥 Bestseller</span>
         <button class="pd-zoom-btn" type="button" onclick="window.open(document.getElementById('pdMainImg').src, '_blank')" aria-label="Open product image">
           <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
         </button>
@@ -312,25 +320,16 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
       <div class="pd-tabs-nav" role="tablist" aria-label="Product detail tabs">
         <button type="button" class="pd-tab-btn is-active" id="pd-tab-description" role="tab" aria-selected="true" aria-controls="pd-panel-description" onclick="switchProductTab('description', this)">Description</button>
         <button type="button" class="pd-tab-btn" id="pd-tab-specifications" role="tab" aria-selected="false" aria-controls="pd-panel-specifications" onclick="switchProductTab('specifications', this)">Specifications</button>
-        <button type="button" class="pd-tab-btn" id="pd-tab-reviews" role="tab" aria-selected="false" aria-controls="pd-panel-reviews" onclick="switchProductTab('reviews', this)">Reviews (<?= number_format($reviewCount) ?>)</button>
         <button type="button" class="pd-tab-btn" id="pd-tab-faqs" role="tab" aria-selected="false" aria-controls="pd-panel-faqs" onclick="switchProductTab('faqs', this)">FAQs</button>
       </div>
 
       <div class="pd-tabs-content">
         <div class="pd-tabs-left">
           <div class="pd-tab-panel is-active" id="pd-panel-description" role="tabpanel" aria-labelledby="pd-tab-description" data-tab-panel="description">
-            <h2>High Quality. Perfect Impression.</h2>
-            <p>
-              <?= !empty(trim((string)($product['description'] ?? '')))
-                ? nl2br(htmlspecialchars((string)$product['description']))
-                : 'Our ' . htmlspecialchars($product['name']) . ' are designed to leave a lasting impact. Printed on high-quality paper with professional finishing options, they reflect your brand identity with clarity and style.' ?>
-            </p>
-            <ul class="pd-check-list">
-              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Perfect for business branding and networking</li>
-              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> High resolution printing with vibrant colors</li>
-              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Multiple paper types and finishing options</li>
-              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Fast turnaround and free delivery above ₹999</li>
-            </ul>
+            <?php $dbDescription = trim((string)($product['description'] ?? '')); ?>
+            <?php if ($dbDescription !== ''): ?>
+              <p><?= nl2br(htmlspecialchars($dbDescription)) ?></p>
+            <?php endif; ?>
           </div>
 
           <div class="pd-tab-panel" id="pd-panel-specifications" role="tabpanel" aria-labelledby="pd-tab-specifications" data-tab-panel="specifications" hidden>
@@ -346,34 +345,6 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
             </div>
             <?php else: ?>
             <p>Specifications for this product will be confirmed by our print expert after your enquiry.</p>
-            <?php endif; ?>
-          </div>
-
-          <div class="pd-tab-panel" id="pd-panel-reviews" role="tabpanel" aria-labelledby="pd-tab-reviews" data-tab-panel="reviews" hidden>
-            <h2>Customer Reviews</h2>
-            <?php if ($reviewCount > 0): ?>
-              <div class="pd-review-summary-box">
-                <div class="pd-review-score"><strong><?= htmlspecialchars($reviewAverageDisplay) ?></strong><span><?= htmlspecialchars($reviewStars) ?></span><small><?= number_format($reviewCount) ?> verified review<?= $reviewCount === 1 ? '' : 's' ?></small></div>
-                <div class="pd-review-breakdown">
-                  <?php foreach ([5,4,3,2,1] as $rating):
-                    $ratingCount = (int)($reviewSummary['breakdown'][$rating] ?? 0);
-                    $pct = $reviewCount > 0 ? round(($ratingCount / $reviewCount) * 100) : 0;
-                  ?>
-                  <div><span><?= $rating ?>★</span><b><i style="width:<?= (int)$pct ?>%"></i></b><em><?= $ratingCount ?></em></div>
-                  <?php endforeach; ?>
-                </div>
-              </div>
-              <div class="pd-review-list">
-                <?php foreach ($productReviews as $review): ?>
-                <article class="pd-review-list-card">
-                  <div class="pd-review-person"><span class="pd-review-avatar" aria-hidden="true"><?= htmlspecialchars($review['customer_initials'] ?? 'RC') ?></span><div><strong><?= htmlspecialchars($review['customer_name'] ?? 'RCS Customer') ?></strong><span>Verified customer<?= !empty($review['created_display']) ? ' · ' . htmlspecialchars($review['created_display']) : '' ?></span></div></div>
-                  <div class="pd-review-stars" aria-label="<?= (int)($review['rating'] ?? 0) ?> out of 5 stars"><?= htmlspecialchars($review['stars'] ?? '') ?></div>
-                  <p><?= htmlspecialchars($review['comment'] ?? '') ?></p>
-                </article>
-                <?php endforeach; ?>
-              </div>
-            <?php else: ?>
-              <div class="pd-review-empty"><i class="fa-regular fa-star" aria-hidden="true"></i><strong>No reviews yet</strong><span>Verified customer reviews will appear here after delivered orders are reviewed.</span></div>
             <?php endif; ?>
           </div>
 
@@ -399,7 +370,6 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
         <aside class="pd-reviews-panel" aria-label="What our customers say">
           <div class="pd-reviews-head">
             <h2>What Our Customers Say</h2>
-            <a href="#pd-panel-reviews" onclick="switchProductTab('reviews', document.getElementById('pd-tab-reviews'))">View All Reviews <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
           </div>
           <div class="pd-review-cards">
             <?php if (!empty($productReviews)): ?>
@@ -427,40 +397,43 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
     </div>
   </section>
 
-  <!-- RELATED CATEGORIES -->
-  <?php $relatedCategoryCards = is_array($relatedCategories ?? null) ? array_slice($relatedCategories, 0, 5) : []; ?>
-  <?php if ($relatedCategoryCards): ?>
-  <section class="ym-section" aria-labelledby="relatedCategoryTitle">
+  <!-- RANDOM RELATED PRODUCTS -->
+  <?php $relatedProductCards = is_array($relatedProducts ?? null) ? array_slice($relatedProducts, 0, 5) : []; ?>
+  <?php if ($relatedProductCards): ?>
+  <section class="ym-section" aria-labelledby="relatedProductTitle">
     <div class="ym-head">
-      <h2 id="relatedCategoryTitle" class="ym-title">You May <span>Also Like</span></h2>
-      <a href="/categories" class="ym-view-all">View All Categories</a>
+      <h2 id="relatedProductTitle" class="ym-title">You May <span>Also Like</span></h2>
+      <a href="/categories" class="ym-view-all">View All Products</a>
     </div>
 
-    <div class="ym-grid ym-category-grid">
-      <?php foreach ($relatedCategoryCards as $idx => $cat):
-        $catName = (string)($cat['name'] ?? 'Product Category');
-        $catSlug = (string)($cat['slug'] ?? '');
-        $catImg = trim((string)($cat['image_path'] ?? ''));
-        $catAlt = trim((string)($cat['image_alt'] ?? '')) ?: ($catName . ' category image');
-        $catCount = (int)($cat['product_count'] ?? 0);
-        $catHref = $catSlug !== '' ? '/category/' . rawurlencode($catSlug) : '/categories';
+    <div class="ym-grid ym-product-grid">
+      <?php foreach ($relatedProductCards as $idx => $relatedProduct):
+        $relatedName = (string)($relatedProduct['name'] ?? 'Print Product');
+        $relatedSlug = (string)($relatedProduct['slug'] ?? '');
+        $relatedHref = $relatedSlug !== '' ? '/product/' . rawurlencode($relatedSlug) : '/categories';
+        $relatedImg = trim((string)($relatedProduct['primary_image'] ?? ($relatedProduct['image_path'] ?? '')));
+        $relatedCategory = trim((string)($relatedProduct['category_name'] ?? 'Print Product'));
+        $relatedMinPrice = (float)($relatedProduct['min_price'] ?? 0);
       ?>
-      <article class="ym-card ym-category-card" data-reveal data-reveal-delay="<?= ($idx % 3) * 60 ?>">
-        <a class="ym-img ym-category-img" href="<?= htmlspecialchars($catHref) ?>">
-          <?php if ($catImg !== ''): ?>
-            <img src="<?= htmlspecialchars($catImg) ?>" alt="<?= htmlspecialchars($catAlt) ?>" loading="lazy"
+      <article class="ym-card ym-product-card" data-reveal data-reveal-delay="<?= ($idx % 3) * 60 ?>">
+        <a class="ym-img ym-product-img" href="<?= htmlspecialchars($relatedHref) ?>">
+          <?php if ($relatedImg !== ''): ?>
+            <img src="<?= htmlspecialchars($relatedImg) ?>" alt="<?= htmlspecialchars($relatedName) ?>" loading="lazy"
                  onerror="this.style.display='none';if(this.nextElementSibling){this.nextElementSibling.removeAttribute('hidden');}">
-            <span class="ym-category-fallback" hidden><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+            <span class="ym-product-fallback" hidden><i class="fa-solid fa-print" aria-hidden="true"></i></span>
           <?php else: ?>
-            <span class="ym-category-fallback"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+            <span class="ym-product-fallback"><i class="fa-solid fa-print" aria-hidden="true"></i></span>
           <?php endif; ?>
         </a>
         <div class="ym-body">
-          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i>Product Category</div>
-          <h3 class="ym-name"><?= htmlspecialchars($catName) ?></h3>
-          <div class="ym-from"><?= $catCount ?> Product<?= $catCount === 1 ? '' : 's' ?> Available</div>
+          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><?= htmlspecialchars($relatedCategory) ?></div>
+          <h3 class="ym-name"><?= htmlspecialchars($relatedName) ?></h3>
           <div class="ym-foot">
-            <a href="<?= htmlspecialchars($catHref) ?>" class="ym-order">EXPLORE</a>
+            <div>
+              <div class="ym-from">Starting from</div>
+              <div class="ym-price">₹<?= $relatedMinPrice > 0 ? number_format($relatedMinPrice) : '—' ?></div>
+            </div>
+            <a href="<?= htmlspecialchars($relatedHref) ?>" class="ym-order">VIEW</a>
           </div>
         </div>
       </article>

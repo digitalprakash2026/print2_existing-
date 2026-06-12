@@ -442,7 +442,7 @@ async function placeWhatsappOrder(couponCode = null, notes = '', customer = null
 // ── Banner Slider ─────────────────────────────────────────────
 /**
  * initBannerSlider(containerId)
- * Auto-advances every 10 seconds. Pauses on hover.
+ * Auto-advances every 3 seconds. Pauses on hover.
  */
 function initBannerSlider(id = 'bannerSlider') {
   const wrap   = document.getElementById(id);
@@ -465,7 +465,7 @@ function initBannerSlider(id = 'bannerSlider') {
   function next() { goTo(cur + 1); }
   function prev() { goTo(cur - 1); }
 
-  function startTimer() { timer = setInterval(next, 10000); }  // 10 s
+  function startTimer() { timer = setInterval(next, 3000); }  // 3 s
   function stopTimer()  { clearInterval(timer); }
 
   // Init

@@ -27,11 +27,19 @@ class ProductCatalog
         return "COALESCE(p.image_path, (SELECT COALESCE(pi.image_path, pi.url) FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1))";
     }
 
+    private static function categoryCodePrefixExpr(): string
+    {
+        return self::categoryCodePrefixColumnReady() ? 'c.code_prefix' : "''";
+    }
+
     private static function fetchProductRows(string $whereSql, array $params = []): array
     {
+        $categoryPrefixExpr = self::categoryCodePrefixExpr();
+
         try {
             return \Database::rows(
                 "SELECT p.*, c.name as category_name, c.slug as category_slug,
+                        {$categoryPrefixExpr} as category_code_prefix,
                         " . self::primaryImageExpr() . " as primary_image,
                         " . self::minPriceExpr() . " as min_price
                  FROM products p
@@ -42,6 +50,7 @@ class ProductCatalog
         } catch (\Throwable) {
             return \Database::rows(
                 "SELECT p.*, c.name as category_name, c.slug as category_slug,
+                        {$categoryPrefixExpr} as category_code_prefix,
                         (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1) as primary_image,
                         " . self::legacyMinPriceExpr() . " as min_price
                  FROM products p
@@ -93,6 +102,46 @@ class ProductCatalog
             'WHERE p.is_active = 1 AND p.id != ? AND p.category_id = ? ORDER BY RAND() LIMIT ?',
             [$productId, $categoryId, $limit]
         );
+    }
+
+    public static function randomRecommendations(int $productId, int $limit = 5): array
+    {
+        $limit = max(1, $limit);
+        $poolLimit = max($limit * 6, 24);
+        $pool = self::fetchProductRows(
+            'WHERE p.is_active = 1 AND p.id != ? ORDER BY RAND() LIMIT ' . (int)$poolLimit,
+            [$productId]
+        );
+
+        if (count($pool) <= $limit) {
+            return $pool;
+        }
+
+        $picked = [];
+        $pickedIds = [];
+        $usedCategoryIds = [];
+
+        foreach ($pool as $row) {
+            if (count($picked) >= $limit) break;
+            $rowId = (int)($row['id'] ?? 0);
+            $categoryId = (int)($row['category_id'] ?? 0);
+            if ($rowId <= 0 || isset($pickedIds[$rowId]) || ($categoryId > 0 && isset($usedCategoryIds[$categoryId]))) {
+                continue;
+            }
+            $picked[] = $row;
+            $pickedIds[$rowId] = true;
+            if ($categoryId > 0) $usedCategoryIds[$categoryId] = true;
+        }
+
+        foreach ($pool as $row) {
+            if (count($picked) >= $limit) break;
+            $rowId = (int)($row['id'] ?? 0);
+            if ($rowId <= 0 || isset($pickedIds[$rowId])) continue;
+            $picked[] = $row;
+            $pickedIds[$rowId] = true;
+        }
+
+        return array_slice($picked, 0, $limit);
     }
 
     public static function relatedCategories(int $currentCategoryId = 0, int $limit = 5): array

@@ -6,145 +6,150 @@ include INCLUDE_PATH . '/partials/header.php';
 // cart-drawer is included by header.php — do not include again
 $razKeyId = Database::setting('razorpay_key_id', env('RAZORPAY_KEY_ID', ''));
 $bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
+$itemCount = count($cartItems ?? []);
+$checkoutSubtotal = (float)($totals['subtotal'] ?? 0);
+$checkoutDiscount = (float)($totals['discount'] ?? 0);
+$checkoutGstPct = (float)($totals['gst_pct'] ?? 18);
+$checkoutGstAmt = (float)($totals['gst_amt'] ?? 0);
+$checkoutShipping = (float)($totals['shipping'] ?? 0);
+$checkoutShippingMode = (string)($totals['shipping_mode'] ?? 'manual');
+$checkoutShippingLabel = $checkoutShipping > 0 ? '₹' . number_format($checkoutShipping) : ($checkoutShippingMode === 'manual' ? 'To be calculated' : 'Free');
+$checkoutTotal = (float)($totals['total'] ?? 0);
 ?>
-<div style="margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));min-height:calc(100vh - var(--site-hh, var(--hh)) - var(--post-header-gap,50px));background:var(--bg);padding:32px 0 80px">
-  <div class="container cart-page">
-    <div class="cart-hero"><h1>Your Cart <span><?= count($cartItems) ?> Items</span></h1><p>Review your items and proceed to checkout.</p></div>
-    <div class="cart-layout">
-      <div class="cart-main">
+<main class="checkout-showcase-page">
+  <div class="checkout-showcase-container">
+    <header class="checkout-page-head">
+      <h1>Checkout</h1>
+      <nav aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><span>Checkout</span></nav>
+    </header>
 
-    <?php if (empty($user['id'])): ?>
-    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">👤 Guest Details</div>
-      <div class="fg"><label>Full Name *</label><input id="g-name" class="fi" placeholder="Your full name"></div>
-      <div class="fg"><label>Email *</label><input id="g-email" type="email" class="fi" placeholder="email@example.com"></div>
-      <div class="fg" style="margin-bottom:0"><label>Phone *</label><input id="g-phone" type="tel" class="fi" placeholder="+91 98765 43210"></div>
-      <div style="font-size:14px;color:var(--text2);margin-top:10px;font-weight:600">
-        Already have account? <a href="/login?next=/checkout" style="color:var(--blue);font-weight:800;text-decoration:underline">Login here</a>
-      </div>
-      <div id="guestErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
-    </div>
-    <?php endif; ?>
+    <ol class="checkout-steps" aria-label="Checkout progress">
+      <li class="is-active"><span>1</span><strong>Shipping Details</strong></li>
+      <li><span>2</span><strong>Review Order</strong></li>
+      <li><span>3</span><strong>Payment</strong></li>
+      <li><span>4</span><strong>Order Complete</strong></li>
+    </ol>
 
-    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">📦 Delivery Address</div>
-      <div class="fg"><label>Business Name *</label><input id="s-business" class="fi" placeholder="ABC Pvt Ltd"></div>
-      <div class="fg"><label>Address Line 1 *</label><input id="s-add1" class="fi" placeholder="House / Building / Street"></div>
-      <div class="fg"><label>Address Line 2 (optional)</label><input id="s-add2" class="fi" placeholder="Area / Landmark"></div>
-      <div class="f2">
-        <div class="fg"><label>City *</label><input id="s-city" class="fi" placeholder="Rajkot"></div>
-        <div class="fg"><label>State *</label><input id="s-state" class="fi" placeholder="Gujarat"></div>
-      </div>
-      <div class="fg" style="margin-bottom:0"><label>Pincode *</label><input id="s-pin" class="fi" placeholder="360001"></div>
-      <?php if (!empty($user['id'])): ?>
-      <label id="ship-save-wrap" style="display:none;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-top:10px">
-        <input type="checkbox" id="ship-save-default" style="accent-color:var(--blue)">
-        Save this as my default delivery address
-      </label>
-      <?php endif; ?>
-      <div id="shipErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
-    </div>
+    <div class="checkout-layout-grid">
+      <div class="checkout-main-col">
+        <?php if (empty($user['id'])): ?>
+        <section class="checkout-card checkout-contact-card">
+          <div class="checkout-card-title"><i class="fa-regular fa-user" aria-hidden="true"></i><h2>Contact Information</h2></div>
+          <div class="checkout-form-grid checkout-form-grid-3">
+            <label>Full Name <b>*</b><input id="g-name" class="checkout-input" placeholder="Enter your full name" autocomplete="name"></label>
+            <label>Email Address <b>*</b><input id="g-email" type="email" class="checkout-input" placeholder="youremail@gmail.com" autocomplete="email"></label>
+            <label>Phone Number <b>*</b><input id="g-phone" type="tel" class="checkout-input" placeholder="+91 98765 43210" autocomplete="tel"></label>
+          </div>
+          <label class="checkout-checkline"><input type="checkbox" checked> <span>Keep me updated on offers and order status</span></label>
+          <p class="checkout-login-note">Already have an account? <a href="/login?next=/checkout">Login here</a></p>
+          <div id="guestErr" class="checkout-error" style="display:none"></div>
+        </section>
+        <?php endif; ?>
 
-    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">🧾 Billing Details (Tax Invoice)</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:12px">
-        <input type="checkbox" id="bill-same-ship" style="accent-color:var(--blue)" onchange="syncBillingFromShipping()">
-        Same as Delivery Address
-      </label>
-      <div id="billingFields">
-        <div class="fg"><label>Legal Business Name *</label><input id="b-legal" class="fi" placeholder="ABC Pvt Ltd"></div>
-        <div class="fg"><label>GSTIN *</label><input id="b-gst" class="fi" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-        <div class="fg"><label>Billing Address Line 1 *</label><input id="b-add1" class="fi" placeholder="Street / Building"></div>
-        <div class="fg"><label>Billing Address Line 2 (optional)</label><input id="b-add2" class="fi" placeholder="Area / Landmark"></div>
-        <div class="f2">
-          <div class="fg"><label>City *</label><input id="b-city" class="fi" placeholder="Rajkot"></div>
-          <div class="fg"><label>State *</label><input id="b-state" class="fi" placeholder="Gujarat"></div>
-        </div>
-        <div class="fg" style="margin-bottom:0"><label>Pincode *</label><input id="b-pin" class="fi" placeholder="360001"></div>
-      </div>
-      <div id="billErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
-    </div>
-
-    <!-- Order Summary -->
-    <div class="fsec" style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:18px;margin-bottom:16px">
-      <div style="font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:14px;color:var(--blue)">📋 Order Summary</div>
-      <?php foreach ($cartItems as $item): ?>
-      <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
-        <div style="width:50px;height:50px;border-radius:8px;background:var(--bg2);overflow:hidden;flex-shrink:0">
-          <img src="<?= htmlspecialchars($item['product_image'] ?? '') ?>" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
-        </div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700"><?= htmlspecialchars($item['product_name']) ?></div>
-          <div style="font-size:12px;color:var(--text2)"><?= number_format($item['quantity']) ?> pcs · <?= htmlspecialchars($item['quality_name']) ?></div>
-          <?php if ($item['design_choice'] === 'rcs'): ?>
-          <div style="font-size:11px;color:var(--blue)">🎨 Design by RCS Graphic</div>
+        <section class="checkout-card checkout-shipping-card">
+          <div class="checkout-card-title"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><h2>Shipping Address</h2></div>
+          <div class="checkout-form-grid">
+            <label class="checkout-full-field">Business / Full Name <b>*</b><input id="s-business" class="checkout-input" placeholder="Enter business or full name" autocomplete="organization"></label>
+            <label>Address Line 1 <b>*</b><input id="s-add1" class="checkout-input" placeholder="House / Flat / Building / Street" autocomplete="address-line1"></label>
+            <label>Address Line 2 <span>(Optional)</span><input id="s-add2" class="checkout-input" placeholder="Landmark / Area / Apartment" autocomplete="address-line2"></label>
+            <label>City <b>*</b><input id="s-city" class="checkout-input" placeholder="Enter your city" autocomplete="address-level2"></label>
+            <label>State <b>*</b><input id="s-state" class="checkout-input" placeholder="Select State" autocomplete="address-level1"></label>
+            <label>PIN Code <b>*</b><input id="s-pin" class="checkout-input" placeholder="Enter PIN code" autocomplete="postal-code"></label>
+          </div>
+          <?php if (!empty($user['id'])): ?>
+          <label id="ship-save-wrap" class="checkout-checkline" style="display:none"><input type="checkbox" id="ship-save-default"> <span>Save this address for future use</span></label>
           <?php endif; ?>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-          <div style="font-family:var(--fd);font-size:15px;font-weight:700;color:var(--blue)">₹<?= number_format($item['total_price']) ?></div>
-          <?php if (!empty($item['id'])): ?>
-          <button type="button" class="btn btn-outline btn-sm" onclick="removeCheckoutItem('<?= htmlspecialchars((string)$item['id'], ENT_QUOTES) ?>')" style="padding:5px 10px;font-size:11px">✕ Remove</button>
-          <?php endif; ?>
-        </div>
-      </div>
-      <?php endforeach; ?>
-    </div>
+          <div id="shipErr" class="checkout-error" style="display:none"></div>
+        </section>
 
-      </div>
-      <aside class="cart-side">
-    <!-- Coupon -->
-    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">🎟️ Coupon Code</div>
-      <div class="coupon-row">
-        <input id="couponInp" placeholder="Enter coupon code" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
-        <button class="btn btn-outline btn-sm" onclick="applyCouponCheckout()">Apply</button>
-      </div>
-      <div id="couponMsg"></div>
-    </div>
+        <section class="checkout-card checkout-billing-card">
+          <div class="checkout-card-title"><i class="fa-regular fa-file-lines" aria-hidden="true"></i><h2>Billing Details <small>Tax Invoice</small></h2></div>
+          <label class="checkout-checkline"><input type="checkbox" id="bill-same-ship" onchange="syncBillingFromShipping()"> <span>Same as shipping address</span></label>
+          <div id="billingFields" class="checkout-form-grid checkout-billing-grid">
+            <label>Legal Business Name <b>*</b><input id="b-legal" class="checkout-input" placeholder="ABC Pvt Ltd"></label>
+            <label>GSTIN <b>*</b><input id="b-gst" class="checkout-input" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></label>
+            <label>Billing Address Line 1 <b>*</b><input id="b-add1" class="checkout-input" placeholder="Street / Building"></label>
+            <label>Billing Address Line 2 <span>(Optional)</span><input id="b-add2" class="checkout-input" placeholder="Area / Landmark"></label>
+            <label>City <b>*</b><input id="b-city" class="checkout-input" placeholder="Rajkot"></label>
+            <label>State <b>*</b><input id="b-state" class="checkout-input" placeholder="Gujarat"></label>
+            <label>PIN Code <b>*</b><input id="b-pin" class="checkout-input" placeholder="360001"></label>
+          </div>
+          <div id="billErr" class="checkout-error" style="display:none"></div>
+        </section>
 
-    <!-- Totals -->
-    <div class="cart-summary-card" id="totalsBox">
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--text2)">Subtotal</span><span>₹<?= number_format($totals['subtotal']) ?></span></div>
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--text2)">GST (<?= $totals['gst_pct'] ?>%)</span><span>₹<?= number_format($totals['gst_amt']) ?></span></div>
-      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding-top:8px;border-top:1px solid var(--border)"><span>Total</span><span style="color:var(--blue);font-family:var(--fd)">₹<?= number_format($totals['total']) ?></span></div>
-    </div>
+        <section class="checkout-card checkout-payment-card">
+          <div class="checkout-card-title"><i class="fa-regular fa-credit-card" aria-hidden="true"></i><h2>Payment Method <small>100% Secure Payments</small></h2></div>
+          <div class="checkout-payment-options" aria-label="Supported Razorpay payment options">
+            <label class="is-selected"><input type="radio" name="payVisual" checked><span><strong>UPI / QR Code</strong><small>Pay using any UPI app</small></span><em>UPI</em></label>
+            <label><input type="radio" name="payVisual"><span><strong>Credit / Debit Card</strong><small>Visa, Mastercard, RuPay</small></span><em>VISA • MC</em></label>
+            <label><input type="radio" name="payVisual"><span><strong>Net Banking</strong><small>All major banks supported</small></span><em><i class="fa-solid fa-building-columns" aria-hidden="true"></i></em></label>
+            <label><input type="radio" name="payVisual"><span><strong>Wallets</strong><small>PhonePe, Paytm, Amazon Pay &amp; more</small></span><em>Wallet</em></label>
+          </div>
+          <div class="checkout-secure-note"><i class="fa-solid fa-lock" aria-hidden="true"></i> Your payment information is secure with 256-bit SSL encryption.</div>
+        </section>
 
+        <section class="checkout-consent-actions">
+          <label class="checkout-consent"><input type="checkbox" id="ship-consent"><span><b>Shipping charges are extra</b> and will be calculated based on package weight and delivery location. Final charges will be shared before dispatch. <b>Customer needs to collect the parcel from the transport office.</b></span></label>
+          <div id="shipConsentErr" class="checkout-error" style="display:none"></div>
+          <label class="checkout-consent"><input type="checkbox" id="terms-consent"><span>I have read and agree to the <a href="/terms-and-conditions" target="_blank">Terms &amp; Conditions</a>.</span></label>
+          <div id="termsConsentErr" class="checkout-error" style="display:none"></div>
+          <div class="checkout-action-buttons">
+            <?php if ($razKeyId): ?>
+            <button class="checkout-pay-btn" onclick="doCheckout()"><i class="fa-solid fa-lock" aria-hidden="true"></i> Pay Securely with Razorpay</button>
+            <?php else: ?>
+            <div class="checkout-pay-warning">⚠️ Online payment not configured. Please use WhatsApp to confirm your order.</div>
+            <?php endif; ?>
+            <button class="checkout-whatsapp-btn" onclick="doWhatsAppOrder()"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Share Order on WhatsApp</button>
+          </div>
+        </section>
+      </div>
+
+      <aside class="checkout-side-col">
+        <section class="checkout-card checkout-summary-card">
+          <div class="checkout-summary-head"><div class="checkout-card-title"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i><h2>Order Summary</h2></div><span><?= (int)$itemCount ?> Items in Cart</span></div>
+          <div class="checkout-items-list">
+            <?php foreach ($cartItems as $item): ?>
+            <article class="checkout-item">
+              <div class="checkout-item-img"><img src="<?= htmlspecialchars($item['product_image'] ?? '') ?>" alt="<?= htmlspecialchars($item['product_name'] ?? '') ?>" onerror="this.style.display='none'"></div>
+              <div class="checkout-item-copy">
+                <h3><?= htmlspecialchars($item['product_name'] ?? '') ?></h3>
+                <p><?= number_format((int)($item['quantity'] ?? 0)) ?> pcs<?= !empty($item['quality_name']) ? ' | ' . htmlspecialchars((string)$item['quality_name']) : '' ?></p>
+                <strong>₹<?= number_format((float)($item['total_price'] ?? 0)) ?></strong>
+              </div>
+              <div class="checkout-item-side">
+                <span><?= number_format((int)($item['quantity'] ?? 0)) ?></span>
+                <?php if (!empty($item['id'])): ?><button type="button" onclick="removeCheckoutItem('<?= htmlspecialchars((string)$item['id'], ENT_QUOTES) ?>')" aria-label="Remove <?= htmlspecialchars($item['product_name'] ?? 'item', ENT_QUOTES) ?>">×</button><?php endif; ?>
+              </div>
+            </article>
+            <?php endforeach; ?>
+          </div>
+          <div class="checkout-coupon-mini">
+            <div><i class="fa-solid fa-tag" aria-hidden="true"></i> Have a coupon?</div>
+            <div class="coupon-row"><input id="couponInp" placeholder="Enter coupon code" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><button class="btn btn-outline btn-sm" onclick="applyCouponCheckout()">Apply</button></div>
+            <div id="couponMsg"></div>
+          </div>
+          <div class="checkout-totals" id="totalsBox">
+            <div><span>Subtotal</span><strong>₹<?= number_format($checkoutSubtotal) ?></strong></div>
+            <?php if ($checkoutDiscount > 0): ?><div class="is-discount"><span>Discount</span><strong>-₹<?= number_format($checkoutDiscount) ?></strong></div><?php endif; ?>
+            <div><span>Shipping / Delivery</span><strong class="<?= $checkoutShipping > 0 ? '' : ($checkoutShippingMode === 'manual' ? 'is-manual' : 'is-free') ?>"><?= $checkoutShippingLabel ?></strong></div>
+            <div><span>Tax (<?= htmlspecialchars((string)$checkoutGstPct, ENT_QUOTES, 'UTF-8') ?>% GST)</span><strong>₹<?= number_format($checkoutGstAmt) ?></strong></div>
+            <div class="checkout-total-row"><span>Total Amount</span><strong>₹<?= number_format($checkoutTotal) ?></strong></div>
+          </div>
+        </section>
+
+        <section class="checkout-card checkout-why-card">
+          <div class="checkout-card-title"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i><h2>Why Shop With Us?</h2></div>
+          <div class="checkout-why-list">
+            <div><i class="fa-solid fa-award" aria-hidden="true"></i><span><strong>Premium Quality</strong><small>Best quality materials and printing</small></span></div>
+            <div><i class="fa-solid fa-lock" aria-hidden="true"></i><span><strong>Secure Payment</strong><small>100% secure and encrypted payments</small></span></div>
+            <div><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><span><strong>Fast Delivery</strong><small>Quick and reliable delivery service</small></span></div>
+            <div><i class="fa-regular fa-heart" aria-hidden="true"></i><span><strong>Satisfaction Guaranteed</strong><small>100% customer satisfaction promise</small></span></div>
+          </div>
+        </section>
       </aside>
     </div>
-
-    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:14px 16px;margin-bottom:14px">
-      <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2);line-height:1.55">
-        <input type="checkbox" id="ship-consent" style="accent-color:var(--blue);margin-top:2px">
-        <span><b>Shipping charges are extra</b> and will be calculated based on package weight and delivery location. Final charges will be shared before dispatch. <b>Customer needs to collect the parcel from the transport office.</b></span>
-      </label>
-      <div id="shipConsentErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
-    </div>
-    <div style="background:var(--white);border-radius:12px;border:1.5px solid var(--border);padding:14px 16px;margin-bottom:14px">
-      <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2);line-height:1.55">
-        <input type="checkbox" id="terms-consent" style="accent-color:var(--blue);margin-top:2px">
-        <span>I have read and agree to the <a href="/terms-and-conditions" target="_blank" style="color:var(--blue);font-weight:700">Terms &amp; Conditions</a>.</span>
-      </label>
-      <div id="termsConsentErr" style="display:none;font-size:12px;color:var(--red);margin-top:8px"></div>
-    </div>
-
-    <!-- Payment Buttons -->
-    <?php if ($razKeyId): ?>
-    <button class="btn btn-blue btn-full" onclick="doCheckout()" style="padding:16px;font-size:16px;border-radius:12px;margin-bottom:10px">
-      🔒 Pay Securely with Razorpay
-    </button>
-    <?php else: ?>
-    <div style="background:var(--amber-bg);border:1px solid var(--amber-mid);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--amber);margin-bottom:10px">
-      ⚠️ Online payment not configured. Please use WhatsApp to confirm your order.
-    </div>
-    <?php endif; ?>
-    <button class="btn btn-outline btn-full" onclick="doWhatsAppOrder()" style="padding:14px;font-size:14px;border-radius:12px">
-      💬 Share Order on WhatsApp
-    </button>
-    <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--text3)">
-      🔒 Secured by Razorpay · GST Invoice included · Your data is safe
-    </div>
   </div>
-
+</main>
 <script>
 const CSRF = '<?= $csrf ?>';
 const BIZ_WA = '<?= htmlspecialchars($bizWa) ?>';
@@ -168,11 +173,15 @@ async function applyCouponCheckout() {
     if (t.totals) {
       const tot = t.totals;
       const fmt = n => '₹' + Number(n).toLocaleString('en-IN');
+      const shipping = Number(tot.shipping || 0);
+      const shippingMode = tot.shipping_mode || 'manual';
+      const shippingText = shipping > 0 ? fmt(shipping) : (shippingMode === 'manual' ? 'To be calculated' : 'Free');
       document.getElementById('totalsBox').innerHTML = `
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--text2)">Subtotal</span><span>${fmt(tot.subtotal)}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--green)"><span>Discount</span><span>-${fmt(tot.discount)}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--text2)">GST (${tot.gst_pct}%)</span><span>${fmt(tot.gst_amt)}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding-top:8px;border-top:1px solid var(--border)"><span>Total</span><span style="color:var(--blue);font-family:var(--fd)">${fmt(tot.total)}</span></div>`;
+        <div><span>Subtotal</span><strong>${fmt(tot.subtotal)}</strong></div>
+        ${Number(tot.discount || 0) > 0 ? `<div class="is-discount"><span>Discount</span><strong>-${fmt(tot.discount)}</strong></div>` : ''}
+        <div><span>Shipping / Delivery</span><strong class="${shipping > 0 ? '' : (shippingMode === 'manual' ? 'is-manual' : 'is-free')}">${shippingText}</strong></div>
+        <div><span>Tax (${tot.gst_pct}% GST)</span><strong>${fmt(tot.gst_amt)}</strong></div>
+        <div class="checkout-total-row"><span>Total Amount</span><strong>${fmt(tot.total)}</strong></div>`;
     }
   } else {
     msg.innerHTML = `<div style="font-size:12px;color:var(--red);margin-top:6px">${data.msg}</div>`;
@@ -458,6 +467,12 @@ document.addEventListener('DOMContentLoaded', () => {
   ['s-business','s-add1','s-add2','s-city','s-state','s-pin'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', syncBillingFromShipping);
+  });
+  document.querySelectorAll('.checkout-payment-options label').forEach(label => {
+    label.addEventListener('click', () => {
+      document.querySelectorAll('.checkout-payment-options label').forEach(item => item.classList.remove('is-selected'));
+      label.classList.add('is-selected');
+    });
   });
   prefillCheckoutFromProfile();
 });

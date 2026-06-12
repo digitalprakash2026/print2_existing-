@@ -24,11 +24,139 @@ if (empty($mockups)) {
     $mockups = [(string)($page['visual_image'] ?? '/assets/img/categories/print-category.svg')];
 }
 $isSimple = (($page['layout'] ?? '') === 'simple') || !empty($page['simple']);
-if ($isSimple):
+$isAboutShowcase = (($page['layout'] ?? '') === 'about-showcase');
+if ($isAboutShowcase):
+$phoneRaw = (string)($settingsMap['biz_phone'] ?? '+91 98765 43210');
+$phone = htmlspecialchars($phoneRaw, ENT_QUOTES, 'UTF-8');
+$phoneHref = htmlspecialchars(preg_replace('/\D+/', '', $phoneRaw), ENT_QUOTES, 'UTF-8');
+$wa = htmlspecialchars((string)($settingsMap['biz_whatsapp'] ?? '919876543210'), ENT_QUOTES, 'UTF-8');
+?>
+<main class="about-showcase-page">
+  <section class="about-showcase-hero">
+    <div class="about-showcase-container about-hero-grid">
+      <div class="about-hero-copy">
+        <p class="about-kicker">About Us</p>
+        <h1>About <span class="rcs-word"><span>R</span><span>C</span><span>S</span></span> PRINT</h1>
+        <h2>Where Ideas Get <span>Printed</span> to Perfection</h2>
+        <p class="about-lead">At RCS PRINT, we transform your ideas into premium quality prints that speak for your brand. From business cards to brochures and beyond, we deliver quality you can see and feel.</p>
+        <div class="about-hero-features" aria-label="RCS PRINT strengths">
+          <div><i class="fa-solid fa-gear" aria-hidden="true"></i><strong>Premium<br>Quality</strong></div>
+          <div><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><strong>Fast<br>Delivery</strong></div>
+          <div><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i><strong>Free Design<br>Support</strong></div>
+          <div><i class="fa-solid fa-shield-heart" aria-hidden="true"></i><strong>Affordable<br>Pricing</strong></div>
+        </div>
+      </div>
+      <div class="about-hero-visual" aria-label="RCS PRINT product mockups">
+        <div class="about-dots about-dots-right" aria-hidden="true"></div>
+        <div class="about-plant" aria-hidden="true"><span></span></div>
+        <div class="about-box-card about-brand-card"><strong><span class="rcs-word"><span>R</span><span>C</span><span>S</span></span></strong><small>PRINT</small></div>
+        <div class="about-brochure about-brochure-main">
+          <span>Your Brand<br>Our Printing<br>Perfect Impact</span>
+          <img src="/assets/images/sample-products/brochures/brochures-2.svg" alt="" loading="eager" decoding="async">
+        </div>
+        <div class="about-shopping-bag">
+          <span class="bag-handle" aria-hidden="true"></span>
+          <strong><span class="rcs-word"><span>R</span><span>C</span><span>S</span></span></strong>
+          <small>PRINT</small>
+        </div>
+        <div class="about-business-card"><img src="/assets/images/sample-products/business-cards/business-cards-1.svg" alt="" loading="lazy" decoding="async"></div>
+        <div class="about-brochure about-brochure-small"><img src="/assets/images/sample-products/brochures/brochures-3.svg" alt="" loading="lazy" decoding="async"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-story-section">
+    <div class="about-showcase-container about-story-grid">
+      <div class="about-story-media">
+        <div class="about-dots about-dots-left" aria-hidden="true"></div>
+        <div class="about-triangle" aria-hidden="true"></div>
+        <figure class="about-story-photo about-story-photo-large">
+          <img src="/assets/img/categories/print-category.svg" alt="Printing press and printed material" loading="lazy" decoding="async">
+        </figure>
+        <figure class="about-story-photo about-story-photo-small">
+          <img src="/assets/images/sample-products/stationery/stationery-3.svg" alt="Design desk with RCS PRINT artwork" loading="lazy" decoding="async">
+        </figure>
+      </div>
+      <div class="about-story-copy">
+        <p class="about-kicker">Our Story</p>
+        <h2>The Story Behind<br><span class="rcs-word"><span>R</span><span>C</span><span>S</span></span> PRINT</h2>
+        <p>RCS PRINT was founded with a simple mission — to deliver high-quality printing solutions that help businesses grow and make a lasting impression.</p>
+        <p>With state-of-the-art technology, a passionate team, and a customer-first approach, we ensure every print we deliver reflects perfection.</p>
+        <div class="about-story-pills">
+          <div><i class="fa-solid fa-rocket" aria-hidden="true"></i><strong>Modern<br>Technology</strong></div>
+          <div><i class="fa-solid fa-people-group" aria-hidden="true"></i><strong>Expert<br>Team</strong></div>
+          <div><i class="fa-regular fa-heart" aria-hidden="true"></i><strong>Customer<br>First</strong></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-choose-section">
+    <div class="about-showcase-container">
+      <div class="about-section-head">
+        <p class="about-kicker">Why Choose Us</p>
+        <h2>Quality That <span>Sets Us Apart</span></h2>
+      </div>
+      <div class="about-choose-grid">
+        <article><i class="fa-solid fa-certificate" aria-hidden="true"></i><h3>Premium Quality</h3><p>We use the best materials and latest technology to deliver flawless prints.</p></article>
+        <article><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><h3>Fast Delivery</h3><p>Quick turnaround and on-time delivery you can count on.</p></article>
+        <article><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i><h3>Free Design Support</h3><p>Our expert designers help you create the perfect design.</p></article>
+        <article><i class="fa-solid fa-circle-dollar-to-slot" aria-hidden="true"></i><h3>Affordable Pricing</h3><p>Top-notch quality at prices that fit your budget.</p></article>
+        <article><i class="fa-solid fa-headset" aria-hidden="true"></i><h3>24/7 Support</h3><p>We're always here to assist you at every step.</p></article>
+        <article><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><h3>Secure &amp; Reliable</h3><p>Your data and orders are safe with 100% confidentiality.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-process-section">
+    <div class="about-showcase-container">
+      <div class="about-section-head">
+        <p class="about-kicker">Our Process</p>
+        <h2>Simple Process, <span>Perfect Results</span></h2>
+      </div>
+      <div class="about-process-row">
+        <article><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i><div><span>01</span><h3>Upload &amp; Request</h3><p>Share your design or requirement.</p></div></article>
+        <article><i class="fa-solid fa-pencil" aria-hidden="true"></i><div><span>02</span><h3>Approve Design</h3><p>We create &amp; share design for approval.</p></div></article>
+        <article><i class="fa-solid fa-print" aria-hidden="true"></i><div><span>03</span><h3>We Print Your Order</h3><p>High-quality printing with perfect finish.</p></div></article>
+        <article><i class="fa-solid fa-truck" aria-hidden="true"></i><div><span>04</span><h3>We Deliver To Your Doorstep</h3><p>Safe &amp; fast delivery right at your place.</p></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-testimonials-section">
+    <div class="about-showcase-container">
+      <div class="about-section-head about-section-head-compact">
+        <p class="about-kicker">What Our Customers Say</p>
+      </div>
+      <div class="about-testimonial-wrap">
+        <button class="about-slider-btn about-slider-prev" type="button" aria-label="Previous testimonial"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+        <div class="about-testimonial-grid">
+          <article><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Excellent printing quality and super fast service. Highly recommended!</p><div class="about-stars">★★★★★</div><div class="about-customer"><span>RM</span><strong>Rakesh Mehta<small>Business Owner</small></strong></div></article>
+          <article><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Very professional team, support and premium quality prints.</p><div class="about-stars">★★★★★</div><div class="about-customer"><span>KS</span><strong>Khushbu Shah<small>Marketing Head</small></strong></div></article>
+          <article><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Best experience for bulk printing. Great price and on-time delivery.</p><div class="about-stars">★★★★★</div><div class="about-customer"><span>JP</span><strong>Jigar Patel<small>Event Organizer</small></strong></div></article>
+        </div>
+        <button class="about-slider-btn about-slider-next" type="button" aria-label="Next testimonial"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <div class="about-slider-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+    </div>
+  </section>
+
+  <section class="about-contact-strip" aria-label="Quick contact actions">
+    <div class="about-showcase-container about-contact-grid">
+      <a href="tel:<?= $phoneHref ?>" class="about-contact-card about-contact-phone"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i><span>Need Help? Call Us<strong><?= $phone ?></strong></span></a>
+      <a href="https://wa.me/<?= $wa ?>" target="_blank" rel="noopener" class="about-contact-card about-contact-whatsapp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i><span>Chat with us on WhatsApp<strong>We are here to help!</strong></span></a>
+      <a href="/contact" class="about-contact-card about-contact-download"><i class="fa-solid fa-download" aria-hidden="true"></i><span>Download Brochure<strong>For Bulk Orders</strong></span></a>
+    </div>
+  </section>
+</main>
+<?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
+<?php include INCLUDE_PATH . '/partials/footer.php'; ?>
+<?php return; endif; ?>
+<?php if ($isSimple):
 ?>
 <main class="info-page info-page-simple">
   <section class="info-simple-hero">
-    <div class="info-container">
+    <div class="info-container info-simple-wrap">
       <nav class="info-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><span><?= $breadcrumb ?></span></nav>
       <div class="info-simple-hero-copy">
         <div class="sec-ey"><?= $eyebrow ?></div>
@@ -41,21 +169,23 @@ if ($isSimple):
   <?php if (!empty($sections)): ?>
   <section class="info-simple-section">
     <div class="info-container info-simple-wrap">
-      <?php foreach ($sections as $section): ?>
-        <article class="info-simple-block">
-          <h2><?= htmlspecialchars((string)($section['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></h2>
-          <?php foreach ((array)($section['body'] ?? []) as $paragraph): ?>
-            <p><?= htmlspecialchars((string)$paragraph, ENT_QUOTES, 'UTF-8') ?></p>
-          <?php endforeach; ?>
-          <?php if (!empty($section['bullets']) && is_array($section['bullets'])): ?>
-            <ul>
-              <?php foreach ($section['bullets'] as $bullet): ?>
-                <li><?= htmlspecialchars((string)$bullet, ENT_QUOTES, 'UTF-8') ?></li>
-              <?php endforeach; ?>
-            </ul>
-          <?php endif; ?>
-        </article>
-      <?php endforeach; ?>
+      <article class="info-simple-document" aria-label="<?= $title ?> details">
+        <?php foreach ($sections as $idx => $section): ?>
+          <section class="info-simple-block">
+            <h2><span><?= str_pad((string)($idx + 1), 2, '0', STR_PAD_LEFT) ?></span><?= htmlspecialchars((string)($section['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></h2>
+            <?php foreach ((array)($section['body'] ?? []) as $paragraph): ?>
+              <p><?= htmlspecialchars((string)$paragraph, ENT_QUOTES, 'UTF-8') ?></p>
+            <?php endforeach; ?>
+            <?php if (!empty($section['bullets']) && is_array($section['bullets'])): ?>
+              <ul>
+                <?php foreach ($section['bullets'] as $bullet): ?>
+                  <li><?= htmlspecialchars((string)$bullet, ENT_QUOTES, 'UTF-8') ?></li>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
+          </section>
+        <?php endforeach; ?>
+      </article>
 
       <aside class="info-simple-help">
         <div>

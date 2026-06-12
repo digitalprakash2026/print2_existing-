@@ -2,6 +2,7 @@
 
 return [
     'about' => [
+        'layout' => 'about-showcase',
         'title' => 'About RCS Graphic',
         'meta_title' => 'About RCS Graphic — Premium Printing & Design Support',
         'meta_description' => 'Learn about RCS Graphic, a professional printing and design support studio for business cards, flyers, brochures, banners, stationery and bulk print orders.',

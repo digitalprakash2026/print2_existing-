@@ -146,7 +146,6 @@ include INCLUDE_PATH . '/partials/header.php';
               $img = trim((string)($p['primary_image'] ?? ''));
               $name = (string)($p['name'] ?? 'Product');
               $slug = (string)($p['slug'] ?? '');
-              $desc = trim((string)($p['description'] ?? '')) ?: ('Premium ' . strtolower($name) . ' printing with custom sizes and finishing options.');
               $minP = (float)($p['min_price'] ?? 0);
               $theme = $categoryThemeClasses[$idx % count($categoryThemeClasses)];
             ?>
@@ -159,9 +158,7 @@ include INCLUDE_PATH . '/partials/header.php';
                   <?php endif; ?>
                 </div>
                 <div class="all-cat-body">
-                  <span class="all-cat-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span>
                   <h2><?= htmlspecialchars($name) ?></h2>
-                  <p><?= htmlspecialchars($desc) ?></p>
                   <strong><?= $minP > 0 ? ('Starting from ₹' . number_format($minP)) : 'Price on request' ?></strong>
                 </div>
               </a>
