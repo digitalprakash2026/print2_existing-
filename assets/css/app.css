@@ -9869,7 +9869,7 @@ body:has(#siteHeader) .banner-slider {
   padding:34px 0 72px;
   background:#fbfbfd;
   color:#111322;
-  font-family:'Poppins', var(--fn);
+  font-family:var(--fn);
 }
 .checkout-showcase-container {
   width:min(var(--page-max), calc(100vw - var(--page-gutter)));
@@ -9958,7 +9958,7 @@ body:has(#siteHeader) .banner-slider {
   padding:0 15px;
   color:#111322;
   background:#fff;
-  font:500 14px/1.4 'Poppins', var(--fn);
+  font:500 14px/1.4 var(--fn);
   transition:border-color .2s ease, box-shadow .2s ease;
 }
 .checkout-input:focus { border-color:#4b148c; box-shadow:0 0 0 4px rgba(75,20,140,.1); }
@@ -10080,7 +10080,7 @@ body:has(#siteHeader) .banner-slider {
   margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));
   background:#fff;
   color:var(--contact-ink);
-  font-family:'Poppins', var(--fn);
+  font-family:var(--fn);
   overflow:hidden;
 }
 .contact-showcase-container {
@@ -10288,7 +10288,7 @@ body:has(#siteHeader) .banner-slider {
   padding:14px 16px;
   color:#151827;
   background:#fff;
-  font:500 14px/1.4 'Poppins', var(--fn);
+  font:500 14px/1.4 var(--fn);
   transition:border-color .2s ease, box-shadow .2s ease;
 }
 .contact-form-grid textarea { min-height:118px; resize:vertical; }
@@ -10561,7 +10561,7 @@ body:has(#siteHeader) .banner-slider {
     radial-gradient(520px 260px at 5% 42%, rgba(255,91,8,.07), transparent 68%),
     #fff;
   color:var(--about-ink);
-  font-family:'Poppins', var(--fn);
+  font-family:var(--fn);
   overflow:hidden;
 }
 .about-showcase-container {
