@@ -4675,15 +4675,45 @@ body:has(#siteHeader) .banner-slider {
 .cat-detail-results .cat-product-grid {
   grid-template-columns:repeat(4, minmax(0,1fr));
 }
+.cat-detail-results .cat-product-card {
+  position:relative;
+  aspect-ratio:1 / 1;
+  min-height:0;
+  border-radius:18px;
+}
 .cat-detail-results .cat-product-card .all-cat-img {
-  min-height:230px;
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  min-height:0;
 }
 .cat-detail-results .cat-product-card .all-cat-img img {
-  min-height:230px;
+  width:100%;
   height:100%;
+  min-height:0;
+  object-fit:cover;
 }
-.cat-detail-results .cat-product-card .all-cat-body p {
-  min-height:58px;
+.cat-detail-results .cat-product-card .all-cat-body {
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  padding:52px 16px 16px;
+  border-top:0;
+  background:linear-gradient(180deg, rgba(7,18,37,0) 0%, rgba(7,18,37,.72) 48%, rgba(7,18,37,.92) 100%);
+}
+.cat-detail-results .cat-product-card .all-cat-body h2 {
+  margin:0 0 8px;
+  color:#fff;
+  font-size:16px;
+  line-height:1.2;
+  text-shadow:0 1px 8px rgba(0,0,0,.28);
+}
+.cat-detail-results .cat-product-card .all-cat-body strong {
+  color:#fff;
+  font-weight:800;
+  text-shadow:0 1px 8px rgba(0,0,0,.24);
 }
 .cat-detail-whatsapp {
   display:flex;
@@ -4748,13 +4778,13 @@ body:has(#siteHeader) .banner-slider {
 }
 @media (max-width:820px) {
   .cat-detail-results .cat-product-grid { grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; }
-  .cat-detail-results .cat-product-card { min-height:330px; }
+  .cat-detail-results .cat-product-card { min-height:0; }
   .cat-detail-browse { margin-bottom:22px; }
 }
 @media (max-width:520px) {
   .cat-detail-results .cat-product-grid { grid-template-columns:1fr; }
-  .cat-detail-results .cat-product-card .all-cat-img { min-height:230px; }
-  .cat-detail-results .cat-product-card .all-cat-img img { min-height:230px; }
+  .cat-detail-results .cat-product-card .all-cat-img { min-height:0; }
+  .cat-detail-results .cat-product-card .all-cat-img img { min-height:0; }
   .cat-detail-whatsapp { align-items:flex-start; padding:22px 18px; }
   .cat-detail-whatsapp .btn { width:100%; justify-content:center; }
 }
@@ -5025,6 +5055,13 @@ body:has(#siteHeader) .banner-slider {
   .subcat-page .all-cat-results .all-cat-img img {
     min-height:210px;
     height:100%;
+  }
+  .subcat-page .all-cat-results .cat-product-card {
+    min-height:0;
+  }
+  .subcat-page .all-cat-results .cat-product-card .all-cat-img,
+  .subcat-page .all-cat-results .cat-product-card .all-cat-img img {
+    min-height:0;
   }
   .subcat-page .all-cat-results .all-cat-body {
     padding:28px 15px 16px;
