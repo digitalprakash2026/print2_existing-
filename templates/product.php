@@ -33,7 +33,7 @@ if (!$primaryImg) $primaryImg = 'https://placehold.co/600x600/EEF3FD/1A56E8?text
 $specs      = $product['specs']      ?? [];
 $qualities  = $product['qualities']  ?? [];
 $attrGroups = []; // Attribute pricing retired from customer flow
-$bizWa      = $settingsMap['biz_whatsapp'] ?? '919876543210';
+$bizWa      = preg_replace('/\D+/', '', (string)($settingsMap['biz_whatsapp'] ?? '919876543210'));
 $startingPrice = (float)($product['min_price'] ?? 0);
 if ($startingPrice <= 0 && $qualities) {
     foreach ($qualities as $q) {
@@ -49,6 +49,29 @@ $discountPct  = ($startingPrice > 0 && $comparePrice > $startingPrice)
     : 0;
 $productCode = trim((string)($product['product_code'] ?? ''));
 $categoryName = trim((string)($product['category_name'] ?? 'Products'));
+$categorySlug = trim((string)($product['category_slug'] ?? ''));
+$categoryUrl = $categorySlug !== '' ? '/category/' . rawurlencode($categorySlug) : '/categories';
+$reviewSummary = is_array($reviewSummary ?? null) ? $reviewSummary : ['average' => 0, 'average_display' => '0.0', 'count' => 0, 'breakdown' => [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0]];
+$productReviews = is_array($productReviews ?? null) ? $productReviews : [];
+$reviewAverage = (float)($reviewSummary['average'] ?? 0);
+$reviewAverageDisplay = (string)($reviewSummary['average_display'] ?? number_format($reviewAverage, 1));
+$reviewCount = (int)($reviewSummary['count'] ?? 0);
+if ($reviewCount === 0 && !empty($productReviews)) {
+    $reviewCount = count($productReviews);
+    $ratingTotal = array_sum(array_map(static fn($review) => (int)($review['rating'] ?? 0), $productReviews));
+    $reviewAverage = $reviewCount > 0 ? round($ratingTotal / $reviewCount, 1) : 0.0;
+    $reviewAverageDisplay = number_format($reviewAverage, 1);
+    $reviewSummary['count'] = $reviewCount;
+    $reviewSummary['average'] = $reviewAverage;
+    $reviewSummary['average_display'] = $reviewAverageDisplay;
+    $reviewSummary['breakdown'] = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+    foreach ($productReviews as $review) {
+        $rating = max(1, min(5, (int)($review['rating'] ?? 0)));
+        $reviewSummary['breakdown'][$rating]++;
+    }
+}
+$reviewStarCount = $reviewCount > 0 ? max(1, min(5, (int)round($reviewAverage))) : 0;
+$reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $reviewStarCount);
 ?>
 
 <div class="pd-page-wrap">
@@ -58,7 +81,7 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
   <div class="breadcrumb">
     <a href="/">Home</a><span>/</span>
     <a href="/categories">Products</a><span>/</span>
-    <span><?= htmlspecialchars($categoryName) ?></span><span>/</span>
+    <a href="<?= htmlspecialchars($categoryUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($categoryName) ?></a><span>/</span>
     <span style="color:var(--ink);font-weight:600"><?= htmlspecialchars($product['name']) ?></span>
   </div>
 
@@ -112,9 +135,14 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
 
       <h1 class="pd-name"><?= htmlspecialchars($product['name']) ?></h1>
       <div class="pd-rating-row" aria-label="Product rating">
-        <span class="pd-stars" aria-hidden="true">★★★★★</span>
-        <strong>4.8</strong>
-        <span>(124 Reviews)</span>
+        <span class="pd-stars" aria-hidden="true"><?= htmlspecialchars($reviewStars) ?></span>
+        <?php if ($reviewCount > 0): ?>
+          <strong><?= htmlspecialchars($reviewAverageDisplay) ?></strong>
+          <span>(<?= number_format($reviewCount) ?> Reviews)</span>
+        <?php else: ?>
+          <strong>New</strong>
+          <span>(No reviews yet)</span>
+        <?php endif; ?>
         <span class="pd-viewing-dot">•</span>
         <span>23 people are viewing this product</span>
       </div>
@@ -224,12 +252,12 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
 
           <div class="design-opt" id="dopt-rcs" onclick="selDesignOpt('rcs')">
             <div class="design-opt-icon"><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i></div>
-            <div class="design-opt-title">Get Free Design</div>
-            <div class="design-opt-copy">Let our experts design for you</div>
+            <div class="design-opt-title">Design by RCS Graphic</div>
+            <div class="design-opt-copy">Let our experts prepare your artwork for print</div>
             <?php if ($designFee > 0): ?>
             <div class="design-opt-note is-paid">+₹<?= number_format($designFee) ?> design fee</div>
             <?php else: ?>
-            <div class="design-opt-note is-free">No upfront design charge</div>
+            <div class="design-opt-note is-free">Design support included</div>
             <?php endif; ?>
           </div>
 
@@ -261,9 +289,6 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
           <button class="btn btn-blue btn-full" onclick="addToCart()" id="addCartBtn">
             <i class="fa-solid fa-cart-plus" aria-hidden="true"></i> ADD TO CART
           </button>
-          <button class="btn btn-green btn-full" onclick="buyNow()">
-            GET FREE DESIGN
-          </button>
           <button class="btn btn-outline" onclick="waOrder()" title="Order via WHATSAPP SUPPORT">
             <svg viewBox="0 0 24 24" style="width:17px;height:17px;fill:currentColor" aria-hidden="true">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
@@ -287,7 +312,7 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
       <div class="pd-tabs-nav" role="tablist" aria-label="Product detail tabs">
         <button type="button" class="pd-tab-btn is-active" id="pd-tab-description" role="tab" aria-selected="true" aria-controls="pd-panel-description" onclick="switchProductTab('description', this)">Description</button>
         <button type="button" class="pd-tab-btn" id="pd-tab-specifications" role="tab" aria-selected="false" aria-controls="pd-panel-specifications" onclick="switchProductTab('specifications', this)">Specifications</button>
-        <button type="button" class="pd-tab-btn" id="pd-tab-reviews" role="tab" aria-selected="false" aria-controls="pd-panel-reviews" onclick="switchProductTab('reviews', this)">Reviews (124)</button>
+        <button type="button" class="pd-tab-btn" id="pd-tab-reviews" role="tab" aria-selected="false" aria-controls="pd-panel-reviews" onclick="switchProductTab('reviews', this)">Reviews (<?= number_format($reviewCount) ?>)</button>
         <button type="button" class="pd-tab-btn" id="pd-tab-faqs" role="tab" aria-selected="false" aria-controls="pd-panel-faqs" onclick="switchProductTab('faqs', this)">FAQs</button>
       </div>
 
@@ -326,12 +351,30 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
 
           <div class="pd-tab-panel" id="pd-panel-reviews" role="tabpanel" aria-labelledby="pd-tab-reviews" data-tab-panel="reviews" hidden>
             <h2>Customer Reviews</h2>
-            <p>Customers trust RCS Graphic for sharp printing, dependable finishing, and quick support from design to delivery.</p>
-            <ul class="pd-check-list">
-              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> 4.8 average customer rating</li>
-              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> 124 verified customer reviews</li>
-              <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i> Loved for print quality and fast communication</li>
-            </ul>
+            <?php if ($reviewCount > 0): ?>
+              <div class="pd-review-summary-box">
+                <div class="pd-review-score"><strong><?= htmlspecialchars($reviewAverageDisplay) ?></strong><span><?= htmlspecialchars($reviewStars) ?></span><small><?= number_format($reviewCount) ?> verified review<?= $reviewCount === 1 ? '' : 's' ?></small></div>
+                <div class="pd-review-breakdown">
+                  <?php foreach ([5,4,3,2,1] as $rating):
+                    $ratingCount = (int)($reviewSummary['breakdown'][$rating] ?? 0);
+                    $pct = $reviewCount > 0 ? round(($ratingCount / $reviewCount) * 100) : 0;
+                  ?>
+                  <div><span><?= $rating ?>★</span><b><i style="width:<?= (int)$pct ?>%"></i></b><em><?= $ratingCount ?></em></div>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+              <div class="pd-review-list">
+                <?php foreach ($productReviews as $review): ?>
+                <article class="pd-review-list-card">
+                  <div class="pd-review-person"><span class="pd-review-avatar" aria-hidden="true"><?= htmlspecialchars($review['customer_initials'] ?? 'RC') ?></span><div><strong><?= htmlspecialchars($review['customer_name'] ?? 'RCS Customer') ?></strong><span>Verified customer<?= !empty($review['created_display']) ? ' · ' . htmlspecialchars($review['created_display']) : '' ?></span></div></div>
+                  <div class="pd-review-stars" aria-label="<?= (int)($review['rating'] ?? 0) ?> out of 5 stars"><?= htmlspecialchars($review['stars'] ?? '') ?></div>
+                  <p><?= htmlspecialchars($review['comment'] ?? '') ?></p>
+                </article>
+                <?php endforeach; ?>
+              </div>
+            <?php else: ?>
+              <div class="pd-review-empty"><i class="fa-regular fa-star" aria-hidden="true"></i><strong>No reviews yet</strong><span>Verified customer reviews will appear here after delivered orders are reviewed.</span></div>
+            <?php endif; ?>
           </div>
 
           <div class="pd-tab-panel" id="pd-panel-faqs" role="tabpanel" aria-labelledby="pd-tab-faqs" data-tab-panel="faqs" hidden>
@@ -359,30 +402,24 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
             <a href="#pd-panel-reviews" onclick="switchProductTab('reviews', document.getElementById('pd-tab-reviews'))">View All Reviews <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
           </div>
           <div class="pd-review-cards">
-            <article class="pd-review-card">
-              <div class="pd-review-person">
-                <span class="pd-review-avatar" aria-hidden="true">RM</span>
-                <div><strong>Rakesh Mehta</strong><span>Business Owner</span></div>
-              </div>
-              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
-              <p>Excellent quality and fast delivery. Highly recommended!</p>
-            </article>
-            <article class="pd-review-card">
-              <div class="pd-review-person">
-                <span class="pd-review-avatar" aria-hidden="true">KS</span>
-                <div><strong>Khushbu Shah</strong><span>Marketing Head</span></div>
-              </div>
-              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
-              <p>Very professional team and amazing print quality.</p>
-            </article>
-            <article class="pd-review-card">
-              <div class="pd-review-person">
-                <span class="pd-review-avatar" aria-hidden="true">JP</span>
-                <div><strong>Jigar Patel</strong><span>Event Organizer</span></div>
-              </div>
-              <div class="pd-review-stars" aria-label="5 out of 5 stars">★★★★★</div>
-              <p>Best experience for bulk printing. Great pricing and support.</p>
-            </article>
+            <?php if (!empty($productReviews)): ?>
+              <?php foreach (array_slice($productReviews, 0, 3) as $review): ?>
+              <article class="pd-review-card">
+                <div class="pd-review-person">
+                  <span class="pd-review-avatar" aria-hidden="true"><?= htmlspecialchars($review['customer_initials'] ?? 'RC') ?></span>
+                  <div><strong><?= htmlspecialchars($review['customer_name'] ?? 'RCS Customer') ?></strong><span>Verified Customer</span></div>
+                </div>
+                <div class="pd-review-stars" aria-label="<?= (int)($review['rating'] ?? 0) ?> out of 5 stars"><?= htmlspecialchars($review['stars'] ?? '') ?></div>
+                <p><?= htmlspecialchars($review['comment'] ?? '') ?></p>
+              </article>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <article class="pd-review-card pd-review-card-empty">
+                <div class="pd-review-person"><span class="pd-review-avatar" aria-hidden="true">★</span><div><strong>No reviews yet</strong><span>Verified customer feedback</span></div></div>
+                <div class="pd-review-stars" aria-label="0 out of 5 stars">☆☆☆☆☆</div>
+                <p>Reviews from customers who purchased this product will appear here after approval.</p>
+              </article>
+            <?php endif; ?>
           </div>
           <button type="button" class="pd-review-next" aria-label="Next review" onclick="document.querySelector('.pd-review-cards')?.scrollBy({left:220, behavior:'smooth'})">›</button>
         </aside>
@@ -390,30 +427,40 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
     </div>
   </section>
 
-  <!-- RELATED PRODUCTS -->
-  <?php if ($related): ?>
-  <section class="ym-section">
+  <!-- RELATED CATEGORIES -->
+  <?php $relatedCategoryCards = is_array($relatedCategories ?? null) ? array_slice($relatedCategories, 0, 5) : []; ?>
+  <?php if ($relatedCategoryCards): ?>
+  <section class="ym-section" aria-labelledby="relatedCategoryTitle">
     <div class="ym-head">
-      <h2 class="ym-title">You May <span>Also Like</span></h2>
-      <a href="/categories" class="ym-view-all">View All Products</a>
+      <h2 id="relatedCategoryTitle" class="ym-title">You May <span>Also Like</span></h2>
+      <a href="/categories" class="ym-view-all">View All Categories</a>
     </div>
 
-    <div class="ym-grid">
-      <?php foreach (array_slice($related, 0, 5) as $rp):
-        $rimg = $rp['primary_image'] ?? '';
-        $rmin = (float)($rp['min_price'] ?? 0);
+    <div class="ym-grid ym-category-grid">
+      <?php foreach ($relatedCategoryCards as $idx => $cat):
+        $catName = (string)($cat['name'] ?? 'Product Category');
+        $catSlug = (string)($cat['slug'] ?? '');
+        $catImg = trim((string)($cat['image_path'] ?? ''));
+        $catAlt = trim((string)($cat['image_alt'] ?? '')) ?: ($catName . ' category image');
+        $catCount = (int)($cat['product_count'] ?? 0);
+        $catHref = $catSlug !== '' ? '/category/' . rawurlencode($catSlug) : '/categories';
       ?>
-      <article class="ym-card" data-reveal data-reveal-delay="<?= ((int)($rp['id'] ?? 0) % 3) * 60 ?>">
-        <a class="ym-img" href="/product/<?= htmlspecialchars($rp['slug']) ?>">
-          <img src="<?= htmlspecialchars($rimg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" loading="lazy"
-               onerror="this.src='https://placehold.co/400x260/EEF3FD/1A56E8?text=<?= urlencode($rp['name']) ?>'">
+      <article class="ym-card ym-category-card" data-reveal data-reveal-delay="<?= ($idx % 3) * 60 ?>">
+        <a class="ym-img ym-category-img" href="<?= htmlspecialchars($catHref) ?>">
+          <?php if ($catImg !== ''): ?>
+            <img src="<?= htmlspecialchars($catImg) ?>" alt="<?= htmlspecialchars($catAlt) ?>" loading="lazy"
+                 onerror="this.style.display='none';if(this.nextElementSibling){this.nextElementSibling.removeAttribute('hidden');}">
+            <span class="ym-category-fallback" hidden><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+          <?php else: ?>
+            <span class="ym-category-fallback"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
+          <?php endif; ?>
         </a>
         <div class="ym-body">
-          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><?= htmlspecialchars($rp['name'] ?? ($rp['category_name'] ?? 'Product')) ?></div>
-          <div class="ym-from">Starting from</div>
+          <div class="ym-cat"><i class="fa-solid fa-layer-group" aria-hidden="true"></i>Product Category</div>
+          <h3 class="ym-name"><?= htmlspecialchars($catName) ?></h3>
+          <div class="ym-from"><?= $catCount ?> Product<?= $catCount === 1 ? '' : 's' ?> Available</div>
           <div class="ym-foot">
-            <div class="ym-price">₹<?= $rmin > 0 ? number_format($rmin) : '—' ?></div>
-            <a href="/product/<?= htmlspecialchars($rp['slug']) ?>" class="ym-order">ORDER NOW</a>
+            <a href="<?= htmlspecialchars($catHref) ?>" class="ym-order">EXPLORE</a>
           </div>
         </div>
       </article>
@@ -425,22 +472,13 @@ $categoryName = trim((string)($product['category_name'] ?? 'Products'));
 </div><!-- /container -->
 </div><!-- /page-wrap -->
 
-<!-- Sticky Price Bar -->
-<div class="sticky-price show" id="stickyBar">
-  <div>
-    <div class="sp-sub">Total Price</div>
-    <div class="sp-price" id="spTotal">₹ —</div>
-  </div>
-  <div class="sticky-price-actions" style="display:flex;gap:8px">
-    <button class="btn btn-blue" onclick="addToCart()" style="padding:11px 18px">Add to Cart</button>
-    <button class="btn btn-green" onclick="buyNow()" style="padding:11px 16px">Buy Now</button>
-  </div>
-</div>
-
 <script>
 // ── Data from PHP ──────────────────────────────────────────────
 const PRODUCT_ID  = <?= (int)$product['id'] ?>;
-const BIZ_WA      = '<?= htmlspecialchars($bizWa) ?>';
+const BIZ_WA      = '<?= htmlspecialchars($bizWa, ENT_QUOTES, 'UTF-8') ?>';
+const PRODUCT_NAME = <?= json_encode((string)($product['name'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+const PRODUCT_CODE = <?= json_encode((string)$productCode, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+const CATEGORY_NAME = <?= json_encode((string)$categoryName, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 const CSRF        = '<?= htmlspecialchars($csrf ?? '') ?>';
 const QUALITIES   = <?= json_encode($qualities) ?>;
 const DESIGN_FEE  = <?= (float)$designFee ?>;
@@ -462,18 +500,14 @@ let currentBasePrice   = 0;
 function refreshOrderReadiness() {
   const hasQty = !!selectedQty;
   const addBtn = document.getElementById('addCartBtn');
-  const stickyBtns = document.querySelectorAll('#stickyBar .btn.btn-blue, #stickyBar .btn.btn-green');
-  const buyBtn = document.querySelector('.btn.btn-green.btn-full');
   const hint = document.getElementById('orderHint');
 
   if (addBtn) addBtn.disabled = !hasQty;
-  if (buyBtn) buyBtn.disabled = !hasQty;
-  stickyBtns.forEach(btn => btn.disabled = !hasQty);
 
   if (hint) {
     hint.textContent = hasQty
-      ? 'Looks good. You can now add to cart or buy now.'
-      : 'Select quantity to enable Add to Cart / Buy Now.';
+      ? 'Looks good. You can now add to cart.'
+      : 'Select quantity to enable Add to Cart.';
   }
 }
 
@@ -554,7 +588,6 @@ function calcPrice() {
   if (!selectedQualityId || !selectedQty) {
     document.getElementById('ppBase').textContent  = '—';
     document.getElementById('ppTotal').textContent = '₹ —';
-    document.getElementById('spTotal').textContent = '₹ —';
     currentBasePrice = 0;
     refreshOrderReadiness();
     return;
@@ -571,7 +604,6 @@ function calcPrice() {
   const fmt = n => '₹' + Number(n).toLocaleString('en-IN');
   document.getElementById('ppBase').textContent  = fmt(base);
   document.getElementById('ppTotal').textContent = fmt(total);
-  document.getElementById('spTotal').textContent = fmt(total);
   const panel = document.getElementById('pricePanel');
   if (panel) {
     panel.classList.remove('flash');
@@ -598,11 +630,17 @@ function calcPrice() {
 
 // Design Option
 function selDesignOpt(choice) {
-  designChoice = choice;
-  document.getElementById('dopt-upload').classList.toggle('sel', choice === 'upload');
-  document.getElementById('dopt-rcs').classList.toggle('sel', choice === 'rcs');
-  document.getElementById('panel-upload').style.display = choice === 'upload' ? 'block' : 'none';
-  document.getElementById('panel-rcs').style.display    = choice === 'rcs' ? 'block' : 'none';
+  designChoice = choice === 'rcs' ? 'rcs' : 'upload';
+  const uploadOpt = document.getElementById('dopt-upload');
+  const rcsOpt = document.getElementById('dopt-rcs');
+  const uploadPanel = document.getElementById('panel-upload');
+  const rcsPanel = document.getElementById('panel-rcs');
+
+  if (uploadOpt) uploadOpt.classList.toggle('sel', designChoice === 'upload');
+  if (rcsOpt) rcsOpt.classList.toggle('sel', designChoice === 'rcs');
+  if (uploadPanel) uploadPanel.style.display = designChoice === 'upload' ? 'block' : 'none';
+  if (rcsPanel) rcsPanel.style.display = designChoice === 'rcs' ? 'block' : 'none';
+
   calcPrice();
   refreshOrderReadiness();
 }
@@ -742,30 +780,42 @@ function validateOrder() {
 
 // WHATSAPP SUPPORT Quick Order
 function waOrder() {
-  const totalEl = document.getElementById('ppTotal').textContent || '₹ —';
-  const qname   = QUALITIES[selectedQualityIdx]?.name || 'Standard';
+  const totalEl = document.getElementById('ppTotal')?.textContent || '₹ —';
+  const baseEl = document.getElementById('ppBase')?.textContent || '—';
+  const qname = QUALITIES[selectedQualityIdx]?.name || 'Standard';
   const qtyText = selectedQty ? Number(selectedQty).toLocaleString('en-IN') + ' pcs' : 'Not selected';
-  const dOpt    = designChoice === 'rcs' ? 'Design by RCS Graphic' : 'Customer Upload';
-  const now     = new Date().toLocaleString('en-IN');
+  const artworkText = uploadedFileName ? uploadedFileName : (artworkId ? 'Artwork uploaded' : 'Not uploaded yet');
+  const designText = designChoice === 'rcs' ? 'Design by RCS Graphic' : 'Customer artwork upload';
+  const now = new Date().toLocaleString('en-IN');
   const pageUrl = window.location.href;
 
   const msg = [
-    '🧾 *Product Enquiry*',
+    '🧾 *Product Enquiry - RCS Graphic*',
     `🕒 ${now}`,
     '',
     '*Product Details*',
-    `• Product: <?= addslashes(htmlspecialchars($product['name'])) ?>`,
+    `• Product: ${PRODUCT_NAME}`,
+    PRODUCT_CODE ? `• Product Code: ${PRODUCT_CODE}` : '',
+    `• Category: ${CATEGORY_NAME || 'Products'}`,
     `• Quantity: ${qtyText}`,
     `• Quality: ${qname}`,
-    `• Design: ${dOpt}`,
+    `• Design Option: ${designText}`,
+    `• Base Price: ${baseEl}`,
     `• Estimated Total: ${totalEl}`,
+    `• Artwork File: ${artworkText}`,
     '',
-    `Source: Product Page (${pageUrl})`,
+    '*Page Link*',
+    pageUrl,
     '',
-    'Please confirm final costing and next steps.'
-  ].join('\n');
+    'I am interested in this product. Please confirm final costing, artwork requirements and next steps.'
+  ].filter(Boolean).join('\n');
 
-  window.open(`https://wa.me/${BIZ_WA}?text=${encodeURIComponent(msg)}`, '_blank');
+  const waNumber = String(BIZ_WA || '').replace(/\D+/g, '');
+  if (!waNumber) {
+    toast('WhatsApp number is not configured', 'error');
+    return;
+  }
+  window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
 }
 
 function switchProductTab(tab, btn) {
@@ -786,4 +836,5 @@ reloadQtySlabs();
 refreshOrderReadiness();
 </script>
 
+<?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>

@@ -81,6 +81,7 @@ if ($uri === '/' && $method === 'GET') {
         }
         $settings    = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
+        $homeReviews = \Reviews\ProductReview::featured(6);
     } catch (\Throwable $e) {
         error_log('Home error: ' . $e->getMessage());
         $categories = $products = [];
@@ -88,8 +89,9 @@ if ($uri === '/' && $method === 'GET') {
         $homeDeals = [];
         $homeBlogs = [];
         $settingsMap = [];
+        $homeReviews = [];
     }
-    view('home', compact('categories', 'products', 'settingsMap', 'homeBanners', 'homeDeals', 'homeBlogs'));
+    view('home', compact('categories', 'products', 'settingsMap', 'homeBanners', 'homeDeals', 'homeBlogs', 'homeReviews'));
     exit;
 }
 
@@ -151,10 +153,12 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 
     if (!$product) { http_response_code(404); view('404'); exit; }
 
-    try { $related = \Catalog\ProductCatalog::relatedFromFixedCategories((int)$product['id'], 4); }
-    catch (\Throwable) { $related = []; }
+    try { $relatedCategories = \Catalog\ProductCatalog::relatedCategories((int)($product['category_id'] ?? 0), 5); }
+    catch (\Throwable) { $relatedCategories = []; }
+    $reviewSummary = \Reviews\ProductReview::summaryForProduct((int)$product['id']);
+    $productReviews = \Reviews\ProductReview::approvedForProduct((int)$product['id'], 12);
 
-    view('product', compact('product', 'related'));
+    view('product', compact('product', 'relatedCategories', 'reviewSummary', 'productReviews'));
     exit;
 }
 
@@ -235,11 +239,7 @@ if ($uri === '/logout') {
 // My Orders
 if ($uri === '/my-orders' && $method === 'GET') {
     \Auth\Auth::require();
-    $user = \Auth\Auth::user();
-    try { $orders = \Orders\OrderManager::getUserOrders((int)$user['id']); }
-    catch (\Throwable) { $orders = []; }
-    view('my-orders', compact('orders', 'user'));
-    exit;
+    redirect('/profile#orders');
 }
 
 // My Profile
@@ -247,19 +247,49 @@ if ($uri === '/profile' && $method === 'GET') {
     \Auth\Auth::require();
     $user = \Auth\Auth::user();
     $profile = \Auth\Auth::getProfile((int)$user['id']);
-    view('profile', compact('user', 'profile'));
+    try { $orders = \Orders\OrderManager::getUserOrders((int)$user['id']); }
+    catch (\Throwable) { $orders = []; }
+    $reviewableItems = \Reviews\ProductReview::reviewableItemsForUser((int)$user['id']);
+    $myReviews = \Reviews\ProductReview::userReviews((int)$user['id']);
+    view('profile', compact('user', 'profile', 'orders', 'reviewableItems', 'myReviews'));
     exit;
 }
 
 if ($uri === '/profile/security' && $method === 'GET') {
     \Auth\Auth::require();
-    view('profile-security');
+    redirect('/profile#security');
+}
+
+// Static information pages
+$sitePageRoutes = [
+    '/about' => 'about',
+    '/shipping-policy' => 'shipping-policy',
+    '/refund-return-policy' => 'refund-return-policy',
+    '/terms-and-conditions' => 'terms-and-conditions',
+    '/privacy-policy' => 'privacy-policy',
+];
+if (isset($sitePageRoutes[$uri]) && $method === 'GET') {
+    $sitePages = require APP_PATH . '/data/site_pages.php';
+    $page = $sitePages[$sitePageRoutes[$uri]] ?? null;
+    if (!$page) { http_response_code(404); view('404'); exit; }
+    try {
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable) {
+        $settingsMap = [];
+    }
+    view('info-page', compact('page', 'settingsMap'));
     exit;
 }
 
-// Terms & Conditions
-if ($uri === '/terms-and-conditions' && $method === 'GET') {
-    view('terms-and-conditions');
+if ($uri === '/contact' && $method === 'GET') {
+    try {
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable) {
+        $settingsMap = [];
+    }
+    view('contact', compact('settingsMap'));
     exit;
 }
 

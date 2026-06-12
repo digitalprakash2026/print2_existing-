@@ -76,7 +76,7 @@ include INCLUDE_PATH . '/partials/header.php';
         }
       ?>
       <a href="/product/<?= htmlspecialchars($p['slug']) ?>"
-         class="pc"
+         class="pc" data-design-target="product.card"
          data-cat="<?= htmlspecialchars($catSlug) ?>">
         <div class="pc-img">
           <img src="<?= htmlspecialchars($img) ?>"
@@ -89,12 +89,12 @@ include INCLUDE_PATH . '/partials/header.php';
         </div>
         <div class="pc-body">
           <div class="pc-cat"><?= htmlspecialchars($p['category_name'] ?? '') ?></div>
-          <div class="pc-name"><?= htmlspecialchars($p['name']) ?></div>
-          <div class="pc-desc"><?= htmlspecialchars($p['description'] ?? '') ?></div>
+          <div class="pc-name" data-design-target="product.card.title"><?= htmlspecialchars($p['name']) ?></div>
+          <div class="pc-desc" data-design-target="product.card.description"><?= htmlspecialchars($p['description'] ?? '') ?></div>
           <div class="pc-foot">
             <div>
               <div class="pc-from">Starting from</div>
-              <div class="pc-price">₹<?= $minP > 0 ? number_format($minP) : '—' ?></div>
+              <div class="pc-price" data-design-target="product.card.price">₹<?= $minP > 0 ? number_format($minP) : '—' ?></div>
             </div>
             <div class="pc-arr">
               <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
@@ -141,4 +141,5 @@ function apFilter(slug, btn) {
 }
 </script>
 
+<?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>

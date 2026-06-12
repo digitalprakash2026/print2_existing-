@@ -84,4 +84,5 @@ $tlSteps = ['received','processing','printing','ready','delivered'];
 </div>
 <script>const CSRF = '<?= $csrf ?>';</script>
 <script src="/assets/js/app.js"></script>
+<?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>

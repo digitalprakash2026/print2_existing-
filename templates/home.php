@@ -23,7 +23,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
      render only when filled, so a designed clickable banner image can
      stand on its own across desktop and mobile.
 ═══════════════════════════════════════════════════════════════ -->
-<div class="banner-slider" id="bannerSlider">
+<div class="banner-slider" id="bannerSlider" data-design-target="home.banner">
   <?php
   $fallbackBanners = [
     [
@@ -80,16 +80,16 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
       <div class="bs-overlay" aria-hidden="true"></div>
       <div class="bs-content">
         <?php if ($eyebrow !== ''): ?><div class="bs-eyebrow"><?= htmlspecialchars($eyebrow, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-        <?php if ($title !== ''): ?><div class="bs-title"><?= $title ?></div><?php endif; ?>
-        <?php if ($subtitle !== ''): ?><div class="bs-sub"><?= $subtitle ?></div><?php endif; ?>
+        <?php if ($title !== ''): ?><div class="bs-title" data-design-target="home.banner.title"><?= $title ?></div><?php endif; ?>
+        <?php if ($subtitle !== ''): ?><div class="bs-sub" data-design-target="home.banner.subtitle"><?= $subtitle ?></div><?php endif; ?>
         <?php if ($hasPrimaryCta || $hasSecondaryCta): ?>
           <div class="bs-actions">
-            <?php if ($hasPrimaryCta): ?><a href="<?= $ctaPrimaryUrl ?>" class="bs-cta-primary"><?= $ctaPrimaryText ?></a><?php endif; ?>
+            <?php if ($hasPrimaryCta): ?><a href="<?= $ctaPrimaryUrl ?>" class="bs-cta-primary" data-design-target="home.banner.buttons"><?= $ctaPrimaryText ?></a><?php endif; ?>
             <?php if ($hasSecondaryCta): ?>
               <?php if ($ctaSecondaryType === 'url'): ?>
-                <a href="<?= $ctaSecondaryUrl ?>" class="bs-cta-wa"><?= $ctaSecondaryText ?></a>
+                <a href="<?= $ctaSecondaryUrl ?>" class="bs-cta-wa" data-design-target="home.banner.buttons"><?= $ctaSecondaryText ?></a>
               <?php else: ?>
-                <button class="bs-cta-wa" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')" type="button"><?= $ctaSecondaryText ?></button>
+                <button class="bs-cta-wa" data-design-target="home.banner.buttons" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')" type="button"><?= $ctaSecondaryText ?></button>
               <?php endif; ?>
             <?php endif; ?>
           </div>
@@ -143,17 +143,17 @@ foreach ($categories as $cat) {
 ?>
 
 <?php if (!empty($catSpot)): ?>
-<section class="shop-cat-section" aria-labelledby="shopCatTitle" data-reveal>
+<section class="shop-cat-section" data-design-target="home.categories.section" aria-labelledby="shopCatTitle" data-reveal>
   <div class="shop-cat-container">
     <div class="shop-cat-head">
-      <h2 class="shop-cat-title" id="shopCatTitle">Shop By <span>Category</span></h2>
+      <h2 class="shop-cat-title" id="shopCatTitle" data-design-target="home.categories.title">Shop By <span>Category</span></h2>
       <a href="/categories" class="shop-cat-all">View All Categories</a>
     </div>
 
     <div class="shop-cat-track" id="shopCatTrack" aria-label="Product categories" data-auto-slide="true">
       <?php foreach ($catSpot as $i => $c): ?>
         <article class="shop-cat-card">
-          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="shop-cat-link">
+          <a href="/category/<?= htmlspecialchars($c['slug']) ?>" class="shop-cat-link" data-design-target="home.category.card">
             <div class="shop-cat-img">
               <?php if (!empty($c['image'])): ?>
                 <img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['image_alt'] ?? $c['name']) ?>" loading="lazy">
@@ -163,7 +163,7 @@ foreach ($categories as $cat) {
             </div>
             <div class="shop-cat-body">
               <span class="shop-cat-icon" aria-hidden="true"><?= htmlspecialchars($c['icon']) ?></span>
-              <span class="shop-cat-name"><?= htmlspecialchars($c['name']) ?></span>
+              <span class="shop-cat-name" data-design-target="home.category.name"><?= htmlspecialchars($c['name']) ?></span>
             </div>
           </a>
         </article>
@@ -306,7 +306,7 @@ foreach ($categories as $cat) {
         $ctaUrl = htmlspecialchars($ctaUrlRaw, ENT_QUOTES, 'UTF-8');
       ?>
         <?php if ($dealType === 'promo'): ?>
-          <article class="deal-promo-card">
+          <article class="deal-promo-card" data-design-target="home.deal.card">
             <div class="deal-confetti" aria-hidden="true"></div>
             <div class="deal-promo-copy">
               <h3>
@@ -328,7 +328,7 @@ foreach ($categories as $cat) {
           </article>
         <?php else: ?>
           <article class="deal-card deal-<?= htmlspecialchars($theme, ENT_QUOTES, 'UTF-8') ?>">
-            <a href="<?= $ctaUrl ?>" class="deal-card-link">
+            <a href="<?= $ctaUrl ?>" class="deal-card-link" data-design-target="home.deal.card">
               <div class="deal-card-img">
                 <?php if ($imageRaw !== ''): ?>
                   <img src="<?= $image ?>" alt="<?= $imageAlt ?>" loading="lazy">
@@ -406,64 +406,43 @@ foreach ($categories as $cat) {
 
     <div class="customer-say-shell">
       <div class="customer-say-track" id="customerSayTrack" role="list" data-auto-slide="true">
-        <article class="customer-card" role="listitem">
-          <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
-          <p class="customer-text">Excellent quality printing and super fast service. Highly recommended!</p>
-          <div class="customer-stars" aria-label="5 out of 5 stars">
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-          </div>
-          <div class="customer-profile">
-            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&q=80&fit=crop&crop=faces" alt="Rakesh Mehta" loading="lazy">
-            <div>
-              <h3>– Rakesh Mehta</h3>
-              <span>Business Owner</span>
+        <?php if (!empty($homeReviews ?? [])): ?>
+          <?php foreach ($homeReviews as $review):
+            $productName = trim((string)($review['product_name'] ?? 'RCS Product')) ?: 'RCS Product';
+            $productUrl = !empty($review['product_slug']) ? '/product/' . rawurlencode((string)$review['product_slug']) : '/categories';
+          ?>
+          <article class="customer-card" role="listitem">
+            <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
+            <p class="customer-text"><?= htmlspecialchars($review['comment'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
+            <div class="customer-stars" aria-label="<?= (int)($review['rating'] ?? 0) ?> out of 5 stars">
+              <?php for ($i = 1; $i <= 5; $i++): ?>
+                <i class="fa-<?= $i <= (int)($review['rating'] ?? 0) ? 'solid' : 'regular' ?> fa-star" aria-hidden="true"></i>
+              <?php endfor; ?>
             </div>
-          </div>
-        </article>
-
-        <article class="customer-card" role="listitem">
-          <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
-          <p class="customer-text">Very professional design support and premium quality prints.</p>
-          <div class="customer-stars" aria-label="5 out of 5 stars">
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-          </div>
-          <div class="customer-profile">
-            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&q=80&fit=crop&crop=faces" alt="Khushbu Shah" loading="lazy">
-            <div>
-              <h3>– Khushbu Shah</h3>
-              <span>Marketing Head</span>
+            <div class="customer-profile">
+              <span class="customer-initials" aria-hidden="true"><?= htmlspecialchars($review['customer_initials'] ?? 'RC', ENT_QUOTES, 'UTF-8') ?></span>
+              <div>
+                <h3>– <?= htmlspecialchars($review['customer_name'] ?? 'RCS Customer', ENT_QUOTES, 'UTF-8') ?></h3>
+                <span><a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?></a></span>
+              </div>
             </div>
-          </div>
-        </article>
-
-        <article class="customer-card" role="listitem">
-          <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
-          <p class="customer-text">Best experience for bulk printing. Great price and on-time delivery.</p>
-          <div class="customer-stars" aria-label="5 out of 5 stars">
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-            <i class="fa-solid fa-star" aria-hidden="true"></i>
-          </div>
-          <div class="customer-profile">
-            <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=160&q=80&fit=crop&crop=faces" alt="Jigar Patel" loading="lazy">
-            <div>
-              <h3>– Jigar Patel</h3>
-              <span>Event Organizer</span>
+          </article>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <article class="customer-card customer-card-empty" role="listitem">
+            <i class="fa-solid fa-quote-left customer-quote" aria-hidden="true"></i>
+            <p class="customer-text">Verified customer reviews will appear here after delivered orders are reviewed and approved.</p>
+            <div class="customer-stars" aria-label="0 out of 5 stars">
+              <i class="fa-regular fa-star" aria-hidden="true"></i>
+              <i class="fa-regular fa-star" aria-hidden="true"></i>
+              <i class="fa-regular fa-star" aria-hidden="true"></i>
+              <i class="fa-regular fa-star" aria-hidden="true"></i>
+              <i class="fa-regular fa-star" aria-hidden="true"></i>
             </div>
-          </div>
-        </article>
+            <div class="customer-profile"><span class="customer-initials" aria-hidden="true">★</span><div><h3>No approved reviews yet</h3><span>Verified customers only</span></div></div>
+          </article>
+        <?php endif; ?>
       </div>
-
     </div>
 
     <div class="customer-dots" aria-label="Testimonials pagination">
@@ -559,7 +538,7 @@ foreach ($categories as $cat) {
         $badgeClass = $blogBadgeClass($blog['badge_theme'] ?? 'purple');
       ?>
       <article class="blog-card" role="listitem">
-        <a href="<?= htmlspecialchars($blogUrl, ENT_QUOTES, 'UTF-8') ?>" class="blog-card-link" aria-label="Read blog: <?= $blogTitle ?>">
+        <a href="<?= htmlspecialchars($blogUrl, ENT_QUOTES, 'UTF-8') ?>" class="blog-card-link" data-design-target="home.blog.card" aria-label="Read blog: <?= $blogTitle ?>">
           <div class="blog-image">
             <?php if ($blogImageRaw !== ''): ?>
               <img src="<?= $blogImage ?>" alt="<?= $blogAlt ?>" loading="lazy">
@@ -621,90 +600,7 @@ foreach ($categories as $cat) {
 
 
 <!-- FOOTER -->
-<footer class="footer" aria-label="Site footer">
-  <div class="footer-container">
-    <div class="footer-main">
-      <div class="footer-brand-col">
-        <a href="/" class="footer-logo" aria-label="RCS Print home">
-          <span class="footer-logo-main">RCS</span>
-          <span class="footer-logo-sub">PRINT</span>
-        </a>
-        <p class="footer-desc">Your one-stop solution for all your printing needs. Quality prints that represent your brand perfectly.</p>
-        <div class="footer-social" aria-label="Social links">
-          <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
-          <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
-          <a href="https://wa.me/<?= $bizWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
-          <a href="/#quick-help-sec" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
-        </div>
-      </div>
-
-      <nav class="footer-col" aria-label="Quick links">
-        <h3>Quick Links</h3>
-        <a href="/">Home</a>
-        <a href="/#why-sec">About Us</a>
-        <a href="/categories">Products</a>
-        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
-        <a href="/#quick-help-sec">Contact Us</a>
-      </nav>
-
-      <nav class="footer-col" aria-label="Products">
-        <h3>Products</h3>
-        <a href="/categories">Business Cards</a>
-        <a href="/categories">Flyers</a>
-        <a href="/categories">Brochures</a>
-        <a href="/categories">Posters</a>
-        <a href="/categories">Diaries</a>
-        <a href="/categories">Calendars</a>
-        <a href="/categories">Stationery &amp; More</a>
-      </nav>
-
-      <nav class="footer-col" aria-label="Customer service">
-        <h3>Customer Service</h3>
-        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>">My Account</a>
-        <a href="/my-orders">Track Order</a>
-        <a href="/categories">Shipping Policy</a>
-        <a href="/categories">Refund &amp; Return</a>
-        <a href="/terms-and-conditions">Terms &amp; Conditions</a>
-        <a href="/terms-and-conditions">Privacy Policy</a>
-      </nav>
-
-      <div class="footer-col footer-contact-col">
-        <h3>Contact Us</h3>
-        <div class="footer-contact-item">
-          <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-          <span><?= $bizAddr ?></span>
-        </div>
-        <a class="footer-contact-item" href="tel:<?= preg_replace('/\D+/', '', $bizPhone) ?>">
-          <i class="fa-solid fa-phone" aria-hidden="true"></i>
-          <span><?= $bizPhone ?></span>
-        </a>
-        <a class="footer-contact-item" href="mailto:<?= $bizEmail ?>">
-          <i class="fa-regular fa-envelope" aria-hidden="true"></i>
-          <span><?= $bizEmail ?></span>
-        </a>
-        <div class="footer-contact-item">
-          <i class="fa-regular fa-clock" aria-hidden="true"></i>
-          <span>Mon - Sat: 10:00 AM - 7:00 PM</span>
-        </div>
-      </div>
-
-      <div class="footer-col footer-newsletter-col">
-        <h3>Newsletter</h3>
-        <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
-        <form class="footer-newsletter" action="/categories" method="get">
-          <label class="sr-only" for="footerEmail">Enter your email</label>
-          <input id="footerEmail" name="email" type="email" placeholder="Enter your email" autocomplete="email">
-          <button type="submit">Subscribe</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="footer-bottom">
-      <div class="footer-copy">© <?= date('Y') ?> RCS PRINT. All Rights Reserved.</div>
-      <div class="footer-developed">Developed By Prakash Karena</div>
-    </div>
-  </div>
-</footer>
+<?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
 
 <script>
 (() => {

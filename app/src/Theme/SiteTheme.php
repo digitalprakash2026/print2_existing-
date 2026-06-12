@@ -40,9 +40,15 @@ class SiteTheme
         'premium' => '0 16px 36px rgba(37,99,235,.13)',
     ];
 
+    private static array $lastElementSaveMeta = [
+        'storage' => 'not_saved',
+        'target_count' => 0,
+        'css_length' => 0,
+    ];
+
     private const STYLE_FIELDS = [
         'fontFamily' => ['type' => 'font', 'css' => 'font-family', 'label' => 'Font family'],
-        'fontSize' => ['type' => 'px', 'css' => 'font-size', 'label' => 'Font size', 'min' => 10, 'max' => 90],
+        'fontSize' => ['type' => 'px', 'css' => 'font-size', 'label' => 'Font size', 'min' => 10, 'max' => 90, 'presets' => [12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64]],
         'fontWeight' => ['type' => 'weight', 'css' => 'font-weight', 'label' => 'Font weight'],
         'lineHeight' => ['type' => 'number', 'css' => 'line-height', 'label' => 'Line height', 'min' => 1, 'max' => 2, 'step' => 0.05],
         'color' => ['type' => 'color', 'css' => 'color', 'label' => 'Text color'],
@@ -58,26 +64,27 @@ class SiteTheme
     ];
 
     private const ELEMENTS = [
-        'header.topbar' => ['label' => 'Header Topbar', 'selector' => '.topbar', 'controls' => ['backgroundColor', 'color', 'fontSize', 'paddingTop', 'paddingBottom']],
-        'header.navbar' => ['label' => 'Header Navbar', 'selector' => '.navbar', 'controls' => ['backgroundColor', 'paddingTop', 'paddingBottom', 'boxShadow']],
-        'header.logo' => ['label' => 'Header Logo', 'selector' => '.brand-img', 'controls' => ['borderRadius']],
-        'header.nav_links' => ['label' => 'Navigation Links', 'selector' => '.nav-link', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color']],
-        'home.banner' => ['label' => 'Home Banner Slider', 'selector' => '.banner-slider', 'controls' => ['borderRadius', 'boxShadow', 'marginBottom']],
-        'home.banner.title' => ['label' => 'Banner Title', 'selector' => '.bs-title', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
-        'home.banner.subtitle' => ['label' => 'Banner Subtitle', 'selector' => '.bs-sub', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
-        'site.buttons' => ['label' => 'All Buttons', 'selector' => '.btn,.bs-cta-primary,.bs-cta-wa,.deal-promo-btn,.deal-order-btn,.all-cat-apply-btn', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color', 'backgroundColor', 'borderRadius', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight']],
-        'home.categories.section' => ['label' => 'Category Section', 'selector' => '.shop-cat-section', 'controls' => ['backgroundColor', 'paddingTop', 'paddingBottom']],
-        'home.categories.title' => ['label' => 'Category Section Title', 'selector' => '.shop-cat-title', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
-        'home.category.card' => ['label' => 'Category Cards', 'selector' => '.shop-cat-link,.all-cat-card', 'controls' => ['backgroundColor', 'borderColor', 'borderRadius', 'boxShadow', 'paddingTop', 'paddingBottom']],
-        'home.category.name' => ['label' => 'Category Card Text', 'selector' => '.shop-cat-name,.all-cat-body h3', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color']],
-        'product.card' => ['label' => 'Product Cards', 'selector' => '.pc,.cat-product-card', 'controls' => ['backgroundColor', 'borderColor', 'borderRadius', 'boxShadow']],
-        'product.card.title' => ['label' => 'Product Card Title', 'selector' => '.pc-name,.cat-product-card h3', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
-        'product.card.description' => ['label' => 'Product Card Description', 'selector' => '.pc-desc,.cat-product-card p', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
-        'product.card.price' => ['label' => 'Product Card Price', 'selector' => '.pc-price,.cat-price', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color']],
-        'home.deal.card' => ['label' => 'Deal Cards', 'selector' => '.deal-card-link,.deal-promo-card', 'controls' => ['backgroundColor', 'borderRadius', 'boxShadow']],
-        'home.blog.card' => ['label' => 'Blog Cards', 'selector' => '.blog-card-link', 'controls' => ['backgroundColor', 'borderRadius', 'boxShadow']],
-        'footer.section' => ['label' => 'Footer Section', 'selector' => '.footer', 'controls' => ['backgroundColor', 'color', 'paddingTop', 'paddingBottom']],
-        'footer.links' => ['label' => 'Footer Links/Text', 'selector' => '.footer-col a,.footer-col p,.footer-contact-item,.footer-desc', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color']],
+        'header.topbar' => ['label' => 'Header Topbar', 'selector' => '[data-design-target="header.topbar"],.topbar', 'controls' => ['backgroundColor', 'color', 'fontSize', 'paddingTop', 'paddingBottom']],
+        'header.navbar' => ['label' => 'Header Navbar', 'selector' => '[data-design-target="header.navbar"],.navbar', 'controls' => ['backgroundColor', 'paddingTop', 'paddingBottom', 'boxShadow']],
+        'header.logo' => ['label' => 'Header Logo', 'selector' => '[data-design-target="header.logo"],.brand-img', 'controls' => ['borderRadius']],
+        'header.nav_links' => ['label' => 'Navigation Links', 'selector' => '[data-design-target="header.nav_links"],.nav-link', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color']],
+        'home.banner' => ['label' => 'Home Banner Slider', 'selector' => '[data-design-target="home.banner"],.banner-slider', 'controls' => ['borderRadius', 'boxShadow', 'marginBottom']],
+        'home.banner.title' => ['label' => 'Banner Title', 'selector' => '[data-design-target="home.banner.title"],.bs-title', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'home.banner.subtitle' => ['label' => 'Banner Subtitle', 'selector' => '[data-design-target="home.banner.subtitle"],.bs-sub', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'home.banner.buttons' => ['label' => 'Banner Buttons', 'selector' => '[data-design-target="home.banner.buttons"],.bs-cta-primary,.bs-cta-wa', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color', 'backgroundColor', 'borderRadius', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight']],
+        'site.buttons' => ['label' => 'All Buttons (Global Group)', 'selector' => '.btn,.deal-promo-btn,.deal-order-btn,.all-cat-apply-btn', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color', 'backgroundColor', 'borderRadius', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight']],
+        'home.categories.section' => ['label' => 'Category Section', 'selector' => '[data-design-target="home.categories.section"],.shop-cat-section', 'controls' => ['backgroundColor', 'paddingTop', 'paddingBottom']],
+        'home.categories.title' => ['label' => 'Category Section Title', 'selector' => '[data-design-target="home.categories.title"],.shop-cat-title', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'home.category.card' => ['label' => 'Category Cards', 'selector' => '[data-design-target="home.category.card"],.shop-cat-link,.all-cat-card', 'controls' => ['backgroundColor', 'borderColor', 'borderRadius', 'boxShadow', 'paddingTop', 'paddingBottom']],
+        'home.category.name' => ['label' => 'Category Card Text', 'selector' => '[data-design-target="home.category.name"],.shop-cat-name,.all-cat-body h3', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color']],
+        'product.card' => ['label' => 'Product Cards', 'selector' => '[data-design-target="product.card"],.pc,.cat-product-card', 'controls' => ['backgroundColor', 'borderColor', 'borderRadius', 'boxShadow']],
+        'product.card.title' => ['label' => 'Product Card Title', 'selector' => '[data-design-target="product.card.title"],.pc-name,.cat-product-card h3', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'product.card.description' => ['label' => 'Product Card Description', 'selector' => '[data-design-target="product.card.description"],.pc-desc,.cat-product-card p', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'marginBottom']],
+        'product.card.price' => ['label' => 'Product Card Price', 'selector' => '[data-design-target="product.card.price"],.pc-price,.cat-price', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'color']],
+        'home.deal.card' => ['label' => 'Deal Cards', 'selector' => '[data-design-target="home.deal.card"],.deal-card-link,.deal-promo-card', 'controls' => ['backgroundColor', 'borderRadius', 'boxShadow']],
+        'home.blog.card' => ['label' => 'Blog Cards', 'selector' => '[data-design-target="home.blog.card"],.blog-card-link', 'controls' => ['backgroundColor', 'borderRadius', 'boxShadow']],
+        'footer.section' => ['label' => 'Footer Section', 'selector' => '[data-design-target="footer.section"],.footer', 'controls' => ['backgroundColor', 'color', 'paddingTop', 'paddingBottom']],
+        'footer.links' => ['label' => 'Footer Links/Text', 'selector' => '[data-design-target="footer.links"],.footer-col a,.footer-col p,.footer-contact-item,.footer-desc', 'controls' => ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color']],
     ];
 
     public static function defaults(): array
@@ -182,6 +189,12 @@ class SiteTheme
     {
         $clean = self::sanitizeElementStyles($styles);
         $encodedAll = json_encode($clean, JSON_UNESCAPED_SLASHES) ?: '{}';
+        $cssLength = strlen(self::elementCss($clean));
+        self::$lastElementSaveMeta = [
+            'storage' => 'theme_element_styles',
+            'target_count' => count($clean),
+            'css_length' => $cssLength,
+        ];
 
         try {
             self::ensureElementStylesTable();
@@ -202,6 +215,8 @@ class SiteTheme
                 }
             } catch (\Throwable) {}
             \Database::setSetting(self::ELEMENT_STYLES_KEY, $encodedAll);
+            self::$lastElementSaveMeta['storage'] = 'settings_fallback';
+            self::$lastElementSaveMeta['error'] = $e->getMessage();
             return $clean;
         }
 
@@ -211,6 +226,11 @@ class SiteTheme
             // The dedicated table is authoritative; this legacy backup is optional.
         }
         return $clean;
+    }
+
+    public static function lastElementSaveMeta(): array
+    {
+        return self::$lastElementSaveMeta;
     }
 
     public static function resetElementStyles(): array
@@ -351,6 +371,7 @@ class SiteTheme
                     'min' => $field['min'] ?? null,
                     'max' => $field['max'] ?? null,
                     'step' => $field['step'] ?? null,
+                    'presets' => $field['presets'] ?? null,
                 ];
             }
             $schema[$target] = [
@@ -423,7 +444,7 @@ class SiteTheme
                 }
             }
             if ($rules !== '') {
-                $css .= self::ELEMENTS[$target]['selector'] . '{' . $rules . '}';
+                $css .= '/* Design Studio: ' . $target . ' */' . self::ELEMENTS[$target]['selector'] . '{' . $rules . '}';
             }
         }
         return $css;
@@ -454,8 +475,8 @@ class SiteTheme
 
         return match ($field['type']) {
             'color' => self::sanitizeColor($value, ''),
-            'font' => in_array($value, self::FONTS, true) || in_array($value, self::HEADING_FONTS, true) ? $value : '',
-            'weight' => in_array($value, self::FONT_WEIGHTS, true) ? $value : '',
+            'font' => self::sanitizeFontName($value),
+            'weight' => self::sanitizeFontWeight($value),
             'px' => self::sanitizePx($value, (int)$field['min'], (int)$field['max'], ''),
             'number' => self::sanitizeNumber($value, (float)$field['min'], (float)$field['max']),
             'shadow' => array_key_exists($value, self::SHADOWS) ? $value : '',
@@ -476,10 +497,43 @@ class SiteTheme
 
     private static function sanitizeColor(string $value, string $default): string
     {
+        $value = trim($value);
         if (preg_match('/^#[0-9a-fA-F]{6}$/', $value)) {
             return strtoupper($value);
         }
+        if (preg_match('/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|0?\.\d+|1(?:\.0)?))?\s*\)$/i', $value, $m)) {
+            if (isset($m[4]) && (float)$m[4] === 0.0) return $default;
+            $r = max(0, min(255, (int)$m[1]));
+            $g = max(0, min(255, (int)$m[2]));
+            $b = max(0, min(255, (int)$m[3]));
+            return sprintf('#%02X%02X%02X', $r, $g, $b);
+        }
         return $default;
+    }
+
+    private static function sanitizeFontName(string $value): string
+    {
+        $value = trim($value, " \t\n\r\0\x0B\"'");
+        $first = trim(explode(',', $value)[0] ?? '', " \t\n\r\0\x0B\"'");
+        foreach (array_merge(self::FONTS, self::HEADING_FONTS) as $font) {
+            if (strcasecmp($font, $value) === 0 || strcasecmp($font, $first) === 0) {
+                return $font;
+            }
+        }
+        return '';
+    }
+
+    private static function sanitizeFontWeight(string $value): string
+    {
+        $value = strtolower(trim($value));
+        if ($value === 'normal') return '400';
+        if ($value === 'bold') return '700';
+        if (preg_match('/^\d+$/', $value)) {
+            $num = (int)$value;
+            $rounded = (string)(max(100, min(900, (int)round($num / 100) * 100)));
+            return in_array($rounded, self::FONT_WEIGHTS, true) ? $rounded : '';
+        }
+        return '';
     }
 
     private static function sanitizePx(string $value, int $min, int $max, string $default): string

@@ -31,7 +31,7 @@ class ProductCatalog
     {
         try {
             return \Database::rows(
-                "SELECT p.*, c.name as category_name,
+                "SELECT p.*, c.name as category_name, c.slug as category_slug,
                         " . self::primaryImageExpr() . " as primary_image,
                         " . self::minPriceExpr() . " as min_price
                  FROM products p
@@ -41,7 +41,7 @@ class ProductCatalog
             );
         } catch (\Throwable) {
             return \Database::rows(
-                "SELECT p.*, c.name as category_name,
+                "SELECT p.*, c.name as category_name, c.slug as category_slug,
                         (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1) as primary_image,
                         " . self::legacyMinPriceExpr() . " as min_price
                  FROM products p
@@ -95,15 +95,76 @@ class ProductCatalog
         );
     }
 
-    public static function relatedFromFixedCategories(int $productId, int $limit = 4): array
+    public static function relatedCategories(int $currentCategoryId = 0, int $limit = 5): array
     {
-        $preferred = ['brochure', 'business-card', 'calendar', 'flyer'];
+        $preferred = [
+            ['business-cards', 'business-card', 'visiting-cards'],
+            ['flyers', 'flyer'],
+            ['brochures', 'brochure'],
+            ['posters', 'poster'],
+            ['calendars', 'calendar'],
+        ];
+        $allCategories = array_values(array_filter(self::categories(), static function (array $category): bool {
+            if (array_key_exists('is_active', $category) && (int)$category['is_active'] !== 1) {
+                return false;
+            }
+            return (int)($category['product_count'] ?? 0) > 0;
+        }));
+        $categories = array_values(array_filter($allCategories, static function (array $category) use ($currentCategoryId): bool {
+            return (int)($category['id'] ?? 0) !== $currentCategoryId;
+        }));
+
+        $picked = [];
+        $usedIds = [];
+        foreach ($preferred as $slugGroup) {
+            if (count($picked) >= $limit) break;
+            foreach ($categories as $category) {
+                $categoryId = (int)($category['id'] ?? 0);
+                if ($categoryId <= 0 || isset($usedIds[$categoryId])) continue;
+                if (in_array((string)($category['slug'] ?? ''), $slugGroup, true)) {
+                    $picked[] = $category;
+                    $usedIds[$categoryId] = true;
+                    break;
+                }
+            }
+        }
+
+        foreach ($categories as $category) {
+            if (count($picked) >= $limit) break;
+            $categoryId = (int)($category['id'] ?? 0);
+            if ($categoryId <= 0 || isset($usedIds[$categoryId])) continue;
+            $picked[] = $category;
+            $usedIds[$categoryId] = true;
+        }
+
+        if (count($picked) < $limit) {
+            foreach ($allCategories as $category) {
+                if (count($picked) >= $limit) break;
+                $categoryId = (int)($category['id'] ?? 0);
+                if ($categoryId <= 0 || isset($usedIds[$categoryId])) continue;
+                $picked[] = $category;
+                $usedIds[$categoryId] = true;
+            }
+        }
+
+        return array_slice($picked, 0, $limit);
+    }
+
+    public static function relatedFromFixedCategories(int $productId, int $limit = 5): array
+    {
+        $preferred = [
+            ['business-cards', 'business-card', 'visiting-cards'],
+            ['flyers', 'flyer'],
+            ['brochures', 'brochure'],
+            ['posters', 'poster'],
+            ['calendars', 'calendar'],
+        ];
         $picked = [];
         $usedCategoryIds = [];
 
-        foreach ($preferred as $slug) {
+        foreach ($preferred as $slugGroup) {
             if (count($picked) >= $limit) break;
-            $row = self::fetchOneFromCategorySlug($productId, $slug);
+            $row = self::fetchOneFromCategorySlugs($productId, $slugGroup);
             if (!$row) continue;
             $picked[] = $row;
             $usedCategoryIds[] = (int)($row['category_id'] ?? 0);
@@ -120,11 +181,18 @@ class ProductCatalog
         return array_slice($picked, 0, $limit);
     }
 
-    private static function fetchOneFromCategorySlug(int $productId, string $slug): ?array
+    private static function fetchOneFromCategorySlugs(int $productId, array $slugs): ?array
     {
+        $slugs = array_values(array_filter(array_map('strval', $slugs)));
+        if (empty($slugs)) {
+            return null;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($slugs), '?'));
+        $params = array_merge([$productId], $slugs);
         $rows = self::fetchProductRows(
-            'WHERE p.is_active = 1 AND p.id != ? AND c.slug = ? ORDER BY p.sort_order ASC, p.id DESC LIMIT 1',
-            [$productId, $slug]
+            "WHERE p.is_active = 1 AND p.id != ? AND c.slug IN ($placeholders) ORDER BY p.sort_order ASC, p.id DESC LIMIT 1",
+            $params
         );
         return $rows[0] ?? null;
     }

@@ -55,20 +55,47 @@ $editId = (int)($_GET['id'] ?? 0);
 <script>
 let allCats = [];
 let currentImages = [];
+let pendingImages = [];
 let autoCodePreview = '';
 
-function renderPreview(images) {
+function renderPreview(images = currentImages, newImages = pendingImages) {
   const box = document.getElementById('imagePreview');
   box.innerHTML = '';
-  if (!images.length) return;
-  images.forEach((img, i) => {
-    const path = typeof img === 'string' ? img : (img.image_path || img.url || '');
-    if (!path) return;
+  const allImages = [
+    ...images.map((img, i) => ({...normalizeImage(img), index: i, isNew: false})),
+    ...newImages.map((img, i) => ({...normalizeImage(img), index: i, isNew: true}))
+  ].filter(img => img.path);
+
+  if (!allImages.length) {
+    box.innerHTML = '<div style="grid-column:1/-1;padding:14px;border:1px dashed var(--border);border-radius:10px;color:var(--text2);font-size:12px;background:#fff">No product images yet. Upload images and save the product.</div>';
+    return;
+  }
+
+  allImages.forEach((img) => {
     const div = document.createElement('div');
-    div.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:8px;background:#fff;position:relative';
-    div.innerHTML = `<img src="${escAttr(path)}" style="width:100%;height:88px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--text2);margin-top:6px">${i===0?'Primary':'Gallery'} image</div>`;
+    div.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:8px;background:#fff;position:relative;display:grid;gap:7px';
+    const badge = img.isNew ? 'New image' : (img.isPrimary ? 'Primary image' : 'Gallery image');
+    const deleteButton = (!img.isNew && img.id > 0)
+      ? `<button type="button" class="btn btn-red btn-xs" onclick="deleteProductImage(${img.id})" style="width:100%;justify-content:center">🗑️ Delete image</button>`
+      : (img.isNew
+        ? '<div style="font-size:11px;color:var(--green);font-weight:800">Will upload on save</div>'
+        : '<button type="button" class="btn btn-red btn-xs" onclick="deleteLegacyProductImage()" style="width:100%;justify-content:center">🗑️ Clear main image</button>');
+    div.innerHTML = `
+      <img src="${escAttr(img.path)}" style="width:100%;height:88px;object-fit:cover;border-radius:8px;border:1px solid var(--border)" onerror="this.style.display='none'">
+      <div style="font-size:11px;color:${img.isPrimary ? 'var(--blue)' : 'var(--text2)'};font-weight:800">${badge}</div>
+      ${deleteButton}
+    `;
     box.appendChild(div);
   });
+}
+
+function normalizeImage(img) {
+  if (typeof img === 'string') return {id: 0, path: img, isPrimary: false};
+  return {
+    id: parseInt(img?.id || '0', 10),
+    path: img?.image_path || img?.url || '',
+    isPrimary: Number(img?.is_primary || 0) === 1,
+  };
 }
 
 function collectFixedTiers() {
@@ -93,8 +120,9 @@ async function boot() {
   document.getElementById('ep-images').addEventListener('change', e => {
     const files = [...(e.target.files || [])];
     if (!files.length) return;
-    currentImages = files.map(f => ({image_path: URL.createObjectURL(f)}));
-    renderPreview(currentImages);
+    pendingImages.forEach(img => { if (img.image_path?.startsWith('blob:')) URL.revokeObjectURL(img.image_path); });
+    pendingImages = files.map(f => ({image_path: URL.createObjectURL(f)}));
+    renderPreview();
   });
 
   const id = parseInt(document.getElementById('ep-id').value || '0', 10);
@@ -111,8 +139,9 @@ async function boot() {
   document.getElementById('ep-desc').value = p.description || '';
   document.getElementById('ep-specs').value = (p.specs||[]).map(s=>`${s.label}: ${s.value||''}`).join('\n');
 
-  currentImages = p.images || (p.image_path ? [{image_path:p.image_path}] : []);
-  renderPreview(currentImages);
+  currentImages = p.images || (p.image_path ? [{image_path:p.image_path, is_primary: 1}] : []);
+  pendingImages = [];
+  renderPreview();
 
   const tiersRes = await fetch(`/admin/api/products/${id}/tiers`).then(r=>r.json());
   const map = {};
@@ -162,6 +191,53 @@ function updateCodeHelp() {
   }
   help.textContent = 'Auto code unavailable (check category prefix / DB migration).';
   help.style.color = 'var(--red)';
+}
+
+async function deleteProductImage(imageId) {
+  const id = parseInt(document.getElementById('ep-id').value || '0', 10);
+  imageId = parseInt(imageId || '0', 10);
+  if (!id || !imageId) { toast('Save the product before deleting images', 'error'); return; }
+  const img = currentImages.find(item => Number(item.id || 0) === imageId);
+  const label = img && Number(img.is_primary || 0) === 1 ? 'primary product image' : 'product image';
+  if (!confirm(`Delete this ${label}? This cannot be undone.`)) return;
+
+  try {
+    const res = await fetch(`/admin/api/products/${id}/images/${imageId}`, {
+      method: 'DELETE',
+      headers: {'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'},
+      credentials: 'same-origin'
+    }).then(r => r.json());
+
+    if (!res.ok) { toast(res.msg || 'Could not delete image', 'error'); return; }
+    currentImages = (res.images || []).length ? res.images : currentImages.filter(item => Number(item.id || 0) !== imageId);
+    renderPreview();
+    toast('Product image deleted', 'success');
+  } catch (err) {
+    console.error(err);
+    toast('Unexpected error while deleting image', 'error');
+  }
+}
+
+async function deleteLegacyProductImage() {
+  const id = parseInt(document.getElementById('ep-id').value || '0', 10);
+  if (!id) { toast('Save the product before deleting images', 'error'); return; }
+  if (!confirm('Clear this legacy main product image? This cannot be undone.')) return;
+
+  try {
+    const res = await fetch(`/admin/api/products/${id}/image-path`, {
+      method: 'DELETE',
+      headers: {'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'},
+      credentials: 'same-origin'
+    }).then(r => r.json());
+
+    if (!res.ok) { toast(res.msg || 'Could not clear main image', 'error'); return; }
+    currentImages = res.images || [];
+    renderPreview();
+    toast('Main product image cleared', 'success');
+  } catch (err) {
+    console.error(err);
+    toast('Unexpected error while clearing image', 'error');
+  }
 }
 
 async function saveProd() {
