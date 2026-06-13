@@ -15,6 +15,34 @@ $sfPhoneHref = preg_replace('/\D+/', '', $sfPhoneRaw);
 $sfWa = htmlspecialchars($sfSettings['biz_whatsapp'] ?? '919876543210', ENT_QUOTES, 'UTF-8');
 $sfEmail = htmlspecialchars($sfSettings['biz_email'] ?? 'hello@rcsgraphic.in', ENT_QUOTES, 'UTF-8');
 $sfAddr = htmlspecialchars($sfSettings['biz_address'] ?? 'Rajkot, Gujarat', ENT_QUOTES, 'UTF-8');
+
+$sfFooterCategories = [];
+try {
+    $sfFooterCategories = \Catalog\ProductCatalog::categories();
+} catch (\Throwable) {
+    $sfFooterCategories = [];
+}
+$sfNormalizeCategory = static fn(string $value): string => preg_replace('/[^a-z0-9]+/', '', strtolower($value)) ?? '';
+$sfCategoryHref = static function (string $label, array $aliases = [], string $fallbackSlug = '') use ($sfFooterCategories, $sfNormalizeCategory): string {
+    $terms = array_filter(array_map('strval', array_merge([$label], $aliases)));
+    $normalizedTerms = array_map($sfNormalizeCategory, $terms);
+
+    foreach ($sfFooterCategories as $category) {
+        $name = (string)($category['name'] ?? '');
+        $slug = (string)($category['slug'] ?? '');
+        $normalizedName = $sfNormalizeCategory($name);
+        $normalizedSlug = $sfNormalizeCategory($slug);
+        foreach ($normalizedTerms as $term) {
+            if ($term === '') continue;
+            if ($term === $normalizedName || $term === $normalizedSlug || str_contains($normalizedName, $term) || str_contains($term, $normalizedName)) {
+                return '/category/' . rawurlencode($slug);
+            }
+        }
+    }
+
+    $fallbackSlug = trim($fallbackSlug) !== '' ? $fallbackSlug : strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $label) ?? '', '-'));
+    return $fallbackSlug !== '' ? '/category/' . rawurlencode($fallbackSlug) : '/categories';
+};
 ?>
 <footer class="footer" aria-label="Site footer" data-design-target="footer.section">
   <div class="footer-container">
@@ -45,13 +73,13 @@ $sfAddr = htmlspecialchars($sfSettings['biz_address'] ?? 'Rajkot, Gujarat', ENT_
 
       <nav class="footer-col" aria-label="Products">
         <h3>Products</h3>
-        <a href="/categories">Business Cards</a>
-        <a href="/categories">Flyers</a>
-        <a href="/categories">Brochures</a>
-        <a href="/categories">Posters</a>
-        <a href="/categories">Diaries</a>
-        <a href="/categories">Calendars</a>
-        <a href="/categories">Stationery &amp; More</a>
+        <a href="<?= $sfCategoryHref('Business Cards', ['Visiting Cards'], 'business-cards') ?>">Business Cards</a>
+        <a href="<?= $sfCategoryHref('Flyers', [], 'flyers') ?>">Flyers</a>
+        <a href="<?= $sfCategoryHref('Brochures', ['Brochure'], 'brochures') ?>">Brochures</a>
+        <a href="<?= $sfCategoryHref('Posters', [], 'posters') ?>">Posters</a>
+        <a href="<?= $sfCategoryHref('Diaries', ['Diary'], 'diaries') ?>">Diaries</a>
+        <a href="<?= $sfCategoryHref('Calendars', ['Calendar'], 'calendars') ?>">Calendars</a>
+        <a href="<?= $sfCategoryHref('Stationery & More', ['Stationery'], 'stationery') ?>">Stationery &amp; More</a>
       </nav>
 
       <nav class="footer-col" aria-label="Customer service">
