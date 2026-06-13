@@ -11,6 +11,7 @@ class ProductCatalog
 {
     private static ?bool $hasProductCodeColumn = null;
     private static ?bool $hasCategoryCodePrefixColumn = null;
+    private static ?bool $hasOriginalPriceColumn = null;
     private static bool $filterSchemaReady = false;
 
     private static function minPriceExpr(): string
@@ -548,7 +549,28 @@ class ProductCatalog
 
     private static function updateProduct(int $editId, array $data, string $slug, ?string $productCode): void
     {
+        $originalPrice = self::normalizeOriginalPrice($data['original_price'] ?? null);
         if (self::productCodeColumnReady()) {
+            if (self::originalPriceColumnReady()) {
+                try {
+                    \Database::query(
+                        "UPDATE products SET name=?, slug=?, category_id=?, product_code=?, description=?,
+                            meta_title=?, design_fee=?, original_price=?, image_path=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
+                        [
+                            $data['name'], $slug, $data['category_id'], $productCode,
+                            $data['description'] ?? '',
+                            $data['meta_title'] ?? $data['name'],
+                            (float)($data['design_fee'] ?? 0),
+                            $originalPrice,
+                            $data['image_path'] ?? null,
+                            $data['is_active'] ?? 1,
+                            $data['sort_order'] ?? 0,
+                            $editId,
+                        ]
+                    );
+                    return;
+                } catch (\Throwable) {}
+            }
             try {
                 \Database::query(
                     "UPDATE products SET name=?, slug=?, category_id=?, product_code=?, description=?,
@@ -558,6 +580,27 @@ class ProductCatalog
                         $data['description'] ?? '',
                         $data['meta_title'] ?? $data['name'],
                         (float)($data['design_fee'] ?? 0),
+                        $data['image_path'] ?? null,
+                        $data['is_active'] ?? 1,
+                        $data['sort_order'] ?? 0,
+                        $editId,
+                    ]
+                );
+                return;
+            } catch (\Throwable) {}
+        }
+
+        if (self::originalPriceColumnReady()) {
+            try {
+                \Database::query(
+                    "UPDATE products SET name=?, slug=?, category_id=?, description=?,
+                        meta_title=?, design_fee=?, original_price=?, image_path=?, is_active=?, sort_order=?, updated_at=NOW() WHERE id=?",
+                    [
+                        $data['name'], $slug, $data['category_id'],
+                        $data['description'] ?? '',
+                        $data['meta_title'] ?? $data['name'],
+                        (float)($data['design_fee'] ?? 0),
+                        $originalPrice,
                         $data['image_path'] ?? null,
                         $data['is_active'] ?? 1,
                         $data['sort_order'] ?? 0,
@@ -602,7 +645,26 @@ class ProductCatalog
 
     private static function insertProduct(array $data, string $slug, ?string $productCode): int
     {
+        $originalPrice = self::normalizeOriginalPrice($data['original_price'] ?? null);
         if (self::productCodeColumnReady()) {
+            if (self::originalPriceColumnReady()) {
+                try {
+                    return (int)\Database::insert(
+                        "INSERT INTO products (name, slug, category_id, product_code, description, meta_title, design_fee, original_price, image_path, is_active, sort_order, created_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                        [
+                            $data['name'], $slug, $data['category_id'], $productCode,
+                            $data['description'] ?? '',
+                            $data['meta_title'] ?? $data['name'],
+                            (float)($data['design_fee'] ?? 0),
+                            $originalPrice,
+                            $data['image_path'] ?? null,
+                            $data['is_active'] ?? 1,
+                            $data['sort_order'] ?? 0,
+                        ]
+                    );
+                } catch (\Throwable) {}
+            }
             try {
                 return (int)\Database::insert(
                     "INSERT INTO products (name, slug, category_id, product_code, description, meta_title, design_fee, image_path, is_active, sort_order, created_at)
@@ -612,6 +674,25 @@ class ProductCatalog
                         $data['description'] ?? '',
                         $data['meta_title'] ?? $data['name'],
                         (float)($data['design_fee'] ?? 0),
+                        $data['image_path'] ?? null,
+                        $data['is_active'] ?? 1,
+                        $data['sort_order'] ?? 0,
+                    ]
+                );
+            } catch (\Throwable) {}
+        }
+
+        if (self::originalPriceColumnReady()) {
+            try {
+                return (int)\Database::insert(
+                    "INSERT INTO products (name, slug, category_id, description, meta_title, design_fee, original_price, image_path, is_active, sort_order, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [
+                        $data['name'], $slug, $data['category_id'],
+                        $data['description'] ?? '',
+                        $data['meta_title'] ?? $data['name'],
+                        (float)($data['design_fee'] ?? 0),
+                        $originalPrice,
                         $data['image_path'] ?? null,
                         $data['is_active'] ?? 1,
                         $data['sort_order'] ?? 0,
@@ -736,6 +817,28 @@ class ProductCatalog
             self::$hasProductCodeColumn = false;
         }
         return self::$hasProductCodeColumn;
+    }
+
+    private static function originalPriceColumnReady(): bool
+    {
+        if (self::$hasOriginalPriceColumn !== null) return self::$hasOriginalPriceColumn;
+        try {
+            $row = \Database::row(
+                "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'products' AND COLUMN_NAME = 'original_price'",
+                [DB_NAME]
+            );
+            self::$hasOriginalPriceColumn = (int)($row['c'] ?? 0) === 1;
+        } catch (\Throwable) {
+            self::$hasOriginalPriceColumn = false;
+        }
+        return self::$hasOriginalPriceColumn;
+    }
+
+    private static function normalizeOriginalPrice(mixed $value): ?float
+    {
+        if ($value === null || $value === '') return null;
+        $price = (float)$value;
+        return $price > 0 ? $price : null;
     }
 
     private static function categoryCodePrefixColumnReady(): bool

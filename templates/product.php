@@ -43,7 +43,7 @@ if ($startingPrice <= 0 && $qualities) {
         }
     }
 }
-$comparePrice = $startingPrice > 0 ? ceil($startingPrice * 1.5) : 0;
+$comparePrice = (float)($product['original_price'] ?? 0);
 $discountPct  = ($startingPrice > 0 && $comparePrice > $startingPrice)
     ? max(1, (int)round((($comparePrice - $startingPrice) / $comparePrice) * 100))
     : 0;
@@ -151,8 +151,6 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
           <strong>New</strong>
           <span>(No reviews yet)</span>
         <?php endif; ?>
-        <span class="pd-viewing-dot">•</span>
-        <span>23 people are viewing this product</span>
       </div>
 
 
