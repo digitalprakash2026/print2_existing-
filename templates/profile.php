@@ -11,6 +11,7 @@ $orders = is_array($orders ?? null) ? $orders : [];
 $reviewableItems = is_array($reviewableItems ?? null) ? $reviewableItems : [];
 $myReviews = is_array($myReviews ?? null) ? $myReviews : [];
 $wishlistItems = is_array($wishlistItems ?? null) ? $wishlistItems : [];
+$myDesigns = is_array($myDesigns ?? null) ? $myDesigns : [];
 
 $h = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 $name = trim((string)($profile['name'] ?? $user['name'] ?? 'RCS Customer'));
@@ -40,26 +41,6 @@ $totalOrders = count($orders);
 $progressOrders = count(array_filter($orders, static fn($order) => in_array((string)($order['status'] ?? ''), $progressStatuses, true)));
 $completedOrders = count(array_filter($orders, static fn($order) => (string)($order['status'] ?? '') === 'delivered'));
 $recentOrders = array_slice($orders, 0, 4);
-$recentDesigns = [];
-foreach ($orders as $order) {
-    foreach (($order['items'] ?? []) as $item) {
-        $recentDesigns[] = [
-            'name' => trim((string)($item['product_name'] ?? 'Print Design')) ?: 'Print Design',
-            'date' => $order['created_at'] ?? date('Y-m-d'),
-            'design' => $item['design_choice'] ?? 'upload',
-        ];
-        if (count($recentDesigns) >= 4) break 2;
-    }
-}
-$designFallbacks = [
-    ['name' => 'Business Card', 'date' => date('Y-m-d'), 'design' => 'upload'],
-    ['name' => 'Flyer Design', 'date' => date('Y-m-d', strtotime('-2 days')), 'design' => 'rcs'],
-    ['name' => 'Brochure Design', 'date' => date('Y-m-d', strtotime('-5 days')), 'design' => 'upload'],
-    ['name' => 'Poster Design', 'date' => date('Y-m-d', strtotime('-8 days')), 'design' => 'rcs'],
-];
-while (count($recentDesigns) < 4) {
-    $recentDesigns[] = $designFallbacks[count($recentDesigns)];
-}
 $accountSettings = is_array($settingsMap ?? null) ? $settingsMap : [];
 if ($accountSettings === []) {
     try {
@@ -322,18 +303,57 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
             <div><h2 id="designsPanelTitle">My Designs</h2><p>Designs are based on your recent orders and uploaded artwork where available.</p></div>
             <a href="/categories">Upload New Design <i class="fa-solid fa-arrow-right"></i></a>
           </div>
-          <div class="account-design-grid">
-            <?php foreach ($recentDesigns as $idx => $design): ?>
-            <article class="account-design-card">
-              <div class="account-design-thumb design-thumb-<?= ($idx % 4) + 1 ?>">
-                <span></span><b></b><em></em>
-                <button type="button" aria-label="Design options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-              </div>
-              <strong><?= $h($design['name']) ?></strong>
-              <small>Updated on <?= date('d M, Y', strtotime((string)$design['date'])) ?></small>
-            </article>
-            <?php endforeach; ?>
-          </div>
+          <?php if (empty($myDesigns)): ?>
+            <div class="account-empty-state">
+              <i class="fa-regular fa-folder-open"></i>
+              <strong>No uploaded designs yet</strong>
+              <span>Artwork uploaded during checkout will appear here after the order is placed.</span>
+              <a href="/categories" class="btn btn-blue btn-sm">Upload With an Order</a>
+            </div>
+          <?php else: ?>
+            <div class="account-design-grid account-uploaded-design-grid">
+              <?php foreach ($myDesigns as $design):
+                  $designId = (int)($design['id'] ?? 0);
+                  $productName = trim((string)($design['product_name'] ?? 'Print Artwork')) ?: 'Print Artwork';
+                  $fileName = trim((string)($design['original_name'] ?? $design['filename'] ?? 'Artwork file')) ?: 'Artwork file';
+                  $orderId = trim((string)($design['order_id'] ?? ''));
+                  $productSlug = trim((string)($design['product_slug'] ?? ''));
+                  $createdDate = $design['created_at'] ?? $design['order_created_at'] ?? date('Y-m-d');
+                  $filePath = \Designs\UserDesigns::publicFilePath($design);
+                  $isImage = \Designs\UserDesigns::isImage($design);
+                  $fileSize = \Designs\UserDesigns::formattedSize($design);
+                  $designChoice = trim((string)($design['design_choice'] ?? 'upload'));
+              ?>
+                <article class="account-design-card account-design-file-card">
+                  <div class="account-design-preview">
+                    <?php if ($isImage && $filePath !== ''): ?>
+                      <img src="<?= $h($filePath) ?>" alt="<?= $h($fileName) ?>" loading="lazy">
+                    <?php else: ?>
+                      <div class="account-design-file-icon"><i class="fa-regular fa-file-lines"></i></div>
+                    <?php endif; ?>
+                  </div>
+                  <div class="account-design-copy">
+                    <strong><?= $h($productName) ?></strong>
+                    <span class="account-design-filename"><?= $h($fileName) ?></span>
+                    <div class="account-design-meta">
+                      <?php if ($orderId !== ''): ?><span>Order <?= $h($orderId) ?></span><?php endif; ?>
+                      <span><?= $h(ucfirst($designChoice)) ?> artwork</span>
+                      <span><?= $h($fileSize) ?></span>
+                      <span>Uploaded <?= date('d M, Y', strtotime((string)$createdDate)) ?></span>
+                    </div>
+                    <div class="account-design-actions">
+                      <?php if ($designId > 0): ?>
+                        <a href="/account/artwork/<?= $designId ?>/download" class="btn btn-blue btn-sm"><i class="fa-solid fa-download"></i> Download</a>
+                      <?php endif; ?>
+                      <?php if ($productSlug !== ''): ?>
+                        <a href="/product/<?= $h($productSlug) ?>" class="btn btn-outline btn-sm">Reorder</a>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </article>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
         </section>
       </section>
 
