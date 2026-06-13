@@ -9,8 +9,29 @@ include __DIR__ . '/layout.php';
   <div id="prodCount" style="font-size:13px;color:var(--text2)">Loading…</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <a href="/admin/categories" class="btn btn-outline btn-sm">Manage Categories</a>
+    <a href="/admin/import/sample/products" class="btn btn-outline btn-sm">Sample CSV</a>
+    <a href="/admin/export/products" class="btn btn-outline btn-sm">Export Products</a>
     <a href="/admin/products/new" class="btn btn-blue btn-sm">+ Add Product</a>
   </div>
+</div>
+
+<div class="fsec" style="margin-bottom:14px">
+  <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
+    <div style="flex:1;min-width:220px">
+      <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px">Import Products CSV</div>
+      <input id="prodImportFile" type="file" class="fi" accept=".csv,text/csv">
+    </div>
+    <div style="min-width:170px">
+      <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px">Import Mode</div>
+      <select id="prodImportMode" class="fi fi-sel">
+        <option value="create_update">Create + Update</option>
+        <option value="create">Create only</option>
+        <option value="update">Update only</option>
+      </select>
+    </div>
+    <button class="btn btn-blue btn-sm" type="button" onclick="importProductsCsv()">Import Products</button>
+  </div>
+  <div id="prodImportResult" style="display:none;margin-top:10px;font-size:12px;color:var(--text2)"></div>
 </div>
 
 <div class="chip-row" style="margin-bottom:14px" id="prodCatFilter">
@@ -82,6 +103,30 @@ function renderProds(prods) {
       </div>
     </div>
   `).join('');
+}
+
+async function importProductsCsv() {
+  const fileInput = document.getElementById('prodImportFile');
+  const resultEl = document.getElementById('prodImportResult');
+  const file = fileInput?.files?.[0];
+  if (!file) { toast('Please choose a products CSV file', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('mode', document.getElementById('prodImportMode')?.value || 'create_update');
+  resultEl.style.display = 'block';
+  resultEl.textContent = 'Importing products...';
+  try {
+    const res = await fetch('/admin/api/import/products', { method:'POST', body:fd, headers:{'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'} }).then(r=>r.json());
+    if (!res.ok) throw new Error(res.msg || 'Import failed');
+    const errors = (res.errors || []).slice(0, 5).map(e => `Row ${e.row}: ${escH(e.message)}`).join('<br>');
+    resultEl.innerHTML = `Total ${res.total || 0} rows · Created ${res.created || 0} · Updated ${res.updated || 0} · Skipped ${res.skipped || 0} · Failed ${res.failed || 0}${errors ? '<br><strong>Errors:</strong><br>' + errors : ''}`;
+    toast('Products import completed', (res.failed || 0) > 0 ? 'info' : 'success');
+    fileInput.value = '';
+    loadProds();
+  } catch (err) {
+    resultEl.textContent = err.message || 'Import failed';
+    toast(resultEl.textContent, 'error');
+  }
 }
 
 async function toggleProd(id, togEl) {
