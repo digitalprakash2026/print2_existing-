@@ -106,6 +106,30 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     };
 
+    $ensureHomeBannerClickColumns = static function (): void {
+        static $ready = false;
+        if ($ready) return;
+        try {
+            $rows = Database::rows(
+                "SELECT COLUMN_NAME
+                 FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = 'home_banners'
+                   AND COLUMN_NAME IN ('image_click_enabled', 'image_click_url')"
+            );
+            $present = array_flip(array_map(static fn($row) => (string)($row['COLUMN_NAME'] ?? ''), $rows));
+            if (!isset($present['image_click_enabled'])) {
+                Database::query("ALTER TABLE home_banners ADD COLUMN image_click_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER cta_secondary_url");
+            }
+            if (!isset($present['image_click_url'])) {
+                Database::query("ALTER TABLE home_banners ADD COLUMN image_click_url VARCHAR(255) NOT NULL DEFAULT '' AFTER image_click_enabled");
+            }
+            $ready = true;
+        } catch (\Throwable $e) {
+            error_log('Home banner click columns unavailable: ' . $e->getMessage());
+        }
+    };
+
     $deleteProductImage = static function (int $productId, int $imageId) use ($adminProductImages): array {
         if ($productId <= 0 || $imageId <= 0) {
             return ['ok' => false, 'msg' => 'Invalid product image'];
@@ -719,6 +743,7 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/banners' && $method === 'GET') {
         try {
+            $ensureHomeBannerClickColumns();
             $rows = Database::rows("SELECT * FROM home_banners ORDER BY sort_order ASC, id DESC");
             json(['ok'=>true,'banners'=>$rows]);
         } catch (\Throwable) {
@@ -729,10 +754,16 @@ if (str_starts_with($uri, '/admin/api/')) {
         if (trim((string)($body['image_path'] ?? '')) === '') {
             json(['ok'=>false,'msg'=>'Banner image path is required'], 400);
         }
+        $imageClickEnabled = (int)($body['image_click_enabled'] ?? 0) === 1 ? 1 : 0;
+        $imageClickUrl = trim((string)($body['image_click_url'] ?? ''));
+        if ($imageClickEnabled && $imageClickUrl === '') {
+            json(['ok'=>false,'msg'=>'Image click URL is required when clickable image is enabled'], 400);
+        }
         try {
+            $ensureHomeBannerClickColumns();
             $id = Database::insert(
-                "INSERT INTO home_banners (eyebrow,title,subtitle,image_path,image_alt,cta_primary_text,cta_primary_url,cta_secondary_text,cta_secondary_type,cta_secondary_url,sort_order,is_active,created_at,updated_at)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",
+                "INSERT INTO home_banners (eyebrow,title,subtitle,image_path,image_alt,cta_primary_text,cta_primary_url,cta_secondary_text,cta_secondary_type,cta_secondary_url,image_click_enabled,image_click_url,sort_order,is_active,created_at,updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",
                 [
                     trim((string)($body['eyebrow'] ?? '')),
                     trim((string)($body['title'] ?? '')),
@@ -744,6 +775,8 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['cta_secondary_text'] ?? '')),
                     trim((string)($body['cta_secondary_type'] ?? 'whatsapp')),
                     trim((string)($body['cta_secondary_url'] ?? '')),
+                    $imageClickEnabled,
+                    $imageClickUrl,
                     (int)($body['sort_order'] ?? 0),
                     (int)($body['is_active'] ?? 1),
                 ]
@@ -757,10 +790,16 @@ if (str_starts_with($uri, '/admin/api/')) {
         if (trim((string)($body['image_path'] ?? '')) === '') {
             json(['ok'=>false,'msg'=>'Banner image path is required'], 400);
         }
+        $imageClickEnabled = (int)($body['image_click_enabled'] ?? 0) === 1 ? 1 : 0;
+        $imageClickUrl = trim((string)($body['image_click_url'] ?? ''));
+        if ($imageClickEnabled && $imageClickUrl === '') {
+            json(['ok'=>false,'msg'=>'Image click URL is required when clickable image is enabled'], 400);
+        }
         try {
+            $ensureHomeBannerClickColumns();
             Database::query(
                 "UPDATE home_banners
-                 SET eyebrow=?, title=?, subtitle=?, image_path=?, image_alt=?, cta_primary_text=?, cta_primary_url=?, cta_secondary_text=?, cta_secondary_type=?, cta_secondary_url=?, sort_order=?, is_active=?, updated_at=NOW()
+                 SET eyebrow=?, title=?, subtitle=?, image_path=?, image_alt=?, cta_primary_text=?, cta_primary_url=?, cta_secondary_text=?, cta_secondary_type=?, cta_secondary_url=?, image_click_enabled=?, image_click_url=?, sort_order=?, is_active=?, updated_at=NOW()
                  WHERE id=?",
                 [
                     trim((string)($body['eyebrow'] ?? '')),
@@ -773,6 +812,8 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['cta_secondary_text'] ?? '')),
                     trim((string)($body['cta_secondary_type'] ?? 'whatsapp')),
                     trim((string)($body['cta_secondary_url'] ?? '')),
+                    $imageClickEnabled,
+                    $imageClickUrl,
                     (int)($body['sort_order'] ?? 0),
                     (int)($body['is_active'] ?? 1),
                     (int)$m[1],

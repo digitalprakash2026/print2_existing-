@@ -465,17 +465,15 @@ function initBannerSlider(id = 'bannerSlider') {
   function next() { goTo(cur + 1); }
   function prev() { goTo(cur - 1); }
 
-  function startTimer() { timer = setInterval(next, 3000); }  // 3 s
-  function stopTimer()  { clearInterval(timer); }
+  function startTimer() {
+    if (timer) clearInterval(timer);
+    if (slides.length > 1) timer = setInterval(next, 3000);
+  }
 
   // Init
   slides[0].classList.add('active');
   dots[0]?.classList.add('active');
   startTimer();
-
-  // Pause on hover
-  wrap.addEventListener('mouseenter', stopTimer);
-  wrap.addEventListener('mouseleave', startTimer);
 
   // Expose for HTML buttons
   wrap._sliderNext = next;

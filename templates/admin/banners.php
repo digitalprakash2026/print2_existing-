@@ -33,7 +33,18 @@ include __DIR__ . '/layout.php';
   </div>
   <div class="f2">
     <div class="fg"><label>Primary CTA Text <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-ptext" placeholder="Order Now"></div>
-    <div class="fg"><label>Banner Click / Primary CTA URL <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-purl" placeholder="/categories"></div>
+    <div class="fg"><label>Primary CTA URL <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-purl" placeholder="/categories"></div>
+  </div>
+  <div class="f2">
+    <div class="fg">
+      <label>Clickable Banner Image</label>
+      <select class="fi fi-sel" id="bn-click-enabled">
+        <option value="0">Disabled</option>
+        <option value="1">Enabled</option>
+      </select>
+      <div style="font-size:11px;color:var(--text3);margin-top:5px">Enable this to make the slide image clickable on the home page.</div>
+    </div>
+    <div class="fg"><label>Image Click URL <span style="color:var(--text3);font-weight:500">(required when enabled)</span></label><input class="fi" id="bn-click-url" placeholder="/categories"></div>
   </div>
   <div class="f2">
     <div class="fg"><label>Secondary CTA Text <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-stext" placeholder="Get Free Design"></div>
@@ -91,7 +102,7 @@ function renderBanners() {
       <img src="${esc(b.image_path)}" style="width:100px;height:58px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
       <div>
         <div style="font-weight:700;font-size:13px">${esc(b.title || 'Image-only banner')}</div>
-        <div style="font-size:11px;color:var(--text2)">Order: ${Number(b.sort_order||0)} · ${b.is_active ? 'Active' : 'Inactive'}</div>
+        <div style="font-size:11px;color:var(--text2)">Order: ${Number(b.sort_order||0)} · ${b.is_active ? 'Active' : 'Inactive'} · Image click: ${Number(b.image_click_enabled||0) === 1 ? 'On' : 'Off'}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
         <button class="btn btn-outline btn-sm" onclick="shiftOrder(${Number(b.id)}, -1)">↑</button>
@@ -113,6 +124,8 @@ function fillForm(b) {
   document.getElementById('bn-alt').value = b.image_alt || '';
   document.getElementById('bn-ptext').value = b.cta_primary_text || '';
   document.getElementById('bn-purl').value = b.cta_primary_url || '';
+  document.getElementById('bn-click-enabled').value = Number(b.image_click_enabled || 0) === 1 ? '1' : '0';
+  document.getElementById('bn-click-url').value = b.image_click_url || '';
   document.getElementById('bn-stext').value = b.cta_secondary_text || '';
   document.getElementById('bn-stype').value = b.cta_secondary_type || 'whatsapp';
   document.getElementById('bn-surl').value = b.cta_secondary_url || '';
@@ -129,6 +142,8 @@ function collectForm() {
     image_alt: document.getElementById('bn-alt').value.trim(),
     cta_primary_text: document.getElementById('bn-ptext').value.trim(),
     cta_primary_url: document.getElementById('bn-purl').value.trim(),
+    image_click_enabled: parseInt(document.getElementById('bn-click-enabled').value || '0', 10) || 0,
+    image_click_url: document.getElementById('bn-click-url').value.trim(),
     cta_secondary_text: document.getElementById('bn-stext').value.trim(),
     cta_secondary_type: document.getElementById('bn-stype').value,
     cta_secondary_url: document.getElementById('bn-surl').value.trim(),
@@ -144,6 +159,7 @@ function editBanner(id){ const b = banners.find(x=>Number(x.id)===Number(id)); i
 async function saveBanner() {
   const payload = collectForm();
   if (!payload.image_path) { showErr('Banner image path required.'); return; }
+  if (payload.image_click_enabled && !payload.image_click_url) { showErr('Image Click URL required when clickable banner image is enabled.'); return; }
   if (payload.cta_secondary_text && payload.cta_secondary_type === 'url' && !payload.cta_secondary_url) { showErr('Secondary CTA URL required when secondary CTA text uses type=url.'); return; }
   showErr('');
   const btn = document.getElementById('bnSaveBtn');
