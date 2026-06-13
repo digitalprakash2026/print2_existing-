@@ -13,11 +13,7 @@ $bizPhone = htmlspecialchars($settingsMap['biz_phone']   ?? '+91 98765 43210');
 $bizWa    = htmlspecialchars($settingsMap['biz_whatsapp']?? '919876543210');
 $bizEmail = htmlspecialchars($settingsMap['biz_email']   ?? 'hello@rcsgraphic.in');
 $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
-$filterOptions = is_array($filterOptions ?? null) ? $filterOptions : [];
-$selectedFilters = is_array($selectedFilters ?? null) ? $selectedFilters : [];
-$products = array_values(array_filter($products ?? [], static fn($product) => (int)($product['is_active'] ?? 1) === 1));
-$visibleCount = count($products);
-$totalItems = $visibleCount;
+$visibleCount = count($activeCategories);
 $categoryThemeClasses = ['purple', 'orange', 'orange', 'orange', 'purple', 'orange', 'purple', 'green'];
 
 include INCLUDE_PATH . '/partials/head.php';
@@ -49,50 +45,26 @@ include INCLUDE_PATH . '/partials/header.php';
     <?php else: ?>
       <section class="all-cat-shop" aria-label="Browse all categories">
         <details class="all-cat-filter-panel" open>
-          <summary><span>Categories &amp; Filters</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+          <summary><span>Categories</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
           <aside class="all-cat-sidebar" aria-label="Category filters">
           <div class="all-cat-side-box all-cat-side-categories">
             <h2>Categories</h2>
             <nav class="all-cat-side-list" aria-label="Category quick links">
-              <?php foreach ($activeCategories as $idx => $cat): ?>
-                <a href="/category/<?= htmlspecialchars($cat['slug'] ?? '') ?>" class="<?= $idx === 0 ? 'is-active' : '' ?>">
+              <?php foreach ($activeCategories as $cat): ?>
+                <a href="/category/<?= htmlspecialchars($cat['slug'] ?? '') ?>">
                   <?= htmlspecialchars($cat['name'] ?? 'Category') ?>
                 </a>
               <?php endforeach; ?>
             </nav>
           </div>
-
-          <form class="all-cat-side-box all-cat-filter-box" method="get" action="/categories">
-            <h2>Filter By</h2>
-            <?php foreach ($filterOptions as $group): ?>
-              <?php if (empty($group['options'])) continue; ?>
-              <div class="all-cat-filter-group">
-                <h3><?= htmlspecialchars($group['label'] ?? 'Filter') ?></h3>
-                <?php foreach ($group['options'] as $option):
-                  $groupSlug = (string)($group['slug'] ?? '');
-                  $optionSlug = (string)($option['slug'] ?? '');
-                  $checked = in_array($optionSlug, $selectedFilters[$groupSlug] ?? [], true);
-                ?>
-                  <label>
-                    <input type="checkbox" name="filters[<?= htmlspecialchars($groupSlug) ?>][]" value="<?= htmlspecialchars($optionSlug) ?>" <?= $checked ? 'checked' : '' ?>>
-                    <?= htmlspecialchars($option['label'] ?? $optionSlug) ?>
-                  </label>
-                <?php endforeach; ?>
-              </div>
-            <?php endforeach; ?>
-            <button type="submit" class="all-cat-apply-btn">Apply Filters <i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
-            <?php if (!empty($selectedFilters)): ?>
-              <a href="/categories" class="all-cat-clear-btn">Clear Filters</a>
-            <?php endif; ?>
-          </form>
           </aside>
         </details>
 
         <div class="all-cat-results">
           <div class="all-cat-toolbar">
-            <p>Showing <?= (int)$visibleCount ?> product<?= $visibleCount === 1 ? '' : 's' ?></p>
+            <p>Showing <?= (int)$visibleCount ?> categor<?= $visibleCount === 1 ? 'y' : 'ies' ?></p>
             <label>Sort by:
-              <select aria-label="Sort products">
+              <select aria-label="Sort categories">
                 <option>Popularity</option>
                 <option>Newest</option>
                 <option>Name A-Z</option>
@@ -100,41 +72,32 @@ include INCLUDE_PATH . '/partials/header.php';
             </label>
           </div>
 
-          <?php if (empty($products)): ?>
-            <div style="padding:42px 20px;border:1px dashed var(--border);border-radius:16px;background:#fff;text-align:center;color:var(--text2)">
-              <strong style="display:block;color:var(--ink);font-size:18px;margin-bottom:6px">No matching products found</strong>
-              <span>Try removing one or more filters.</span>
-            </div>
-          <?php else: ?>
-          <div class="all-cat-grid" aria-label="Filtered printing products">
-            <?php foreach ($products as $idx => $product):
-              $name = (string)($product['name'] ?? 'Product');
-              $slug = (string)($product['slug'] ?? '');
-              $image = trim((string)($product['primary_image'] ?? ($product['image_path'] ?? '')));
-              $category = trim((string)($product['category_name'] ?? 'Print Product'));
-              $minPrice = (float)($product['min_price'] ?? 0);
+          <div class="all-cat-grid" aria-label="Printing categories">
+            <?php foreach ($activeCategories as $idx => $cat):
+              $name = (string)($cat['name'] ?? 'Category');
+              $slug = (string)($cat['slug'] ?? '');
+              $image = trim((string)($cat['image_path'] ?? ''));
+              $icon = trim((string)($cat['icon'] ?? '🖨️'));
+              $productCount = (int)($cat['product_count'] ?? 0);
               $theme = $categoryThemeClasses[$idx % count($categoryThemeClasses)];
             ?>
-              <a class="all-cat-card all-cat-card-<?= htmlspecialchars($theme) ?>" href="/product/<?= htmlspecialchars($slug) ?>">
+              <a class="all-cat-card all-cat-card-<?= htmlspecialchars($theme) ?>" href="/category/<?= htmlspecialchars($slug) ?>">
                 <div class="all-cat-img">
                   <?php if ($image !== ''): ?>
                     <img src="<?= htmlspecialchars($image) ?>" alt="<?= htmlspecialchars($name) ?>" loading="lazy" onerror="this.src='https://placehold.co/600x600/EEF3FD/1A56E8?text=<?= urlencode($name) ?>'">
                   <?php else: ?>
-                    <div class="shop-cat-fallback" aria-hidden="true">📦</div>
+                    <div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($icon) ?></div>
                   <?php endif; ?>
                 </div>
                 <div class="all-cat-body">
                   <span class="all-cat-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span>
                   <h2><?= htmlspecialchars($name) ?></h2>
-                  <p><?= htmlspecialchars($category) ?></p>
-                  <strong><?= $minPrice > 0 ? ('Starting from ₹' . number_format($minPrice)) : 'Price on request' ?></strong>
+                  <p><?= $productCount ?> product<?= $productCount === 1 ? '' : 's' ?></p>
+                  <span class="all-cat-arrow" aria-hidden="true">›</span>
                 </div>
               </a>
             <?php endforeach; ?>
           </div>
-          <?php endif; ?>
-
-
         </div>
       </section>
 

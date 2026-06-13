@@ -209,20 +209,28 @@ class ProductCatalog
         return $out;
     }
 
-    public static function filteredProducts(array $filters = []): array
+    public static function filteredProducts(array $filters = [], ?int $categoryId = null): array
     {
         $filters = self::normalizeFilterSelections($filters);
-        if (!$filters) return self::all(true);
+        $categoryId = $categoryId !== null ? max(0, (int)$categoryId) : 0;
+        if (!$filters && $categoryId <= 0) return self::all(true);
 
         try {
             self::ensureFilterSchema();
         } catch (\Throwable $e) {
             error_log('Product filters unavailable: ' . $e->getMessage());
+            if ($categoryId > 0) {
+                return self::fetchProductRows('WHERE p.is_active = 1 AND p.category_id = ? ORDER BY p.sort_order ASC', [$categoryId]);
+            }
             return self::all(true);
         }
 
         $where = ['p.is_active = 1'];
         $params = [];
+        if ($categoryId > 0) {
+            $where[] = 'p.category_id = ?';
+            $params[] = $categoryId;
+        }
         foreach ($filters as $groupSlug => $slugs) {
             if (!$slugs) continue;
             $placeholders = implode(',', array_fill(0, count($slugs), '?'));
@@ -444,7 +452,7 @@ class ProductCatalog
         );
     }
 
-    public static function byCategory(string $slug): ?array
+    public static function byCategory(string $slug, array $filters = []): ?array
     {
         $category = \Database::row(
             "SELECT * FROM categories WHERE slug = ? AND is_active = 1",
@@ -452,7 +460,7 @@ class ProductCatalog
         );
         if (!$category) return null;
 
-        $products = self::fetchProductRows('WHERE p.is_active = 1 AND p.category_id = ? ORDER BY p.sort_order ASC', [$category['id']]);
+        $products = self::filteredProducts($filters, (int)$category['id']);
 
         return ['category' => $category, 'products' => $products];
     }

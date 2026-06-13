@@ -166,28 +166,27 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 if ($uri === '/categories' && $method === 'GET') {
     try {
         $categories = \Catalog\ProductCatalog::categories();
-        $filterOptions = \Catalog\ProductCatalog::filterOptions();
-        $selectedFilters = \Catalog\ProductCatalog::normalizeFilterSelections($_GET['filters'] ?? []);
-        $products = \Catalog\ProductCatalog::filteredProducts($selectedFilters);
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {
         error_log('Categories page error: ' . $e->getMessage());
-        $categories = $products = [];
-        $filterOptions = $selectedFilters = [];
+        $categories = [];
         $settingsMap = [];
     }
-    view('categories', compact('categories', 'products', 'filterOptions', 'selectedFilters', 'settingsMap'));
+    view('categories', compact('categories', 'settingsMap'));
     exit;
 }
 
 // ── Category Page — /category/{slug} ─────────────────────────
 if (preg_match('#^/category/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     try {
-        $result = \Catalog\ProductCatalog::byCategory($m[1]);
+        $selectedFilters = \Catalog\ProductCatalog::normalizeFilterSelections($_GET['filters'] ?? []);
+        $result = \Catalog\ProductCatalog::byCategory($m[1], $selectedFilters);
+        $filterOptions = \Catalog\ProductCatalog::filterOptions();
     } catch (\Throwable $e) {
         error_log('Category error: ' . $e->getMessage());
         $result = null;
+        $selectedFilters = $filterOptions = [];
     }
 
     if (!$result) { http_response_code(404); view('404'); exit; }
@@ -198,7 +197,7 @@ if (preg_match('#^/category/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     try { $categories = \Catalog\ProductCatalog::categories(); }
     catch (\Throwable) { $categories = []; }
 
-    view('category', compact('category', 'products', 'categories'));
+    view('category', compact('category', 'products', 'categories', 'filterOptions', 'selectedFilters'));
     exit;
 }
 
