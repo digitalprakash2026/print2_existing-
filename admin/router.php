@@ -47,20 +47,6 @@ $hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
     return $adminUsersHasMobile;
 };
 
-
-if ($uri === '/admin/export/categories') {
-    \Catalog\CatalogImportExport::streamCategoriesCsv();
-}
-if ($uri === '/admin/export/products') {
-    \Catalog\CatalogImportExport::streamProductsCsv();
-}
-if ($uri === '/admin/import/sample/categories') {
-    \Catalog\CatalogImportExport::streamCategorySampleCsv();
-}
-if ($uri === '/admin/import/sample/products') {
-    \Catalog\CatalogImportExport::streamProductSampleCsv();
-}
-
 if (str_starts_with($uri, '/admin/api/')) {
     header('Content-Type: application/json');
     $body = json_decode(file_get_contents('php://input'), true) ?? $_POST;
@@ -303,13 +289,6 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/product-filters' && $method === 'GET') {
         json(['ok' => true, 'filters' => \Catalog\ProductCatalog::filterOptions()]);
-    }
-
-    if ($uri === '/admin/api/import/categories' && $method === 'POST') {
-        json(\Catalog\CatalogImportExport::importCategories($_FILES['file'] ?? [], (string)($body['mode'] ?? 'create_update')));
-    }
-    if ($uri === '/admin/api/import/products' && $method === 'POST') {
-        json(\Catalog\CatalogImportExport::importProducts($_FILES['file'] ?? [], (string)($body['mode'] ?? 'create_update')));
     }
 
     if ($uri === '/admin/api/products' && $method === 'GET') {

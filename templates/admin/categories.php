@@ -9,29 +9,8 @@ include __DIR__ . '/layout.php';
   <div id="catCount" style="font-size:13px;color:var(--text2)">Loading…</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <a href="/admin/products" class="btn btn-outline btn-sm">← Back to Products</a>
-    <a href="/admin/import/sample/categories" class="btn btn-outline btn-sm">Sample CSV</a>
-    <a href="/admin/export/categories" class="btn btn-outline btn-sm">Export Categories</a>
     <button class="btn btn-blue btn-sm" type="button" onclick="openCatModal()">+ Add Category</button>
   </div>
-</div>
-
-<div class="fsec" style="margin-bottom:14px">
-  <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
-    <div style="flex:1;min-width:220px">
-      <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px">Import Categories CSV</div>
-      <input id="catImportFile" type="file" class="fi" accept=".csv,text/csv">
-    </div>
-    <div style="min-width:170px">
-      <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px">Import Mode</div>
-      <select id="catImportMode" class="fi fi-sel">
-        <option value="create_update">Create + Update</option>
-        <option value="create">Create only</option>
-        <option value="update">Update only</option>
-      </select>
-    </div>
-    <button class="btn btn-blue btn-sm" type="button" onclick="importCategoriesCsv()">Import Categories</button>
-  </div>
-  <div id="catImportResult" style="display:none;margin-top:10px;font-size:12px;color:var(--text2)"></div>
 </div>
 
 <div id="catList">
@@ -124,30 +103,6 @@ async function loadCategories() {
       </div>
     `;
   }).join('');
-}
-
-async function importCategoriesCsv() {
-  const fileInput = document.getElementById('catImportFile');
-  const resultEl = document.getElementById('catImportResult');
-  const file = fileInput?.files?.[0];
-  if (!file) { toast('Please choose a categories CSV file', 'error'); return; }
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('mode', document.getElementById('catImportMode')?.value || 'create_update');
-  resultEl.style.display = 'block';
-  resultEl.textContent = 'Importing categories...';
-  try {
-    const res = await fetch('/admin/api/import/categories', { method:'POST', body:fd, headers:{'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf??'') ?>'} }).then(r=>r.json());
-    if (!res.ok) throw new Error(res.msg || 'Import failed');
-    const errors = (res.errors || []).slice(0, 5).map(e => `Row ${e.row}: ${escH(e.message)}`).join('<br>');
-    resultEl.innerHTML = `Total ${res.total || 0} rows · Created ${res.created || 0} · Updated ${res.updated || 0} · Skipped ${res.skipped || 0} · Failed ${res.failed || 0}${errors ? '<br><strong>Errors:</strong><br>' + errors : ''}`;
-    toast('Categories import completed', (res.failed || 0) > 0 ? 'info' : 'success');
-    fileInput.value = '';
-    loadCategories();
-  } catch (err) {
-    resultEl.textContent = err.message || 'Import failed';
-    toast(resultEl.textContent, 'error');
-  }
 }
 
 function openCatModal(id = 0) {
