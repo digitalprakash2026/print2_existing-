@@ -157,8 +157,12 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     catch (\Throwable) { $relatedProducts = []; }
     $reviewSummary = \Reviews\ProductReview::summaryForProduct((int)$product['id']);
     $productReviews = \Reviews\ProductReview::approvedForProduct((int)$product['id'], 12);
+    $wishlistActive = false;
+    if ($user = \Auth\Auth::user()) {
+        $wishlistActive = \Wishlist\Wishlist::isWishlisted((int)$user['id'], (int)($product['id'] ?? 0));
+    }
 
-    view('product', compact('product', 'relatedProducts', 'reviewSummary', 'productReviews'));
+    view('product', compact('product', 'relatedProducts', 'reviewSummary', 'productReviews', 'wishlistActive'));
     exit;
 }
 
@@ -254,7 +258,8 @@ if ($uri === '/profile' && $method === 'GET') {
     catch (\Throwable) { $orders = []; }
     $reviewableItems = \Reviews\ProductReview::reviewableItemsForUser((int)$user['id']);
     $myReviews = \Reviews\ProductReview::userReviews((int)$user['id']);
-    view('profile', compact('user', 'profile', 'orders', 'reviewableItems', 'myReviews'));
+    $wishlistItems = \Wishlist\Wishlist::itemsForUser((int)$user['id']);
+    view('profile', compact('user', 'profile', 'orders', 'reviewableItems', 'myReviews', 'wishlistItems'));
     exit;
 }
 

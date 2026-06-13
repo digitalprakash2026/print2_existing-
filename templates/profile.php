@@ -10,6 +10,7 @@ $shipping = $profile['shipping'] ?? [];
 $orders = is_array($orders ?? null) ? $orders : [];
 $reviewableItems = is_array($reviewableItems ?? null) ? $reviewableItems : [];
 $myReviews = is_array($myReviews ?? null) ? $myReviews : [];
+$wishlistItems = is_array($wishlistItems ?? null) ? $wishlistItems : [];
 
 $h = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 $name = trim((string)($profile['name'] ?? $user['name'] ?? 'RCS Customer'));
@@ -207,6 +208,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
     <aside class="account-sidebar" aria-label="My account menu">
       <button class="account-nav-item is-active" type="button" data-account-tab="dashboard"><i class="fa-solid fa-shapes"></i><span>Dashboard</span></button>
       <button class="account-nav-item" type="button" data-account-tab="orders"><i class="fa-regular fa-clipboard"></i><span>My Orders</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="wishlist"><i class="fa-regular fa-heart"></i><span>My Wishlist</span></button>
       <button class="account-nav-item" type="button" data-account-tab="designs"><i class="fa-regular fa-pen-to-square"></i><span>My Designs</span></button>
       <button class="account-nav-item" type="button" data-account-tab="reviews"><i class="fa-regular fa-star"></i><span>My Reviews</span></button>
       <button class="account-nav-item" type="button" data-account-tab="addresses"><i class="fa-solid fa-location-dot"></i><span>Saved Addresses</span></button>
@@ -269,6 +271,48 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
             <a href="/categories">Place New Order <i class="fa-solid fa-arrow-right"></i></a>
           </div>
           <?php $renderOrders($orders, false); ?>
+        </section>
+      </section>
+
+      <section class="account-tab-panel" data-account-panel="wishlist" aria-labelledby="wishlistPanelTitle">
+        <section class="account-card account-wishlist-card">
+          <div class="account-section-head">
+            <div><h2 id="wishlistPanelTitle">My Wishlist</h2><p>Products you saved for quick access later.</p></div>
+            <a href="/categories">Browse More <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+          <?php if (empty($wishlistItems)): ?>
+            <div class="account-empty-state compact"><i class="fa-regular fa-heart"></i><strong>Your wishlist is empty</strong><span>Tap the heart on any product to save it here.</span><a href="/categories" class="btn btn-blue btn-sm">Browse Products</a></div>
+          <?php else: ?>
+            <div class="account-wishlist-grid" id="accountWishlistGrid">
+              <?php foreach ($wishlistItems as $item):
+                $wishProductId = (int)($item['id'] ?? 0);
+                $wishName = trim((string)($item['name'] ?? 'Product'));
+                $wishSlug = trim((string)($item['slug'] ?? ''));
+                $wishImg = trim((string)($item['primary_image'] ?? ($item['image_path'] ?? '')));
+                $wishCategory = trim((string)($item['category_name'] ?? 'Print Product'));
+                $wishPrice = (float)($item['min_price'] ?? 0);
+              ?>
+                <article class="account-wishlist-item" data-wishlist-product="<?= $wishProductId ?>">
+                  <a class="account-wishlist-img" href="/product/<?= $h($wishSlug) ?>">
+                    <?php if ($wishImg !== ''): ?>
+                      <img src="<?= $h($wishImg) ?>" alt="<?= $h($wishName) ?>" loading="lazy">
+                    <?php else: ?>
+                      <span aria-hidden="true">📦</span>
+                    <?php endif; ?>
+                  </a>
+                  <div class="account-wishlist-copy">
+                    <small><?= $h($wishCategory) ?></small>
+                    <strong><?= $h($wishName) ?></strong>
+                    <em><?= $wishPrice > 0 ? ('Starting from ₹' . number_format($wishPrice)) : 'Price on request' ?></em>
+                    <div class="account-wishlist-actions">
+                      <a href="/product/<?= $h($wishSlug) ?>" class="btn btn-blue btn-sm">View Product</a>
+                      <button type="button" class="btn btn-outline btn-sm" onclick="removeWishlistItem(<?= $wishProductId ?>, this)"><i class="fa-regular fa-trash-can"></i> Remove</button>
+                    </div>
+                  </div>
+                </article>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
         </section>
       </section>
 
@@ -494,7 +538,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
 </main>
 
 <script>
-const ACCOUNT_TABS = ['dashboard','orders','designs','reviews','addresses','details','security'];
+const ACCOUNT_TABS = ['dashboard','orders','wishlist','designs','reviews','addresses','details','security'];
 
 function setAccountTab(tab, pushHash = true, scrollToPanel = true) {
   const safeTab = ACCOUNT_TABS.includes(tab) ? tab : 'dashboard';
@@ -520,6 +564,35 @@ document.querySelectorAll('[data-account-tab]').forEach(el => {
     setAccountTab(tab);
   });
 });
+
+async function removeWishlistItem(productId, btn) {
+  productId = parseInt(productId || '0', 10);
+  if (!productId) return;
+  btn.disabled = true;
+  try {
+    const resp = await fetch(`/api/wishlist/${productId}`, {
+      method: 'DELETE',
+      headers: {'X-CSRF-TOKEN':'<?= $h($csrf ?? '') ?>'},
+      credentials: 'same-origin'
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      alert(data.msg || 'Could not remove wishlist item');
+      btn.disabled = false;
+      return;
+    }
+    const card = btn.closest('[data-wishlist-product]');
+    card?.remove();
+    const grid = document.getElementById('accountWishlistGrid');
+    if (grid && !grid.querySelector('[data-wishlist-product]')) {
+      grid.outerHTML = '<div class="account-empty-state compact"><i class="fa-regular fa-heart"></i><strong>Your wishlist is empty</strong><span>Tap the heart on any product to save it here.</span><a href="/categories" class="btn btn-blue btn-sm">Browse Products</a></div>';
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Could not remove wishlist item');
+    btn.disabled = false;
+  }
+}
 
 window.addEventListener('hashchange', () => setAccountTab(location.hash.replace('#', ''), false));
 setAccountTab(location.hash.replace('#', ''), false, false);

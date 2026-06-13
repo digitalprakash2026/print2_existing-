@@ -98,6 +98,28 @@ if (preg_match('#^/api/products/(\d+)/pricing$#', $uri, $m) && $method === 'GET'
     json(['ok' => true, ...$data]);
 }
 
+// ── Wishlist ─────────────────────────────────────────────────
+
+if ($uri === '/api/wishlist' && $method === 'GET') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    json(['ok' => true, 'items' => \Wishlist\Wishlist::itemsForUser((int)$user['id'])]);
+}
+
+if ($uri === '/api/wishlist/toggle' && $method === 'POST') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $result = \Wishlist\Wishlist::toggle((int)$user['id'], (int)($body['product_id'] ?? 0));
+    json($result, ($result['ok'] ?? false) ? 200 : 422);
+}
+
+if (preg_match('#^/api/wishlist/(\\d+)$#', $uri, $m) && $method === 'DELETE') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $result = \Wishlist\Wishlist::remove((int)$user['id'], (int)$m[1]);
+    json($result, ($result['ok'] ?? false) ? 200 : 422);
+}
+
 // Live price calculation
 if ($uri === '/api/price/calculate' && $method === 'POST') {
     $result = \Cart\Pricing::calculate(
