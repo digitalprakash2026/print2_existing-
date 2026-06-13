@@ -982,6 +982,17 @@ if (str_starts_with($uri, '/admin/api/')) {
             json(['ok'=>false,'msg'=>'blogs table missing. Run SQL migration first.','blogs'=>[]], 500);
         }
     }
+    if (preg_match('#^/admin/api/blogs/(\d+)$#', $uri, $m) && $method === 'GET') {
+        try {
+            $blog = Database::row("SELECT * FROM blogs WHERE id=?", [(int)$m[1]]);
+            if (!$blog) {
+                json(['ok'=>false,'msg'=>'Blog not found'], 404);
+            }
+            json(['ok'=>true,'blog'=>$blog]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'blogs table missing. Run SQL migration first.'], 500);
+        }
+    }
     if ($uri === '/admin/api/blogs' && $method === 'POST') {
         $title = trim((string)($body['title'] ?? ''));
         $content = $sanitizeBlogContent((string)($body['content'] ?? ''));
@@ -1351,6 +1362,11 @@ if ($uri === '/admin/orders') {
     exit;
 }
 
+if (preg_match('#^/admin/blogs/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
+    view('admin/blogs-new', ['blogEditId' => (int)$m[1]]);
+    exit;
+}
+
 $adminPage = match(true) {
     $uri === '/admin' || $uri === '/admin/dashboard' => 'admin/dashboard',
     $uri === '/admin/analytics'  => 'admin/analytics',
@@ -1360,6 +1376,7 @@ $adminPage = match(true) {
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/deals'      => 'admin/deals',
     $uri === '/admin/blogs'      => 'admin/blogs',
+    $uri === '/admin/blogs/new'  => 'admin/blogs-new',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/reviews'    => 'admin/reviews',
