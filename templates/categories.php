@@ -93,7 +93,7 @@ include INCLUDE_PATH . '/partials/header.php';
                   <span class="all-cat-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span>
                   <h2><?= htmlspecialchars($name) ?></h2>
                   <p><?= $productCount ?> product<?= $productCount === 1 ? '' : 's' ?></p>
-                  <span class="all-cat-arrow" aria-hidden="true">›</span>
+                  <span class="all-cat-cta">View Products <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
                 </div>
               </a>
             <?php endforeach; ?>

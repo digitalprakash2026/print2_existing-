@@ -4482,6 +4482,43 @@ body:has(#siteHeader) .banner-slider {
   line-height:1;
   font-weight:500;
 }
+.all-cat-results .all-cat-body {
+  min-height:auto;
+  padding:30px 18px 18px;
+}
+.all-cat-results .all-cat-body h2 {
+  margin-bottom:7px;
+}
+.all-cat-results .all-cat-body p {
+  min-height:0;
+  margin-bottom:14px;
+}
+.all-cat-cta {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  width:100%;
+  min-height:38px;
+  padding:0 13px;
+  border-radius:999px;
+  background:#fff7ed;
+  color:var(--orange);
+  font-size:12px;
+  font-weight:900;
+  line-height:1;
+  border:1px solid rgba(234,88,12,.18);
+  transition:background .2s ease, color .2s ease, transform .2s ease;
+}
+.all-cat-card:hover .all-cat-cta {
+  background:var(--orange);
+  color:#fff;
+  transform:translateY(-1px);
+}
+.all-cat-cta i {
+  font-size:11px;
+}
+
 .all-cat-pagination {
   display:flex;
   align-items:center;
