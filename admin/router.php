@@ -609,6 +609,43 @@ if (str_starts_with($uri, '/admin/api/')) {
         \Orders\AdminAudit::log('coupon_created',"Coupon: $code");
         json(['ok'=>true,'id'=>$id]);
     }
+    if (preg_match('#^/admin/api/coupons/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $id = (int)$m[1];
+        $code = strtoupper(trim($body['code']??''));
+        if (!$code) json(['ok'=>false,'msg'=>'Code required']);
+        if (Database::row("SELECT id FROM coupons WHERE code=? AND id<>?",[$code, $id])) json(['ok'=>false,'msg'=>'Code exists']);
+        $scopeType = ($body['scope_type'] ?? 'all') === 'category' ? 'category' : 'all';
+        $categoryId = (int)($body['category_id'] ?? 0);
+        if ($scopeType === 'category' && $categoryId <= 0) {
+            json(['ok'=>false,'msg'=>'Please select a category for category-specific coupon.'], 422);
+        }
+        try {
+            Database::query(
+                "UPDATE coupons
+                 SET code=?, description=?, discount_type=?, discount_value=?, min_order_amount=?, max_uses=?, valid_from=?, valid_until=?, scope_type=?, category_id=?
+                 WHERE id=?",
+                [
+                    $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
+                    (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
+                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null,
+                    $scopeType, $scopeType === 'category' ? $categoryId : null, $id,
+                ]
+            );
+        } catch (\Throwable) {
+            Database::query(
+                "UPDATE coupons
+                 SET code=?, description=?, discount_type=?, discount_value=?, min_order_amount=?, max_uses=?, valid_from=?, valid_until=?
+                 WHERE id=?",
+                [
+                    $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
+                    (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
+                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null, $id,
+                ]
+            );
+        }
+        \Orders\AdminAudit::log('coupon_updated',"Coupon: $code");
+        json(['ok'=>true,'id'=>$id]);
+    }
     if (preg_match('#^/admin/api/coupons/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
         Database::query("UPDATE coupons SET is_active=NOT is_active WHERE id=?",[$m[1]]);
         json(['ok'=>true]);
