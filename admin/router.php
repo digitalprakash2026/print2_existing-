@@ -1365,9 +1365,39 @@ if ($uri === '/admin/orders') {
     $page   = max(1, (int)($_GET['page'] ?? 1));
     $perPage = 12;
 
+    $summaryRow = Database::row(
+        "SELECT
+            COUNT(*) AS total_orders,
+            SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS new_today,
+            SUM(CASE WHEN status IN ('received','whatsapp_pending') THEN 1 ELSE 0 END) AS pending_orders,
+            SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) AS processing_orders,
+            SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) AS ready_orders,
+            SUM(CASE WHEN status IN ('received','whatsapp_pending','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS delayed_orders
+         FROM orders"
+    ) ?: [];
+    $summaryCounts = [
+        'total_orders' => (int)($summaryRow['total_orders'] ?? 0),
+        'new_today' => (int)($summaryRow['new_today'] ?? 0),
+        'pending_orders' => (int)($summaryRow['pending_orders'] ?? 0),
+        'processing_orders' => (int)($summaryRow['processing_orders'] ?? 0),
+        'ready_orders' => (int)($summaryRow['ready_orders'] ?? 0),
+        'delayed_orders' => (int)($summaryRow['delayed_orders'] ?? 0),
+    ];
+    $statusCountRows = Database::rows("SELECT status, COUNT(*) AS c FROM orders GROUP BY status");
+    $statusCounts = ['all' => $summaryCounts['total_orders']];
+    foreach ($statusCountRows as $row) {
+        $statusCounts[(string)$row['status']] = (int)($row['c'] ?? 0);
+    }
+    $statusCounts['attention'] = ($statusCounts['received'] ?? 0) + ($statusCounts['whatsapp_pending'] ?? 0) + ($statusCounts['processing'] ?? 0) + ($statusCounts['printing'] ?? 0);
+    $statusCounts['delayed'] = $summaryCounts['delayed_orders'];
+
     $where = [];
     $params = [];
-    if ($status !== 'all' && $status !== '') { $where[] = 'status = ?'; $params[] = $status; }
+    if ($status === 'attention') {
+        $where[] = "status IN ('received','whatsapp_pending','processing','printing')";
+    } elseif ($status === 'delayed') {
+        $where[] = "status IN ('received','whatsapp_pending','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)";
+    } elseif ($status !== 'all' && $status !== '') { $where[] = 'status = ?'; $params[] = $status; }
     if ($search !== '') {
         $where[] = '(order_id LIKE ? OR customer_name LIKE ? OR customer_phone LIKE ? OR customer_email LIKE ?)';
         $like = '%' . $search . '%';
@@ -1395,7 +1425,7 @@ if ($uri === '/admin/orders') {
         );
     }
 
-    view('admin/orders', compact('orders','total','page','perPage','status','search'));
+    view('admin/orders', compact('orders','total','page','perPage','status','search','summaryCounts','statusCounts'));
     exit;
 }
 

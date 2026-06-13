@@ -6,11 +6,17 @@ include __DIR__ . '/layout.php';
 $statusColors = ['received'=>'b-blue','processing'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
 $statusLabels = ['received'=>'Received','processing'=>'Processing','printing'=>'Printing','ready'=>'Ready','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'WA Pending'];
 $orders = $orders ?? [];
+$summaryCounts = $summaryCounts ?? [];
+$statusCounts = $statusCounts ?? ['all' => 0];
 $total = (int)($total ?? 0);
 $page = (int)($page ?? 1);
 $perPage = (int)($perPage ?? 12);
 $search = $search ?? '';
 $status = $status ?? 'all';
+$orderUrl = static function (array $params = []): string {
+    $params = array_filter($params, static fn($v) => $v !== '' && $v !== null);
+    return '/admin/orders' . ($params ? ('?' . http_build_query($params)) : '');
+};
 ?>
 
 <div class="adm-orders-page">
@@ -22,10 +28,52 @@ $status = $status ?? 'all';
   <a href="/admin/export/orders" class="btn btn-outline btn-sm" target="_blank">⬇ Export CSV</a>
 </div>
 
+<div class="adm-orders-stats">
+  <a class="adm-order-stat adm-order-stat--blue" href="<?= htmlspecialchars($orderUrl(['search' => $search])) ?>">
+    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['new_today'] ?? 0)) ?></span>
+    <span class="adm-order-stat-l">New Today</span>
+  </a>
+  <a class="adm-order-stat adm-order-stat--amber" href="<?= htmlspecialchars($orderUrl(['status' => 'attention', 'search' => $search])) ?>">
+    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['pending_orders'] ?? 0)) ?></span>
+    <span class="adm-order-stat-l">Pending</span>
+  </a>
+  <a class="adm-order-stat adm-order-stat--orange" href="<?= htmlspecialchars($orderUrl(['status' => 'processing', 'search' => $search])) ?>">
+    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['processing_orders'] ?? 0)) ?></span>
+    <span class="adm-order-stat-l">Processing</span>
+  </a>
+  <a class="adm-order-stat adm-order-stat--green" href="<?= htmlspecialchars($orderUrl(['status' => 'ready', 'search' => $search])) ?>">
+    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['ready_orders'] ?? 0)) ?></span>
+    <span class="adm-order-stat-l">Ready</span>
+  </a>
+  <a class="adm-order-stat adm-order-stat--red" href="<?= htmlspecialchars($orderUrl(['status' => 'delayed', 'search' => $search])) ?>">
+    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['delayed_orders'] ?? 0)) ?></span>
+    <span class="adm-order-stat-l">Delayed / Attention</span>
+  </a>
+</div>
+
+<div class="adm-orders-tabs" aria-label="Order status filters">
+  <?php
+    $quickStatuses = ['all' => 'All', 'attention' => 'Attention', 'delayed' => 'Delayed', 'received' => 'New', 'whatsapp_pending' => 'WA Pending', 'processing' => 'Processing', 'printing' => 'Printing', 'ready' => 'Ready', 'delivered' => 'Delivered', 'cancelled' => 'Cancelled'];
+    foreach ($quickStatuses as $key => $label):
+      $hrefParams = ['status' => $key];
+      if ($key === 'all') unset($hrefParams['status']);
+      if ($search !== '') $hrefParams['search'] = $search;
+      $href = $orderUrl($hrefParams);
+      $active = ($status === $key) || ($key === 'all' && ($status === '' || $status === 'all'));
+  ?>
+  <a href="<?= htmlspecialchars($href) ?>" class="adm-orders-tab <?= $active ? 'act' : '' ?>">
+    <span><?= htmlspecialchars($label) ?></span>
+    <b><?= number_format((int)($statusCounts[$key] ?? 0)) ?></b>
+  </a>
+  <?php endforeach; ?>
+</div>
+
 <form method="GET" class="adm-orders-filters">
   <input name="search" class="fi" placeholder="Search order ID, name, phone…" value="<?= htmlspecialchars($search) ?>">
   <select name="status" class="fi fi-sel" onchange="this.form.submit()">
     <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>All Statuses</option>
+    <option value="attention" <?= $status === 'attention' ? 'selected' : '' ?>>Attention Required</option>
+    <option value="delayed" <?= $status === 'delayed' ? 'selected' : '' ?>>Delayed / Needs Attention</option>
     <?php foreach ($statusLabels as $k => $v): ?>
     <option value="<?= $k ?>" <?= $status === $k ? 'selected' : '' ?>><?= $v ?></option>
     <?php endforeach; ?>
@@ -68,10 +116,22 @@ $status = $status ?? 'all';
         $orderShipping = (is_array($orderNotesJson) && is_array($orderNotesJson['shipping'] ?? null))
             ? $orderNotesJson['shipping']
             : null;
+        $orderStatus = (string)($o['status'] ?? 'received');
+        $createdTs = strtotime((string)($o['created_at'] ?? '')) ?: time();
+        $activeOrder = !in_array($orderStatus, ['delivered','cancelled'], true);
+        $isNewOrder = $activeOrder && $createdTs >= strtotime('-24 hours');
+        $isDelayedOrder = in_array($orderStatus, ['received','whatsapp_pending','processing','printing'], true) && $createdTs < strtotime('-24 hours');
+        $rowClasses = ['order-row', 'order-row--' . preg_replace('/[^a-z0-9_-]+/i', '-', $orderStatus)];
+        if ($isNewOrder) $rowClasses[] = 'order-row--new';
+        if ($isDelayedOrder) $rowClasses[] = 'order-row--delayed';
       ?>
-      <tr id="ord-<?= (int)$o['id'] ?>">
+      <tr id="ord-<?= (int)$o['id'] ?>" class="<?= htmlspecialchars(implode(' ', $rowClasses)) ?>">
         <td>
           <div class="ord-id">#<?= htmlspecialchars($o['order_id']) ?></div>
+          <div class="ord-alerts">
+            <?php if ($isNewOrder): ?><span class="ord-mini-badge ord-mini-badge--new">New</span><?php endif; ?>
+            <?php if ($isDelayedOrder): ?><span class="ord-mini-badge ord-mini-badge--delay">Needs attention</span><?php endif; ?>
+          </div>
           <div class="ord-date"><?= date('d M Y, H:i', strtotime($o['created_at'])) ?></div>
           <div class="ord-meta">Internal ID: <?= (int)$o['id'] ?></div>
         </td>

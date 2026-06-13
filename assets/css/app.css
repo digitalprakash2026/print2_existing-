@@ -12095,3 +12095,83 @@ body:has(#siteHeader) .banner-slider {
   object-fit:cover !important;
   object-position:center;
 }
+
+/* Admin order attention states */
+.adm-orders-stats {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(150px,1fr));
+  gap:10px;
+  margin-bottom:12px;
+}
+.adm-order-stat {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:13px 14px;
+  border:1.5px solid var(--border);
+  border-radius:14px;
+  background:var(--white);
+  color:var(--text);
+  text-decoration:none;
+  box-shadow:0 8px 22px rgba(16,24,40,.05);
+}
+.adm-order-stat-v { font-family:var(--fd); font-size:24px; font-weight:800; line-height:1; }
+.adm-order-stat-l { font-size:11px; color:var(--text2); font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.adm-order-stat--blue { border-color:#BFDBFE; background:#EFF6FF; }
+.adm-order-stat--amber { border-color:#FDE68A; background:#FFFBEB; }
+.adm-order-stat--orange { border-color:#FDBA74; background:#FFF7ED; }
+.adm-order-stat--green { border-color:#BBF7D0; background:#F0FDF4; }
+.adm-order-stat--red { border-color:#FECACA; background:#FEF2F2; }
+.adm-orders-tabs {
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+.adm-orders-tab {
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border:1.5px solid var(--border);
+  background:var(--white);
+  color:var(--text2);
+  border-radius:999px;
+  padding:7px 10px;
+  font-size:12px;
+  font-weight:800;
+  text-decoration:none;
+}
+.adm-orders-tab b {
+  min-width:22px;
+  text-align:center;
+  color:var(--blue);
+  background:var(--blue-bg);
+  border-radius:999px;
+  padding:2px 6px;
+  font-size:11px;
+}
+.adm-orders-tab.act { color:var(--blue); border-color:var(--blue-mid); background:var(--blue-bg); }
+.adm-orders-table tbody tr.order-row--received td,
+.adm-orders-table tbody tr.order-row--whatsapp_pending td { background:#F8FBFF; }
+.adm-orders-table tbody tr.order-row--processing td { background:#FFFBEB; }
+.adm-orders-table tbody tr.order-row--printing td { background:#FFF7ED; }
+.adm-orders-table tbody tr.order-row--ready td { background:#F0FDF4; }
+.adm-orders-table tbody tr.order-row--delayed td { background:#FEF2F2; }
+.adm-orders-table tbody tr.order-row--new td:first-child { box-shadow:inset 4px 0 0 var(--blue); }
+.adm-orders-table tbody tr.order-row--delayed td:first-child { box-shadow:inset 4px 0 0 var(--red); }
+.ord-alerts { display:flex; gap:5px; flex-wrap:wrap; margin-top:5px; }
+.ord-mini-badge {
+  display:inline-flex;
+  align-items:center;
+  border-radius:999px;
+  padding:2px 7px;
+  font-size:10px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.ord-mini-badge--new { color:var(--blue); background:#DBEAFE; }
+.ord-mini-badge--delay { color:var(--red); background:#FEE2E2; }
+@media (max-width:900px) {
+  .adm-orders-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
