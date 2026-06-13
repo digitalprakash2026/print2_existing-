@@ -23,7 +23,6 @@ $productCount = count($products ?? []);
 $categoryName = (string)($category['name'] ?? 'Category');
 $categorySlug = (string)($category['slug'] ?? '');
 $categoryDescription = trim((string)($category['description'] ?? ''));
-$activeCategories = array_values(array_filter($categories ?? [], static fn($cat) => (int)($cat['is_active'] ?? 1) === 1));
 $filterOptions = is_array($filterOptions ?? null) ? $filterOptions : [];
 $selectedFilters = is_array($selectedFilters ?? null) ? $selectedFilters : [];
 $hasSelectedFilters = !empty($selectedFilters);
@@ -61,22 +60,8 @@ include INCLUDE_PATH . '/partials/header.php';
     <?php else: ?>
       <section class="all-cat-shop" aria-label="Browse <?= htmlspecialchars($categoryName) ?> products">
         <details class="all-cat-filter-panel" open>
-          <summary><span>Categories &amp; Filters</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
-          <aside class="all-cat-sidebar" aria-label="Category filters">
-            <div class="all-cat-side-box all-cat-side-categories">
-              <h2>Categories</h2>
-              <nav class="all-cat-side-list" aria-label="Category quick links">
-                <?php foreach ($activeCategories as $cat):
-                  $sideSlug = (string)($cat['slug'] ?? '');
-                  $sideName = (string)($cat['name'] ?? 'Category');
-                ?>
-                  <a href="/category/<?= htmlspecialchars($sideSlug) ?>" class="<?= $sideSlug === $categorySlug ? 'is-active' : '' ?>">
-                    <?= htmlspecialchars($sideName) ?>
-                  </a>
-                <?php endforeach; ?>
-              </nav>
-            </div>
-
+          <summary><span>Filters</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+          <aside class="all-cat-sidebar" aria-label="Product filters">
             <form class="all-cat-side-box all-cat-filter-box" method="get" action="/category/<?= htmlspecialchars($categorySlug) ?>">
               <h2>Filter By</h2>
               <?php foreach ($filterOptions as $group): ?>

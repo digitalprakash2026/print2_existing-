@@ -162,11 +162,7 @@ class ProductCatalog
         foreach ($rows as $row) {
             $groupSlug = (string)($row['group_slug'] ?? '');
             if (!isset($groups[$groupSlug])) {
-                $groups[$groupSlug] = [
-                    'slug' => $groupSlug,
-                    'label' => (string)($row['group_label'] ?? $groupSlug),
-                    'options' => [],
-                ];
+                continue;
             }
             $groups[$groupSlug]['options'][] = [
                 'id' => (int)($row['id'] ?? 0),
