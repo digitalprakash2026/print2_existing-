@@ -38,7 +38,7 @@ include INCLUDE_PATH . '/partials/header.php';
       <nav class="all-cat-crumb" aria-label="Breadcrumb">
         <a href="/">Home</a><span>›</span><a href="/categories">All Categories</a><span>›</span><span><?= htmlspecialchars($categoryName) ?></span>
       </nav>
-      <h1 id="categoryTitle"><?= htmlspecialchars($categoryName) ?> Products</h1>
+      <h1 id="categoryTitle"><?= htmlspecialchars($categoryName) ?></h1>
       <p><?= $categoryDescription !== '' ? htmlspecialchars($categoryDescription) : 'Premium quality printing products for every business need.' ?></p>
     </div>
     <div class="all-cat-hero-visual" aria-hidden="true">
