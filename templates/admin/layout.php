@@ -5,10 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= htmlspecialchars($pageTitle ?? 'Admin — RCS Graphic') ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@600;700&display=swap" rel="stylesheet">
-<?php $adminCssVersion = @filemtime(PUBLIC_PATH . '/assets/css/app.css') ?: time(); ?>
-<link rel="stylesheet" href="/assets/css/app.css?v=<?= (int)$adminCssVersion ?>">
+<?php
+$adminAppCssVersion = @filemtime(PUBLIC_PATH . '/assets/css/app.css') ?: time();
+$adminCssVersion = @filemtime(PUBLIC_PATH . '/assets/css/admin.css') ?: time();
+$adminPageClass = 'admin-page-' . preg_replace('/[^a-z0-9-]+/i', '-', (string)($currentAdmPage ?? 'dashboard'));
+?>
+<link rel="stylesheet" href="/assets/css/app.css?v=<?= (int)$adminAppCssVersion ?>">
+<link rel="stylesheet" href="/assets/css/admin.css?v=<?= (int)$adminCssVersion ?>">
 </head>
-<body class="<?= ($currentAdmPage ?? '') === 'dashboard' ? 'admin-dashboard-shell' : '' ?>" style="background:var(--bg)">
+<body class="admin-shell <?= htmlspecialchars($adminPageClass) ?> <?= ($currentAdmPage ?? '') === 'dashboard' ? 'admin-dashboard-shell' : '' ?>" style="background:var(--bg)">
 <div class="toast-wrap" id="tw"></div>
 
 <!-- Admin Header -->
