@@ -60,7 +60,7 @@
     <!-- Sidebar -->
     <div class="adm-sb" id="admSidebar">
       <div class="adm-sb-logo">
-        <div class="adm-sb-t">RCS Graphic</div>
+        <div class="adm-sb-t"><span>RCS</span> Graphic</div>
         <div class="adm-sb-s">Admin Panel</div>
       </div>
       <div class="adm-nl">Main</div>
