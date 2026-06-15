@@ -9,29 +9,32 @@ include __DIR__ . '/layout.php';
       <h1>Dashboard</h1>
       <p>Welcome back! Here’s what’s happening with your business today.</p>
     </div>
-    <button class="dash-ref-date" type="button">📅 <span><?= date('d M Y') ?> - <?= date('d M Y') ?></span>⌄</button>
+    <div class="dash-ref-title-actions">
+      <button class="dash-ref-refresh" id="dashRefresh" type="button" aria-label="Refresh dashboard">↻ Refresh</button>
+      <button class="dash-ref-date" type="button"><span class="dash-ref-mini-icon">▣</span><span><?= date('d M Y') ?> - <?= date('d M Y') ?></span>⌄</button>
+    </div>
   </div>
 
   <section class="dash-ref-kpis dash-ref-kpis-top" aria-label="Primary dashboard metrics">
-    <article class="dash-ref-kpi kpi-bag"><span>🛍️</span><div><b id="ds-new">—</b><strong>New Orders</strong><small class="pos">↑ Live orders</small></div></article>
-    <article class="dash-ref-kpi kpi-hour"><span>⌛</span><div><b id="ds-pending">—</b><strong>Pending Orders</strong><small class="pos">↑ Needs review</small></div></article>
-    <article class="dash-ref-kpi kpi-print"><span>🖨️</span><div><b id="ds-production">—</b><strong>Printing Orders</strong><small>↗ In production</small></div></article>
-    <article class="dash-ref-kpi kpi-box"><span>📦</span><div><b id="ds-ready">—</b><strong>Ready Orders</strong><small class="neg">↓ Ready queue</small></div></article>
-    <article class="dash-ref-kpi kpi-truck"><span>🚚</span><div><b id="ds-delivered">—</b><strong>Delivered Orders</strong><small class="pos">↑ Completed</small></div></article>
-    <article class="dash-ref-kpi kpi-rupee"><span>₹</span><div><b id="ds-rev">—</b><strong>Total Revenue</strong><small class="pos">↑ Paid orders</small></div></article>
+    <a class="dash-ref-kpi kpi-bag" href="/admin/orders?seen=new"><span>▣</span><div><b id="ds-new">—</b><strong>New Orders</strong><small id="tr-new" class="pos">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-hour" href="/admin/orders?status=received"><span>⌛</span><div><b id="ds-pending">—</b><strong>Pending Orders</strong><small id="tr-pending" class="pos">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-print" href="/admin/orders?status=printing"><span>▤</span><div><b id="ds-production">—</b><strong>Printing Orders</strong><small id="tr-production">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-box" href="/admin/orders?status=ready"><span>⬡</span><div><b id="ds-ready">—</b><strong>Ready Orders</strong><small id="tr-ready" class="neg">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-truck" href="/admin/orders?status=delivered"><span>▰</span><div><b id="ds-delivered">—</b><strong>Delivered Orders</strong><small id="tr-delivered" class="pos">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-rupee" href="/admin/analytics"><span>₹</span><div><b id="ds-rev">—</b><strong>Total Revenue</strong><small class="pos">↑ Paid orders</small></div></a>
   </section>
 
   <section class="dash-ref-kpis dash-ref-kpis-sub" aria-label="Secondary dashboard metrics">
-    <article class="dash-ref-kpi kpi-shield"><span>🛡️</span><div><b id="ds-today-rev">—</b><strong>Today’s Revenue</strong><small class="pos">↑ Today</small></div></article>
-    <article class="dash-ref-kpi kpi-chart"><span>📈</span><div><b id="ds-month-rev">—</b><strong>This Month Revenue</strong><small class="pos">↑ This month</small></div></article>
-    <article class="dash-ref-kpi kpi-wallet"><span>💳</span><div><b id="ds-payments">—</b><strong>Pending Payments</strong><small class="neg">↑ Follow up</small></div></article>
-    <article class="dash-ref-kpi kpi-aov"><span>📊</span><div><b id="ds-aov">—</b><strong>Average Order Value</strong><small class="pos">↑ Paid orders</small></div></article>
-    <article class="dash-ref-kpi kpi-users"><span>👥</span><div><b id="ds-customers">—</b><strong>Total Customers</strong><small class="pos">↑ Customer base</small></div></article>
+    <a class="dash-ref-kpi kpi-shield" href="/admin/orders"><span>◈</span><div><b id="ds-today-rev">—</b><strong>Today’s Revenue</strong><small id="tr-today-rev" class="pos">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-chart" href="/admin/analytics"><span>↗</span><div><b id="ds-month-rev">—</b><strong>This Month Revenue</strong><small id="tr-month-rev" class="pos">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-wallet" href="/admin/orders"><span>▧</span><div><b id="ds-payments">—</b><strong>Pending Payments</strong><small class="neg">↑ Follow up</small></div></a>
+    <a class="dash-ref-kpi kpi-aov" href="/admin/analytics"><span>▥</span><div><b id="ds-aov">—</b><strong>Average Order Value</strong><small id="tr-aov" class="pos">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-users" href="/admin/customers"><span>●</span><div><b id="ds-customers">—</b><strong>Total Customers</strong><small id="tr-customers" class="pos">Loading trend…</small></div></a>
   </section>
 
   <section class="dash-ref-main-row">
     <article class="dash-ref-card dash-ref-revenue">
-      <div class="dash-ref-card-head"><div><h2>Revenue Overview</h2></div><button class="dash-ref-select" type="button">Last 6 Months⌄</button></div>
+      <div class="dash-ref-card-head"><div><h2>Revenue Overview</h2><small id="dashUpdated">Syncing live dashboard…</small></div><button class="dash-ref-select" type="button">Last 6 Months⌄</button></div>
       <div class="dash-ref-chart" id="revChart"><div class="dash-ref-empty">Loading…</div></div>
     </article>
 
@@ -79,10 +82,34 @@ const STATUS_LABELS = {received:'Received',processing:'Processing',printing:'Pri
 const money = n => '₹'+Number(n||0).toLocaleString('en-IN');
 const escH = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const pct = (part,total) => Math.max(3, Math.round((Number(part||0) / Math.max(Number(total||0), 1)) * 100));
+const trendText = (value, label) => {
+  const n = Number(value || 0);
+  const arrow = n < 0 ? '↓' : '↑';
+  return `${arrow} ${Math.abs(n).toFixed(2)}% ${label || ''}`.trim();
+};
+function setTrend(id, value, label, invert=false){
+  const el = document.getElementById(id);
+  if (!el) return;
+  const n = Number(value || 0);
+  el.textContent = trendText(n, label);
+  el.classList.toggle('pos', invert ? n <= 0 : n >= 0);
+  el.classList.toggle('neg', invert ? n > 0 : n < 0);
+}
 
 async function loadDash(){
-  const res = await fetch('/admin/api/dashboard').then(r=>r.json());
-  if (!res.ok) return;
+  const btn = document.getElementById('dashRefresh');
+  const upd = document.getElementById('dashUpdated');
+  if (btn) btn.classList.add('loading');
+  if (upd) upd.textContent = 'Refreshing live data…';
+  let res;
+  try {
+    res = await fetch('/admin/api/dashboard', { credentials:'same-origin' }).then(r=>r.json());
+  } catch (e) {
+    if (upd) upd.textContent = 'Could not load dashboard. Check connection and retry.';
+    if (btn) btn.classList.remove('loading');
+    return;
+  }
+  if (!res.ok) { if (btn) btn.classList.remove('loading'); return; }
   const s = res.stats || {};
   document.getElementById('ds-new').textContent = Number(s.new_orders||0).toLocaleString('en-IN');
   document.getElementById('ds-pending').textContent = Number(s.pending_orders||0).toLocaleString('en-IN');
@@ -95,6 +122,17 @@ async function loadDash(){
   document.getElementById('ds-payments').textContent = money(s.pending_payments || 0);
   document.getElementById('ds-aov').textContent = money(s.avg_order_value || 0);
   document.getElementById('ds-customers').textContent = Number(s.total_customers||0).toLocaleString('en-IN');
+  setTrend('tr-new', s.new_orders_trend, s.new_orders_trend_label);
+  setTrend('tr-pending', s.pending_orders_trend, s.pending_orders_trend_label, true);
+  setTrend('tr-production', s.production_orders_trend, s.production_orders_trend_label);
+  setTrend('tr-ready', s.ready_orders_trend, s.ready_orders_trend_label);
+  setTrend('tr-delivered', s.delivered_orders_trend, s.delivered_orders_trend_label);
+  setTrend('tr-today-rev', s.today_revenue_trend, s.today_revenue_trend_label);
+  setTrend('tr-month-rev', s.month_revenue_trend, s.month_revenue_trend_label);
+  setTrend('tr-aov', s.avg_order_value_trend, s.avg_order_value_trend_label);
+  setTrend('tr-customers', s.total_customers_trend, s.total_customers_trend_label);
+  if (upd) upd.textContent = 'Last updated: ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  if (btn) btn.classList.remove('loading');
   drawRevenue(res.monthly || []);
   drawQueue(res.queue || {});
   drawProducts(res.top_products || []);
@@ -140,6 +178,7 @@ function drawOrders(orders){
   el.innerHTML = orders.map(o=>`<tr><td><a href="/admin/orders?search=${encodeURIComponent(o.order_id)}">#${escH(o.order_id)}</a></td><td>${escH(o.customer_name||'-')}</td><td>${escH(o.product_summary || (Number(o.item_count||0)+' item(s)'))}</td><td>${money(o.total_amount)}</td><td><span class="dash-ref-status ${STATUS_COLORS[o.status]||'st-blue'}">${STATUS_LABELS[o.status]||escH(o.status)}</span></td><td>${fmt(o.created_at)}</td><td><span class="dash-ref-new">NEW</span></td></tr>`).join('');
 }
 function fmt(d){const dt=new Date(String(d).replace(' ','T'));return Number.isNaN(dt.getTime())?escH(d):dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+', '+dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
+document.getElementById('dashRefresh')?.addEventListener('click', loadDash);
 loadDash();
 </script>
     </div></div></div>

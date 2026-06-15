@@ -262,7 +262,7 @@ if (str_starts_with($uri, '/admin/api/')) {
     if ($uri === '/admin/api/dashboard' && $method === 'GET') {
         $hasSeen = $ensureOrderSeenColumn();
         $newOrderWhere = $hasSeen ? "is_seen = 0" : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
-        $stats = [
+        $statRows = [
             'total_orders'      => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
             'new_orders'        => Database::row("SELECT COUNT(*) as c FROM orders WHERE $newOrderWhere")['c'] ?? 0,
             'total_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status='paid'")['r'] ?? 0,
@@ -277,6 +277,60 @@ if (str_starts_with($uri, '/admin/api/')) {
             'avg_order_value'   => Database::row("SELECT COALESCE(AVG(total_amount),0) as a FROM orders WHERE payment_status='paid'")['a'] ?? 0,
             'total_customers'   => Database::row("SELECT COUNT(*) as c FROM users")['c'] ?? 0,
         ];
+        $trendPct = static function ($current, $previous): ?float {
+            $current = (float)$current;
+            $previous = (float)$previous;
+            if ($previous <= 0) {
+                return $current > 0 ? 100.0 : 0.0;
+            }
+            return round((($current - $previous) / $previous) * 100, 2);
+        };
+        $comparisonRows = [
+            'new_orders' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND status NOT IN ('delivered','cancelled')")['c'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'pending_orders' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending') AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'production_orders' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('processing','printing') AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'ready_orders' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready' AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'delivered_orders' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='delivered' AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'today_revenue' => [
+                'previous' => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND payment_status='paid'")['r'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'month_revenue' => [
+                'previous' => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH),'%Y-%m-01') AND created_at < DATE_FORMAT(CURDATE(),'%Y-%m-01') AND payment_status='paid'")['r'] ?? 0,
+                'label' => 'vs last month',
+            ],
+            'avg_order_value' => [
+                'previous' => Database::row("SELECT COALESCE(AVG(total_amount),0) as a FROM orders WHERE created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH),'%Y-%m-01') AND created_at < DATE_FORMAT(CURDATE(),'%Y-%m-01') AND payment_status='paid'")['a'] ?? 0,
+                'label' => 'vs last month',
+            ],
+            'total_customers' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM users WHERE created_at < DATE_FORMAT(CURDATE(),'%Y-%m-01')")['c'] ?? 0,
+                'label' => 'vs last month',
+            ],
+        ];
+        $stats = [];
+        foreach ($statRows as $key => $value) {
+            $stats[$key] = $value;
+            if (isset($comparisonRows[$key])) {
+                $stats[$key . '_trend'] = $trendPct($value, $comparisonRows[$key]['previous']);
+                $stats[$key . '_trend_label'] = $comparisonRows[$key]['label'];
+            }
+        }
         $queue = [
             'design_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending')")['c'] ?? 0),
             'approval_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='whatsapp_pending'")['c'] ?? 0),
