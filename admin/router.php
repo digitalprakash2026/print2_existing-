@@ -28,6 +28,38 @@ if ($uri === '/admin/logout') {
 }
 
 \Auth\Auth::requireAdmin();
+$orderSeenColumnReady = null;
+$orderSeenColumnAvailable = static function () use (&$orderSeenColumnReady): bool {
+    if ($orderSeenColumnReady !== null) return $orderSeenColumnReady;
+    try {
+        $row = Database::row(
+            "SELECT 1 AS ok
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'orders'
+               AND COLUMN_NAME = 'is_seen'
+             LIMIT 1"
+        );
+        $orderSeenColumnReady = (bool)$row;
+    } catch (\Throwable) {
+        $orderSeenColumnReady = false;
+    }
+    return $orderSeenColumnReady;
+};
+$ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderSeenColumnAvailable): bool {
+    if ($orderSeenColumnAvailable()) return true;
+    try {
+        Database::query("ALTER TABLE orders ADD COLUMN is_seen TINYINT(1) NOT NULL DEFAULT 0 AFTER status");
+        try { Database::query("CREATE INDEX idx_orders_is_seen ON orders (is_seen, created_at)"); } catch (\Throwable) {}
+        $orderSeenColumnReady = true;
+        return true;
+    } catch (\Throwable $e) {
+        error_log('Order is_seen column unavailable: ' . $e->getMessage());
+        $orderSeenColumnReady = false;
+        return false;
+    }
+};
+
 $adminUsersHasMobile = null;
 $hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
     if ($adminUsersHasMobile !== null) return $adminUsersHasMobile;
@@ -228,19 +260,48 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
     if ($uri === '/admin/api/dashboard' && $method === 'GET') {
+        $hasSeen = $ensureOrderSeenColumn();
+        $newOrderWhere = $hasSeen ? "is_seen = 0" : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
         $stats = [
-            'total_orders'    => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
-            'total_revenue'   => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status='paid'")['r'] ?? 0,
-            'today_orders'    => Database::row("SELECT COUNT(*) as c FROM orders WHERE DATE(created_at)=CURDATE()")['c'] ?? 0,
-            'today_revenue'   => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE DATE(created_at)=CURDATE() AND payment_status='paid'")['r'] ?? 0,
-            'pending_orders'  => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','processing','printing')")['c'] ?? 0,
-            'total_customers' => Database::row("SELECT COUNT(*) as c FROM users")['c'] ?? 0,
+            'total_orders'      => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
+            'new_orders'        => Database::row("SELECT COUNT(*) as c FROM orders WHERE $newOrderWhere")['c'] ?? 0,
+            'total_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status='paid'")['r'] ?? 0,
+            'today_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE DATE(created_at)=CURDATE() AND payment_status='paid'")['r'] ?? 0,
+            'today_orders'      => Database::row("SELECT COUNT(*) as c FROM orders WHERE DATE(created_at)=CURDATE()")['c'] ?? 0,
+            'pending_orders'    => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending')")['c'] ?? 0,
+            'production_orders' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('processing','printing')")['c'] ?? 0,
+            'ready_orders'      => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0,
+            'delivered_orders'  => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='delivered'")['c'] ?? 0,
+            'pending_payments'  => Database::row("SELECT COUNT(*) as c FROM orders WHERE payment_status <> 'paid'")['c'] ?? 0,
+            'total_customers'   => Database::row("SELECT COUNT(*) as c FROM users")['c'] ?? 0,
+        ];
+        $queue = [
+            'design_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending')")['c'] ?? 0),
+            'approval_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='whatsapp_pending'")['c'] ?? 0),
+            'printing' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='printing'")['c'] ?? 0),
+            'packing' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='processing'")['c'] ?? 0),
+            'ready_delivery' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0),
         ];
         $byStatus    = Database::rows("SELECT status, COUNT(*) as count FROM orders GROUP BY status");
         $monthly     = Database::rows("SELECT DATE_FORMAT(created_at,'%b %Y') as month, SUM(total_amount) as revenue, COUNT(*) as orders FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH) GROUP BY YEAR(created_at), MONTH(created_at) ORDER BY created_at ASC");
         $topProducts = Database::rows("SELECT product_name, COUNT(*) as count, SUM(total_price) as revenue FROM order_items GROUP BY product_name ORDER BY count DESC LIMIT 8");
         $recentOrders= Database::rows("SELECT o.*, COUNT(oi.id) as item_count FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id GROUP BY o.id ORDER BY o.created_at DESC LIMIT 10");
-        json(['ok'=>true,'stats'=>$stats,'by_status'=>$byStatus,'monthly'=>$monthly,'top_products'=>$topProducts,'recent_orders'=>$recentOrders]);
+        $recentNewOrders = Database::rows("SELECT o.*, COUNT(oi.id) as item_count FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id WHERE $newOrderWhere GROUP BY o.id ORDER BY o.created_at DESC LIMIT 6");
+        json(['ok'=>true,'stats'=>$stats,'queue'=>$queue,'by_status'=>$byStatus,'monthly'=>$monthly,'top_products'=>$topProducts,'recent_orders'=>$recentOrders,'recent_new_orders'=>$recentNewOrders,'seen_supported'=>$hasSeen]);
+    }
+
+    if ($uri === '/admin/api/order-notifications' && $method === 'GET') {
+        $hasSeen = $ensureOrderSeenColumn();
+        $newOrderWhere = $hasSeen ? "is_seen = 0" : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
+        $count = (int)(Database::row("SELECT COUNT(*) AS c FROM orders WHERE $newOrderWhere")['c'] ?? 0);
+        $orders = Database::rows("SELECT id, order_id, customer_name, total_amount, status, created_at FROM orders WHERE $newOrderWhere ORDER BY created_at DESC LIMIT 5");
+        json(['ok'=>true,'count'=>$count,'orders'=>$orders,'seen_supported'=>$hasSeen]);
+    }
+
+    if (preg_match('#^/admin/api/orders/(\d+)/seen$#', $uri, $m) && $method === 'POST') {
+        if (!$ensureOrderSeenColumn()) json(['ok'=>false,'msg'=>'Seen tracking is unavailable. Run database migration.'], 500);
+        Database::query("UPDATE orders SET is_seen = 1 WHERE id = ?", [(int)$m[1]]);
+        json(['ok'=>true]);
     }
 
     if ($uri === '/admin/api/orders' && $method === 'GET') {
@@ -1362,8 +1423,14 @@ if (str_contains($uri, '/admin/settings') || str_contains($uri, '/admin/integrat
 if ($uri === '/admin/orders') {
     $search = trim((string)($_GET['search'] ?? ''));
     $status = trim((string)($_GET['status'] ?? 'all'));
+    $paymentStatus = trim((string)($_GET['payment_status'] ?? 'all'));
+    $seen = trim((string)($_GET['seen'] ?? 'all'));
+    $sort = trim((string)($_GET['sort'] ?? 'newest'));
+    $dateFrom = trim((string)($_GET['date_from'] ?? ''));
+    $dateTo = trim((string)($_GET['date_to'] ?? ''));
     $page   = max(1, (int)($_GET['page'] ?? 1));
     $perPage = 12;
+    $hasSeen = $ensureOrderSeenColumn();
 
     $summaryRow = Database::row(
         "SELECT
@@ -1398,18 +1465,32 @@ if ($uri === '/admin/orders') {
     } elseif ($status === 'delayed') {
         $where[] = "status IN ('received','whatsapp_pending','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)";
     } elseif ($status !== 'all' && $status !== '') { $where[] = 'status = ?'; $params[] = $status; }
+    if ($paymentStatus !== 'all' && $paymentStatus !== '') { $where[] = 'payment_status = ?'; $params[] = $paymentStatus; }
+    if ($seen === 'new') {
+        $where[] = $hasSeen ? 'is_seen = 0' : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
+    } elseif ($seen === 'seen' && $hasSeen) {
+        $where[] = 'is_seen = 1';
+    }
+    if ($dateFrom !== '') { $where[] = 'DATE(created_at) >= ?'; $params[] = $dateFrom; }
+    if ($dateTo !== '') { $where[] = 'DATE(created_at) <= ?'; $params[] = $dateTo; }
     if ($search !== '') {
         $where[] = '(order_id LIKE ? OR customer_name LIKE ? OR customer_phone LIKE ? OR customer_email LIKE ?)';
         $like = '%' . $search . '%';
         array_push($params, $like, $like, $like, $like);
     }
     $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+    $orderSql = match ($sort) {
+        'oldest' => 'created_at ASC',
+        'high_value' => 'total_amount DESC, created_at DESC',
+        'urgent' => ($hasSeen ? 'is_seen ASC, ' : '') . "FIELD(status,'received','whatsapp_pending','processing','printing','ready','delivered','cancelled'), created_at ASC",
+        default => 'created_at DESC',
+    };
 
     $countRow = Database::row("SELECT COUNT(*) c FROM orders $whereSql", $params);
     $total = (int)($countRow['c'] ?? 0);
     $offset = ($page - 1) * $perPage;
 
-    $orders = Database::rows("SELECT * FROM orders $whereSql ORDER BY created_at DESC LIMIT $perPage OFFSET $offset", $params);
+    $orders = Database::rows("SELECT * FROM orders $whereSql ORDER BY $orderSql LIMIT $perPage OFFSET $offset", $params);
     foreach ($orders as &$o) {
         $o['items'] = Database::rows(
             "SELECT oi.*,
@@ -1425,7 +1506,7 @@ if ($uri === '/admin/orders') {
         );
     }
 
-    view('admin/orders', compact('orders','total','page','perPage','status','search','summaryCounts','statusCounts'));
+    view('admin/orders', compact('orders','total','page','perPage','status','search','summaryCounts','statusCounts','paymentStatus','seen','sort','dateFrom','dateTo','hasSeen'));
     exit;
 }
 

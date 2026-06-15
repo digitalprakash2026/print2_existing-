@@ -13,6 +13,12 @@ $page = (int)($page ?? 1);
 $perPage = (int)($perPage ?? 12);
 $search = $search ?? '';
 $status = $status ?? 'all';
+$paymentStatus = $paymentStatus ?? 'all';
+$seen = $seen ?? 'all';
+$sort = $sort ?? 'newest';
+$dateFrom = $dateFrom ?? '';
+$dateTo = $dateTo ?? '';
+$hasSeen = !empty($hasSeen);
 $orderUrl = static function (array $params = []): string {
     $params = array_filter($params, static fn($v) => $v !== '' && $v !== null);
     return '/admin/orders' . ($params ? ('?' . http_build_query($params)) : '');
@@ -93,8 +99,27 @@ $orderUrl = static function (array $params = []): string {
     <option value="<?= $k ?>" <?= $status === $k ? 'selected' : '' ?>><?= $v ?></option>
     <?php endforeach; ?>
   </select>
+  <select name="payment_status" class="fi fi-sel" onchange="this.form.submit()">
+    <option value="all" <?= $paymentStatus === 'all' ? 'selected' : '' ?>>All Payments</option>
+    <?php foreach (['paid'=>'Paid','pending'=>'Pending','failed'=>'Failed','refunded'=>'Refunded'] as $k => $v): ?>
+    <option value="<?= $k ?>" <?= $paymentStatus === $k ? 'selected' : '' ?>><?= $v ?></option>
+    <?php endforeach; ?>
+  </select>
+  <select name="seen" class="fi fi-sel" onchange="this.form.submit()">
+    <option value="all" <?= $seen === 'all' ? 'selected' : '' ?>>All Orders</option>
+    <option value="new" <?= $seen === 'new' ? 'selected' : '' ?>>New / Unseen</option>
+    <?php if ($hasSeen): ?><option value="seen" <?= $seen === 'seen' ? 'selected' : '' ?>>Seen</option><?php endif; ?>
+  </select>
+  <input type="date" name="date_from" class="fi" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="Date from">
+  <input type="date" name="date_to" class="fi" value="<?= htmlspecialchars($dateTo) ?>" aria-label="Date to">
+  <select name="sort" class="fi fi-sel" onchange="this.form.submit()">
+    <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Newest first</option>
+    <option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Oldest first</option>
+    <option value="high_value" <?= $sort === 'high_value' ? 'selected' : '' ?>>High value first</option>
+    <option value="urgent" <?= $sort === 'urgent' ? 'selected' : '' ?>>Urgent first</option>
+  </select>
   <button class="btn btn-blue btn-sm" type="submit">Apply</button>
-  <?php if ($search || $status !== 'all'): ?><a href="/admin/orders" class="btn btn-outline btn-sm">Clear</a><?php endif; ?>
+  <?php if ($search || $status !== 'all' || $paymentStatus !== 'all' || $seen !== 'all' || $sort !== 'newest' || $dateFrom || $dateTo): ?><a href="/admin/orders" class="btn btn-outline btn-sm">Clear</a><?php endif; ?>
 </form>
 </div>
 
@@ -134,20 +159,21 @@ $orderUrl = static function (array $params = []): string {
             : null;
         $orderStatus = (string)($o['status'] ?? 'received');
         $createdTs = strtotime((string)($o['created_at'] ?? '')) ?: time();
+        $isUnseenOrder = $hasSeen ? ((int)($o['is_seen'] ?? 1) === 0) : false;
         $activeOrder = !in_array($orderStatus, ['delivered','cancelled'], true);
         $isNewOrder = $activeOrder && $createdTs >= strtotime('-24 hours');
         $isDelayedOrder = in_array($orderStatus, ['received','whatsapp_pending','processing','printing'], true) && $createdTs < strtotime('-24 hours');
         $ageSeconds = max(0, time() - $createdTs);
         $orderAge = $ageSeconds >= 86400 ? floor($ageSeconds / 86400) . 'd old' : floor($ageSeconds / 3600) . 'h old';
         $rowClasses = ['order-row', 'order-row--' . preg_replace('/[^a-z0-9_-]+/i', '-', $orderStatus)];
-        if ($isNewOrder) $rowClasses[] = 'order-row--new';
+        if ($isNewOrder || $isUnseenOrder) $rowClasses[] = 'order-row--new';
         if ($isDelayedOrder) $rowClasses[] = 'order-row--delayed';
       ?>
       <tr id="ord-<?= (int)$o['id'] ?>" class="<?= htmlspecialchars(implode(' ', $rowClasses)) ?>">
         <td>
           <div class="ord-id">#<?= htmlspecialchars($o['order_id']) ?></div>
           <div class="ord-alerts">
-            <?php if ($isNewOrder): ?><span class="ord-mini-badge ord-mini-badge--new">New</span><?php endif; ?>
+            <?php if ($isNewOrder || $isUnseenOrder): ?><span class="ord-mini-badge ord-mini-badge--new"><?= $isUnseenOrder ? 'Unseen' : 'New' ?></span><?php endif; ?>
             <?php if ($isDelayedOrder): ?><span class="ord-mini-badge ord-mini-badge--delay">Needs attention</span><?php endif; ?>
           </div>
           <div class="ord-date"><?= date('d M Y, H:i', strtotime($o['created_at'])) ?></div>
@@ -212,6 +238,7 @@ $orderUrl = static function (array $params = []): string {
         </td>
         <td>
           <div class="ord-actions">
+            <?php if ($isUnseenOrder): ?><button class="aoc-btn" onclick="markOrderSeen(<?= (int)$o['id'] ?>)">✓ Mark seen</button><?php endif; ?>
             <a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">🧾 Invoice</a>
             <a href="/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">👁 View</a>
             <button
@@ -289,6 +316,13 @@ function toast(msg, type='info') {
   const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg; w.appendChild(t);
   requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+async function markOrderSeen(id) {
+  const resp = await fetch(`/admin/api/orders/${id}/seen`, {method:'POST', headers:{'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'}});
+  const data = await resp.json();
+  if (data.ok) { toast('Order marked as seen', 'success'); setTimeout(() => location.reload(), 450); }
+  else toast(data.msg || 'Could not mark seen', 'error');
 }
 
 function updOrdFromSel(id) {

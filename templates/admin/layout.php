@@ -26,6 +26,15 @@
   <div class="adm-hdr-right">
     <?php $admin = \Auth\Auth::admin(); ?>
     <div class="adm-hdr-actions">
+      <div class="adm-notify" id="admNotify">
+        <button class="adm-notify-btn" type="button" id="admNotifyBtn" aria-expanded="false" aria-label="New order notifications">
+          🔔 <span class="adm-notify-count" id="admNotifyCount" style="display:none">0</span>
+        </button>
+        <div class="adm-notify-panel" id="admNotifyPanel">
+          <div class="adm-notify-head"><strong>New Orders</strong><a href="/admin/orders?seen=new">View all</a></div>
+          <div id="admNotifyList" class="adm-notify-list"><div class="adm-notify-empty">Loading…</div></div>
+        </div>
+      </div>
       <span class="adm-hdr-name"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
       <a href="/admin/logout" class="btn-auth btn-auth-ghost adm-hdr-link">Logout</a>
     </div>
@@ -99,6 +108,36 @@
         }
       });
 
+      const notify = document.getElementById('admNotify');
+      const notifyBtn = document.getElementById('admNotifyBtn');
+      const notifyPanel = document.getElementById('admNotifyPanel');
+      const notifyCount = document.getElementById('admNotifyCount');
+      const notifyList = document.getElementById('admNotifyList');
+      function escAdm(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+      async function loadAdminNotifications(){
+        if (!notifyCount || !notifyList) return;
+        try {
+          const res = await fetch('/admin/api/order-notifications').then(r=>r.json());
+          if (!res.ok) return;
+          const count = Number(res.count || 0);
+          notifyCount.textContent = count > 99 ? '99+' : String(count);
+          notifyCount.style.display = count > 0 ? '' : 'none';
+          notifyList.innerHTML = (res.orders || []).length
+            ? res.orders.map(o => `<a class="adm-notify-item" href="/admin/orders?seen=new"><span>#${escAdm(o.order_id)}</span><small>${escAdm(o.customer_name)} · ₹${Number(o.total_amount||0).toLocaleString('en-IN')}</small></a>`).join('')
+            : '<div class="adm-notify-empty">No new orders pending review.</div>';
+        } catch (e) {}
+      }
+      if (notifyBtn && notify) {
+        notifyBtn.addEventListener('click', function(e){
+          e.stopPropagation();
+          const open = notify.classList.toggle('open');
+          notifyBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+          if (open) loadAdminNotifications();
+        });
+        loadAdminNotifications();
+        setInterval(loadAdminNotifications, 60000);
+      }
+
       const userBtn = document.getElementById('admUserBtn');
       const userMenu = document.getElementById('admUserMenu');
       if (userBtn && userMenu) {
@@ -111,6 +150,10 @@
           if (!userMenu.contains(e.target)) {
             userMenu.classList.remove('open');
             userBtn.setAttribute('aria-expanded', 'false');
+          }
+          if (notify && !notify.contains(e.target)) {
+            notify.classList.remove('open');
+            notifyBtn?.setAttribute('aria-expanded', 'false');
           }
         });
       }
