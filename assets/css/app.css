@@ -12688,3 +12688,70 @@ body:has(.adm-dash-pro) { background:var(--adm-page) !important; }
 .adm-help-card span { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.10); }
 .adm-help-card strong { display:block; font-size:13px; }
 .adm-help-card small { display:block; margin-top:3px; color:#d5deeb; font-size:12px; }
+
+/* Dashboard reference-layout correction: keep right-side cards aligned like the supplied mockup */
+.adm-main:has(.adm-dash-pro) {
+  overflow-x:hidden;
+}
+.adm-dash-pro,
+.dash-card,
+.dash-mid-grid > *,
+.dash-bottom-grid > *,
+.dash-kpi-card {
+  min-width:0;
+}
+.dash-mid-grid {
+  grid-template-columns:minmax(0,1.62fr) minmax(0,.76fr) minmax(0,.76fr) !important;
+  gap:16px;
+}
+.dash-bottom-grid {
+  grid-template-columns:minmax(0,1.55fr) minmax(360px,.95fr) !important;
+  gap:16px;
+}
+.dash-revenue-card { grid-column:auto !important; }
+.dash-products-card,
+.dash-queue-card { height:100%; }
+.dash-products-list { gap:11px; }
+.dash-product-row {
+  grid-template-columns:minmax(0,1fr) minmax(78px,.82fr) 38px;
+}
+.dash-product-row strong,
+.dash-queue-row strong,
+.dash-queue-row small {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.dash-queue-row {
+  grid-template-columns:42px minmax(0,1fr) 34px;
+  padding:10px;
+}
+.dash-actions-grid {
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+@media (max-width:1400px) {
+  .dash-kpi-grid--top { grid-template-columns:repeat(6,minmax(0,1fr)); }
+  .dash-kpi-grid--sub { grid-template-columns:repeat(5,minmax(0,1fr)); }
+  .dash-mid-grid { grid-template-columns:minmax(0,1.62fr) minmax(0,.76fr) minmax(0,.76fr) !important; }
+  .dash-bottom-grid { grid-template-columns:minmax(0,1.55fr) minmax(360px,.95fr) !important; }
+  .dash-revenue-card { grid-column:auto !important; }
+  .dash-kpi-card { padding:16px; gap:12px; min-height:112px; }
+  .dash-kpi-card .kpi-icon { width:52px; height:52px; flex-basis:52px; font-size:23px; }
+  .dash-kpi-card strong { font-size:23px; }
+  .dash-kpi-card small { margin-top:10px; font-size:11px; }
+  .dash-actions-grid { gap:12px; }
+  .dash-actions-grid a { min-height:92px; }
+}
+@media (max-width:1180px) {
+  .dash-kpi-grid--top { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .dash-kpi-grid--sub { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .dash-mid-grid { grid-template-columns:1fr 1fr !important; }
+  .dash-revenue-card { grid-column:1 / -1 !important; }
+  .dash-bottom-grid { grid-template-columns:1fr !important; }
+}
+@media (max-width:760px) {
+  .dash-kpi-grid--top,
+  .dash-kpi-grid--sub,
+  .dash-mid-grid,
+  .dash-bottom-grid { grid-template-columns:1fr !important; }
+}
