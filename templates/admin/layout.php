@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= htmlspecialchars($pageTitle ?? 'Admin — RCS Graphic') ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/app.css">
+<?php $adminCssVersion = @filemtime(PUBLIC_PATH . '/assets/css/app.css') ?: time(); ?>
+<link rel="stylesheet" href="/assets/css/app.css?v=<?= (int)$adminCssVersion ?>">
 </head>
-<body style="background:var(--bg)">
+<body class="<?= ($currentAdmPage ?? '') === 'dashboard' ? 'admin-dashboard-shell' : '' ?>" style="background:var(--bg)">
 <div class="toast-wrap" id="tw"></div>
 
 <!-- Admin Header -->
