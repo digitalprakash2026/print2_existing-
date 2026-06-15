@@ -20,37 +20,52 @@ $orderUrl = static function (array $params = []): string {
 ?>
 
 <div class="adm-orders-page">
-<div class="adm-orders-head">
-  <div>
-    <div class="adm-pt" style="margin:0">Order Management</div>
-    <div class="adm-orders-sub">Track, update status, and manage shipping from one place.</div>
+<section class="adm-orders-command">
+  <div class="adm-orders-command-bg" aria-hidden="true"></div>
+  <div class="adm-orders-head">
+    <div>
+      <div class="adm-orders-kicker">Production dashboard</div>
+      <div class="adm-pt" style="margin:0">Order Command Center</div>
+      <div class="adm-orders-sub">Track urgent print orders, manage customer actions, and keep production moving.</div>
+    </div>
+    <a href="/admin/export/orders" class="btn btn-outline btn-sm adm-orders-export" target="_blank">⬇ Export CSV</a>
   </div>
-  <a href="/admin/export/orders" class="btn btn-outline btn-sm" target="_blank">⬇ Export CSV</a>
-</div>
 
-<div class="adm-orders-stats">
+  <div class="adm-orders-stats">
   <a class="adm-order-stat adm-order-stat--blue" href="<?= htmlspecialchars($orderUrl(['search' => $search])) ?>">
+    <span class="adm-order-stat-i">🆕</span>
     <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['new_today'] ?? 0)) ?></span>
     <span class="adm-order-stat-l">New Today</span>
+    <span class="adm-order-stat-cta">View latest →</span>
   </a>
   <a class="adm-order-stat adm-order-stat--amber" href="<?= htmlspecialchars($orderUrl(['status' => 'attention', 'search' => $search])) ?>">
+    <span class="adm-order-stat-i">⚠️</span>
     <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['pending_orders'] ?? 0)) ?></span>
     <span class="adm-order-stat-l">Pending</span>
+    <span class="adm-order-stat-cta">Review now →</span>
   </a>
   <a class="adm-order-stat adm-order-stat--orange" href="<?= htmlspecialchars($orderUrl(['status' => 'processing', 'search' => $search])) ?>">
+    <span class="adm-order-stat-i">⚙️</span>
     <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['processing_orders'] ?? 0)) ?></span>
     <span class="adm-order-stat-l">Processing</span>
+    <span class="adm-order-stat-cta">Track flow →</span>
   </a>
   <a class="adm-order-stat adm-order-stat--green" href="<?= htmlspecialchars($orderUrl(['status' => 'ready', 'search' => $search])) ?>">
+    <span class="adm-order-stat-i">✅</span>
     <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['ready_orders'] ?? 0)) ?></span>
     <span class="adm-order-stat-l">Ready</span>
+    <span class="adm-order-stat-cta">Dispatch →</span>
   </a>
   <a class="adm-order-stat adm-order-stat--red" href="<?= htmlspecialchars($orderUrl(['status' => 'delayed', 'search' => $search])) ?>">
+    <span class="adm-order-stat-i">🔥</span>
     <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['delayed_orders'] ?? 0)) ?></span>
     <span class="adm-order-stat-l">Delayed / Attention</span>
+    <span class="adm-order-stat-cta">Fix first →</span>
   </a>
 </div>
+</section>
 
+<div class="adm-orders-control-panel">
 <div class="adm-orders-tabs" aria-label="Order status filters">
   <?php
     $quickStatuses = ['all' => 'All', 'attention' => 'Attention', 'delayed' => 'Delayed', 'received' => 'New', 'whatsapp_pending' => 'WA Pending', 'processing' => 'Processing', 'printing' => 'Printing', 'ready' => 'Ready', 'delivered' => 'Delivered', 'cancelled' => 'Cancelled'];
@@ -81,6 +96,7 @@ $orderUrl = static function (array $params = []): string {
   <button class="btn btn-blue btn-sm" type="submit">Apply</button>
   <?php if ($search || $status !== 'all'): ?><a href="/admin/orders" class="btn btn-outline btn-sm">Clear</a><?php endif; ?>
 </form>
+</div>
 
 <?php if (!$orders): ?>
 <div style="text-align:center;padding:44px;color:var(--text2)"><div style="font-size:40px;margin-bottom:9px">📋</div><div>No orders found</div></div>
@@ -121,6 +137,8 @@ $orderUrl = static function (array $params = []): string {
         $activeOrder = !in_array($orderStatus, ['delivered','cancelled'], true);
         $isNewOrder = $activeOrder && $createdTs >= strtotime('-24 hours');
         $isDelayedOrder = in_array($orderStatus, ['received','whatsapp_pending','processing','printing'], true) && $createdTs < strtotime('-24 hours');
+        $ageSeconds = max(0, time() - $createdTs);
+        $orderAge = $ageSeconds >= 86400 ? floor($ageSeconds / 86400) . 'd old' : floor($ageSeconds / 3600) . 'h old';
         $rowClasses = ['order-row', 'order-row--' . preg_replace('/[^a-z0-9_-]+/i', '-', $orderStatus)];
         if ($isNewOrder) $rowClasses[] = 'order-row--new';
         if ($isDelayedOrder) $rowClasses[] = 'order-row--delayed';
@@ -133,6 +151,7 @@ $orderUrl = static function (array $params = []): string {
             <?php if ($isDelayedOrder): ?><span class="ord-mini-badge ord-mini-badge--delay">Needs attention</span><?php endif; ?>
           </div>
           <div class="ord-date"><?= date('d M Y, H:i', strtotime($o['created_at'])) ?></div>
+          <div class="ord-age">⏱ <?= htmlspecialchars($orderAge) ?></div>
           <div class="ord-meta">Internal ID: <?= (int)$o['id'] ?></div>
         </td>
         <td>
@@ -186,7 +205,7 @@ $orderUrl = static function (array $params = []): string {
           <?php if (!empty($o['coupon_code'])): ?><div class="ord-meta" style="color:var(--green)">Coupon: <?= htmlspecialchars($o['coupon_code']) ?></div><?php endif; ?>
         </td>
         <td>
-          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+          <div class="ord-status-stack">
             <span class="badge <?= $statusColors[$o['status']] ?? 'b-blue' ?>"><?= $statusLabels[$o['status']] ?? $o['status'] ?></span>
             <span class="badge <?= $o['payment_status'] === 'paid' ? 'b-green' : 'b-amber' ?>"><?= ucfirst($o['payment_status']) ?></span>
           </div>
