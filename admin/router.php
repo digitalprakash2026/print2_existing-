@@ -261,15 +261,15 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/dashboard' && $method === 'GET') {
         $hasSeen = $ensureOrderSeenColumn();
-        $newOrderWhere = $hasSeen ? "is_seen = 0" : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
+        $newOrderWhere = "status='new_order'";
         $statRows = [
             'total_orders'      => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
             'new_orders'        => Database::row("SELECT COUNT(*) as c FROM orders WHERE $newOrderWhere")['c'] ?? 0,
             'total_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status='paid'")['r'] ?? 0,
             'today_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE DATE(created_at)=CURDATE() AND payment_status='paid'")['r'] ?? 0,
             'today_orders'      => Database::row("SELECT COUNT(*) as c FROM orders WHERE DATE(created_at)=CURDATE()")['c'] ?? 0,
-            'pending_orders'    => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending')")['c'] ?? 0,
-            'production_orders' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('processing','printing')")['c'] ?? 0,
+            'pending_orders'    => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('new_order','received','whatsapp_pending')")['c'] ?? 0,
+            'production_orders' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('design_approved','other_process','processing','printing')")['c'] ?? 0,
             'ready_orders'      => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0,
             'delivered_orders'  => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='delivered'")['c'] ?? 0,
             'pending_payments'  => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status IS NULL OR payment_status <> 'paid'")['r'] ?? 0,
@@ -287,15 +287,15 @@ if (str_starts_with($uri, '/admin/api/')) {
         };
         $comparisonRows = [
             'new_orders' => [
-                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND status NOT IN ('delivered','cancelled')")['c'] ?? 0,
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='new_order' AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
                 'label' => 'vs yesterday',
             ],
             'pending_orders' => [
-                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending') AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('new_order','received','whatsapp_pending') AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
                 'label' => 'vs yesterday',
             ],
             'production_orders' => [
-                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('processing','printing') AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('design_approved','other_process','processing','printing') AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
                 'label' => 'vs yesterday',
             ],
             'ready_orders' => [
@@ -332,7 +332,7 @@ if (str_starts_with($uri, '/admin/api/')) {
             }
         }
         $queue = [
-            'design_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending')")['c'] ?? 0),
+            'design_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('new_order','received','whatsapp_pending')")['c'] ?? 0),
             'approval_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='whatsapp_pending'")['c'] ?? 0),
             'printing' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='printing'")['c'] ?? 0),
             'packing' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='processing'")['c'] ?? 0),
@@ -348,7 +348,7 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/order-notifications' && $method === 'GET') {
         $hasSeen = $ensureOrderSeenColumn();
-        $newOrderWhere = $hasSeen ? "is_seen = 0" : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
+        $newOrderWhere = "status='new_order'";
         $count = (int)(Database::row("SELECT COUNT(*) AS c FROM orders WHERE $newOrderWhere")['c'] ?? 0);
         $orders = Database::rows("SELECT id, order_id, customer_name, total_amount, status, created_at FROM orders WHERE $newOrderWhere ORDER BY created_at DESC LIMIT 5");
         json(['ok'=>true,'count'=>$count,'orders'=>$orders,'seen_supported'=>$hasSeen]);
@@ -1499,10 +1499,10 @@ if ($uri === '/admin/orders') {
         "SELECT
             COUNT(*) AS total_orders,
             SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS new_today,
-            SUM(CASE WHEN status IN ('received','whatsapp_pending') THEN 1 ELSE 0 END) AS pending_orders,
+            SUM(CASE WHEN status IN ('new_order','received','whatsapp_pending') THEN 1 ELSE 0 END) AS pending_orders,
             SUM(CASE WHEN status IN ('other_process','processing') THEN 1 ELSE 0 END) AS processing_orders,
             SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) AS ready_orders,
-            SUM(CASE WHEN status IN ('received','whatsapp_pending','design_approved','other_process','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS delayed_orders
+            SUM(CASE WHEN status IN ('new_order','received','whatsapp_pending','design_approved','other_process','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS delayed_orders
          FROM orders"
     ) ?: [];
     $summaryCounts = [
@@ -1518,10 +1518,7 @@ if ($uri === '/admin/orders') {
     foreach ($statusCountRows as $row) {
         $statusCounts[(string)$row['status']] = (int)($row['c'] ?? 0);
     }
-    $newOrderCountRow = $hasSeen
-        ? Database::row("SELECT COUNT(*) AS c FROM orders WHERE is_seen = 0")
-        : Database::row("SELECT COUNT(*) AS c FROM orders WHERE DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')");
-    $statusCounts['new_order'] = (int)($newOrderCountRow['c'] ?? 0);
+    $statusCounts['new_order'] = (int)($statusCounts['new_order'] ?? 0);
     $statusCounts['design_approved'] = (int)($statusCounts['design_approved'] ?? 0);
     $statusCounts['other_process'] = (int)($statusCounts['other_process'] ?? 0) + (int)($statusCounts['processing'] ?? 0);
     $statusCounts['ready_dispatch'] = (int)($statusCounts['ready'] ?? 0);
@@ -1531,15 +1528,15 @@ if ($uri === '/admin/orders') {
     $where = [];
     $params = [];
     if ($status === 'attention') {
-        $where[] = "status IN ('received','whatsapp_pending','design_approved','other_process','processing','printing')";
+        $where[] = "status IN ('new_order','received','whatsapp_pending','design_approved','other_process','processing','printing')";
     } elseif ($status === 'delayed') {
-        $where[] = "status IN ('received','whatsapp_pending','design_approved','other_process','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)";
+        $where[] = "status IN ('new_order','received','whatsapp_pending','design_approved','other_process','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)";
     } elseif ($status === 'other_process') {
         $where[] = "status IN ('other_process','processing')";
     } elseif ($status !== 'all' && $status !== '') { $where[] = 'status = ?'; $params[] = $status; }
     if ($paymentStatus !== 'all' && $paymentStatus !== '') { $where[] = 'payment_status = ?'; $params[] = $paymentStatus; }
     if ($seen === 'new') {
-        $where[] = $hasSeen ? 'is_seen = 0' : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
+        $where[] = "status = 'new_order'";
     } elseif ($seen === 'seen' && $hasSeen) {
         $where[] = 'is_seen = 1';
     }
@@ -1554,7 +1551,7 @@ if ($uri === '/admin/orders') {
     $orderSql = match ($sort) {
         'oldest' => 'created_at ASC',
         'high_value' => 'total_amount DESC, created_at DESC',
-        'urgent' => ($hasSeen ? 'is_seen ASC, ' : '') . "FIELD(status,'received','whatsapp_pending','design_approved','other_process','processing','printing','ready','delivered','cancelled'), created_at ASC",
+        'urgent' => ($hasSeen ? 'is_seen ASC, ' : '') . "FIELD(status,'new_order','received','whatsapp_pending','design_approved','other_process','processing','printing','ready','delivered','cancelled'), created_at ASC",
         default => 'created_at DESC',
     };
 

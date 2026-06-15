@@ -48,7 +48,7 @@ class OrderManager
                 "INSERT INTO orders (order_id, user_id, customer_name, customer_email, customer_phone,
                     subtotal, discount_amount, gst_amount, gst_percent, total_amount,
                     coupon_code, payment_method, payment_status, status, notes, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'received', ?, ?)",
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new_order', ?, ?)",
                 [
                     $orderId,
                     $user['id'],
@@ -158,7 +158,7 @@ class OrderManager
 
     public static function updateStatus(int $orderId, string $status, string $note = '', string $actor = 'admin'): bool
     {
-        $validStatuses = ['received', 'design_approved', 'printing', 'other_process', 'processing', 'ready', 'delivered', 'cancelled', 'whatsapp_pending'];
+        $validStatuses = ['new_order', 'received', 'design_approved', 'printing', 'other_process', 'processing', 'ready', 'delivered', 'cancelled', 'whatsapp_pending'];
         if (!in_array($status, $validStatuses)) return false;
 
         \Database::query(
