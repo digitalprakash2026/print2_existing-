@@ -6,33 +6,122 @@ include __DIR__ . '/layout.php';
 $statusColors = ['received'=>'b-blue','processing'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
 $statusLabels = ['received'=>'Received','processing'=>'Processing','printing'=>'Printing','ready'=>'Ready','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'WA Pending'];
 $orders = $orders ?? [];
+$summaryCounts = $summaryCounts ?? [];
+$statusCounts = $statusCounts ?? ['all' => 0];
 $total = (int)($total ?? 0);
 $page = (int)($page ?? 1);
 $perPage = (int)($perPage ?? 12);
 $search = $search ?? '';
 $status = $status ?? 'all';
+$paymentStatus = $paymentStatus ?? 'all';
+$seen = $seen ?? 'all';
+$sort = $sort ?? 'newest';
+$dateFrom = $dateFrom ?? '';
+$dateTo = $dateTo ?? '';
+$hasSeen = !empty($hasSeen);
+$orderUrl = static function (array $params = []): string {
+    $params = array_filter($params, static fn($v) => $v !== '' && $v !== null);
+    return '/admin/orders' . ($params ? ('?' . http_build_query($params)) : '');
+};
 ?>
 
 <div class="adm-orders-page">
-<div class="adm-orders-head">
-  <div>
-    <div class="adm-pt" style="margin:0">Order Management</div>
-    <div class="adm-orders-sub">Track, update status, and manage shipping from one place.</div>
+<section class="adm-orders-command">
+  <div class="adm-orders-command-bg" aria-hidden="true"></div>
+  <div class="adm-orders-head">
+    <div>
+      <div class="adm-orders-kicker">Production dashboard</div>
+      <div class="adm-pt" style="margin:0">Order Command Center</div>
+      <div class="adm-orders-sub">Track urgent print orders, manage customer actions, and keep production moving.</div>
+    </div>
+    <a href="/admin/export/orders" class="btn btn-outline btn-sm adm-orders-export" target="_blank">⬇ Export CSV</a>
   </div>
-  <a href="/admin/export/orders" class="btn btn-outline btn-sm" target="_blank">⬇ Export CSV</a>
+
+  <div class="adm-orders-stats">
+  <a class="adm-order-stat adm-order-stat--blue" href="<?= htmlspecialchars($orderUrl(['search' => $search])) ?>">
+    <span class="adm-order-stat-i">🆕</span>
+    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['new_today'] ?? 0)) ?></span>
+    <span class="adm-order-stat-l">New Today</span>
+    <span class="adm-order-stat-cta">View latest →</span>
+  </a>
+  <a class="adm-order-stat adm-order-stat--amber" href="<?= htmlspecialchars($orderUrl(['status' => 'attention', 'search' => $search])) ?>">
+    <span class="adm-order-stat-i">⚠️</span>
+    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['pending_orders'] ?? 0)) ?></span>
+    <span class="adm-order-stat-l">Pending</span>
+    <span class="adm-order-stat-cta">Review now →</span>
+  </a>
+  <a class="adm-order-stat adm-order-stat--orange" href="<?= htmlspecialchars($orderUrl(['status' => 'processing', 'search' => $search])) ?>">
+    <span class="adm-order-stat-i">⚙️</span>
+    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['processing_orders'] ?? 0)) ?></span>
+    <span class="adm-order-stat-l">Processing</span>
+    <span class="adm-order-stat-cta">Track flow →</span>
+  </a>
+  <a class="adm-order-stat adm-order-stat--green" href="<?= htmlspecialchars($orderUrl(['status' => 'ready', 'search' => $search])) ?>">
+    <span class="adm-order-stat-i">✅</span>
+    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['ready_orders'] ?? 0)) ?></span>
+    <span class="adm-order-stat-l">Ready</span>
+    <span class="adm-order-stat-cta">Dispatch →</span>
+  </a>
+  <a class="adm-order-stat adm-order-stat--red" href="<?= htmlspecialchars($orderUrl(['status' => 'delayed', 'search' => $search])) ?>">
+    <span class="adm-order-stat-i">🔥</span>
+    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['delayed_orders'] ?? 0)) ?></span>
+    <span class="adm-order-stat-l">Delayed / Attention</span>
+    <span class="adm-order-stat-cta">Fix first →</span>
+  </a>
+</div>
+</section>
+
+<div class="adm-orders-control-panel">
+<div class="adm-orders-tabs" aria-label="Order status filters">
+  <?php
+    $quickStatuses = ['all' => 'All', 'attention' => 'Attention', 'delayed' => 'Delayed', 'received' => 'New', 'whatsapp_pending' => 'WA Pending', 'processing' => 'Processing', 'printing' => 'Printing', 'ready' => 'Ready', 'delivered' => 'Delivered', 'cancelled' => 'Cancelled'];
+    foreach ($quickStatuses as $key => $label):
+      $hrefParams = ['status' => $key];
+      if ($key === 'all') unset($hrefParams['status']);
+      if ($search !== '') $hrefParams['search'] = $search;
+      $href = $orderUrl($hrefParams);
+      $active = ($status === $key) || ($key === 'all' && ($status === '' || $status === 'all'));
+  ?>
+  <a href="<?= htmlspecialchars($href) ?>" class="adm-orders-tab <?= $active ? 'act' : '' ?>">
+    <span><?= htmlspecialchars($label) ?></span>
+    <b><?= number_format((int)($statusCounts[$key] ?? 0)) ?></b>
+  </a>
+  <?php endforeach; ?>
 </div>
 
 <form method="GET" class="adm-orders-filters">
   <input name="search" class="fi" placeholder="Search order ID, name, phone…" value="<?= htmlspecialchars($search) ?>">
   <select name="status" class="fi fi-sel" onchange="this.form.submit()">
     <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>All Statuses</option>
+    <option value="attention" <?= $status === 'attention' ? 'selected' : '' ?>>Attention Required</option>
+    <option value="delayed" <?= $status === 'delayed' ? 'selected' : '' ?>>Delayed / Needs Attention</option>
     <?php foreach ($statusLabels as $k => $v): ?>
     <option value="<?= $k ?>" <?= $status === $k ? 'selected' : '' ?>><?= $v ?></option>
     <?php endforeach; ?>
   </select>
+  <select name="payment_status" class="fi fi-sel" onchange="this.form.submit()">
+    <option value="all" <?= $paymentStatus === 'all' ? 'selected' : '' ?>>All Payments</option>
+    <?php foreach (['paid'=>'Paid','pending'=>'Pending','failed'=>'Failed','refunded'=>'Refunded'] as $k => $v): ?>
+    <option value="<?= $k ?>" <?= $paymentStatus === $k ? 'selected' : '' ?>><?= $v ?></option>
+    <?php endforeach; ?>
+  </select>
+  <select name="seen" class="fi fi-sel" onchange="this.form.submit()">
+    <option value="all" <?= $seen === 'all' ? 'selected' : '' ?>>All Orders</option>
+    <option value="new" <?= $seen === 'new' ? 'selected' : '' ?>>New / Unseen</option>
+    <?php if ($hasSeen): ?><option value="seen" <?= $seen === 'seen' ? 'selected' : '' ?>>Seen</option><?php endif; ?>
+  </select>
+  <input type="date" name="date_from" class="fi" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="Date from">
+  <input type="date" name="date_to" class="fi" value="<?= htmlspecialchars($dateTo) ?>" aria-label="Date to">
+  <select name="sort" class="fi fi-sel" onchange="this.form.submit()">
+    <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Newest first</option>
+    <option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Oldest first</option>
+    <option value="high_value" <?= $sort === 'high_value' ? 'selected' : '' ?>>High value first</option>
+    <option value="urgent" <?= $sort === 'urgent' ? 'selected' : '' ?>>Urgent first</option>
+  </select>
   <button class="btn btn-blue btn-sm" type="submit">Apply</button>
-  <?php if ($search || $status !== 'all'): ?><a href="/admin/orders" class="btn btn-outline btn-sm">Clear</a><?php endif; ?>
+  <?php if ($search || $status !== 'all' || $paymentStatus !== 'all' || $seen !== 'all' || $sort !== 'newest' || $dateFrom || $dateTo): ?><a href="/admin/orders" class="btn btn-outline btn-sm">Clear</a><?php endif; ?>
 </form>
+</div>
 
 <?php if (!$orders): ?>
 <div style="text-align:center;padding:44px;color:var(--text2)"><div style="font-size:40px;margin-bottom:9px">📋</div><div>No orders found</div></div>
@@ -68,11 +157,27 @@ $status = $status ?? 'all';
         $orderShipping = (is_array($orderNotesJson) && is_array($orderNotesJson['shipping'] ?? null))
             ? $orderNotesJson['shipping']
             : null;
+        $orderStatus = (string)($o['status'] ?? 'received');
+        $createdTs = strtotime((string)($o['created_at'] ?? '')) ?: time();
+        $isUnseenOrder = $hasSeen ? ((int)($o['is_seen'] ?? 1) === 0) : false;
+        $activeOrder = !in_array($orderStatus, ['delivered','cancelled'], true);
+        $isNewOrder = $activeOrder && $createdTs >= strtotime('-24 hours');
+        $isDelayedOrder = in_array($orderStatus, ['received','whatsapp_pending','processing','printing'], true) && $createdTs < strtotime('-24 hours');
+        $ageSeconds = max(0, time() - $createdTs);
+        $orderAge = $ageSeconds >= 86400 ? floor($ageSeconds / 86400) . 'd old' : floor($ageSeconds / 3600) . 'h old';
+        $rowClasses = ['order-row', 'order-row--' . preg_replace('/[^a-z0-9_-]+/i', '-', $orderStatus)];
+        if ($isNewOrder || $isUnseenOrder) $rowClasses[] = 'order-row--new';
+        if ($isDelayedOrder) $rowClasses[] = 'order-row--delayed';
       ?>
-      <tr id="ord-<?= (int)$o['id'] ?>">
+      <tr id="ord-<?= (int)$o['id'] ?>" class="<?= htmlspecialchars(implode(' ', $rowClasses)) ?>">
         <td>
           <div class="ord-id">#<?= htmlspecialchars($o['order_id']) ?></div>
+          <div class="ord-alerts">
+            <?php if ($isNewOrder || $isUnseenOrder): ?><span class="ord-mini-badge ord-mini-badge--new"><?= $isUnseenOrder ? 'Unseen' : 'New' ?></span><?php endif; ?>
+            <?php if ($isDelayedOrder): ?><span class="ord-mini-badge ord-mini-badge--delay">Needs attention</span><?php endif; ?>
+          </div>
           <div class="ord-date"><?= date('d M Y, H:i', strtotime($o['created_at'])) ?></div>
+          <div class="ord-age">⏱ <?= htmlspecialchars($orderAge) ?></div>
           <div class="ord-meta">Internal ID: <?= (int)$o['id'] ?></div>
         </td>
         <td>
@@ -126,13 +231,14 @@ $status = $status ?? 'all';
           <?php if (!empty($o['coupon_code'])): ?><div class="ord-meta" style="color:var(--green)">Coupon: <?= htmlspecialchars($o['coupon_code']) ?></div><?php endif; ?>
         </td>
         <td>
-          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+          <div class="ord-status-stack">
             <span class="badge <?= $statusColors[$o['status']] ?? 'b-blue' ?>"><?= $statusLabels[$o['status']] ?? $o['status'] ?></span>
             <span class="badge <?= $o['payment_status'] === 'paid' ? 'b-green' : 'b-amber' ?>"><?= ucfirst($o['payment_status']) ?></span>
           </div>
         </td>
         <td>
           <div class="ord-actions">
+            <?php if ($isUnseenOrder): ?><button class="aoc-btn" onclick="markOrderSeen(<?= (int)$o['id'] ?>)">✓ Mark seen</button><?php endif; ?>
             <a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">🧾 Invoice</a>
             <a href="/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">👁 View</a>
             <button
@@ -210,6 +316,13 @@ function toast(msg, type='info') {
   const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg; w.appendChild(t);
   requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+async function markOrderSeen(id) {
+  const resp = await fetch(`/admin/api/orders/${id}/seen`, {method:'POST', headers:{'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'}});
+  const data = await resp.json();
+  if (data.ok) { toast('Order marked as seen', 'success'); setTimeout(() => location.reload(), 450); }
+  else toast(data.msg || 'Could not mark seen', 'error');
 }
 
 function updOrdFromSel(id) {

@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS home_banners (
     cta_secondary_text VARCHAR(120) NOT NULL DEFAULT '',
     cta_secondary_type VARCHAR(20) NOT NULL DEFAULT 'whatsapp',
     cta_secondary_url VARCHAR(255) NULL,
+    image_click_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    image_click_url VARCHAR(255) NOT NULL DEFAULT '',
     sort_order INT NOT NULL DEFAULT 0,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL,
@@ -28,6 +30,8 @@ ALTER TABLE home_banners MODIFY title VARCHAR(255) NULL;
 ALTER TABLE home_banners MODIFY cta_primary_text VARCHAR(120) NOT NULL DEFAULT '';
 ALTER TABLE home_banners MODIFY cta_primary_url VARCHAR(255) NOT NULL DEFAULT '';
 ALTER TABLE home_banners MODIFY cta_secondary_text VARCHAR(120) NOT NULL DEFAULT '';
+ALTER TABLE home_banners ADD COLUMN IF NOT EXISTS image_click_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER cta_secondary_url;
+ALTER TABLE home_banners ADD COLUMN IF NOT EXISTS image_click_url VARCHAR(255) NOT NULL DEFAULT '' AFTER image_click_enabled;
 
 -- Sample 2400x1000 banner placeholder designed for desktop and mobile-safe cropping.
 INSERT INTO home_banners (
@@ -41,6 +45,8 @@ INSERT INTO home_banners (
     cta_secondary_text,
     cta_secondary_type,
     cta_secondary_url,
+    image_click_enabled,
+    image_click_url,
     sort_order,
     is_active,
     created_at,
@@ -56,6 +62,8 @@ SELECT
     '',
     '',
     'url',
+    '',
+    0,
     '',
     0,
     1,

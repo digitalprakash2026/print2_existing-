@@ -43,7 +43,7 @@ if ($startingPrice <= 0 && $qualities) {
         }
     }
 }
-$comparePrice = $startingPrice > 0 ? ceil($startingPrice * 1.5) : 0;
+$comparePrice = (float)($product['original_price'] ?? 0);
 $discountPct  = ($startingPrice > 0 && $comparePrice > $startingPrice)
     ? max(1, (int)round((($comparePrice - $startingPrice) / $comparePrice) * 100))
     : 0;
@@ -104,8 +104,8 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
     <div class="pd-gallery" data-reveal>
 
       <div class="pd-main" id="pdMainWrap">
-        <button class="pd-zoom-btn" type="button" onclick="window.open(document.getElementById('pdMainImg').src, '_blank')" aria-label="Open product image">
-          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <button class="pd-wishlist-btn <?= !empty($wishlistActive) ? 'is-active' : '' ?>" type="button" onclick="toggleWishlist(this)" aria-label="<?= !empty($wishlistActive) ? 'Remove from wishlist' : 'Add to wishlist' ?>" aria-pressed="<?= !empty($wishlistActive) ? 'true' : 'false' ?>">
+          <i class="<?= !empty($wishlistActive) ? 'fa-solid' : 'fa-regular' ?> fa-heart" aria-hidden="true"></i>
         </button>
         <img id="pdMainImg"
              src="<?= htmlspecialchars($primaryImg) ?>"
@@ -151,8 +151,6 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
           <strong>New</strong>
           <span>(No reviews yet)</span>
         <?php endif; ?>
-        <span class="pd-viewing-dot">•</span>
-        <span>23 people are viewing this product</span>
       </div>
 
 
@@ -453,6 +451,7 @@ const PRODUCT_NAME = <?= json_encode((string)($product['name'] ?? ''), JSON_HEX_
 const PRODUCT_CODE = <?= json_encode((string)$productCode, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 const CATEGORY_NAME = <?= json_encode((string)$categoryName, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 const CSRF        = '<?= htmlspecialchars($csrf ?? '') ?>';
+const IS_LOGGED_IN = <?= ($user ?? null) ? 'true' : 'false' ?>;
 const QUALITIES   = <?= json_encode($qualities) ?>;
 const DESIGN_FEE  = <?= (float)$designFee ?>;
 
@@ -741,6 +740,49 @@ async function buyNow() {
   if (!ok) return;
   closeCart();
   location.href = '/checkout';
+}
+
+async function toggleWishlist(btn) {
+  if (!IS_LOGGED_IN) {
+    toast('Please login to add products to your wishlist', 'info');
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    setTimeout(() => { window.location.href = `/login?redirect=${next}`; }, 450);
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/api/wishlist/toggle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': CSRF
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({product_id: PRODUCT_ID})
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      toast(data.msg || 'Could not update wishlist', 'error');
+      return;
+    }
+
+    const active = !!data.wishlisted;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    btn.setAttribute('aria-label', active ? 'Remove from wishlist' : 'Add to wishlist');
+    const icon = btn.querySelector('i');
+    if (icon) {
+      icon.classList.toggle('fa-solid', active);
+      icon.classList.toggle('fa-regular', !active);
+    }
+    toast(data.msg || (active ? 'Added to wishlist' : 'Removed from wishlist'), active ? 'success' : 'info');
+  } catch (err) {
+    console.error(err);
+    toast('Could not update wishlist', 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function validateOrder() {

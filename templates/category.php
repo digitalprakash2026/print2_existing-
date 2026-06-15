@@ -23,7 +23,9 @@ $productCount = count($products ?? []);
 $categoryName = (string)($category['name'] ?? 'Category');
 $categorySlug = (string)($category['slug'] ?? '');
 $categoryDescription = trim((string)($category['description'] ?? ''));
-$activeCategories = array_values(array_filter($categories ?? [], static fn($cat) => (int)($cat['is_active'] ?? 1) === 1));
+$filterOptions = is_array($filterOptions ?? null) ? $filterOptions : [];
+$selectedFilters = is_array($selectedFilters ?? null) ? $selectedFilters : [];
+$hasSelectedFilters = !empty($selectedFilters);
 $categoryThemeClasses = ['purple', 'orange', 'orange', 'orange', 'purple', 'orange', 'purple', 'green'];
 
 include INCLUDE_PATH . '/partials/head.php';
@@ -36,7 +38,7 @@ include INCLUDE_PATH . '/partials/header.php';
       <nav class="all-cat-crumb" aria-label="Breadcrumb">
         <a href="/">Home</a><span>›</span><a href="/categories">All Categories</a><span>›</span><span><?= htmlspecialchars($categoryName) ?></span>
       </nav>
-      <h1 id="categoryTitle"><?= htmlspecialchars($categoryName) ?> Products</h1>
+      <h1 id="categoryTitle"><?= htmlspecialchars($categoryName) ?></h1>
       <p><?= $categoryDescription !== '' ? htmlspecialchars($categoryDescription) : 'Premium quality printing products for every business need.' ?></p>
     </div>
     <div class="all-cat-hero-visual" aria-hidden="true">
@@ -45,7 +47,7 @@ include INCLUDE_PATH . '/partials/header.php';
   </section>
 
   <div class="container all-cat-content">
-    <?php if (empty($products)): ?>
+    <?php if (empty($products) && !$hasSelectedFilters): ?>
       <div class="cat-detail-empty">
         <div class="cat-detail-empty-icon">🖨️</div>
         <div class="cat-detail-empty-title">No products yet in <?= htmlspecialchars($categoryName) ?></div>
@@ -58,80 +60,37 @@ include INCLUDE_PATH . '/partials/header.php';
     <?php else: ?>
       <section class="all-cat-shop" aria-label="Browse <?= htmlspecialchars($categoryName) ?> products">
         <details class="all-cat-filter-panel" open>
-          <summary><span>Categories &amp; Filters</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
-          <aside class="all-cat-sidebar" aria-label="Category filters">
-            <div class="all-cat-side-box all-cat-side-categories">
-              <h2>Categories</h2>
-              <nav class="all-cat-side-list" aria-label="Category quick links">
-                <a href="/categories" class="<?= $categorySlug === '' ? 'is-active' : '' ?>">All Categories</a>
-                <?php foreach ($activeCategories as $cat):
-                  $sideSlug = (string)($cat['slug'] ?? '');
-                  $sideName = (string)($cat['name'] ?? 'Category');
-                ?>
-                  <a href="/category/<?= htmlspecialchars($sideSlug) ?>" class="<?= $sideSlug === $categorySlug ? 'is-active' : '' ?>">
-                    <?= htmlspecialchars($sideName) ?>
-                  </a>
-                <?php endforeach; ?>
-              </nav>
-            </div>
-
-            <div class="all-cat-side-box all-cat-filter-box">
+          <summary><span>Filters</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+          <aside class="all-cat-sidebar" aria-label="Product filters">
+            <form class="all-cat-side-box all-cat-filter-box" method="get" action="/category/<?= htmlspecialchars($categorySlug) ?>">
               <h2>Filter By</h2>
-              <div class="all-cat-filter-group">
-                <h3>Product Type</h3>
-                <label><input type="checkbox"> Standard</label>
-                <label><input type="checkbox"> Premium</label>
-                <label><input type="checkbox"> Luxury</label>
-                <select class="all-cat-mobile-filter-select" aria-label="Filter by product type">
-                  <option>All product types</option>
-                  <option>Standard</option>
-                  <option>Premium</option>
-                  <option>Luxury</option>
-                </select>
-              </div>
-              <div class="all-cat-filter-group">
-                <h3>Paper Type</h3>
-                <label><input type="checkbox"> Art Paper</label>
-                <label><input type="checkbox"> Matte</label>
-                <label><input type="checkbox"> Glossy</label>
-                <label><input type="checkbox"> Textured</label>
-                <select class="all-cat-mobile-filter-select" aria-label="Filter by paper type">
-                  <option>All paper types</option>
-                  <option>Art Paper</option>
-                  <option>Matte</option>
-                  <option>Glossy</option>
-                  <option>Textured</option>
-                </select>
-              </div>
-              <div class="all-cat-filter-group">
-                <h3>Finishing</h3>
-                <label><input type="checkbox"> Matt Lamination</label>
-                <label><input type="checkbox"> Gloss Lamination</label>
-                <label><input type="checkbox"> UV Coating</label>
-                <label><input type="checkbox"> Spot UV</label>
-                <label><input type="checkbox"> Foil Stamping</label>
-                <select class="all-cat-mobile-filter-select" aria-label="Filter by finishing">
-                  <option>All finishing</option>
-                  <option>Matt Lamination</option>
-                  <option>Gloss Lamination</option>
-                  <option>UV Coating</option>
-                  <option>Spot UV</option>
-                  <option>Foil Stamping</option>
-                </select>
-              </div>
-              <div class="all-cat-filter-group all-cat-price-filter">
-                <h3>Price Range</h3>
-                <div class="all-cat-price-line" aria-hidden="true"><span></span></div>
-                <div class="all-cat-price-values"><span>₹0</span><span>₹5000+</span></div>
-              </div>
-              <button type="button" class="all-cat-apply-btn">Apply Filters <i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
-            </div>
+              <?php foreach ($filterOptions as $group): ?>
+                <?php if (empty($group['options'])) continue; ?>
+                <div class="all-cat-filter-group">
+                  <h3><?= htmlspecialchars($group['label'] ?? 'Filter') ?></h3>
+                  <?php foreach ($group['options'] as $option):
+                    $groupSlug = (string)($group['slug'] ?? '');
+                    $optionSlug = (string)($option['slug'] ?? '');
+                    $checked = in_array($optionSlug, $selectedFilters[$groupSlug] ?? [], true);
+                  ?>
+                    <label>
+                      <input type="checkbox" name="filters[<?= htmlspecialchars($groupSlug) ?>][]" value="<?= htmlspecialchars($optionSlug) ?>" <?= $checked ? 'checked' : '' ?>>
+                      <?= htmlspecialchars($option['label'] ?? $optionSlug) ?>
+                    </label>
+                  <?php endforeach; ?>
+                </div>
+              <?php endforeach; ?>
+              <button type="submit" class="all-cat-apply-btn">Apply Filters <i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
+              <?php if (!empty($selectedFilters)): ?>
+                <a href="/category/<?= htmlspecialchars($categorySlug) ?>" class="all-cat-clear-btn">Clear Filters</a>
+              <?php endif; ?>
+            </form>
           </aside>
         </details>
 
         <div class="all-cat-results">
           <div class="all-cat-toolbar">
-            <p>Showing 1–<?= (int)$productCount ?> of <?= (int)$productCount ?> products</p>
+            <p><?= $productCount > 0 ? 'Showing 1–' . (int)$productCount . ' of ' . (int)$productCount . ' products' : 'Showing 0 products' ?></p>
             <label>Sort by:
               <select aria-label="Sort <?= htmlspecialchars($categoryName) ?> products">
                 <option>Popularity</option>
@@ -164,10 +123,18 @@ include INCLUDE_PATH . '/partials/header.php';
               </a>
             <?php endforeach; ?>
           </div>
+          <?php if (empty($products)): ?>
+            <div style="padding:42px 20px;border:1px dashed var(--border);border-radius:16px;background:#fff;text-align:center;color:var(--text2)">
+              <strong style="display:block;color:var(--ink);font-size:18px;margin-bottom:6px">No matching products found</strong>
+              <span>Try removing one or more filters.</span>
+            </div>
+          <?php endif; ?>
 
-          <nav class="all-cat-pagination" aria-label="<?= htmlspecialchars($categoryName) ?> pagination">
-            <span class="is-muted">←</span><strong>1</strong><span>2</span><span>3</span><span>4</span><span>→</span>
-          </nav>
+          <?php if ($productCount > 0): ?>
+            <nav class="all-cat-pagination" aria-label="<?= htmlspecialchars($categoryName) ?> pagination">
+              <span class="is-muted">←</span><strong>1</strong><span>2</span><span>3</span><span>4</span><span>→</span>
+            </nav>
+          <?php endif; ?>
         </div>
       </section>
 

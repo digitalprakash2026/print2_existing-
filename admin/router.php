@@ -28,6 +28,38 @@ if ($uri === '/admin/logout') {
 }
 
 \Auth\Auth::requireAdmin();
+$orderSeenColumnReady = null;
+$orderSeenColumnAvailable = static function () use (&$orderSeenColumnReady): bool {
+    if ($orderSeenColumnReady !== null) return $orderSeenColumnReady;
+    try {
+        $row = Database::row(
+            "SELECT 1 AS ok
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'orders'
+               AND COLUMN_NAME = 'is_seen'
+             LIMIT 1"
+        );
+        $orderSeenColumnReady = (bool)$row;
+    } catch (\Throwable) {
+        $orderSeenColumnReady = false;
+    }
+    return $orderSeenColumnReady;
+};
+$ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderSeenColumnAvailable): bool {
+    if ($orderSeenColumnAvailable()) return true;
+    try {
+        Database::query("ALTER TABLE orders ADD COLUMN is_seen TINYINT(1) NOT NULL DEFAULT 0 AFTER status");
+        try { Database::query("CREATE INDEX idx_orders_is_seen ON orders (is_seen, created_at)"); } catch (\Throwable) {}
+        $orderSeenColumnReady = true;
+        return true;
+    } catch (\Throwable $e) {
+        error_log('Order is_seen column unavailable: ' . $e->getMessage());
+        $orderSeenColumnReady = false;
+        return false;
+    }
+};
+
 $adminUsersHasMobile = null;
 $hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
     if ($adminUsersHasMobile !== null) return $adminUsersHasMobile;
@@ -103,6 +135,30 @@ if (str_starts_with($uri, '/admin/api/')) {
             }
             unset($img);
             return $images;
+        }
+    };
+
+    $ensureHomeBannerClickColumns = static function (): void {
+        static $ready = false;
+        if ($ready) return;
+        try {
+            $rows = Database::rows(
+                "SELECT COLUMN_NAME
+                 FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = 'home_banners'
+                   AND COLUMN_NAME IN ('image_click_enabled', 'image_click_url')"
+            );
+            $present = array_flip(array_map(static fn($row) => (string)($row['COLUMN_NAME'] ?? ''), $rows));
+            if (!isset($present['image_click_enabled'])) {
+                Database::query("ALTER TABLE home_banners ADD COLUMN image_click_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER cta_secondary_url");
+            }
+            if (!isset($present['image_click_url'])) {
+                Database::query("ALTER TABLE home_banners ADD COLUMN image_click_url VARCHAR(255) NOT NULL DEFAULT '' AFTER image_click_enabled");
+            }
+            $ready = true;
+        } catch (\Throwable $e) {
+            error_log('Home banner click columns unavailable: ' . $e->getMessage());
         }
     };
 
@@ -204,19 +260,50 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
     if ($uri === '/admin/api/dashboard' && $method === 'GET') {
+        $hasSeen = $ensureOrderSeenColumn();
+        $newOrderWhere = $hasSeen ? "is_seen = 0" : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
         $stats = [
-            'total_orders'    => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
-            'total_revenue'   => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status='paid'")['r'] ?? 0,
-            'today_orders'    => Database::row("SELECT COUNT(*) as c FROM orders WHERE DATE(created_at)=CURDATE()")['c'] ?? 0,
-            'today_revenue'   => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE DATE(created_at)=CURDATE() AND payment_status='paid'")['r'] ?? 0,
-            'pending_orders'  => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','processing','printing')")['c'] ?? 0,
-            'total_customers' => Database::row("SELECT COUNT(*) as c FROM users")['c'] ?? 0,
+            'total_orders'      => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
+            'new_orders'        => Database::row("SELECT COUNT(*) as c FROM orders WHERE $newOrderWhere")['c'] ?? 0,
+            'total_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status='paid'")['r'] ?? 0,
+            'today_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE DATE(created_at)=CURDATE() AND payment_status='paid'")['r'] ?? 0,
+            'today_orders'      => Database::row("SELECT COUNT(*) as c FROM orders WHERE DATE(created_at)=CURDATE()")['c'] ?? 0,
+            'pending_orders'    => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending')")['c'] ?? 0,
+            'production_orders' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('processing','printing')")['c'] ?? 0,
+            'ready_orders'      => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0,
+            'delivered_orders'  => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='delivered'")['c'] ?? 0,
+            'pending_payments'  => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status IS NULL OR payment_status <> 'paid'")['r'] ?? 0,
+            'month_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE created_at >= DATE_FORMAT(CURDATE(),'%Y-%m-01') AND payment_status='paid'")['r'] ?? 0,
+            'avg_order_value'   => Database::row("SELECT COALESCE(AVG(total_amount),0) as a FROM orders WHERE payment_status='paid'")['a'] ?? 0,
+            'total_customers'   => Database::row("SELECT COUNT(*) as c FROM users")['c'] ?? 0,
+        ];
+        $queue = [
+            'design_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending')")['c'] ?? 0),
+            'approval_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='whatsapp_pending'")['c'] ?? 0),
+            'printing' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='printing'")['c'] ?? 0),
+            'packing' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='processing'")['c'] ?? 0),
+            'ready_delivery' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0),
         ];
         $byStatus    = Database::rows("SELECT status, COUNT(*) as count FROM orders GROUP BY status");
         $monthly     = Database::rows("SELECT DATE_FORMAT(created_at,'%b %Y') as month, SUM(total_amount) as revenue, COUNT(*) as orders FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH) GROUP BY YEAR(created_at), MONTH(created_at) ORDER BY created_at ASC");
         $topProducts = Database::rows("SELECT product_name, COUNT(*) as count, SUM(total_price) as revenue FROM order_items GROUP BY product_name ORDER BY count DESC LIMIT 8");
-        $recentOrders= Database::rows("SELECT o.*, COUNT(oi.id) as item_count FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id GROUP BY o.id ORDER BY o.created_at DESC LIMIT 10");
-        json(['ok'=>true,'stats'=>$stats,'by_status'=>$byStatus,'monthly'=>$monthly,'top_products'=>$topProducts,'recent_orders'=>$recentOrders]);
+        $recentOrders= Database::rows("SELECT o.*, COUNT(oi.id) as item_count, SUBSTRING_INDEX(GROUP_CONCAT(oi.product_name ORDER BY oi.id SEPARATOR ', '), ',', 1) as product_summary FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id GROUP BY o.id ORDER BY o.created_at DESC LIMIT 10");
+        $recentNewOrders = Database::rows("SELECT o.*, COUNT(oi.id) as item_count, SUBSTRING_INDEX(GROUP_CONCAT(oi.product_name ORDER BY oi.id SEPARATOR ', '), ',', 1) as product_summary FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id WHERE $newOrderWhere GROUP BY o.id ORDER BY o.created_at DESC LIMIT 6");
+        json(['ok'=>true,'stats'=>$stats,'queue'=>$queue,'by_status'=>$byStatus,'monthly'=>$monthly,'top_products'=>$topProducts,'recent_orders'=>$recentOrders,'recent_new_orders'=>$recentNewOrders,'seen_supported'=>$hasSeen]);
+    }
+
+    if ($uri === '/admin/api/order-notifications' && $method === 'GET') {
+        $hasSeen = $ensureOrderSeenColumn();
+        $newOrderWhere = $hasSeen ? "is_seen = 0" : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
+        $count = (int)(Database::row("SELECT COUNT(*) AS c FROM orders WHERE $newOrderWhere")['c'] ?? 0);
+        $orders = Database::rows("SELECT id, order_id, customer_name, total_amount, status, created_at FROM orders WHERE $newOrderWhere ORDER BY created_at DESC LIMIT 5");
+        json(['ok'=>true,'count'=>$count,'orders'=>$orders,'seen_supported'=>$hasSeen]);
+    }
+
+    if (preg_match('#^/admin/api/orders/(\d+)/seen$#', $uri, $m) && $method === 'POST') {
+        if (!$ensureOrderSeenColumn()) json(['ok'=>false,'msg'=>'Seen tracking is unavailable. Run database migration.'], 500);
+        Database::query("UPDATE orders SET is_seen = 1 WHERE id = ?", [(int)$m[1]]);
+        json(['ok'=>true]);
     }
 
     if ($uri === '/admin/api/orders' && $method === 'GET') {
@@ -585,6 +672,43 @@ if (str_starts_with($uri, '/admin/api/')) {
         \Orders\AdminAudit::log('coupon_created',"Coupon: $code");
         json(['ok'=>true,'id'=>$id]);
     }
+    if (preg_match('#^/admin/api/coupons/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $id = (int)$m[1];
+        $code = strtoupper(trim($body['code']??''));
+        if (!$code) json(['ok'=>false,'msg'=>'Code required']);
+        if (Database::row("SELECT id FROM coupons WHERE code=? AND id<>?",[$code, $id])) json(['ok'=>false,'msg'=>'Code exists']);
+        $scopeType = ($body['scope_type'] ?? 'all') === 'category' ? 'category' : 'all';
+        $categoryId = (int)($body['category_id'] ?? 0);
+        if ($scopeType === 'category' && $categoryId <= 0) {
+            json(['ok'=>false,'msg'=>'Please select a category for category-specific coupon.'], 422);
+        }
+        try {
+            Database::query(
+                "UPDATE coupons
+                 SET code=?, description=?, discount_type=?, discount_value=?, min_order_amount=?, max_uses=?, valid_from=?, valid_until=?, scope_type=?, category_id=?
+                 WHERE id=?",
+                [
+                    $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
+                    (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
+                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null,
+                    $scopeType, $scopeType === 'category' ? $categoryId : null, $id,
+                ]
+            );
+        } catch (\Throwable) {
+            Database::query(
+                "UPDATE coupons
+                 SET code=?, description=?, discount_type=?, discount_value=?, min_order_amount=?, max_uses=?, valid_from=?, valid_until=?
+                 WHERE id=?",
+                [
+                    $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
+                    (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
+                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null, $id,
+                ]
+            );
+        }
+        \Orders\AdminAudit::log('coupon_updated',"Coupon: $code");
+        json(['ok'=>true,'id'=>$id]);
+    }
     if (preg_match('#^/admin/api/coupons/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
         Database::query("UPDATE coupons SET is_active=NOT is_active WHERE id=?",[$m[1]]);
         json(['ok'=>true]);
@@ -719,6 +843,7 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/banners' && $method === 'GET') {
         try {
+            $ensureHomeBannerClickColumns();
             $rows = Database::rows("SELECT * FROM home_banners ORDER BY sort_order ASC, id DESC");
             json(['ok'=>true,'banners'=>$rows]);
         } catch (\Throwable) {
@@ -729,10 +854,16 @@ if (str_starts_with($uri, '/admin/api/')) {
         if (trim((string)($body['image_path'] ?? '')) === '') {
             json(['ok'=>false,'msg'=>'Banner image path is required'], 400);
         }
+        $imageClickEnabled = (int)($body['image_click_enabled'] ?? 0) === 1 ? 1 : 0;
+        $imageClickUrl = trim((string)($body['image_click_url'] ?? ''));
+        if ($imageClickEnabled && $imageClickUrl === '') {
+            json(['ok'=>false,'msg'=>'Image click URL is required when clickable image is enabled'], 400);
+        }
         try {
+            $ensureHomeBannerClickColumns();
             $id = Database::insert(
-                "INSERT INTO home_banners (eyebrow,title,subtitle,image_path,image_alt,cta_primary_text,cta_primary_url,cta_secondary_text,cta_secondary_type,cta_secondary_url,sort_order,is_active,created_at,updated_at)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",
+                "INSERT INTO home_banners (eyebrow,title,subtitle,image_path,image_alt,cta_primary_text,cta_primary_url,cta_secondary_text,cta_secondary_type,cta_secondary_url,image_click_enabled,image_click_url,sort_order,is_active,created_at,updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",
                 [
                     trim((string)($body['eyebrow'] ?? '')),
                     trim((string)($body['title'] ?? '')),
@@ -744,6 +875,8 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['cta_secondary_text'] ?? '')),
                     trim((string)($body['cta_secondary_type'] ?? 'whatsapp')),
                     trim((string)($body['cta_secondary_url'] ?? '')),
+                    $imageClickEnabled,
+                    $imageClickUrl,
                     (int)($body['sort_order'] ?? 0),
                     (int)($body['is_active'] ?? 1),
                 ]
@@ -757,10 +890,16 @@ if (str_starts_with($uri, '/admin/api/')) {
         if (trim((string)($body['image_path'] ?? '')) === '') {
             json(['ok'=>false,'msg'=>'Banner image path is required'], 400);
         }
+        $imageClickEnabled = (int)($body['image_click_enabled'] ?? 0) === 1 ? 1 : 0;
+        $imageClickUrl = trim((string)($body['image_click_url'] ?? ''));
+        if ($imageClickEnabled && $imageClickUrl === '') {
+            json(['ok'=>false,'msg'=>'Image click URL is required when clickable image is enabled'], 400);
+        }
         try {
+            $ensureHomeBannerClickColumns();
             Database::query(
                 "UPDATE home_banners
-                 SET eyebrow=?, title=?, subtitle=?, image_path=?, image_alt=?, cta_primary_text=?, cta_primary_url=?, cta_secondary_text=?, cta_secondary_type=?, cta_secondary_url=?, sort_order=?, is_active=?, updated_at=NOW()
+                 SET eyebrow=?, title=?, subtitle=?, image_path=?, image_alt=?, cta_primary_text=?, cta_primary_url=?, cta_secondary_text=?, cta_secondary_type=?, cta_secondary_url=?, image_click_enabled=?, image_click_url=?, sort_order=?, is_active=?, updated_at=NOW()
                  WHERE id=?",
                 [
                     trim((string)($body['eyebrow'] ?? '')),
@@ -773,6 +912,8 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['cta_secondary_text'] ?? '')),
                     trim((string)($body['cta_secondary_type'] ?? 'whatsapp')),
                     trim((string)($body['cta_secondary_url'] ?? '')),
+                    $imageClickEnabled,
+                    $imageClickUrl,
                     (int)($body['sort_order'] ?? 0),
                     (int)($body['is_active'] ?? 1),
                     (int)$m[1],
@@ -939,6 +1080,17 @@ if (str_starts_with($uri, '/admin/api/')) {
             json(['ok'=>true,'blogs'=>$rows]);
         } catch (\Throwable) {
             json(['ok'=>false,'msg'=>'blogs table missing. Run SQL migration first.','blogs'=>[]], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/blogs/(\d+)$#', $uri, $m) && $method === 'GET') {
+        try {
+            $blog = Database::row("SELECT * FROM blogs WHERE id=?", [(int)$m[1]]);
+            if (!$blog) {
+                json(['ok'=>false,'msg'=>'Blog not found'], 404);
+            }
+            json(['ok'=>true,'blog'=>$blog]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'blogs table missing. Run SQL migration first.'], 500);
         }
     }
     if ($uri === '/admin/api/blogs' && $method === 'POST') {
@@ -1273,24 +1425,74 @@ if (str_contains($uri, '/admin/settings') || str_contains($uri, '/admin/integrat
 if ($uri === '/admin/orders') {
     $search = trim((string)($_GET['search'] ?? ''));
     $status = trim((string)($_GET['status'] ?? 'all'));
+    $paymentStatus = trim((string)($_GET['payment_status'] ?? 'all'));
+    $seen = trim((string)($_GET['seen'] ?? 'all'));
+    $sort = trim((string)($_GET['sort'] ?? 'newest'));
+    $dateFrom = trim((string)($_GET['date_from'] ?? ''));
+    $dateTo = trim((string)($_GET['date_to'] ?? ''));
     $page   = max(1, (int)($_GET['page'] ?? 1));
     $perPage = 12;
+    $hasSeen = $ensureOrderSeenColumn();
+
+    $summaryRow = Database::row(
+        "SELECT
+            COUNT(*) AS total_orders,
+            SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS new_today,
+            SUM(CASE WHEN status IN ('received','whatsapp_pending') THEN 1 ELSE 0 END) AS pending_orders,
+            SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) AS processing_orders,
+            SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) AS ready_orders,
+            SUM(CASE WHEN status IN ('received','whatsapp_pending','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS delayed_orders
+         FROM orders"
+    ) ?: [];
+    $summaryCounts = [
+        'total_orders' => (int)($summaryRow['total_orders'] ?? 0),
+        'new_today' => (int)($summaryRow['new_today'] ?? 0),
+        'pending_orders' => (int)($summaryRow['pending_orders'] ?? 0),
+        'processing_orders' => (int)($summaryRow['processing_orders'] ?? 0),
+        'ready_orders' => (int)($summaryRow['ready_orders'] ?? 0),
+        'delayed_orders' => (int)($summaryRow['delayed_orders'] ?? 0),
+    ];
+    $statusCountRows = Database::rows("SELECT status, COUNT(*) AS c FROM orders GROUP BY status");
+    $statusCounts = ['all' => $summaryCounts['total_orders']];
+    foreach ($statusCountRows as $row) {
+        $statusCounts[(string)$row['status']] = (int)($row['c'] ?? 0);
+    }
+    $statusCounts['attention'] = ($statusCounts['received'] ?? 0) + ($statusCounts['whatsapp_pending'] ?? 0) + ($statusCounts['processing'] ?? 0) + ($statusCounts['printing'] ?? 0);
+    $statusCounts['delayed'] = $summaryCounts['delayed_orders'];
 
     $where = [];
     $params = [];
-    if ($status !== 'all' && $status !== '') { $where[] = 'status = ?'; $params[] = $status; }
+    if ($status === 'attention') {
+        $where[] = "status IN ('received','whatsapp_pending','processing','printing')";
+    } elseif ($status === 'delayed') {
+        $where[] = "status IN ('received','whatsapp_pending','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)";
+    } elseif ($status !== 'all' && $status !== '') { $where[] = 'status = ?'; $params[] = $status; }
+    if ($paymentStatus !== 'all' && $paymentStatus !== '') { $where[] = 'payment_status = ?'; $params[] = $paymentStatus; }
+    if ($seen === 'new') {
+        $where[] = $hasSeen ? 'is_seen = 0' : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
+    } elseif ($seen === 'seen' && $hasSeen) {
+        $where[] = 'is_seen = 1';
+    }
+    if ($dateFrom !== '') { $where[] = 'DATE(created_at) >= ?'; $params[] = $dateFrom; }
+    if ($dateTo !== '') { $where[] = 'DATE(created_at) <= ?'; $params[] = $dateTo; }
     if ($search !== '') {
         $where[] = '(order_id LIKE ? OR customer_name LIKE ? OR customer_phone LIKE ? OR customer_email LIKE ?)';
         $like = '%' . $search . '%';
         array_push($params, $like, $like, $like, $like);
     }
     $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+    $orderSql = match ($sort) {
+        'oldest' => 'created_at ASC',
+        'high_value' => 'total_amount DESC, created_at DESC',
+        'urgent' => ($hasSeen ? 'is_seen ASC, ' : '') . "FIELD(status,'received','whatsapp_pending','processing','printing','ready','delivered','cancelled'), created_at ASC",
+        default => 'created_at DESC',
+    };
 
     $countRow = Database::row("SELECT COUNT(*) c FROM orders $whereSql", $params);
     $total = (int)($countRow['c'] ?? 0);
     $offset = ($page - 1) * $perPage;
 
-    $orders = Database::rows("SELECT * FROM orders $whereSql ORDER BY created_at DESC LIMIT $perPage OFFSET $offset", $params);
+    $orders = Database::rows("SELECT * FROM orders $whereSql ORDER BY $orderSql LIMIT $perPage OFFSET $offset", $params);
     foreach ($orders as &$o) {
         $o['items'] = Database::rows(
             "SELECT oi.*,
@@ -1306,7 +1508,12 @@ if ($uri === '/admin/orders') {
         );
     }
 
-    view('admin/orders', compact('orders','total','page','perPage','status','search'));
+    view('admin/orders', compact('orders','total','page','perPage','status','search','summaryCounts','statusCounts','paymentStatus','seen','sort','dateFrom','dateTo','hasSeen'));
+    exit;
+}
+
+if (preg_match('#^/admin/blogs/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
+    view('admin/blogs-new', ['blogEditId' => (int)$m[1]]);
     exit;
 }
 
@@ -1319,6 +1526,7 @@ $adminPage = match(true) {
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/deals'      => 'admin/deals',
     $uri === '/admin/blogs'      => 'admin/blogs',
+    $uri === '/admin/blogs/new'  => 'admin/blogs-new',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/reviews'    => 'admin/reviews',

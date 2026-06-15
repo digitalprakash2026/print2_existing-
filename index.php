@@ -157,8 +157,12 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     catch (\Throwable) { $relatedProducts = []; }
     $reviewSummary = \Reviews\ProductReview::summaryForProduct((int)$product['id']);
     $productReviews = \Reviews\ProductReview::approvedForProduct((int)$product['id'], 12);
+    $wishlistActive = false;
+    if ($user = \Auth\Auth::user()) {
+        $wishlistActive = \Wishlist\Wishlist::isWishlisted((int)$user['id'], (int)($product['id'] ?? 0));
+    }
 
-    view('product', compact('product', 'relatedProducts', 'reviewSummary', 'productReviews'));
+    view('product', compact('product', 'relatedProducts', 'reviewSummary', 'productReviews', 'wishlistActive'));
     exit;
 }
 
@@ -166,28 +170,27 @@ if (preg_match('#^/product/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 if ($uri === '/categories' && $method === 'GET') {
     try {
         $categories = \Catalog\ProductCatalog::categories();
-        $filterOptions = \Catalog\ProductCatalog::filterOptions();
-        $selectedFilters = \Catalog\ProductCatalog::normalizeFilterSelections($_GET['filters'] ?? []);
-        $products = \Catalog\ProductCatalog::filteredProducts($selectedFilters);
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {
         error_log('Categories page error: ' . $e->getMessage());
-        $categories = $products = [];
-        $filterOptions = $selectedFilters = [];
+        $categories = [];
         $settingsMap = [];
     }
-    view('categories', compact('categories', 'products', 'filterOptions', 'selectedFilters', 'settingsMap'));
+    view('categories', compact('categories', 'settingsMap'));
     exit;
 }
 
 // ── Category Page — /category/{slug} ─────────────────────────
 if (preg_match('#^/category/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     try {
-        $result = \Catalog\ProductCatalog::byCategory($m[1]);
+        $selectedFilters = \Catalog\ProductCatalog::normalizeFilterSelections($_GET['filters'] ?? []);
+        $result = \Catalog\ProductCatalog::byCategory($m[1], $selectedFilters);
+        $filterOptions = \Catalog\ProductCatalog::filterOptions();
     } catch (\Throwable $e) {
         error_log('Category error: ' . $e->getMessage());
         $result = null;
+        $selectedFilters = $filterOptions = [];
     }
 
     if (!$result) { http_response_code(404); view('404'); exit; }
@@ -198,7 +201,7 @@ if (preg_match('#^/category/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     try { $categories = \Catalog\ProductCatalog::categories(); }
     catch (\Throwable) { $categories = []; }
 
-    view('category', compact('category', 'products', 'categories'));
+    view('category', compact('category', 'products', 'categories', 'filterOptions', 'selectedFilters'));
     exit;
 }
 
@@ -255,7 +258,38 @@ if ($uri === '/profile' && $method === 'GET') {
     catch (\Throwable) { $orders = []; }
     $reviewableItems = \Reviews\ProductReview::reviewableItemsForUser((int)$user['id']);
     $myReviews = \Reviews\ProductReview::userReviews((int)$user['id']);
-    view('profile', compact('user', 'profile', 'orders', 'reviewableItems', 'myReviews'));
+    $wishlistItems = \Wishlist\Wishlist::itemsForUser((int)$user['id']);
+    $myDesigns = \Designs\UserDesigns::forUser((int)$user['id']);
+    view('profile', compact('user', 'profile', 'orders', 'reviewableItems', 'myReviews', 'wishlistItems', 'myDesigns'));
+    exit;
+}
+
+
+if (preg_match('#^/account/artwork/(\d+)/download$#', $uri, $m) && $method === 'GET') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $file = \Designs\UserDesigns::downloadForUser((int)$user['id'], (int)$m[1]);
+    if (!$file) {
+        http_response_code(404);
+        view('404');
+        exit;
+    }
+
+    $relativePath = '/' . ltrim((string)($file['file_path'] ?? ''), '/');
+    $fullPath = PUBLIC_PATH . $relativePath;
+    $realPath = realpath($fullPath);
+    $uploadRoot = realpath(UPLOAD_PATH);
+    if (!$realPath || !$uploadRoot || !str_starts_with($realPath, $uploadRoot . DIRECTORY_SEPARATOR) || !is_file($realPath)) {
+        http_response_code(404);
+        exit('File missing');
+    }
+
+    $downloadName = basename((string)($file['original_name'] ?: $file['filename'] ?: 'artwork-file'));
+    $downloadName = str_replace(['"', "\r", "\n"], '', $downloadName);
+    header('Content-Type: ' . (($file['mime_type'] ?? '') ?: 'application/octet-stream'));
+    header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+    header('Content-Length: ' . filesize($realPath));
+    readfile($realPath);
     exit;
 }
 

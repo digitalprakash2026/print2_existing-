@@ -22,8 +22,9 @@ $editId = (int)($_GET['id'] ?? 0);
   </div>
   <div class="f2">
     <div class="fg"><label>Design Fee (₹)</label><input type="number" min="0" class="fi" id="ep-design-fee" value="0"></div>
-    <div class="fg"><label>Status</label><select class="fi fi-sel" id="ep-active"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+    <div class="fg"><label>Original Price / MRP (₹)</label><input type="number" min="0" step="0.01" class="fi" id="ep-original-price" placeholder="Optional, for discount badge"></div>
   </div>
+  <div class="fg"><label>Status</label><select class="fi fi-sel" id="ep-active"><option value="1">Active</option><option value="0">Inactive</option></select></div>
   <div class="fg"><label>Description</label><textarea class="fi" id="ep-desc" style="height:84px"></textarea></div>
   <div class="fg"><label>Specifications (Label: Value per line)</label><textarea class="fi" id="ep-specs" style="height:96px"></textarea></div>
 
@@ -181,6 +182,7 @@ async function boot() {
   document.getElementById('ep-cat').value = p.category_id || '';
   document.getElementById('ep-code').value = p.product_code || '';
   document.getElementById('ep-design-fee').value = p.design_fee || 0;
+  document.getElementById('ep-original-price').value = p.original_price || '';
   document.getElementById('ep-active').value = p.is_active ? '1' : '0';
   document.getElementById('ep-desc').value = p.description || '';
   document.getElementById('ep-specs').value = (p.specs||[]).map(s=>`${s.label}: ${s.value||''}`).join('\n');
@@ -308,6 +310,7 @@ async function saveProd() {
     product_code: document.getElementById('ep-code').value.trim().toUpperCase(),
     description: document.getElementById('ep-desc').value.trim(),
     design_fee: parseFloat(document.getElementById('ep-design-fee').value || '0') || 0,
+    original_price: parseFloat(document.getElementById('ep-original-price').value || '0') || 0,
     is_active: parseInt(document.getElementById('ep-active').value || '1',10),
     specs,
     quantity_tiers: tierCheck.tiers,

@@ -66,7 +66,11 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
     $hasPrimaryCta = $ctaPrimaryTextRaw !== '' && $ctaPrimaryUrlRaw !== '' && $ctaPrimaryUrlRaw !== '#';
     $hasSecondaryCta = $ctaSecondaryTextRaw !== '' && ($ctaSecondaryType !== 'url' || ($ctaSecondaryUrlRaw !== '' && $ctaSecondaryUrlRaw !== '#'));
     $hasContent = $eyebrow !== '' || $title !== '' || $subtitle !== '' || $hasPrimaryCta || $hasSecondaryCta;
-    $slideClickUrl = $hasPrimaryCta ? $ctaPrimaryUrl : '';
+    $hasClickSetting = array_key_exists('image_click_enabled', $slide);
+    $imageClickEnabled = $hasClickSetting ? ((int)($slide['image_click_enabled'] ?? 0) === 1) : $hasPrimaryCta;
+    $imageClickUrlRaw = trim((string)($slide['image_click_url'] ?? ''));
+    $slideClickUrlRaw = $imageClickEnabled ? ($imageClickUrlRaw !== '' ? $imageClickUrlRaw : ($hasClickSetting ? '' : $ctaPrimaryUrlRaw)) : '';
+    $slideClickUrl = $slideClickUrlRaw !== '' && $slideClickUrlRaw !== '#' ? htmlspecialchars($slideClickUrlRaw, ENT_QUOTES, 'UTF-8') : '';
   ?>
   <div class="bs-slide <?= $hasContent ? 'has-content' : 'image-only' ?>">
     <?php if ($slideClickUrl !== ''): ?>
