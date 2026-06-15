@@ -11,21 +11,22 @@
 <div class="toast-wrap" id="tw"></div>
 
 <!-- Admin Header -->
-<header class="header adm-header" style="z-index:950">
+<header class="header adm-header adm-header-pro" style="z-index:950">
   <div class="adm-hdr-left">
     <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false" onclick="document.body.classList.toggle('adm-sb-open');this.setAttribute('aria-expanded',document.body.classList.contains('adm-sb-open')?'true':'false');">
       <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
     </button>
   </div>
   <div class="adm-hdr-center">
-    <div class="hdr-logo" onclick="location.href='/admin'">
-      <div class="hdr-logo-box">R</div>
-      <div><div class="hdr-logo-name">RCS Admin</div><div class="hdr-logo-sub">Print Order System</div></div>
-    </div>
+    <form class="adm-global-search" action="/admin/orders" method="GET" role="search">
+      <input name="search" type="search" placeholder="Search orders, customers, products..." aria-label="Search admin records">
+      <button type="submit" aria-label="Search">⌕</button>
+    </form>
   </div>
   <div class="adm-hdr-right">
     <?php $admin = \Auth\Auth::admin(); ?>
     <div class="adm-hdr-actions">
+      <button class="adm-icon-btn" type="button" aria-label="Fullscreen" onclick="document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();">⛶</button>
       <div class="adm-notify" id="admNotify">
         <button class="adm-notify-btn" type="button" id="admNotifyBtn" aria-expanded="false" aria-label="New order notifications">
           🔔 <span class="adm-notify-count" id="admNotifyCount" style="display:none">0</span>
@@ -35,8 +36,12 @@
           <div id="admNotifyList" class="adm-notify-list"><div class="adm-notify-empty">Loading…</div></div>
         </div>
       </div>
-      <span class="adm-hdr-name"><?= htmlspecialchars($admin['name'] ?? '') ?></span>
-      <a href="/admin/logout" class="btn-auth btn-auth-ghost adm-hdr-link">Logout</a>
+      <a class="adm-new-orders-link" href="/admin/orders?seen=new">New Orders</a>
+      <span class="adm-hdr-divider"></span>
+      <div class="adm-admin-chip">
+        <span><strong><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></strong><small>Super Admin</small></span>
+        <em><?= strtoupper(substr((string)($admin['name'] ?? 'A'), 0, 1)) ?></em>
+      </div>
     </div>
     <div class="adm-user-menu" id="admUserMenu">
       <button class="adm-user-btn" id="admUserBtn" type="button" aria-expanded="false" aria-label="Admin actions">
@@ -81,6 +86,10 @@
       <a href="/admin/integrations" class="adm-ni <?= $cur === 'integrations' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 1 5 5v2h-2V7a3 3 0 1 0-6 0v2H7V7a5 5 0 0 1 5-5zm-7 9h14v9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-9zm4 3v2h2v-2H9zm4 0v2h2v-2h-2z"/></svg>Integrations</a>
       <a href="/admin/audit-logs" class="adm-ni <?= $cur === 'audit' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>Audit Log</a>
       <a href="/admin/export/orders" class="adm-ni" target="_blank"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Export CSV</a>
+      <div class="adm-help-card">
+        <span>🎧</span>
+        <div><strong>Need Help?</strong><small>+91 98765 43210</small></div>
+      </div>
     </div>
     <button class="adm-sb-backdrop" id="admSidebarBack" type="button" aria-label="Close admin menu" onclick="document.body.classList.remove('adm-sb-open');document.getElementById('admMobToggle')?.setAttribute('aria-expanded','false');"></button>
 

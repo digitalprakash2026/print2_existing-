@@ -272,7 +272,9 @@ if (str_starts_with($uri, '/admin/api/')) {
             'production_orders' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('processing','printing')")['c'] ?? 0,
             'ready_orders'      => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0,
             'delivered_orders'  => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='delivered'")['c'] ?? 0,
-            'pending_payments'  => Database::row("SELECT COUNT(*) as c FROM orders WHERE payment_status <> 'paid'")['c'] ?? 0,
+            'pending_payments'  => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status IS NULL OR payment_status <> 'paid'")['r'] ?? 0,
+            'month_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE created_at >= DATE_FORMAT(CURDATE(),'%Y-%m-01') AND payment_status='paid'")['r'] ?? 0,
+            'avg_order_value'   => Database::row("SELECT COALESCE(AVG(total_amount),0) as a FROM orders WHERE payment_status='paid'")['a'] ?? 0,
             'total_customers'   => Database::row("SELECT COUNT(*) as c FROM users")['c'] ?? 0,
         ];
         $queue = [
@@ -285,8 +287,8 @@ if (str_starts_with($uri, '/admin/api/')) {
         $byStatus    = Database::rows("SELECT status, COUNT(*) as count FROM orders GROUP BY status");
         $monthly     = Database::rows("SELECT DATE_FORMAT(created_at,'%b %Y') as month, SUM(total_amount) as revenue, COUNT(*) as orders FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH) GROUP BY YEAR(created_at), MONTH(created_at) ORDER BY created_at ASC");
         $topProducts = Database::rows("SELECT product_name, COUNT(*) as count, SUM(total_price) as revenue FROM order_items GROUP BY product_name ORDER BY count DESC LIMIT 8");
-        $recentOrders= Database::rows("SELECT o.*, COUNT(oi.id) as item_count FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id GROUP BY o.id ORDER BY o.created_at DESC LIMIT 10");
-        $recentNewOrders = Database::rows("SELECT o.*, COUNT(oi.id) as item_count FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id WHERE $newOrderWhere GROUP BY o.id ORDER BY o.created_at DESC LIMIT 6");
+        $recentOrders= Database::rows("SELECT o.*, COUNT(oi.id) as item_count, SUBSTRING_INDEX(GROUP_CONCAT(oi.product_name ORDER BY oi.id SEPARATOR ', '), ',', 1) as product_summary FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id GROUP BY o.id ORDER BY o.created_at DESC LIMIT 10");
+        $recentNewOrders = Database::rows("SELECT o.*, COUNT(oi.id) as item_count, SUBSTRING_INDEX(GROUP_CONCAT(oi.product_name ORDER BY oi.id SEPARATOR ', '), ',', 1) as product_summary FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id WHERE $newOrderWhere GROUP BY o.id ORDER BY o.created_at DESC LIMIT 6");
         json(['ok'=>true,'stats'=>$stats,'queue'=>$queue,'by_status'=>$byStatus,'monthly'=>$monthly,'top_products'=>$topProducts,'recent_orders'=>$recentOrders,'recent_new_orders'=>$recentNewOrders,'seen_supported'=>$hasSeen]);
     }
 

@@ -3,69 +3,86 @@ $pageTitle = 'Dashboard — RCS Admin';
 $currentAdmPage = 'dashboard';
 include __DIR__ . '/layout.php';
 ?>
-<div class="adm-dash-page">
-  <section class="adm-dash-hero">
+<div class="adm-dash-pro">
+  <section class="dash-pro-head">
     <div>
-      <div class="adm-orders-kicker">Admin overview</div>
-      <div class="adm-pt" style="margin:0">Dashboard</div>
-      <div class="adm-orders-sub">Monitor new orders, production flow, revenue, and quick actions from one clean workspace.</div>
+      <h1>Dashboard</h1>
+      <p>Welcome back! Here’s what’s happening with your printing business today.</p>
     </div>
-    <div class="adm-dash-actions">
-      <a href="/admin/products/new" class="btn btn-blue btn-sm">+ Add Product</a>
-      <a href="/admin/orders" class="btn btn-outline btn-sm">View Orders</a>
-      <a href="/admin/coupons" class="btn btn-outline btn-sm">Create Coupon</a>
-      <a href="/admin/export/orders" class="btn btn-outline btn-sm" target="_blank">Export Orders</a>
-    </div>
+    <button class="dash-date-pill" type="button">📅 <span><?= date('d M Y') ?> - <?= date('d M Y') ?></span>⌄</button>
   </section>
 
-  <div class="adm-kpi-grid" id="dashKpis">
-    <div class="adm-kpi-card is-blue"><span>🆕</span><b id="ds-new">—</b><small>New Orders</small></div>
-    <div class="adm-kpi-card is-amber"><span>⚠️</span><b id="ds-pending">—</b><small>Pending Orders</small></div>
-    <div class="adm-kpi-card is-orange"><span>⚙️</span><b id="ds-production">—</b><small>Processing / Printing</small></div>
-    <div class="adm-kpi-card is-green"><span>✅</span><b id="ds-ready">—</b><small>Ready Orders</small></div>
-    <div class="adm-kpi-card is-slate"><span>📦</span><b id="ds-delivered">—</b><small>Delivered</small></div>
-    <div class="adm-kpi-card is-blue"><span>💰</span><b id="ds-rev">—</b><small>Total Revenue</small></div>
-    <div class="adm-kpi-card is-green"><span>📈</span><b id="ds-today-rev">—</b><small>Today Revenue</small></div>
-    <div class="adm-kpi-card is-red"><span>💳</span><b id="ds-payments">—</b><small>Pending Payments</small></div>
-  </div>
+  <section class="dash-kpi-grid dash-kpi-grid--top" aria-label="Order summary">
+    <article class="dash-kpi-card kpi-blue"><div class="kpi-icon">🛍️</div><div><strong id="ds-new">—</strong><span>New Orders</span><small class="up">↑ Live queue</small></div></article>
+    <article class="dash-kpi-card kpi-amber"><div class="kpi-icon">⏳</div><div><strong id="ds-pending">—</strong><span>Pending Orders</span><small class="up">↑ Needs review</small></div></article>
+    <article class="dash-kpi-card kpi-purple"><div class="kpi-icon">🖨️</div><div><strong id="ds-production">—</strong><span>Printing Orders</span><small>↗ Production flow</small></div></article>
+    <article class="dash-kpi-card kpi-green"><div class="kpi-icon">📦</div><div><strong id="ds-ready">—</strong><span>Ready Orders</span><small class="down">↓ Dispatch queue</small></div></article>
+    <article class="dash-kpi-card kpi-mint"><div class="kpi-icon">🚚</div><div><strong id="ds-delivered">—</strong><span>Delivered Orders</span><small class="up">↑ Completed</small></div></article>
+    <article class="dash-kpi-card kpi-pink"><div class="kpi-icon">₹</div><div><strong id="ds-rev">—</strong><span>Total Revenue</span><small class="up">↑ Paid orders</small></div></article>
+  </section>
 
-  <div class="adm-dash-grid-main">
-    <section class="adm-panel-card adm-panel-card--wide">
-      <div class="adm-panel-head"><div><strong>Recent New Orders</strong><small>Unseen / fresh orders that need admin review.</small></div><a href="/admin/orders?seen=new" class="btn btn-outline btn-sm">Review all</a></div>
-      <div id="newOrdersList" class="adm-new-orders-list"><div class="adm-empty-state">Loading…</div></div>
-    </section>
-    <section class="adm-panel-card">
-      <div class="adm-panel-head"><div><strong>Production Queue</strong><small>Print workflow snapshot.</small></div></div>
-      <div id="prodQueue" class="adm-queue-list"><div class="adm-empty-state">Loading…</div></div>
-    </section>
-  </div>
+  <section class="dash-kpi-grid dash-kpi-grid--sub" aria-label="Revenue and customer summary">
+    <article class="dash-kpi-card kpi-lime"><div class="kpi-icon">🛡️</div><div><strong id="ds-today-rev">—</strong><span>Today’s Revenue</span><small class="up">↑ Today</small></div></article>
+    <article class="dash-kpi-card kpi-teal"><div class="kpi-icon">📈</div><div><strong id="ds-month-rev">—</strong><span>This Month Revenue</span><small class="up">↑ This month</small></div></article>
+    <article class="dash-kpi-card kpi-orange"><div class="kpi-icon">💳</div><div><strong id="ds-payments">—</strong><span>Pending Payments</span><small class="down">↑ Follow up</small></div></article>
+    <article class="dash-kpi-card kpi-indigo"><div class="kpi-icon">📊</div><div><strong id="ds-aov">—</strong><span>Average Order Value</span><small class="up">↑ Paid orders</small></div></article>
+    <article class="dash-kpi-card kpi-violet"><div class="kpi-icon">👥</div><div><strong id="ds-customers">—</strong><span>Total Customers</span><small class="up">↑ Customer base</small></div></article>
+  </section>
 
-  <div class="adm-dash-charts adm-dash-charts--premium" id="dash-charts">
-    <div class="anl-card adm-panel-card">
-      <div class="adm-panel-head"><div><strong>Revenue (6 months)</strong><small>Paid order revenue trend.</small></div></div>
-      <div class="rev-chart" id="revChart"><div class="adm-empty-state">Loading…</div></div>
-    </div>
-    <div class="anl-card adm-panel-card">
-      <div class="adm-panel-head"><div><strong>Top Products</strong><small>Most ordered printing products.</small></div></div>
-      <div id="topProds"><div class="adm-empty-state">Loading…</div></div>
-    </div>
-  </div>
+  <section class="dash-mid-grid">
+    <article class="dash-card dash-revenue-card">
+      <div class="dash-card-head"><div><h2>Revenue Overview</h2><p>Paid order revenue over the last six months.</p></div><button type="button" class="dash-mini-select">Last 6 Months⌄</button></div>
+      <div class="dash-line-chart" id="revChart"><div class="adm-empty-state">Loading…</div></div>
+    </article>
 
-  <div class="adm-panel-card">
-    <div class="adm-panel-head"><div><strong>Recent Orders</strong><small>Latest activity across all statuses.</small></div><a href="/admin/orders" class="btn btn-outline btn-sm">View All →</a></div>
-    <div id="recentOrders"><div class="adm-empty-state">Loading…</div></div>
-  </div>
+    <article class="dash-card dash-queue-card">
+      <div class="dash-card-head"><div><h2>Production Queue</h2><p>Track design, approval, printing and dispatch.</p></div><a href="/admin/orders?status=attention" class="dash-view-link">View All</a></div>
+      <div class="dash-queue-list" id="prodQueue"><div class="adm-empty-state">Loading…</div></div>
+    </article>
+
+    <article class="dash-card dash-products-card">
+      <div class="dash-card-head"><div><h2>Top Products</h2><p>Highest ordered catalog items.</p></div><a href="/admin/products" class="dash-view-link">View All</a></div>
+      <div class="dash-products-list" id="topProds"><div class="adm-empty-state">Loading…</div></div>
+    </article>
+  </section>
+
+  <section class="dash-bottom-grid">
+    <article class="dash-card dash-orders-card">
+      <div class="dash-card-head"><div><h2>Recent New Orders</h2><p>Unseen orders highlighted for fast follow-up.</p></div><a href="/admin/orders?seen=new" class="dash-view-link">View All Orders</a></div>
+      <div class="dash-orders-table-wrap">
+        <table class="dash-orders-table">
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Product</th><th>Amount</th><th>Status</th><th>Time</th><th></th></tr></thead>
+          <tbody id="newOrdersList"><tr><td colspan="7"><div class="adm-empty-state">Loading…</div></td></tr></tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="dash-card dash-actions-card">
+      <div class="dash-card-head"><div><h2>Quick Actions</h2><p>Common admin shortcuts.</p></div></div>
+      <div class="dash-actions-grid">
+        <a href="/admin/products/new"><span class="qa-blue">📦</span><b>Add Product</b></a>
+        <a href="/admin/orders"><span class="qa-green">📋</span><b>View Orders</b></a>
+        <a href="/admin/coupons"><span class="qa-purple">🏷️</span><b>Create Coupon</b></a>
+        <a href="/admin/export/orders" target="_blank"><span class="qa-orange">⬇️</span><b>Export Orders</b></a>
+        <a href="/admin/customers"><span class="qa-pink">👤</span><b>Manage Users</b></a>
+        <a href="/admin/design"><span class="qa-cyan">✏️</span><b>Design Studio</b></a>
+        <a href="/admin/analytics"><span class="qa-indigo">📊</span><b>Reports</b></a>
+        <a href="/admin/settings"><span class="qa-slate">⚙️</span><b>Settings</b></a>
+      </div>
+    </article>
+  </section>
 </div>
 
 <script>
 const STATUS_COLORS = {received:'b-blue',processing:'b-amber',printing:'b-orange',ready:'b-green',delivered:'b-ink',cancelled:'b-red',whatsapp_pending:'b-amber'};
 const STATUS_LABELS = {received:'Received',processing:'Processing',printing:'Printing',ready:'Ready',delivered:'Delivered',cancelled:'Cancelled',whatsapp_pending:'WA Pending'};
 const money = n => '₹'+Number(n||0).toLocaleString('en-IN');
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function pct(part,total){return Math.max(4, Math.round((Number(part||0) / Math.max(Number(total||0), 1)) * 100));}
 
 async function loadDash() {
   const res = await fetch('/admin/api/dashboard').then(r=>r.json());
   if (!res.ok) return;
-
   const s = res.stats || {};
   document.getElementById('ds-new').textContent = Number(s.new_orders||0).toLocaleString('en-IN');
   document.getElementById('ds-pending').textContent = Number(s.pending_orders||0).toLocaleString('en-IN');
@@ -74,46 +91,68 @@ async function loadDash() {
   document.getElementById('ds-delivered').textContent = Number(s.delivered_orders||0).toLocaleString('en-IN');
   document.getElementById('ds-rev').textContent = money(s.total_revenue);
   document.getElementById('ds-today-rev').textContent = money(s.today_revenue);
-  document.getElementById('ds-payments').textContent = Number(s.pending_payments||0).toLocaleString('en-IN');
+  document.getElementById('ds-month-rev').textContent = money(s.month_revenue || 0);
+  document.getElementById('ds-payments').textContent = money(s.pending_payments || 0);
+  document.getElementById('ds-aov').textContent = money(s.avg_order_value || 0);
+  document.getElementById('ds-customers').textContent = Number(s.total_customers||0).toLocaleString('en-IN');
 
-  const newOrders = res.recent_new_orders || [];
-  document.getElementById('newOrdersList').innerHTML = newOrders.length ? newOrders.map(o => orderMini(o, true)).join('') : '<div class="adm-empty-state">🎉 No new orders pending review.</div>';
+  renderLineChart(res.monthly || []);
+  renderQueue(res.queue || {});
+  renderTopProducts(res.top_products || []);
+  renderNewOrders(res.recent_new_orders || []);
+}
 
-  const q = res.queue || {};
-  const queueItems = [
-    ['Design Pending', q.design_pending || 0, '🎨'], ['Customer Approval', q.approval_pending || 0, '💬'],
-    ['Printing', q.printing || 0, '🖨️'], ['Packing', q.packing || 0, '📦'], ['Ready for Delivery', q.ready_delivery || 0, '✅']
+function renderLineChart(monthly) {
+  const chart = document.getElementById('revChart');
+  if (!monthly.length) { chart.innerHTML = '<div class="adm-empty-state">No revenue data yet.</div>'; return; }
+  const values = monthly.map(m => Number(m.revenue || 0));
+  const max = Math.max(...values, 1);
+  const w = 640, h = 250, pad = 34;
+  const step = (w - pad * 2) / Math.max(monthly.length - 1, 1);
+  const pts = monthly.map((m,i) => [pad + (i * step), h - pad - ((Number(m.revenue || 0) / max) * (h - pad * 2))]);
+  const path = pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+  const area = `${path} L${pts[pts.length-1][0].toFixed(1)} ${h-pad} L${pad} ${h-pad} Z`;
+  const yLabels = [max, max*.75, max*.5, max*.25, 0];
+  chart.innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Revenue overview chart">
+    <defs><linearGradient id="revFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity=".18"/><stop offset="1" stop-color="#2563eb" stop-opacity=".02"/></linearGradient></defs>
+    ${yLabels.map((v,i)=>`<g><line x1="${pad}" y1="${pad+i*((h-pad*2)/4)}" x2="${w-pad}" y2="${pad+i*((h-pad*2)/4)}"/><text x="0" y="${pad+i*((h-pad*2)/4)+4}">${money(v).replace('.00','')}</text></g>`).join('')}
+    <path d="${area}" fill="url(#revFill)"></path><path d="${path}" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+    ${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="5"/><text class="x" x="${p[0]}" y="${h-8}" text-anchor="middle">${escH(monthly[i].month)}</text>`).join('')}
+  </svg>`;
+}
+
+function renderQueue(q) {
+  const items = [
+    ['Design Pending','Waiting for design work', q.design_pending || 0, '✂️','purple'],
+    ['Customer Approval','Waiting for customer approval', q.approval_pending || 0, '⌘','orange'],
+    ['Printing','In printing process', q.printing || 0, '🖨️','blue'],
+    ['Packing','Ready for packaging', q.packing || 0, '▣','cyan'],
+    ['Ready for Delivery','Ready to dispatch', q.ready_delivery || 0, '🚚','green']
   ];
-  const maxQ = Math.max(...queueItems.map(i=>Number(i[1])||0), 1);
-  document.getElementById('prodQueue').innerHTML = queueItems.map(([label,count,icon]) => `<div class="adm-queue-row"><span>${icon}</span><div><strong>${label}</strong><em style="width:${Math.max(6,(count/maxQ)*100)}%"></em></div><b>${count}</b></div>`).join('');
-
-  const monthly = res.monthly || [];
-  const maxRev = Math.max(...monthly.map(m=>parseFloat(m.revenue)||0), 1);
-  document.getElementById('revChart').innerHTML = monthly.length
-    ? monthly.map(m => `<div class="rv-bar-wrap"><div class="rv-val">${parseFloat(m.revenue)>0?'₹'+Math.round(m.revenue/1000)+'k':''}</div><div class="rv-bar ${parseFloat(m.revenue)===maxRev?'hi':''}" style="height:${Math.max(8,(parseFloat(m.revenue)/maxRev)*92)}px"></div><div class="rv-lbl">${escH(m.month)}</div></div>`).join('')
-    : '<div class="adm-empty-state">No revenue data yet.</div>';
-
-  const top = res.top_products || [];
-  const maxTop = Math.max(...top.map(p=>Number(p.count)||0), 1);
-  document.getElementById('topProds').innerHTML = top.length
-    ? top.map(p=>`<div class="adm-product-progress"><div><span>${escH(p.product_name)}</span><b>${Number(p.count||0)} orders</b></div><em><i style="width:${Math.max(6,(Number(p.count||0)/maxTop)*100)}%"></i></em></div>`).join('')
-    : '<div class="adm-empty-state">No product data yet.</div>';
-
-  document.getElementById('recentOrders').innerHTML = res.recent_orders?.length
-    ? res.recent_orders.map(o=>orderMini(o, false)).join('')
-    : '<div class="adm-empty-state">📋 No orders yet.</div>';
+  document.getElementById('prodQueue').innerHTML = items.map(([title,sub,count,icon,tone]) => `<div class="dash-queue-row"><span class="${tone}">${icon}</span><div><strong>${title}</strong><small>${sub}</small></div><b class="${tone}">${count}</b></div>`).join('');
 }
 
-function orderMini(o, isNew) {
-  return `<div class="adm-order-mini ${isNew ? 'is-new' : ''}">
-    <div><strong>#${escH(o.order_id)}</strong>${isNew ? '<span>NEW</span>' : ''}<small>${escH(o.customer_name)} · ${escH(o.customer_phone || '')}</small></div>
-    <div><b>${money(o.total_amount)}</b><small class="badge ${STATUS_COLORS[o.status]||'b-blue'}">${STATUS_LABELS[o.status]||o.status}</small></div>
-    <a href="/admin/orders?search=${encodeURIComponent(o.order_id)}" class="btn btn-outline btn-sm">Open</a>
-  </div>`;
+function renderTopProducts(products) {
+  const wrap = document.getElementById('topProds');
+  if (!products.length) { wrap.innerHTML = '<div class="adm-empty-state">No product data yet.</div>'; return; }
+  const total = products.reduce((sum,p)=>sum + Number(p.count || 0), 0);
+  wrap.innerHTML = products.slice(0,8).map(p => `<div class="dash-product-row"><div><strong>${escH(p.product_name)}</strong><small>${Number(p.count||0)} orders</small></div><em><i style="width:${pct(p.count,total)}%"></i></em><b>${pct(p.count,total)}%</b></div>`).join('');
 }
-function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function toast(msg,type='info'){const w=document.getElementById('tw');const t=document.createElement('div');t.className='toast '+type;t.textContent=msg;w.appendChild(t);requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},2800);}
 
+function renderNewOrders(orders) {
+  const body = document.getElementById('newOrdersList');
+  if (!orders.length) { body.innerHTML = '<tr><td colspan="7"><div class="adm-empty-state">🎉 No new orders pending review.</div></td></tr>'; return; }
+  body.innerHTML = orders.map(o => `<tr>
+    <td><a href="/admin/orders?search=${encodeURIComponent(o.order_id)}">#${escH(o.order_id)}</a></td>
+    <td>${escH(o.customer_name || '-')}</td>
+    <td>${escH(o.product_summary || (Number(o.item_count||0) + ' item(s)'))}</td>
+    <td>${money(o.total_amount)}</td>
+    <td><span class="dash-status ${STATUS_COLORS[o.status]||'b-blue'}">${STATUS_LABELS[o.status]||escH(o.status)}</span></td>
+    <td>${formatDate(o.created_at)}</td>
+    <td><span class="dash-new-badge">NEW</span></td>
+  </tr>`).join('');
+}
+function formatDate(d){const dt = new Date(String(d).replace(' ', 'T')); return Number.isNaN(dt.getTime()) ? escH(d) : dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+', '+dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
 loadDash();
 </script>
     </div></div></div>
