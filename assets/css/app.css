@@ -12885,3 +12885,41 @@ body:has(.dash-ref-page) .adm-main:has(.dash-ref-page) { padding:28px 28px 34px;
   body:has(.dash-ref-page) .adm-header-pro { left:0; width:100%; padding:0 14px; }
   body:has(.dash-ref-page) .adm-sb { top:0; height:100vh; }
 }
+
+/* Final reference lock: admin dashboard shell starts at viewport top like supplied mockup */
+body:has(.dash-ref-page) { --adm-ref-sidebar:242px; --adm-ref-header:76px; }
+body:has(.dash-ref-page) .adm-header-pro { position:fixed; top:0; right:0; left:var(--adm-ref-sidebar); width:auto; height:var(--adm-ref-header); }
+body:has(.dash-ref-page) .adm-sb { position:fixed; inset:0 auto 0 0; top:0; width:var(--adm-ref-sidebar); height:100vh; z-index:960; overflow-y:auto; }
+body:has(.dash-ref-page) .adm-lay { display:block; min-height:100vh; }
+body:has(.dash-ref-page) .adm-main { margin-left:var(--adm-ref-sidebar); min-height:calc(100vh - var(--adm-ref-header)); }
+body:has(.dash-ref-page) .adm-main:has(.dash-ref-page) { padding-top:28px; }
+body:has(.dash-ref-page) .adm-mob-toggle { display:inline-flex; }
+body:has(.dash-ref-page) .adm-header-pro .adm-hdr-center { position:static; transform:none; justify-content:flex-start; }
+body:has(.dash-ref-page) .adm-header-pro .adm-hdr-left { width:42px; }
+body:has(.dash-ref-page) .adm-header-pro .adm-hdr-right { margin-left:auto; }
+body:has(.dash-ref-page) .adm-icon-btn,
+body:has(.dash-ref-page) .adm-notify-btn { width:40px; height:40px; border-radius:11px; }
+body:has(.dash-ref-page) .adm-notify-count { top:-7px; right:-5px; min-width:18px; height:18px; font-size:10px; border:2px solid #fff; }
+body:has(.dash-ref-page) .adm-new-orders-link { margin-left:-4px; }
+body:has(.dash-ref-page) .adm-admin-chip em { position:relative; }
+body:has(.dash-ref-page) .adm-admin-chip em::after { content:''; position:absolute; right:-1px; bottom:1px; width:9px; height:9px; border-radius:50%; background:#10b981; border:2px solid #fff; }
+.dash-ref-date .dash-ref-mini-icon { font-size:14px; }
+.dash-ref-kpi::after { display:none; }
+.dash-ref-kpi:hover { transform:none; box-shadow:0 9px 25px rgba(15,23,42,.052); }
+.dash-ref-kpi small { white-space:nowrap; }
+.dash-ref-card-head a:hover,
+.dash-ref-select:hover { border-color:#cbd5e1; box-shadow:0 8px 18px rgba(15,23,42,.06); }
+@media (min-width:1501px) {
+  .dash-ref-page { grid-template-rows:auto auto auto minmax(390px,auto) auto; }
+  .dash-ref-revenue { min-height:416px; }
+  .dash-ref-queue,
+  .dash-ref-products { min-height:416px; }
+  .dash-ref-orders,
+  .dash-ref-actions { min-height:330px; }
+}
+@media (max-width:900px) {
+  body:has(.dash-ref-page) .adm-sb { position:fixed; transform:translateX(-100%); }
+  body.adm-sb-open:has(.dash-ref-page) .adm-sb { transform:translateX(0); }
+  body:has(.dash-ref-page) .adm-main { margin-left:0; }
+  body:has(.dash-ref-page) .adm-header-pro { left:0; }
+}
