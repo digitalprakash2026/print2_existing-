@@ -3,8 +3,8 @@ $pageTitle = 'Orders — RCS Admin';
 $currentAdmPage = 'orders';
 $admMainClass = 'adm-main--orders';
 include __DIR__ . '/layout.php';
-$statusColors = ['received'=>'b-blue','processing'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
-$statusLabels = ['received'=>'Received','processing'=>'Processing','printing'=>'Printing','ready'=>'Ready','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'WA Pending'];
+$statusColors = ['received'=>'b-blue','design_approved'=>'b-green','processing'=>'b-amber','other_process'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
+$statusLabels = ['received'=>'Received','design_approved'=>'Design Approved','printing'=>'Printing','other_process'=>'Other Process','processing'=>'Other Process','ready'=>'Ready to Dispatch','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'WA Pending'];
 $orders = $orders ?? [];
 $summaryCounts = $summaryCounts ?? [];
 $statusCounts = $statusCounts ?? ['all' => 0];
@@ -23,6 +23,29 @@ $orderUrl = static function (array $params = []): string {
     $params = array_filter($params, static fn($v) => $v !== '' && $v !== null);
     return '/admin/orders' . ($params ? ('?' . http_build_query($params)) : '');
 };
+
+$baseCardParams = [];
+foreach (['search' => $search, 'payment_status' => $paymentStatus, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'sort' => $sort] as $k => $v) {
+    if ($v !== '' && !in_array($v, ['all', 'newest'], true)) $baseCardParams[$k] = $v;
+}
+$orderStatusCards = [
+    ['key'=>'all','label'=>'All Order','icon'=>'▦','class'=>'blue','params'=>[],'count'=>$statusCounts['all'] ?? 0],
+    ['key'=>'new_order','label'=>'New Order','icon'=>'●','class'=>'pink','params'=>['seen'=>'new'],'count'=>$statusCounts['new_order'] ?? 0],
+    ['key'=>'received','label'=>'Received','icon'=>'▣','class'=>'cyan','params'=>['status'=>'received'],'count'=>$statusCounts['received'] ?? 0],
+    ['key'=>'design_approved','label'=>'Design Approved','icon'=>'✓','class'=>'green','params'=>['status'=>'design_approved'],'count'=>$statusCounts['design_approved'] ?? 0],
+    ['key'=>'printing','label'=>'Printing','icon'=>'▤','class'=>'purple','params'=>['status'=>'printing'],'count'=>$statusCounts['printing'] ?? 0],
+    ['key'=>'other_process','label'=>'Other Process','icon'=>'⚙','class'=>'amber','params'=>['status'=>'other_process'],'count'=>$statusCounts['other_process'] ?? 0],
+    ['key'=>'ready_dispatch','label'=>'Ready to Dispatch','icon'=>'▰','class'=>'lime','params'=>['status'=>'ready'],'count'=>$statusCounts['ready_dispatch'] ?? 0],
+    ['key'=>'delivered','label'=>'Delivered','icon'=>'◆','class'=>'slate','params'=>['status'=>'delivered'],'count'=>$statusCounts['delivered'] ?? 0],
+];
+$isCardActive = static function (array $card) use ($status, $seen): bool {
+    return match ($card['key']) {
+        'all' => ($status === '' || $status === 'all') && $seen === 'all',
+        'new_order' => $seen === 'new',
+        'ready_dispatch' => $status === 'ready' && $seen !== 'new',
+        default => $status === $card['key'] && $seen !== 'new',
+    };
+};
 ?>
 
 <div class="adm-orders-page">
@@ -37,65 +60,32 @@ $orderUrl = static function (array $params = []): string {
     <a href="/admin/export/orders" class="btn btn-outline btn-sm adm-orders-export" target="_blank">⬇ Export CSV</a>
   </div>
 
-  <div class="adm-orders-stats">
-  <a class="adm-order-stat adm-order-stat--blue" href="<?= htmlspecialchars($orderUrl(['search' => $search])) ?>">
-    <span class="adm-order-stat-i">🆕</span>
-    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['new_today'] ?? 0)) ?></span>
-    <span class="adm-order-stat-l">New Today</span>
-    <span class="adm-order-stat-cta">View latest →</span>
-  </a>
-  <a class="adm-order-stat adm-order-stat--amber" href="<?= htmlspecialchars($orderUrl(['status' => 'attention', 'search' => $search])) ?>">
-    <span class="adm-order-stat-i">⚠️</span>
-    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['pending_orders'] ?? 0)) ?></span>
-    <span class="adm-order-stat-l">Pending</span>
-    <span class="adm-order-stat-cta">Review now →</span>
-  </a>
-  <a class="adm-order-stat adm-order-stat--orange" href="<?= htmlspecialchars($orderUrl(['status' => 'processing', 'search' => $search])) ?>">
-    <span class="adm-order-stat-i">⚙️</span>
-    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['processing_orders'] ?? 0)) ?></span>
-    <span class="adm-order-stat-l">Processing</span>
-    <span class="adm-order-stat-cta">Track flow →</span>
-  </a>
-  <a class="adm-order-stat adm-order-stat--green" href="<?= htmlspecialchars($orderUrl(['status' => 'ready', 'search' => $search])) ?>">
-    <span class="adm-order-stat-i">✅</span>
-    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['ready_orders'] ?? 0)) ?></span>
-    <span class="adm-order-stat-l">Ready</span>
-    <span class="adm-order-stat-cta">Dispatch →</span>
-  </a>
-  <a class="adm-order-stat adm-order-stat--red" href="<?= htmlspecialchars($orderUrl(['status' => 'delayed', 'search' => $search])) ?>">
-    <span class="adm-order-stat-i">🔥</span>
-    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['delayed_orders'] ?? 0)) ?></span>
-    <span class="adm-order-stat-l">Delayed / Attention</span>
-    <span class="adm-order-stat-cta">Fix first →</span>
-  </a>
+  <div class="adm-orders-status-grid" aria-label="Order status summary filters">
+  <?php foreach ($orderStatusCards as $card): ?>
+    <?php
+      $hrefParams = array_merge($baseCardParams, $card['params']);
+      $href = $orderUrl($hrefParams);
+      $active = $isCardActive($card);
+    ?>
+    <a class="adm-order-status-card adm-order-status-card--<?= htmlspecialchars($card['class']) ?> <?= $active ? 'act' : '' ?>" href="<?= htmlspecialchars($href) ?>">
+      <span class="adm-order-status-icon"><?= htmlspecialchars($card['icon']) ?></span>
+      <span class="adm-order-status-copy">
+        <b><?= number_format((int)$card['count']) ?></b>
+        <strong><?= htmlspecialchars($card['label']) ?></strong>
+      </span>
+      <em><?= $active ? 'Showing' : 'View' ?> →</em>
+    </a>
+  <?php endforeach; ?>
 </div>
 </section>
 
 <div class="adm-orders-control-panel">
-<div class="adm-orders-tabs" aria-label="Order status filters">
-  <?php
-    $quickStatuses = ['all' => 'All', 'attention' => 'Attention', 'delayed' => 'Delayed', 'received' => 'New', 'whatsapp_pending' => 'WA Pending', 'processing' => 'Processing', 'printing' => 'Printing', 'ready' => 'Ready', 'delivered' => 'Delivered', 'cancelled' => 'Cancelled'];
-    foreach ($quickStatuses as $key => $label):
-      $hrefParams = ['status' => $key];
-      if ($key === 'all') unset($hrefParams['status']);
-      if ($search !== '') $hrefParams['search'] = $search;
-      $href = $orderUrl($hrefParams);
-      $active = ($status === $key) || ($key === 'all' && ($status === '' || $status === 'all'));
-  ?>
-  <a href="<?= htmlspecialchars($href) ?>" class="adm-orders-tab <?= $active ? 'act' : '' ?>">
-    <span><?= htmlspecialchars($label) ?></span>
-    <b><?= number_format((int)($statusCounts[$key] ?? 0)) ?></b>
-  </a>
-  <?php endforeach; ?>
-</div>
-
 <form method="GET" class="adm-orders-filters">
   <input name="search" class="fi" placeholder="Search order ID, name, phone…" value="<?= htmlspecialchars($search) ?>">
   <select name="status" class="fi fi-sel" onchange="this.form.submit()">
     <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>All Statuses</option>
-    <option value="attention" <?= $status === 'attention' ? 'selected' : '' ?>>Attention Required</option>
-    <option value="delayed" <?= $status === 'delayed' ? 'selected' : '' ?>>Delayed / Needs Attention</option>
     <?php foreach ($statusLabels as $k => $v): ?>
+    <?php if ($k === 'processing' || $k === 'whatsapp_pending') continue; ?>
     <option value="<?= $k ?>" <?= $status === $k ? 'selected' : '' ?>><?= $v ?></option>
     <?php endforeach; ?>
   </select>
@@ -249,7 +239,7 @@ $orderUrl = static function (array $params = []): string {
 
           <div class="ord-status-row">
             <select class="fi fi-sel" id="ord_status_<?= (int)$o['id'] ?>">
-              <?php foreach (['received','processing','printing','ready','delivered','cancelled'] as $s): ?>
+              <?php foreach (['received','design_approved','printing','other_process','ready','delivered','cancelled'] as $s): ?>
               <option value="<?= $s ?>" <?= $o['status'] === $s ? 'selected' : '' ?>><?= $statusLabels[$s] ?? ucfirst($s) ?></option>
               <?php endforeach; ?>
             </select>
@@ -305,7 +295,8 @@ $orderUrl = static function (array $params = []): string {
 <?php if ($total > $perPage): ?>
 <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap">
   <?php for ($i = 1; $i <= ceil($total / $perPage); $i++): ?>
-  <a href="?page=<?= $i ?>&status=<?= urlencode($status) ?>&search=<?= urlencode($search) ?>" class="btn <?= $page === $i ? 'btn-blue' : 'btn-outline' ?> btn-sm"><?= $i ?></a>
+  <?php $pageHref = $orderUrl(['page'=>$i,'status'=>$status,'search'=>$search,'payment_status'=>$paymentStatus,'seen'=>$seen,'sort'=>$sort,'date_from'=>$dateFrom,'date_to'=>$dateTo]); ?>
+  <a href="<?= htmlspecialchars($pageHref) ?>" class="btn <?= $page === $i ? 'btn-blue' : 'btn-outline' ?> btn-sm"><?= $i ?></a>
   <?php endfor; ?>
 </div>
 <?php endif; ?>

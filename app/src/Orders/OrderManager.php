@@ -158,7 +158,7 @@ class OrderManager
 
     public static function updateStatus(int $orderId, string $status, string $note = '', string $actor = 'admin'): bool
     {
-        $validStatuses = ['received', 'processing', 'printing', 'ready', 'delivered', 'cancelled', 'whatsapp_pending'];
+        $validStatuses = ['received', 'design_approved', 'printing', 'other_process', 'processing', 'ready', 'delivered', 'cancelled', 'whatsapp_pending'];
         if (!in_array($status, $validStatuses)) return false;
 
         \Database::query(

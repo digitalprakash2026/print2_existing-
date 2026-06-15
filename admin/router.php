@@ -365,7 +365,14 @@ if (str_starts_with($uri, '/admin/api/')) {
         $q      = trim($_GET['q'] ?? '');
         $where = [];
         $params = [];
-        if ($status && $status !== 'all') { $where[] = 'o.status = ?'; $params[] = $status; }
+        if ($status && $status !== 'all') {
+            if ($status === 'other_process') {
+                $where[] = "o.status IN ('other_process','processing')";
+            } else {
+                $where[] = 'o.status = ?';
+                $params[] = $status;
+            }
+        }
         if ($q) {
             $where[] = '(o.order_id LIKE ? OR o.customer_name LIKE ? OR o.customer_phone LIKE ? OR o.customer_email LIKE ?)';
             $like = '%' . $q . '%';
@@ -1493,9 +1500,9 @@ if ($uri === '/admin/orders') {
             COUNT(*) AS total_orders,
             SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS new_today,
             SUM(CASE WHEN status IN ('received','whatsapp_pending') THEN 1 ELSE 0 END) AS pending_orders,
-            SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) AS processing_orders,
+            SUM(CASE WHEN status IN ('other_process','processing') THEN 1 ELSE 0 END) AS processing_orders,
             SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) AS ready_orders,
-            SUM(CASE WHEN status IN ('received','whatsapp_pending','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS delayed_orders
+            SUM(CASE WHEN status IN ('received','whatsapp_pending','design_approved','other_process','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS delayed_orders
          FROM orders"
     ) ?: [];
     $summaryCounts = [
@@ -1511,15 +1518,24 @@ if ($uri === '/admin/orders') {
     foreach ($statusCountRows as $row) {
         $statusCounts[(string)$row['status']] = (int)($row['c'] ?? 0);
     }
-    $statusCounts['attention'] = ($statusCounts['received'] ?? 0) + ($statusCounts['whatsapp_pending'] ?? 0) + ($statusCounts['processing'] ?? 0) + ($statusCounts['printing'] ?? 0);
+    $newOrderCountRow = $hasSeen
+        ? Database::row("SELECT COUNT(*) AS c FROM orders WHERE is_seen = 0")
+        : Database::row("SELECT COUNT(*) AS c FROM orders WHERE DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')");
+    $statusCounts['new_order'] = (int)($newOrderCountRow['c'] ?? 0);
+    $statusCounts['design_approved'] = (int)($statusCounts['design_approved'] ?? 0);
+    $statusCounts['other_process'] = (int)($statusCounts['other_process'] ?? 0) + (int)($statusCounts['processing'] ?? 0);
+    $statusCounts['ready_dispatch'] = (int)($statusCounts['ready'] ?? 0);
+    $statusCounts['attention'] = ($statusCounts['received'] ?? 0) + ($statusCounts['whatsapp_pending'] ?? 0) + ($statusCounts['design_approved'] ?? 0) + ($statusCounts['other_process'] ?? 0) + ($statusCounts['printing'] ?? 0);
     $statusCounts['delayed'] = $summaryCounts['delayed_orders'];
 
     $where = [];
     $params = [];
     if ($status === 'attention') {
-        $where[] = "status IN ('received','whatsapp_pending','processing','printing')";
+        $where[] = "status IN ('received','whatsapp_pending','design_approved','other_process','processing','printing')";
     } elseif ($status === 'delayed') {
-        $where[] = "status IN ('received','whatsapp_pending','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)";
+        $where[] = "status IN ('received','whatsapp_pending','design_approved','other_process','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)";
+    } elseif ($status === 'other_process') {
+        $where[] = "status IN ('other_process','processing')";
     } elseif ($status !== 'all' && $status !== '') { $where[] = 'status = ?'; $params[] = $status; }
     if ($paymentStatus !== 'all' && $paymentStatus !== '') { $where[] = 'payment_status = ?'; $params[] = $paymentStatus; }
     if ($seen === 'new') {
@@ -1538,7 +1554,7 @@ if ($uri === '/admin/orders') {
     $orderSql = match ($sort) {
         'oldest' => 'created_at ASC',
         'high_value' => 'total_amount DESC, created_at DESC',
-        'urgent' => ($hasSeen ? 'is_seen ASC, ' : '') . "FIELD(status,'received','whatsapp_pending','processing','printing','ready','delivered','cancelled'), created_at ASC",
+        'urgent' => ($hasSeen ? 'is_seen ASC, ' : '') . "FIELD(status,'received','whatsapp_pending','design_approved','other_process','processing','printing','ready','delivered','cancelled'), created_at ASC",
         default => 'created_at DESC',
     };
 

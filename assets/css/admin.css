@@ -216,3 +216,30 @@ body.admin-page-dashboard .dash-ref-actions-grid span { font-family:Inter,system
   body.admin-page-dashboard .dash-ref-bottom-row { grid-template-columns:1fr; }
   body.admin-page-dashboard .dash-ref-actions-grid { grid-template-columns:1fr 1fr; }
 }
+
+/* Orders command center: 8 primary status cards */
+body.admin-page-orders .adm-orders-command { border:1px solid var(--adm-line); border-radius:18px; background:linear-gradient(135deg,#ffffff 0%,#f8fbff 100%); box-shadow:var(--adm-shadow); padding:18px; margin-bottom:16px; overflow:hidden; }
+body.admin-page-orders .adm-orders-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:16px; }
+body.admin-page-orders .adm-orders-kicker { color:var(--adm-blue); font-size:12px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+body.admin-page-orders .adm-orders-sub { margin-top:5px; color:var(--adm-muted); font-size:13px; font-weight:700; }
+body.admin-page-orders .adm-orders-status-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+body.admin-page-orders .adm-order-status-card { min-height:112px; display:grid; grid-template-columns:54px minmax(0,1fr); align-items:center; gap:14px; position:relative; padding:16px; border:1px solid var(--adm-line); border-radius:14px; background:#fff; color:var(--adm-ink); text-decoration:none; box-shadow:0 8px 20px rgba(15,23,42,.045); transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+body.admin-page-orders .adm-order-status-card:hover { transform:translateY(-2px); border-color:#cbd5e1; box-shadow:0 14px 30px rgba(15,23,42,.09); }
+body.admin-page-orders .adm-order-status-card.act { border-color:#93c5fd; box-shadow:0 14px 34px rgba(37,99,235,.14); }
+body.admin-page-orders .adm-order-status-card.act::before { content:''; position:absolute; inset:0 auto 0 0; width:4px; border-radius:14px 0 0 14px; background:var(--adm-blue); }
+body.admin-page-orders .adm-order-status-icon { width:54px; height:54px; display:flex; align-items:center; justify-content:center; border-radius:13px; font-size:25px; font-weight:900; }
+body.admin-page-orders .adm-order-status-copy b { display:block; color:var(--adm-ink); font-size:27px; line-height:1; font-weight:900; letter-spacing:-.04em; }
+body.admin-page-orders .adm-order-status-copy strong { display:block; margin-top:8px; color:#334155; font-size:13px; line-height:1.2; font-weight:800; }
+body.admin-page-orders .adm-order-status-card em { position:absolute; right:14px; bottom:12px; color:#64748b; font-size:11px; font-style:normal; font-weight:900; }
+body.admin-page-orders .adm-order-status-card--blue .adm-order-status-icon { background:#dbeafe; color:#2563eb; }
+body.admin-page-orders .adm-order-status-card--pink .adm-order-status-icon { background:#fce7f3; color:#db2777; }
+body.admin-page-orders .adm-order-status-card--cyan .adm-order-status-icon { background:#cffafe; color:#0891b2; }
+body.admin-page-orders .adm-order-status-card--green .adm-order-status-icon { background:#dcfce7; color:#16a34a; }
+body.admin-page-orders .adm-order-status-card--purple .adm-order-status-icon { background:#f3e8ff; color:#9333ea; }
+body.admin-page-orders .adm-order-status-card--amber .adm-order-status-icon { background:#ffedd5; color:#f97316; }
+body.admin-page-orders .adm-order-status-card--lime .adm-order-status-icon { background:#ecfccb; color:#65a30d; }
+body.admin-page-orders .adm-order-status-card--slate .adm-order-status-icon { background:#e2e8f0; color:#334155; }
+body.admin-page-orders .adm-orders-control-panel { border:1px solid var(--adm-line); border-radius:16px; background:#fff; box-shadow:var(--adm-shadow); padding:14px; margin-bottom:16px; }
+body.admin-page-orders .adm-orders-filters { margin:0; }
+@media (max-width:1300px) { body.admin-page-orders .adm-orders-status-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:640px) { body.admin-page-orders .adm-orders-status-grid { grid-template-columns:1fr; } }
