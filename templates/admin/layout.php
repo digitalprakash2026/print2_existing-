@@ -38,11 +38,11 @@ $adminPageClass = 'admin-page-' . preg_replace('/[^a-z0-9-]+/i', '-', (string)($
           🔔 <span class="adm-notify-count" id="admNotifyCount" style="display:none">0</span>
         </button>
         <div class="adm-notify-panel" id="admNotifyPanel">
-          <div class="adm-notify-head"><strong>New Orders</strong><a href="/admin/orders?seen=new">View all</a></div>
+          <div class="adm-notify-head"><strong>New Orders</strong><a href="/admin/orders?status=new_order">View all</a></div>
           <div id="admNotifyList" class="adm-notify-list"><div class="adm-notify-empty">Loading…</div></div>
         </div>
       </div>
-      <a class="adm-new-orders-link" href="/admin/orders?seen=new">New Orders</a>
+      <a class="adm-new-orders-link" href="/admin/orders?status=new_order">New Orders</a>
       <span class="adm-hdr-divider"></span>
       <div class="adm-admin-chip">
         <span><strong><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></strong><small>Super Admin</small></span>
@@ -138,7 +138,7 @@ $adminPageClass = 'admin-page-' . preg_replace('/[^a-z0-9-]+/i', '-', (string)($
           notifyCount.textContent = count > 99 ? '99+' : String(count);
           notifyCount.style.display = count > 0 ? '' : 'none';
           notifyList.innerHTML = (res.orders || []).length
-            ? res.orders.map(o => `<a class="adm-notify-item" href="/admin/orders?seen=new"><span>#${escAdm(o.order_id)}</span><small>${escAdm(o.customer_name)} · ₹${Number(o.total_amount||0).toLocaleString('en-IN')}</small></a>`).join('')
+            ? res.orders.map(o => `<a class="adm-notify-item" href="/admin/orders?status=new_order"><span>#${escAdm(o.order_id)}</span><small>${escAdm(o.customer_name)} · ₹${Number(o.total_amount||0).toLocaleString('en-IN')}</small></a>`).join('')
             : '<div class="adm-notify-empty">No new orders pending review.</div>';
         } catch (e) {}
       }

@@ -9,8 +9,56 @@ namespace Orders;
 
 class OrderManager
 {
+    private static ?bool $workflowSchemaReady = null;
+
+    public static function ensureWorkflowSchema(): bool
+    {
+        if (self::$workflowSchemaReady !== null) return self::$workflowSchemaReady;
+
+        $statusEnum = "ENUM('new_order','received','design_approved','printing','other_process','processing','ready','delivered','cancelled','whatsapp_pending')";
+
+        try {
+            $ordersStatus = \Database::row(
+                "SELECT COLUMN_TYPE
+                 FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = 'orders'
+                   AND COLUMN_NAME = 'status'
+                 LIMIT 1"
+            );
+            if (!str_contains((string)($ordersStatus['COLUMN_TYPE'] ?? ''), "'new_order'")) {
+                \Database::query("ALTER TABLE orders MODIFY COLUMN status {$statusEnum} NOT NULL DEFAULT 'new_order'");
+            }
+
+            try {
+                $historyStatus = \Database::row(
+                    "SELECT COLUMN_TYPE
+                     FROM information_schema.COLUMNS
+                     WHERE TABLE_SCHEMA = DATABASE()
+                       AND TABLE_NAME = 'order_status_history'
+                       AND COLUMN_NAME = 'status'
+                     LIMIT 1"
+                );
+                if ($historyStatus && !str_contains((string)($historyStatus['COLUMN_TYPE'] ?? ''), "'new_order'")) {
+                    \Database::query("ALTER TABLE order_status_history MODIFY COLUMN status {$statusEnum} NOT NULL");
+                }
+            } catch (\Throwable $e) {
+                error_log('Order status history schema update skipped: ' . $e->getMessage());
+            }
+
+            self::$workflowSchemaReady = true;
+        } catch (\Throwable $e) {
+            error_log('Order workflow status schema unavailable: ' . $e->getMessage());
+            self::$workflowSchemaReady = false;
+        }
+
+        return self::$workflowSchemaReady;
+    }
+
     public static function place(array $params): array
     {
+        self::ensureWorkflowSchema();
+
         $user = \Auth\Auth::user();
         if (!$user) return ['ok' => false, 'msg' => 'Not authenticated'];
 
@@ -158,6 +206,8 @@ class OrderManager
 
     public static function updateStatus(int $orderId, string $status, string $note = '', string $actor = 'admin'): bool
     {
+        self::ensureWorkflowSchema();
+
         $validStatuses = ['new_order', 'received', 'design_approved', 'printing', 'other_process', 'processing', 'ready', 'delivered', 'cancelled', 'whatsapp_pending'];
         if (!in_array($status, $validStatuses)) return false;
 

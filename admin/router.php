@@ -59,6 +59,7 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
         return false;
     }
 };
+\Orders\OrderManager::ensureWorkflowSchema();
 
 $adminUsersHasMobile = null;
 $hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {

@@ -15,7 +15,7 @@ include __DIR__ . '/layout.php';
   </div>
 
   <section class="dash-ref-kpis dash-ref-kpis-top" aria-label="Primary dashboard metrics">
-    <a class="dash-ref-kpi kpi-bag" href="/admin/orders?seen=new"><span><svg viewBox="0 0 24 24"><path d="M7 9V7a5 5 0 0 1 10 0v2h2l1 12H4L5 9h2Zm2 0h6V7a3 3 0 0 0-6 0v2Z"/></svg></span><div><b id="ds-new">—</b><strong>New Orders</strong><small id="tr-new" class="pos">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-bag" href="/admin/orders?status=new_order"><span><svg viewBox="0 0 24 24"><path d="M7 9V7a5 5 0 0 1 10 0v2h2l1 12H4L5 9h2Zm2 0h6V7a3 3 0 0 0-6 0v2Z"/></svg></span><div><b id="ds-new">—</b><strong>New Orders</strong><small id="tr-new" class="pos">Loading trend…</small></div></a>
     <a class="dash-ref-kpi kpi-hour" href="/admin/orders?status=received"><span><svg viewBox="0 0 24 24"><path d="M6 2h12v6.2L14.2 12l3.8 3.8V22H6v-6.2L9.8 12 6 8.2V2Zm2 2v3.4l4 4 4-4V4H8Zm4 8.6-4 4V20h8v-3.4l-4-4Z"/></svg></span><div><b id="ds-pending">—</b><strong>Pending Orders</strong><small id="tr-pending" class="pos">Loading trend…</small></div></a>
     <a class="dash-ref-kpi kpi-print" href="/admin/orders?status=printing"><span><svg viewBox="0 0 24 24"><path d="M7 3h10v5H7V3Zm-2 7h14a3 3 0 0 1 3 3v5h-4v3H6v-3H2v-5a3 3 0 0 1 3-3Zm3 6v3h8v-3H8Zm10-3a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"/></svg></span><div><b id="ds-production">—</b><strong>Printing Orders</strong><small id="tr-production">Loading trend…</small></div></a>
     <a class="dash-ref-kpi kpi-box" href="/admin/orders?status=ready"><span><svg viewBox="0 0 24 24"><path d="M12 2 21 7v10l-9 5-9-5V7l9-5Zm0 2.3L6.2 7.5 12 10.7l5.8-3.2L12 4.3ZM5 9.2v6.6l6 3.3v-6.6L5 9.2Zm8 9.9 6-3.3V9.2l-6 3.3v6.6Z"/></svg></span><div><b id="ds-ready">—</b><strong>Ready Orders</strong><small id="tr-ready" class="neg">Loading trend…</small></div></a>
@@ -50,7 +50,7 @@ include __DIR__ . '/layout.php';
 
   <section class="dash-ref-bottom-row">
     <article class="dash-ref-card dash-ref-orders">
-      <div class="dash-ref-card-head"><div><h2>Recent New Orders</h2></div><a href="/admin/orders?seen=new">View All Orders</a></div>
+      <div class="dash-ref-card-head"><div><h2>Recent New Orders</h2></div><a href="/admin/orders?status=new_order">View All Orders</a></div>
       <div class="dash-ref-table-wrap">
         <table class="dash-ref-table">
           <thead><tr><th>Order ID</th><th>Customer</th><th>Product</th><th>Amount</th><th>Status</th><th>Time</th><th></th></tr></thead>

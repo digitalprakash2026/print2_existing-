@@ -69,6 +69,8 @@ class Razorpay
         string $razorpayPaymentId,
         string $razorpaySignature
     ): array {
+        \Orders\OrderManager::ensureWorkflowSchema();
+
         if (!self::verifyPayment($razorpayOrderId, $razorpayPaymentId, $razorpaySignature)) {
             // Log suspicious activity
             error_log("Razorpay signature verification FAILED for order {$internalOrderId}. Possible tampering.");
