@@ -99,7 +99,7 @@ class Razorpay
             // Update order
             \Database::query(
                 "UPDATE orders SET payment_status = 'paid', payment_id = ?,
-                    razorpay_order_id = ?, status = 'received', updated_at = NOW()
+                    razorpay_order_id = ?, status = 'new_order', updated_at = NOW()
                  WHERE id = ?",
                 [$razorpayPaymentId, $razorpayOrderId, $internalOrderId]
             );

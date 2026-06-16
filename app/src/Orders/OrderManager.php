@@ -105,7 +105,7 @@ class OrderManager
             // Status history
             \Database::insert(
                 "INSERT INTO order_status_history (order_id, status, note, created_by, created_at)
-                 VALUES (?, 'received', 'Order placed', ?, ?)",
+                 VALUES (?, 'new_order', 'Order placed', ?, ?)",
                 [$dbOrderId, 'system', $now]
             );
 

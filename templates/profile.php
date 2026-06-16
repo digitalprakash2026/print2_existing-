@@ -28,15 +28,18 @@ $hasSavedAddress = trim((string)($shipping['address_line1'] ?? '')) !== '' || tr
 $savedAddressCount = $hasSavedAddress ? 1 : 0;
 
 $statusLabels = [
+    'new_order' => 'New Order',
     'received' => 'Received',
-    'processing' => 'In Progress',
+    'design_approved' => 'Design Approved',
     'printing' => 'Printing',
-    'ready' => 'Ready',
+    'other_process' => 'Other Process',
+    'processing' => 'Other Process',
+    'ready' => 'Dispatched',
     'delivered' => 'Delivered',
     'cancelled' => 'Cancelled',
     'whatsapp_pending' => 'Pending',
 ];
-$progressStatuses = ['received', 'processing', 'printing', 'ready', 'whatsapp_pending'];
+$progressStatuses = ['new_order', 'received', 'design_approved', 'printing', 'other_process', 'processing', 'ready', 'whatsapp_pending'];
 $totalOrders = count($orders);
 $progressOrders = count(array_filter($orders, static fn($order) => in_array((string)($order['status'] ?? ''), $progressStatuses, true)));
 $completedOrders = count(array_filter($orders, static fn($order) => (string)($order['status'] ?? '') === 'delivered'));
@@ -78,13 +81,14 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
       </div>
       <?php foreach ($list as $order):
         $items = is_array($order['items'] ?? null) ? $order['items'] : [];
-        $status = (string)($order['status'] ?? 'received');
+        $status = (string)($order['status'] ?? 'new_order');
         $statusClass = preg_replace('/[^a-z0-9_-]/i', '', $status);
         $productTitle = implode(', ', array_filter(array_map(static fn($item) => (string)($item['product_name'] ?? ''), $items)));
         $orderPublicId = (string)($order['order_id'] ?? $order['id'] ?? '');
         $isPaid = in_array((string)($order['payment_status'] ?? ''), ['paid'], true);
-        $trackSteps = ['received', 'processing', 'printing', 'ready', 'delivered'];
-        $trackIndex = array_search($status, $trackSteps, true);
+        $trackSteps = ['new_order', 'received', 'design_approved', 'printing', 'other_process', 'ready'];
+        $trackStatus = $status === 'processing' ? 'other_process' : $status;
+        $trackIndex = array_search($trackStatus, $trackSteps, true);
         $trackIndex = $trackIndex === false ? -1 : (int)$trackIndex;
         $isCancelled = $status === 'cancelled';
         $isWhatsappPending = $status === 'whatsapp_pending';
