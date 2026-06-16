@@ -9648,6 +9648,16 @@ body:has(#siteHeader) .banner-slider {
 .account-order-expanded li {
   margin-bottom:5px;
 }
+.account-order-expanded li.account-design-issue {
+  list-style:none;
+  margin-left:-18px;
+  padding:10px 12px;
+  border:1px solid #fecaca;
+  border-radius:12px;
+  background:#fff1f2;
+  color:#9f1239;
+  font-weight:800;
+}
 .account-placeholder-card {
   display:flex;
   min-height:360px;

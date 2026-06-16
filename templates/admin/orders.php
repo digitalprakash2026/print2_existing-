@@ -151,9 +151,9 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
               $designChoice = (string)($item['design_choice'] ?? 'upload');
               $isRcsDesign = $designChoice === 'rcs';
             ?>
-            <div class="ord-item-row ord-design-workflow">
+            <div class="ord-item-row ord-design-workflow ord-design-workflow--<?= htmlspecialchars($approvalStatus) ?> <?= !$isRcsDesign ? 'ord-design-workflow--customer-upload' : 'ord-design-workflow--rcs' ?>">
               <div class="ord-design-head">
-                <div><div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?></div><div class="ord-meta"><?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?></div></div>
+                <div><div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?></div><div class="ord-meta"><?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?> · <?= $isRcsDesign ? 'RCS will prepare proof' : 'Customer artwork approval required' ?></div></div>
                 <div class="ord-design-badges"><span class="badge <?= $isRcsDesign ? 'b-purple' : 'b-blue' ?>"><?= $isRcsDesign ? '🎨 RCS Design' : '📁 Customer Upload' ?></span><span class="badge <?= $designApprovalColors[$approvalStatus] ?? 'b-amber' ?>"><?= htmlspecialchars($designApprovalLabels[$approvalStatus] ?? $approvalStatus) ?></span></div>
               </div>
               <div class="ord-design-files">
@@ -161,7 +161,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                   <strong><?= $isRcsDesign ? 'Customer Brief / Assets' : 'Customer Artwork' ?></strong>
                   <?php if (!empty($item['artwork_file_id'])): ?>
                     <span><?= htmlspecialchars($item['artwork_original_name'] ?: $item['artwork_filename'] ?: 'Artwork File') ?></span>
-                    <a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/download" class="ord-artwork-link">Download</a>
+                    <a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/download" class="ord-artwork-link ord-artwork-link--primary">Download Customer File</a>
                   <?php else: ?>
                     <span class="ord-artwork-empty"><?= $isRcsDesign ? 'Use WhatsApp/customer communication for brief and assets.' : 'No artwork uploaded' ?></span>
                   <?php endif; ?>
@@ -176,13 +176,13 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                   <?php endif; ?>
                 </div>
               </div>
-              <?php if (!empty($item['design_admin_note'])): ?><div class="ord-design-note">Note: <?= htmlspecialchars($item['design_admin_note']) ?></div><?php endif; ?>
+              <?php if (!empty($item['design_admin_note'])): ?><div class="ord-design-note <?= $approvalStatus === 'issue_found' ? 'ord-design-note--issue' : '' ?>"><?= $approvalStatus === 'issue_found' ? '⚠ Issue for customer: ' : 'Note: ' ?><?= htmlspecialchars($item['design_admin_note']) ?></div><?php endif; ?>
               <?php if ($approvalId > 0): ?>
               <div class="ord-design-actions">
                 <input type="file" id="proof_<?= $approvalId ?>" class="ord-proof-input" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip">
                 <button class="aoc-btn" type="button" onclick="uploadDesignProof(<?= $approvalId ?>)">Upload Proof</button>
-                <button class="aoc-btn" type="button" onclick="setDesignApproval(<?= $approvalId ?>,'issue_found')">Mark Issue</button>
-                <button class="aoc-btn" type="button" onclick="setDesignApproval(<?= $approvalId ?>,'approved')">Approve Design</button>
+                <button class="aoc-btn aoc-btn--danger" type="button" onclick="setDesignApproval(<?= $approvalId ?>,'issue_found')">Mark Issue</button>
+                <button class="aoc-btn aoc-btn--approve" type="button" onclick="setDesignApproval(<?= $approvalId ?>,'approved')">Approve Design</button>
               </div>
               <?php endif; ?>
             </div>
@@ -270,9 +270,13 @@ async function updOrd(id, status) {
 }
 
 async function setDesignApproval(id, status) {
-  const label = status === 'approved' ? 'Approve design?' : 'Add note for customer/admin';
+  const label = status === 'approved' ? 'Approve design?' : 'Describe the artwork/design issue for the customer';
   const note = window.prompt(label, status === 'approved' ? 'Design approved for printing.' : '');
   if (note === null) return;
+  if (status === 'issue_found' && !note.trim()) {
+    toast('Please add an issue note for the customer', 'error');
+    return;
+  }
   const resp = await fetch(`/admin/api/design-approvals/${id}`, {
     method: 'POST',
     headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'},

@@ -270,6 +270,9 @@ body.admin-page-orders .adm-order-card-section { border:1px solid var(--adm-line
 body.admin-page-orders .adm-order-card-section--wide { grid-column:span 2; }
 body.admin-page-orders .adm-order-card-section h3 { margin:0 0 10px; color:var(--adm-ink); font-size:13px; font-weight:900; letter-spacing:-.02em; }
 body.admin-page-orders .ord-design-workflow { display:grid; gap:12px; padding:12px; border:1px solid var(--adm-line); border-radius:12px; background:#fff; }
+body.admin-page-orders .ord-design-workflow--customer-upload { border-color:#bfdbfe; background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); }
+body.admin-page-orders .ord-design-workflow--issue_found { border-color:#fecaca; background:#fff7f7; }
+body.admin-page-orders .ord-design-workflow--approved { border-color:#bbf7d0; }
 body.admin-page-orders .ord-design-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
 body.admin-page-orders .ord-design-badges,
 body.admin-page-orders .ord-design-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
@@ -278,6 +281,10 @@ body.admin-page-orders .ord-design-filebox { border:1px dashed var(--adm-line); 
 body.admin-page-orders .ord-design-filebox strong { color:var(--adm-ink); font-size:12px; font-weight:900; }
 body.admin-page-orders .ord-design-filebox span,
 body.admin-page-orders .ord-design-note { color:var(--adm-muted); font-size:12px; font-weight:700; }
+body.admin-page-orders .ord-design-note--issue { color:#b91c1c; border:1px solid #fecaca; background:#fee2e2; border-radius:10px; padding:10px; }
+body.admin-page-orders .ord-artwork-link--primary { justify-self:start; border-radius:9px; padding:7px 10px; background:#2563eb; color:#fff !important; text-decoration:none; font-weight:900; }
+body.admin-page-orders .aoc-btn--danger { border-color:#fecaca !important; background:#fff1f2 !important; color:#be123c !important; }
+body.admin-page-orders .aoc-btn--approve { border-color:#bbf7d0 !important; background:#ecfdf5 !important; color:#047857 !important; }
 body.admin-page-orders .ord-proof-input { max-width:240px; font-size:12px; }
 body.admin-page-orders .adm-order-card--new { border-color:#bfdbfe; }
 body.admin-page-orders .adm-order-card--delayed { border-color:#fed7aa; }

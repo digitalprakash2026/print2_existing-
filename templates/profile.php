@@ -132,9 +132,9 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                     $designStatus = (string)($item['design_approval_status'] ?? 'pending_review');
                     $proofName = (string)($item['design_proof_original_name'] ?? $item['design_proof_filename'] ?? '');
                   ?>
-                    <li>
+                    <li class="<?= $designStatus === 'issue_found' ? 'account-design-issue' : '' ?>">
                       <?= $h($item['product_name'] ?? 'Product') ?> — <?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?>
-                      <?php if (!empty($item['design_admin_note'])): ?><br><small><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
+                      <?php if (!empty($item['design_admin_note'])): ?><br><small><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
                       <?php if (!empty($item['design_proof_file_id'])): ?><br><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener"><?= $h($proofName !== '' ? $proofName : 'Download proof') ?></a><?php endif; ?>
                     </li>
                   <?php endforeach; ?>

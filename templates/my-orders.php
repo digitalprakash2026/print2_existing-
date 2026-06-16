@@ -74,7 +74,7 @@ $designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issu
       <div style="font-size:12px;color:var(--text2);flex-basis:100%">
         <?php foreach ($items as $item): ?>
           <?php $ds = (string)($item['design_approval_status'] ?? 'pending_review'); ?>
-          <?= htmlspecialchars($item['product_name']) ?> design: <?= htmlspecialchars($designApprovalLabels[$ds] ?? ucfirst(str_replace('_', ' ', $ds))) ?>
+          <span style="<?= $ds === 'issue_found' ? 'display:inline-block;margin:3px 0;padding:6px 8px;border-radius:9px;background:#fff1f2;color:#be123c;font-weight:700' : '' ?>"><?= $ds === 'issue_found' ? '⚠ ' : '' ?><?= htmlspecialchars($item['product_name']) ?> design: <?= htmlspecialchars($designApprovalLabels[$ds] ?? ucfirst(str_replace('_', ' ', $ds))) ?><?= !empty($item['design_admin_note']) ? ' — ' . htmlspecialchars($item['design_admin_note']) : '' ?></span>
           <?php if (!empty($item['design_proof_file_id'])): ?> · <a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank">Download proof</a><?php endif; ?> |
         <?php endforeach; ?>
       </div>
