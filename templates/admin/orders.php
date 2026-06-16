@@ -117,12 +117,10 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
     $orderStatus = (string)($o['status'] ?? 'new_order');
     $createdTs = strtotime((string)($o['created_at'] ?? '')) ?: time();
     $isNewOrder = $orderStatus === 'new_order';
-    $isDelayedOrder = in_array($orderStatus, ['new_order','received','whatsapp_pending','design_approved','other_process','processing','printing'], true) && $createdTs < strtotime('-24 hours');
     $ageSeconds = max(0, time() - $createdTs);
     $orderAge = $ageSeconds >= 86400 ? floor($ageSeconds / 86400) . 'd old' : floor($ageSeconds / 3600) . 'h old';
     $cardClasses = ['adm-order-card', 'adm-order-card--' . preg_replace('/[^a-z0-9_-]+/i', '-', $orderStatus)];
     if ($isNewOrder) $cardClasses[] = 'adm-order-card--new';
-    if ($isDelayedOrder) $cardClasses[] = 'adm-order-card--delayed';
   ?>
   <article id="ord-<?= (int)$o['id'] ?>" class="<?= htmlspecialchars(implode(' ', $cardClasses)) ?>" data-order-card>
     <div class="adm-order-card-head">
@@ -130,17 +128,11 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
         <span class="adm-order-card-id"><strong>#<?= htmlspecialchars($o['order_id']) ?></strong><small><?= date('d M Y, H:i', strtotime($o['created_at'])) ?> · <?= htmlspecialchars($orderAge) ?></small></span>
         <span class="adm-order-card-customer"><strong><?= htmlspecialchars($o['customer_name']) ?></strong><small><?= htmlspecialchars($o['customer_phone']) ?><?= !empty($o['customer_email']) ? ' · ' . htmlspecialchars($o['customer_email']) : '' ?></small></span>
         <span class="adm-order-card-meta"><b>₹<?= number_format((float)$o['total_amount']) ?></b><small><?= count($o['items'] ?? []) ?> item(s)</small></span>
-        <span class="adm-order-card-badges"><span class="badge <?= $statusColors[$orderStatus] ?? 'b-blue' ?>"><?= htmlspecialchars($statusLabels[$orderStatus] ?? $orderStatus) ?></span><span class="badge <?= $o['payment_status'] === 'paid' ? 'b-green' : 'b-amber' ?>"><?= ucfirst($o['payment_status']) ?></span><?php if ($isDelayedOrder): ?><span class="ord-mini-badge ord-mini-badge--delay">Needs attention</span><?php endif; ?></span>
+        <span class="adm-order-card-badges"><span class="badge <?= $statusColors[$orderStatus] ?? 'b-blue' ?>"><?= htmlspecialchars($statusLabels[$orderStatus] ?? $orderStatus) ?></span><span class="badge <?= $o['payment_status'] === 'paid' ? 'b-green' : 'b-amber' ?>"><?= ucfirst($o['payment_status']) ?></span></span>
       </button>
       <div class="adm-order-card-quick" aria-label="Quick order actions">
         <select class="fi fi-sel" id="ord_status_<?= (int)$o['id'] ?>" aria-label="Update status for order <?= htmlspecialchars($o['order_id']) ?>"><?php foreach (['new_order','received','design_approved','printing','other_process','ready','delivered','cancelled'] as $s): ?><option value="<?= $s ?>" <?= $orderStatus === $s ? 'selected' : '' ?>><?= $statusLabels[$s] ?? ucfirst($s) ?></option><?php endforeach; ?></select>
         <button class="btn btn-outline btn-sm" type="button" onclick="updOrdFromSel(<?= (int)$o['id'] ?>)">Update</button>
-        <details class="adm-order-actions-menu">
-          <summary>Actions</summary>
-          <a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" target="_blank">Invoice</a>
-          <a href="/invoice/<?= htmlspecialchars($o['order_id']) ?>" target="_blank">View order</a>
-          <button type="button" onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'>Addresses</button>
-        </details>
       </div>
       <button class="adm-order-card-toggle" type="button" aria-label="Expand order <?= htmlspecialchars($o['order_id']) ?>" aria-expanded="false" data-order-toggle onclick="toggleOrderCard(this)">⌄</button>
     </div>

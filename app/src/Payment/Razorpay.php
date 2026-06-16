@@ -104,6 +104,12 @@ class Razorpay
                 [$razorpayPaymentId, $razorpayOrderId, $internalOrderId]
             );
 
+            \Database::insert(
+                "INSERT INTO order_status_history (order_id, status, note, created_by, created_at)
+                 VALUES (?, 'new_order', 'Payment captured; order moved to New Order queue', ?, NOW())",
+                [$internalOrderId, 'system']
+            );
+
             $db->commit();
 
             $order = \Orders\OrderManager::getOrder($internalOrderId);
