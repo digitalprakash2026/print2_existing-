@@ -140,8 +140,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
     </div>
     <div class="adm-order-card-body" hidden>
       <div class="adm-order-card-grid">
-        <section class="adm-order-card-section"><h3>Customer</h3><div class="ord-customer"><?= htmlspecialchars($o['customer_name']) ?></div><div class="ord-meta"><?= htmlspecialchars($o['customer_phone']) ?></div><?php if (!empty($o['customer_email'])): ?><div class="ord-meta"><?= htmlspecialchars($o['customer_email']) ?></div><?php endif; ?><div class="ord-cust-actions"><a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn">📞 Call</a><button class="aoc-btn" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($orderStatus) ?>')">💬 WA</button></div></section>
-        <section class="adm-order-card-section adm-order-card-section--wide">
+        <section class="adm-order-card-section adm-order-card-section--full">
           <h3>Items & Design Approval</h3>
           <div class="ord-items-hdr"><?= count($o['items'] ?? []) ?> item(s)</div>
           <?php foreach (($o['items'] ?? []) as $item): ?>
@@ -153,10 +152,10 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
             ?>
             <div class="ord-item-row ord-design-workflow ord-design-workflow--<?= htmlspecialchars($approvalStatus) ?> <?= !$isRcsDesign ? 'ord-design-workflow--customer-upload' : 'ord-design-workflow--rcs' ?>">
               <div class="ord-design-head">
-                <div><div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?></div><div class="ord-meta"><?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?> · <?= $isRcsDesign ? 'RCS will prepare proof' : 'Customer artwork approval required' ?></div></div>
+                <div><div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?> <span class="ord-design-inline-choice"><?= $isRcsDesign ? 'RCS Design' : 'Customer Upload' ?></span></div><div class="ord-meta"><?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?> · <?= $isRcsDesign ? 'RCS will prepare proof' : 'Customer artwork approval required' ?></div></div>
                 <div class="ord-design-badges"><span class="badge <?= $isRcsDesign ? 'b-purple' : 'b-blue' ?>"><?= $isRcsDesign ? '🎨 RCS Design' : '📁 Customer Upload' ?></span><span class="badge <?= $designApprovalColors[$approvalStatus] ?? 'b-amber' ?>"><?= htmlspecialchars($designApprovalLabels[$approvalStatus] ?? $approvalStatus) ?></span></div>
               </div>
-              <div class="ord-design-files">
+              <div class="ord-design-strip">
                 <div class="ord-design-filebox">
                   <strong><?= $isRcsDesign ? 'Customer Brief / Assets' : 'Customer Artwork' ?></strong>
                   <?php if (!empty($item['artwork_file_id'])): ?>
@@ -166,7 +165,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                     <span class="ord-artwork-empty"><?= $isRcsDesign ? 'Use WhatsApp/customer communication for brief and assets.' : 'No artwork uploaded' ?></span>
                   <?php endif; ?>
                 </div>
-                <div class="ord-design-filebox">
+                <div class="ord-design-filebox ord-design-filebox--proof">
                   <strong>RCS Proof / Corrected File</strong>
                   <?php if (!empty($item['design_proof_file_id'])): ?>
                     <span><?= htmlspecialchars($item['design_proof_original_name'] ?: $item['design_proof_filename'] ?: 'Proof File') ?></span>
@@ -175,22 +174,20 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                     <span class="ord-artwork-empty">No proof uploaded yet</span>
                   <?php endif; ?>
                 </div>
+                <?php if ($approvalId > 0): ?>
+                <div class="ord-design-actions">
+                  <input type="file" id="proof_<?= $approvalId ?>" class="ord-proof-input" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" onchange="uploadDesignProof(<?= $approvalId ?>)">
+                  <button class="aoc-btn" type="button" onclick="chooseDesignProof(<?= $approvalId ?>)">Upload Proof</button>
+                  <button class="aoc-btn aoc-btn--danger" type="button" onclick="setDesignApproval(<?= $approvalId ?>,'issue_found')">Mark Issue</button>
+                  <button class="aoc-btn aoc-btn--approve" type="button" onclick="setDesignApproval(<?= $approvalId ?>,'approved')">Approve Design</button>
+                </div>
+                <?php endif; ?>
               </div>
               <?php if (!empty($item['design_admin_note'])): ?><div class="ord-design-note <?= $approvalStatus === 'issue_found' ? 'ord-design-note--issue' : '' ?>"><?= $approvalStatus === 'issue_found' ? '⚠ Issue for customer: ' : 'Note: ' ?><?= htmlspecialchars($item['design_admin_note']) ?></div><?php endif; ?>
-              <?php if ($approvalId > 0): ?>
-              <div class="ord-design-actions">
-                <input type="file" id="proof_<?= $approvalId ?>" class="ord-proof-input" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip">
-                <button class="aoc-btn" type="button" onclick="uploadDesignProof(<?= $approvalId ?>)">Upload Proof</button>
-                <button class="aoc-btn aoc-btn--danger" type="button" onclick="setDesignApproval(<?= $approvalId ?>,'issue_found')">Mark Issue</button>
-                <button class="aoc-btn aoc-btn--approve" type="button" onclick="setDesignApproval(<?= $approvalId ?>,'approved')">Approve Design</button>
-              </div>
-              <?php endif; ?>
             </div>
           <?php endforeach; ?>
         </section>
-        <section class="adm-order-card-section"><h3>Order Value</h3><div class="ord-amt">₹<?= number_format((float)$o['total_amount']) ?></div><?php if (!empty($o['coupon_code'])): ?><div class="ord-meta" style="color:var(--green)">Coupon: <?= htmlspecialchars($o['coupon_code']) ?></div><?php endif; ?><div class="ord-meta">Internal ID: <?= (int)$o['id'] ?></div></section>
-        <section class="adm-order-card-section"><h3>Actions</h3><div class="ord-actions"><a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">🧾 Invoice</a><a href="/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">👁 View</a><button class="aoc-btn" onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'>📍 Addresses</button></div><div class="ord-meta" style="margin-top:10px">Use the quick action row above to change status without opening this card.</div></section>
-        <section class="adm-order-card-section adm-order-card-section--wide"><h3>Shipping</h3><details class="ord-ship"><summary>Shipping details</summary><div class="ord-ship-grid"><input class="fi" id="ship_provider_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['shipping_provider'] ?? '') ?>" placeholder="Provider"><input class="fi" id="ship_track_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['tracking_code'] ?? '') ?>" placeholder="Tracking code"><input class="fi" id="ship_status_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['shipping_status'] ?? '') ?>" placeholder="Shipping status"><button class="btn btn-outline btn-sm" onclick="saveShipping(<?= (int)$o['id'] ?>)">Save</button></div><textarea class="fi" id="ship_notes_<?= (int)$o['id'] ?>" style="height:56px" placeholder="Shipping notes"><?= htmlspecialchars($o['shipping_notes'] ?? '') ?></textarea></details></section>
+        <section class="adm-order-card-section adm-order-card-section--full adm-order-compact-tools"><div class="ord-ship-grid"><input class="fi" id="ship_provider_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['shipping_provider'] ?? '') ?>" placeholder="Shipping provider"><input class="fi" id="ship_track_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['tracking_code'] ?? '') ?>" placeholder="Tracking code"><input class="fi" id="ship_status_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['shipping_status'] ?? '') ?>" placeholder="Shipping status"><button class="btn btn-outline btn-sm" onclick="saveShipping(<?= (int)$o['id'] ?>)">Save Shipping</button></div><div class="ord-actions ord-actions--compact"><a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn">📞 Call</a><button class="aoc-btn" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($orderStatus) ?>')">💬 WA</button><a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">🧾 Invoice</a><a href="/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">👁 View</a><button class="aoc-btn" onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'>📍 Addresses</button></div></section>
       </div>
     </div>
   </article>
@@ -285,6 +282,11 @@ async function setDesignApproval(id, status) {
   const data = await resp.json();
   if (data.ok) { toast('Design approval updated', 'success'); setTimeout(() => location.reload(), 500); }
   else toast(data.msg || 'Could not update design approval', 'error');
+}
+
+function chooseDesignProof(id) {
+  const input = document.getElementById(`proof_${id}`);
+  if (input) input.click();
 }
 
 async function uploadDesignProof(id) {
