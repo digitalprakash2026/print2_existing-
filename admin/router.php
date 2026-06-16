@@ -60,6 +60,7 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
     }
 };
 \Orders\OrderManager::ensureWorkflowSchema();
+\Orders\OrderManager::ensureDesignApprovalSchema();
 
 $adminUsersHasMobile = null;
 $hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
@@ -1414,6 +1415,43 @@ if (str_starts_with($uri, '/admin/api/')) {
         $file = Database::row("SELECT * FROM artwork_files WHERE id=?",[$m[1]]);
         json($file ? ['ok'=>true,'file'=>$file] : ['ok'=>false,'msg'=>'Not found'],404);
     }
+    if (preg_match('#^/admin/api/design-approvals/(\d+)$#', $uri, $m) && $method === 'POST') {
+        $status = trim((string)($body['status'] ?? 'pending_review'));
+        $note = trim((string)($body['admin_note'] ?? ''));
+        $ok = \Orders\OrderManager::updateDesignApproval((int)$m[1], $status, $note);
+        json(['ok' => $ok]);
+    }
+    if (preg_match('#^/admin/api/design-approvals/(\d+)/proof$#', $uri, $m) && $method === 'POST') {
+        $approval = Database::row("SELECT * FROM order_design_approvals WHERE id = ?", [(int)$m[1]]);
+        if (!$approval) json(['ok' => false, 'msg' => 'Design approval not found'], 404);
+        if (empty($_FILES['proof'])) json(['ok' => false, 'msg' => 'No proof file uploaded'], 400);
+
+        $file = $_FILES['proof'];
+        $maxMb = (int)Database::setting('upload_max_mb', env('UPLOAD_MAX_SIZE_MB', '50'));
+        if ($file['size'] > ($maxMb * 1024 * 1024)) json(['ok' => false, 'msg' => "File too large. Max {$maxMb}MB."], 400);
+        $allowed = explode(',', Database::setting('upload_allowed_ext', 'pdf,ai,eps,png,jpg,jpeg,psd,cdr,svg,tif,tiff,zip'));
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowed, true)) json(['ok' => false, 'msg' => "File type .{$ext} not allowed."], 400);
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        $dir = UPLOAD_PATH . '/artwork/proofs/' . date('Y/m/');
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $filename = uniqid('proof_', true) . '.' . $ext;
+        $filepath = $dir . $filename;
+        $publicPath = '/uploads/artwork/proofs/' . date('Y/m/') . $filename;
+        if (!move_uploaded_file($file['tmp_name'], $filepath)) json(['ok' => false, 'msg' => 'Upload failed'], 500);
+
+        $adminId = (int)($admin['id'] ?? 0);
+        $fileId = Database::insert(
+            "INSERT INTO artwork_files (uploaded_by, order_item_id, filename, original_name, file_path, mime_type, file_size, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+            [$adminId ?: 0, (int)$approval['order_item_id'], $filename, $file['name'], $publicPath, $mime, $file['size']]
+        );
+        \Orders\OrderManager::updateDesignApproval((int)$m[1], 'proof_uploaded', trim((string)($_POST['admin_note'] ?? '')), (int)$fileId);
+        json(['ok' => true, 'file_id' => (int)$fileId]);
+    }
     if ($uri === '/admin/api/sheets/retry' && $method === 'POST') {
         $failed = Database::rows("SELECT * FROM sheets_sync_log WHERE resolved=0 LIMIT 20");
         foreach ($failed as $row) Database::query("UPDATE sheets_sync_log SET resolved=1 WHERE id=?",[$row['id']]);
@@ -1567,13 +1605,34 @@ if ($uri === '/admin/orders') {
                     af.id AS artwork_file_id,
                     af.original_name AS artwork_original_name,
                     af.filename AS artwork_filename,
-                    af.file_path AS artwork_file_path
+                    af.file_path AS artwork_file_path,
+                    oda.id AS design_approval_id,
+                    oda.status AS design_approval_status,
+                    oda.admin_note AS design_admin_note,
+                    oda.approved_at AS design_approved_at,
+                    oda.proof_file_id AS design_proof_file_id,
+                    pf.original_name AS design_proof_original_name,
+                    pf.filename AS design_proof_filename,
+                    pf.file_path AS design_proof_file_path
              FROM order_items oi
              LEFT JOIN artwork_files af ON af.order_item_id = oi.id
+             LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
+             LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
              WHERE oi.order_id=?
              ORDER BY oi.id ASC",
             [$o['id']]
         );
+        foreach ($o['items'] as &$item) {
+            if (empty($item['design_approval_id'])) {
+                \Orders\OrderManager::ensureDesignApprovalForItem(
+                    (int)$o['id'],
+                    (int)$item['id'],
+                    (string)($item['design_choice'] ?? 'upload'),
+                    !empty($item['artwork_file_id']) ? (int)$item['artwork_file_id'] : null
+                );
+            }
+        }
+        unset($item);
     }
 
     view('admin/orders', compact('orders','total','page','perPage','status','search','summaryCounts','statusCounts','paymentStatus','seen','sort','dateFrom','dateTo','hasSeen'));

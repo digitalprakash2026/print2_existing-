@@ -10,6 +10,7 @@ namespace Orders;
 class OrderManager
 {
     private static ?bool $workflowSchemaReady = null;
+    private static ?bool $designApprovalSchemaReady = null;
 
     public static function ensureWorkflowSchema(): bool
     {
@@ -55,9 +56,43 @@ class OrderManager
         return self::$workflowSchemaReady;
     }
 
+    public static function ensureDesignApprovalSchema(): bool
+    {
+        if (self::$designApprovalSchemaReady !== null) return self::$designApprovalSchemaReady;
+
+        try {
+            \Database::query(
+                "CREATE TABLE IF NOT EXISTS order_design_approvals (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    order_id INT NOT NULL,
+                    order_item_id INT NOT NULL,
+                    design_choice ENUM('upload','rcs') NOT NULL,
+                    status ENUM('pending_review','issue_found','proof_uploaded','approved') NOT NULL DEFAULT 'pending_review',
+                    customer_artwork_file_id INT NULL,
+                    proof_file_id INT NULL,
+                    admin_note TEXT NULL,
+                    customer_note TEXT NULL,
+                    approved_at DATETIME NULL,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NULL,
+                    UNIQUE KEY uniq_order_design_item (order_item_id),
+                    KEY idx_order_design_order (order_id),
+                    KEY idx_order_design_status (status)
+                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+            self::$designApprovalSchemaReady = true;
+        } catch (\Throwable $e) {
+            error_log('Order design approval schema unavailable: ' . $e->getMessage());
+            self::$designApprovalSchemaReady = false;
+        }
+
+        return self::$designApprovalSchemaReady;
+    }
+
     public static function place(array $params): array
     {
         self::ensureWorkflowSchema();
+        self::ensureDesignApprovalSchema();
 
         $user = \Auth\Auth::user();
         if (!$user) return ['ok' => false, 'msg' => 'Not authenticated'];
@@ -148,6 +183,17 @@ class OrderManager
                         [$orderItemId, $item['id']]
                     );
                 }
+
+                $customerArtwork = \Database::row(
+                    "SELECT id FROM artwork_files WHERE order_item_id = ? ORDER BY id DESC LIMIT 1",
+                    [$orderItemId]
+                );
+                self::ensureDesignApprovalForItem(
+                    (int)$dbOrderId,
+                    (int)$orderItemId,
+                    (string)($item['design_choice'] ?? 'upload'),
+                    $customerArtwork ? (int)$customerArtwork['id'] : null
+                );
             }
 
             // Status history
@@ -238,15 +284,87 @@ class OrderManager
         return true;
     }
 
+    public static function ensureDesignApprovalForItem(int $orderId, int $orderItemId, string $designChoice, ?int $customerArtworkFileId = null): void
+    {
+        if (!self::ensureDesignApprovalSchema()) return;
+        $designChoice = $designChoice === 'rcs' ? 'rcs' : 'upload';
+        \Database::query(
+            "INSERT INTO order_design_approvals
+                (order_id, order_item_id, design_choice, status, customer_artwork_file_id, created_at)
+             VALUES (?, ?, ?, 'pending_review', ?, NOW())
+             ON DUPLICATE KEY UPDATE
+                design_choice = VALUES(design_choice),
+                customer_artwork_file_id = COALESCE(order_design_approvals.customer_artwork_file_id, VALUES(customer_artwork_file_id)),
+                updated_at = NOW()",
+            [$orderId, $orderItemId, $designChoice, $customerArtworkFileId]
+        );
+    }
+
+    public static function updateDesignApproval(int $approvalId, string $status, string $adminNote = '', ?int $proofFileId = null): bool
+    {
+        if (!self::ensureDesignApprovalSchema()) return false;
+        $valid = ['pending_review', 'issue_found', 'proof_uploaded', 'approved'];
+        if (!in_array($status, $valid, true)) return false;
+
+        $approval = \Database::row("SELECT * FROM order_design_approvals WHERE id = ?", [$approvalId]);
+        if (!$approval) return false;
+
+        $sets = ['status = ?', 'admin_note = ?', 'updated_at = NOW()'];
+        $params = [$status, $adminNote];
+        if ($proofFileId !== null) {
+            $sets[] = 'proof_file_id = ?';
+            $params[] = $proofFileId;
+        }
+        if ($status === 'approved') {
+            $sets[] = 'approved_at = NOW()';
+        }
+        $params[] = $approvalId;
+        \Database::query("UPDATE order_design_approvals SET " . implode(', ', $sets) . " WHERE id = ?", $params);
+
+        self::syncOrderDesignApproved((int)$approval['order_id']);
+        return true;
+    }
+
+    public static function syncOrderDesignApproved(int $orderId): void
+    {
+        if (!self::ensureDesignApprovalSchema()) return;
+        $row = \Database::row(
+            "SELECT COUNT(*) AS total,
+                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved
+             FROM order_design_approvals
+             WHERE order_id = ?",
+            [$orderId]
+        );
+        if ((int)($row['total'] ?? 0) > 0 && (int)($row['total'] ?? 0) === (int)($row['approved'] ?? 0)) {
+            $order = \Database::row("SELECT status FROM orders WHERE id = ?", [$orderId]);
+            if ($order && in_array((string)$order['status'], ['new_order', 'received'], true)) {
+                self::updateStatus($orderId, 'design_approved', 'All designs approved', 'system');
+            }
+        }
+    }
+
     public static function getOrder(int $id): ?array
     {
+        self::ensureDesignApprovalSchema();
+
         $order = \Database::row("SELECT * FROM orders WHERE id = ?", [$id]);
         if (!$order) return null;
 
         $order['items'] = \Database::rows(
-            "SELECT oi.*, af.filename, af.original_name, af.file_path
+            "SELECT oi.*, af.filename, af.original_name, af.file_path,
+                    oda.id AS design_approval_id,
+                    oda.status AS design_approval_status,
+                    oda.admin_note AS design_admin_note,
+                    oda.customer_note AS design_customer_note,
+                    oda.approved_at AS design_approved_at,
+                    oda.proof_file_id AS design_proof_file_id,
+                    pf.original_name AS design_proof_original_name,
+                    pf.filename AS design_proof_filename,
+                    pf.file_path AS design_proof_file_path
              FROM order_items oi
              LEFT JOIN artwork_files af ON af.order_item_id = oi.id
+             LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
+             LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
              WHERE oi.order_id = ?",
             [$id]
         );
@@ -271,13 +389,26 @@ class OrderManager
 
     public static function getUserOrders(int $userId): array
     {
+        self::ensureDesignApprovalSchema();
+
         $orders = \Database::rows(
             "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC",
             [$userId]
         );
         foreach ($orders as &$order) {
             $order['items'] = \Database::rows(
-                "SELECT * FROM order_items WHERE order_id = ?",
+                "SELECT oi.*,
+                        oda.status AS design_approval_status,
+                        oda.admin_note AS design_admin_note,
+                        oda.approved_at AS design_approved_at,
+                        oda.proof_file_id AS design_proof_file_id,
+                        pf.original_name AS design_proof_original_name,
+                        pf.filename AS design_proof_filename,
+                        pf.file_path AS design_proof_file_path
+                 FROM order_items oi
+                 LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
+                 LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
+                 WHERE oi.order_id = ?",
                 [$order['id']]
             );
         }

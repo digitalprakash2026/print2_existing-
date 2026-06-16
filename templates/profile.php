@@ -39,6 +39,7 @@ $statusLabels = [
     'cancelled' => 'Cancelled',
     'whatsapp_pending' => 'Pending',
 ];
+$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Proof Uploaded','approved'=>'Approved'];
 $progressStatuses = ['new_order', 'received', 'design_approved', 'printing', 'other_process', 'processing', 'ready', 'whatsapp_pending'];
 $totalOrders = count($orders);
 $progressOrders = count(array_filter($orders, static fn($order) => in_array((string)($order['status'] ?? ''), $progressStatuses, true)));
@@ -62,7 +63,7 @@ if ($accountBizWa === '') {
     $accountBizWa = $accountBizPhoneHref;
 }
 
-$renderOrders = static function (array $list, bool $compact = false) use ($h, $statusLabels): void {
+$renderOrders = static function (array $list, bool $compact = false) use ($h, $statusLabels, $designApprovalLabels): void {
     if (empty($list)) {
         ?>
         <div class="account-empty-state">
@@ -117,6 +118,25 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                 <ul>
                   <?php foreach ($items as $item): ?>
                     <li><?= $h($item['product_name'] ?? 'Product') ?> — <?= number_format((float)($item['quantity'] ?? 0)) ?> × <?= $h($item['quality_name'] ?? 'Standard') ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              <?php endif; ?>
+            </div>
+            <div>
+              <strong>Design Approval</strong>
+              <?php if (empty($items)): ?>
+                <p>Design details will appear after order processing starts.</p>
+              <?php else: ?>
+                <ul>
+                  <?php foreach ($items as $item):
+                    $designStatus = (string)($item['design_approval_status'] ?? 'pending_review');
+                    $proofName = (string)($item['design_proof_original_name'] ?? $item['design_proof_filename'] ?? '');
+                  ?>
+                    <li>
+                      <?= $h($item['product_name'] ?? 'Product') ?> — <?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?>
+                      <?php if (!empty($item['design_admin_note'])): ?><br><small><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
+                      <?php if (!empty($item['design_proof_file_id'])): ?><br><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener"><?= $h($proofName !== '' ? $proofName : 'Download proof') ?></a><?php endif; ?>
+                    </li>
                   <?php endforeach; ?>
                 </ul>
               <?php endif; ?>

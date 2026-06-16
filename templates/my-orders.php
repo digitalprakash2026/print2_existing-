@@ -8,6 +8,7 @@ include INCLUDE_PATH . '/partials/header.php';
 $statusLabels = ['new_order'=>'New Order','received'=>'Received','design_approved'=>'Design Approved','processing'=>'Other Process','other_process'=>'Other Process','printing'=>'Printing','ready'=>'Dispatched','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'Pending'];
 $statusColors = ['new_order'=>'b-blue','received'=>'b-blue','design_approved'=>'b-green','processing'=>'b-amber','other_process'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
 $tlSteps = ['new_order','received','design_approved','printing','other_process','ready'];
+$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Proof Uploaded','approved'=>'Approved'];
 ?>
 <div class="myord-hdr">
   <div class="container">
@@ -68,6 +69,13 @@ $tlSteps = ['new_order','received','design_approved','printing','other_process',
       <div style="font-size:12px;color:var(--text2)">
         <?php foreach ($items as $item): ?>
         <?= htmlspecialchars($item['product_name']) ?>: <?= number_format($item['quantity']) ?> × <?= htmlspecialchars($item['quality_name']) ?> |
+        <?php endforeach; ?>
+      </div>
+      <div style="font-size:12px;color:var(--text2);flex-basis:100%">
+        <?php foreach ($items as $item): ?>
+          <?php $ds = (string)($item['design_approval_status'] ?? 'pending_review'); ?>
+          <?= htmlspecialchars($item['product_name']) ?> design: <?= htmlspecialchars($designApprovalLabels[$ds] ?? ucfirst(str_replace('_', ' ', $ds))) ?>
+          <?php if (!empty($item['design_proof_file_id'])): ?> · <a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank">Download proof</a><?php endif; ?> |
         <?php endforeach; ?>
       </div>
       <div style="display:flex;gap:7px">

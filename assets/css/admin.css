@@ -269,6 +269,16 @@ body.admin-page-orders .adm-order-card-grid { display:grid; grid-template-column
 body.admin-page-orders .adm-order-card-section { border:1px solid var(--adm-line); border-radius:13px; background:#fff; padding:14px; }
 body.admin-page-orders .adm-order-card-section--wide { grid-column:span 2; }
 body.admin-page-orders .adm-order-card-section h3 { margin:0 0 10px; color:var(--adm-ink); font-size:13px; font-weight:900; letter-spacing:-.02em; }
+body.admin-page-orders .ord-design-workflow { display:grid; gap:12px; padding:12px; border:1px solid var(--adm-line); border-radius:12px; background:#fff; }
+body.admin-page-orders .ord-design-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+body.admin-page-orders .ord-design-badges,
+body.admin-page-orders .ord-design-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+body.admin-page-orders .ord-design-files { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+body.admin-page-orders .ord-design-filebox { border:1px dashed var(--adm-line); border-radius:10px; padding:10px; display:grid; gap:6px; background:#f8fafc; }
+body.admin-page-orders .ord-design-filebox strong { color:var(--adm-ink); font-size:12px; font-weight:900; }
+body.admin-page-orders .ord-design-filebox span,
+body.admin-page-orders .ord-design-note { color:var(--adm-muted); font-size:12px; font-weight:700; }
+body.admin-page-orders .ord-proof-input { max-width:240px; font-size:12px; }
 body.admin-page-orders .adm-order-card--new { border-color:#bfdbfe; }
 body.admin-page-orders .adm-order-card--delayed { border-color:#fed7aa; }
 @media (max-width:1200px) {
@@ -277,6 +287,7 @@ body.admin-page-orders .adm-order-card--delayed { border-color:#fed7aa; }
   body.admin-page-orders .adm-order-card-toggle { position:absolute; right:18px; top:18px; }
   body.admin-page-orders .adm-order-card-quick { grid-template-columns:minmax(180px,1fr) auto; }
   body.admin-page-orders .adm-order-card-grid { grid-template-columns:1fr; }
+  body.admin-page-orders .ord-design-files { grid-template-columns:1fr; }
   body.admin-page-orders .adm-order-card-section--wide { grid-column:auto; }
 }
 @media (max-width:760px) {
