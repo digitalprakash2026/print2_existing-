@@ -351,7 +351,7 @@ class OrderManager
         if (!$order) return null;
 
         $order['items'] = \Database::rows(
-            "SELECT oi.*, af.filename, af.original_name, af.file_path,
+            "SELECT oi.*, af.filename, af.original_name, af.file_path, af.mime_type,
                     oda.id AS design_approval_id,
                     oda.status AS design_approval_status,
                     oda.admin_note AS design_admin_note,
@@ -360,10 +360,11 @@ class OrderManager
                     oda.proof_file_id AS design_proof_file_id,
                     pf.original_name AS design_proof_original_name,
                     pf.filename AS design_proof_filename,
-                    pf.file_path AS design_proof_file_path
+                    pf.file_path AS design_proof_file_path,
+                    pf.mime_type AS design_proof_mime_type
              FROM order_items oi
-             LEFT JOIN artwork_files af ON af.order_item_id = oi.id
              LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
+             LEFT JOIN artwork_files af ON af.id = oda.customer_artwork_file_id
              LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
              WHERE oi.order_id = ?",
             [$id]
@@ -404,7 +405,8 @@ class OrderManager
                         oda.proof_file_id AS design_proof_file_id,
                         pf.original_name AS design_proof_original_name,
                         pf.filename AS design_proof_filename,
-                        pf.file_path AS design_proof_file_path
+                        pf.file_path AS design_proof_file_path,
+                        pf.mime_type AS design_proof_mime_type
                  FROM order_items oi
                  LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
                  LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id

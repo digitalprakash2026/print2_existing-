@@ -131,11 +131,21 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                   <?php foreach ($items as $item):
                     $designStatus = (string)($item['design_approval_status'] ?? 'pending_review');
                     $proofName = (string)($item['design_proof_original_name'] ?? $item['design_proof_filename'] ?? '');
+                    $proofPath = trim((string)($item['design_proof_file_path'] ?? ''));
+                    if ($proofPath !== '' && $proofPath[0] !== '/') { $proofPath = '/' . $proofPath; }
+                    $proofMime = strtolower((string)($item['design_proof_mime_type'] ?? ''));
+                    $proofExt = strtolower(pathinfo($proofName !== '' ? $proofName : (string)($item['design_proof_filename'] ?? ''), PATHINFO_EXTENSION));
+                    $proofIsImage = str_starts_with($proofMime, 'image/') || in_array($proofExt, ['jpg','jpeg','png','gif','webp','svg'], true);
                   ?>
-                    <li class="<?= $designStatus === 'issue_found' ? 'account-design-issue' : '' ?>">
-                      <?= $h($item['product_name'] ?? 'Product') ?> — <?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?>
-                      <?php if (!empty($item['design_admin_note'])): ?><br><small><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
-                      <?php if (!empty($item['design_proof_file_id'])): ?><br><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener"><?= $h($proofName !== '' ? $proofName : 'Download proof') ?></a><?php endif; ?>
+                    <li class="account-design-approval-item <?= $designStatus === 'issue_found' ? 'account-design-issue' : '' ?>">
+                      <div class="account-design-approval-main">
+                        <span><?= $h($item['product_name'] ?? 'Product') ?> — <?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
+                        <?php if (!empty($item['design_admin_note'])): ?><small><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
+                        <?php if (!empty($item['design_proof_file_id'])): ?><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener"><?= $h($proofName !== '' ? $proofName : 'Download corrected file') ?></a><?php endif; ?>
+                      </div>
+                      <?php if (!empty($item['design_proof_file_id']) && $proofIsImage && $proofPath !== ''): ?>
+                        <a class="account-design-proof-preview" href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener" aria-label="Open corrected design"><img src="<?= $h($proofPath) ?>" alt="<?= $h($proofName !== '' ? $proofName : 'Corrected design preview') ?>" loading="lazy"></a>
+                      <?php endif; ?>
                     </li>
                   <?php endforeach; ?>
                 </ul>

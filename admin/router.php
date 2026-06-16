@@ -1613,10 +1613,11 @@ if ($uri === '/admin/orders') {
                     oda.proof_file_id AS design_proof_file_id,
                     pf.original_name AS design_proof_original_name,
                     pf.filename AS design_proof_filename,
-                    pf.file_path AS design_proof_file_path
+                    pf.file_path AS design_proof_file_path,
+                    pf.mime_type AS design_proof_mime_type
              FROM order_items oi
-             LEFT JOIN artwork_files af ON af.order_item_id = oi.id
              LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
+             LEFT JOIN artwork_files af ON af.id = oda.customer_artwork_file_id
              LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
              WHERE oi.order_id=?
              ORDER BY oi.id ASC",
@@ -1624,11 +1625,18 @@ if ($uri === '/admin/orders') {
         );
         foreach ($o['items'] as &$item) {
             if (empty($item['design_approval_id'])) {
+                $customerArtwork = Database::row(
+                    "SELECT af.id FROM artwork_files af
+                      WHERE af.order_item_id = ?
+                        AND NOT EXISTS (SELECT 1 FROM order_design_approvals oda2 WHERE oda2.proof_file_id = af.id)
+                      ORDER BY af.id ASC LIMIT 1",
+                    [(int)$item['id']]
+                );
                 \Orders\OrderManager::ensureDesignApprovalForItem(
                     (int)$o['id'],
                     (int)$item['id'],
                     (string)($item['design_choice'] ?? 'upload'),
-                    !empty($item['artwork_file_id']) ? (int)$item['artwork_file_id'] : null
+                    !empty($customerArtwork['id']) ? (int)$customerArtwork['id'] : null
                 );
             }
         }

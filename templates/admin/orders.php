@@ -164,7 +164,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                   <?php endif; ?>
                 </div>
                 <div class="ord-design-filebox ord-design-filebox--proof">
-                  <strong>RCS Proof / Corrected File</strong>
+                  <strong>Corrected File</strong>
                   <?php if (!empty($item['design_proof_file_id'])): ?>
                     <span><?= htmlspecialchars($item['design_proof_original_name'] ?: $item['design_proof_filename'] ?: 'Proof File') ?></span>
                     <a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" class="ord-artwork-link">Download</a>

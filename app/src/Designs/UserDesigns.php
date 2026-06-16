@@ -25,6 +25,7 @@ final class UserDesigns
                    INNER JOIN orders o ON o.id = oi.order_id
                    LEFT JOIN products p ON p.id = oi.product_id
                   WHERE o.user_id = ?
+                    AND NOT EXISTS (SELECT 1 FROM order_design_approvals oda WHERE oda.proof_file_id = af.id)
                   ORDER BY COALESCE(af.created_at, o.created_at) DESC, af.id DESC
                   LIMIT {$limit}",
                 [$userId]
