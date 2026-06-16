@@ -269,6 +269,7 @@ body.admin-page-orders .adm-order-card-grid { display:grid; grid-template-column
 body.admin-page-orders .adm-order-card-section { border:1px solid var(--adm-line); border-radius:13px; background:#fff; padding:14px; }
 body.admin-page-orders .adm-order-card-section--wide { grid-column:span 2; }
 body.admin-page-orders .adm-order-card-section--full { grid-column:1/-1; }
+body.admin-page-orders .adm-order-card-section--flush { padding:10px; }
 body.admin-page-orders .adm-order-card-section h3 { margin:0 0 10px; color:var(--adm-ink); font-size:13px; font-weight:900; letter-spacing:-.02em; }
 body.admin-page-orders .ord-design-workflow { display:grid; gap:8px; padding:10px 12px; border:1px solid var(--adm-line); border-radius:12px; background:#fff; }
 body.admin-page-orders .ord-design-workflow--customer-upload { border-color:#bfdbfe; background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); }
@@ -288,8 +289,14 @@ body.admin-page-orders .ord-artwork-link--primary { justify-self:start; border-r
 body.admin-page-orders .aoc-btn--danger { border-color:#fecaca !important; background:#fff1f2 !important; color:#be123c !important; }
 body.admin-page-orders .aoc-btn--approve { border-color:#bbf7d0 !important; background:#ecfdf5 !important; color:#047857 !important; }
 body.admin-page-orders .ord-proof-input { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
-body.admin-page-orders .adm-order-compact-tools { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; }
-body.admin-page-orders .ord-actions--compact { justify-content:flex-end; flex-wrap:wrap; }
+body.admin-page-orders .adm-order-action-strip { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; background:linear-gradient(135deg,#f8fafc 0%,#eef6ff 100%); }
+body.admin-page-orders .ord-action-strip-label { color:var(--adm-muted); font-size:11px; font-weight:950; text-transform:uppercase; letter-spacing:.06em; }
+body.admin-page-orders .ord-actions--compact { justify-content:flex-end; flex-wrap:wrap; gap:9px; }
+body.admin-page-orders .ord-actions--compact .aoc-btn { min-height:36px; padding:0 12px; border-radius:11px; font-weight:950; box-shadow:0 8px 18px rgba(15,23,42,.07); }
+body.admin-page-orders .aoc-btn--call { background:#eff6ff !important; border-color:#bfdbfe !important; color:#1d4ed8 !important; }
+body.admin-page-orders .aoc-btn--wa { background:#ecfdf5 !important; border-color:#bbf7d0 !important; color:#047857 !important; }
+body.admin-page-orders .aoc-btn--invoice { background:#f8fafc !important; border-color:#cbd5e1 !important; color:#334155 !important; }
+body.admin-page-orders .aoc-btn--address { background:#fff7ed !important; border-color:#fed7aa !important; color:#c2410c !important; }
 body.admin-page-orders .adm-order-card--new { border-color:#bfdbfe; }
 body.admin-page-orders .adm-order-card--delayed { border-color:#fed7aa; }
 @media (max-width:1200px) {
@@ -298,8 +305,8 @@ body.admin-page-orders .adm-order-card--delayed { border-color:#fed7aa; }
   body.admin-page-orders .adm-order-card-toggle { position:absolute; right:18px; top:18px; }
   body.admin-page-orders .adm-order-card-quick { grid-template-columns:minmax(180px,1fr) auto; }
   body.admin-page-orders .adm-order-card-grid { grid-template-columns:1fr; }
-  body.admin-page-orders .ord-design-strip,
-  body.admin-page-orders .adm-order-compact-tools { grid-template-columns:1fr; }
+  body.admin-page-orders .ord-design-strip { grid-template-columns:1fr; }
+  body.admin-page-orders .adm-order-action-strip { align-items:flex-start; flex-direction:column; }
   body.admin-page-orders .ord-design-filebox { grid-template-columns:1fr; }
   body.admin-page-orders .adm-order-card-section--wide { grid-column:auto; }
 }

@@ -140,9 +140,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
     </div>
     <div class="adm-order-card-body" hidden>
       <div class="adm-order-card-grid">
-        <section class="adm-order-card-section adm-order-card-section--full">
-          <h3>Items & Design Approval</h3>
-          <div class="ord-items-hdr"><?= count($o['items'] ?? []) ?> item(s)</div>
+        <section class="adm-order-card-section adm-order-card-section--full adm-order-card-section--flush">
           <?php foreach (($o['items'] ?? []) as $item): ?>
             <?php
               $approvalId = (int)($item['design_approval_id'] ?? 0);
@@ -187,7 +185,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
             </div>
           <?php endforeach; ?>
         </section>
-        <section class="adm-order-card-section adm-order-card-section--full adm-order-compact-tools"><div class="ord-ship-grid"><input class="fi" id="ship_provider_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['shipping_provider'] ?? '') ?>" placeholder="Shipping provider"><input class="fi" id="ship_track_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['tracking_code'] ?? '') ?>" placeholder="Tracking code"><input class="fi" id="ship_status_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['shipping_status'] ?? '') ?>" placeholder="Shipping status"><button class="btn btn-outline btn-sm" onclick="saveShipping(<?= (int)$o['id'] ?>)">Save Shipping</button></div><div class="ord-actions ord-actions--compact"><a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn">📞 Call</a><button class="aoc-btn" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($orderStatus) ?>')">💬 WA</button><a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">🧾 Invoice</a><a href="/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">👁 View</a><button class="aoc-btn" onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'>📍 Addresses</button></div></section>
+        <section class="adm-order-card-section adm-order-card-section--full adm-order-action-strip"><span class="ord-action-strip-label">Quick actions</span><div class="ord-actions ord-actions--compact"><a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn aoc-btn--call">📞 Call Customer</a><button class="aoc-btn aoc-btn--wa" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($orderStatus) ?>')">💬 WhatsApp</button><a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn aoc-btn--invoice" target="_blank">🧾 Invoice</a><button class="aoc-btn aoc-btn--address" onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'>📍 Address</button></div></section>
       </div>
     </div>
   </article>
