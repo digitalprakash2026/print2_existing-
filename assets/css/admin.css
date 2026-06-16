@@ -322,3 +322,4 @@ body.admin-page-orders .ord-design-actions .aoc-btn--approve { min-width:132px; 
 @media (min-width:1201px) {
   body.admin-page-orders .ord-design-actions { flex-wrap:nowrap; }
 }
+body.admin-page-orders .ord-design-note--customer { border-color:#fed7aa; background:#fff7ed; color:#9a3412; }

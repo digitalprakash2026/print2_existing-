@@ -67,7 +67,7 @@ class OrderManager
                     order_id INT NOT NULL,
                     order_item_id INT NOT NULL,
                     design_choice ENUM('upload','rcs') NOT NULL,
-                    status ENUM('pending_review','issue_found','proof_uploaded','approved') NOT NULL DEFAULT 'pending_review',
+                    status ENUM('pending_review','issue_found','proof_uploaded','revision_requested','approved') NOT NULL DEFAULT 'pending_review',
                     customer_artwork_file_id INT NULL,
                     proof_file_id INT NULL,
                     admin_note TEXT NULL,
@@ -80,6 +80,19 @@ class OrderManager
                     KEY idx_order_design_status (status)
                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
             );
+
+            $approvalStatus = \Database::row(
+                "SELECT COLUMN_TYPE
+                 FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = 'order_design_approvals'
+                   AND COLUMN_NAME = 'status'
+                 LIMIT 1"
+            );
+            if ($approvalStatus && !str_contains((string)($approvalStatus['COLUMN_TYPE'] ?? ''), "'revision_requested'")) {
+                \Database::query("ALTER TABLE order_design_approvals MODIFY COLUMN status ENUM('pending_review','issue_found','proof_uploaded','revision_requested','approved') NOT NULL DEFAULT 'pending_review'");
+            }
+
             self::$designApprovalSchemaReady = true;
         } catch (\Throwable $e) {
             error_log('Order design approval schema unavailable: ' . $e->getMessage());
@@ -303,7 +316,7 @@ class OrderManager
     public static function updateDesignApproval(int $approvalId, string $status, string $adminNote = '', ?int $proofFileId = null): bool
     {
         if (!self::ensureDesignApprovalSchema()) return false;
-        $valid = ['pending_review', 'issue_found', 'proof_uploaded', 'approved'];
+        $valid = ['pending_review', 'issue_found', 'proof_uploaded', 'revision_requested', 'approved'];
         if (!in_array($status, $valid, true)) return false;
 
         $approval = \Database::row("SELECT * FROM order_design_approvals WHERE id = ?", [$approvalId]);
@@ -317,12 +330,62 @@ class OrderManager
         }
         if ($status === 'approved') {
             $sets[] = 'approved_at = NOW()';
+        } elseif (in_array($status, ['pending_review', 'issue_found', 'proof_uploaded', 'revision_requested'], true)) {
+            $sets[] = 'approved_at = NULL';
+        }
+        if ($status === 'proof_uploaded') {
+            $sets[] = 'customer_note = NULL';
         }
         $params[] = $approvalId;
         \Database::query("UPDATE order_design_approvals SET " . implode(', ', $sets) . " WHERE id = ?", $params);
 
         self::syncOrderDesignApproved((int)$approval['order_id']);
         return true;
+    }
+
+    public static function customerDesignDecision(int $approvalId, int $userId, string $decision, string $customerNote = ''): array
+    {
+        if (!self::ensureDesignApprovalSchema()) return ['ok' => false, 'msg' => 'Design approval system is not ready.'];
+        if ($approvalId <= 0 || $userId <= 0) return ['ok' => false, 'msg' => 'Invalid request.'];
+
+        $approval = \Database::row(
+            "SELECT oda.*, o.user_id
+             FROM order_design_approvals oda
+             INNER JOIN orders o ON o.id = oda.order_id
+             WHERE oda.id = ? AND o.user_id = ?
+             LIMIT 1",
+            [$approvalId, $userId]
+        );
+        if (!$approval) return ['ok' => false, 'msg' => 'Design approval not found.'];
+        if (empty($approval['proof_file_id'])) return ['ok' => false, 'msg' => 'Corrected design file is not uploaded yet.'];
+        if ((string)($approval['status'] ?? '') !== 'proof_uploaded') {
+            return ['ok' => false, 'msg' => 'This corrected design is not waiting for customer review.'];
+        }
+
+        if ($decision === 'approve') {
+            \Database::query(
+                "UPDATE order_design_approvals
+                    SET status = 'approved', customer_note = ?, approved_at = NOW(), updated_at = NOW()
+                  WHERE id = ?",
+                [trim($customerNote) !== '' ? trim($customerNote) : 'Approved by customer.', $approvalId]
+            );
+            self::syncOrderDesignApproved((int)$approval['order_id']);
+            return ['ok' => true, 'msg' => 'Design approved successfully.'];
+        }
+
+        if ($decision === 'revision') {
+            $note = trim($customerNote);
+            if ($note === '') return ['ok' => false, 'msg' => 'Please describe the required revision.'];
+            \Database::query(
+                "UPDATE order_design_approvals
+                    SET status = 'revision_requested', customer_note = ?, approved_at = NULL, updated_at = NOW()
+                  WHERE id = ?",
+                [$note, $approvalId]
+            );
+            return ['ok' => true, 'msg' => 'Revision request sent to admin.'];
+        }
+
+        return ['ok' => false, 'msg' => 'Invalid design action.'];
     }
 
     public static function syncOrderDesignApproved(int $orderId): void
@@ -399,8 +462,10 @@ class OrderManager
         foreach ($orders as &$order) {
             $order['items'] = \Database::rows(
                 "SELECT oi.*,
+                        oda.id AS design_approval_id,
                         oda.status AS design_approval_status,
                         oda.admin_note AS design_admin_note,
+                        oda.customer_note AS design_customer_note,
                         oda.approved_at AS design_approved_at,
                         oda.proof_file_id AS design_proof_file_id,
                         pf.original_name AS design_proof_original_name,

@@ -12973,3 +12973,12 @@ body:has(.dash-ref-page) .adm-admin-chip em::after { content:''; position:absolu
 .account-design-proof-preview { width:72px; height:54px; flex:0 0 72px; border:1px solid #dbe4f0; border-radius:12px; overflow:hidden; background:#f8fafc; display:block; }
 .account-design-proof-preview img { width:100%; height:100%; object-fit:cover; display:block; }
 .account-order-expanded li.account-design-issue.account-design-approval-item { display:flex; }
+.account-design-review-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+.account-design-review-actions button,
+.account-design-revision-form button { border:0; border-radius:999px; padding:8px 12px; font-weight:900; cursor:pointer; }
+.account-design-approve-btn { background:#16a34a; color:#fff; }
+.account-design-revision-btn { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa !important; }
+.account-design-revision-form { display:grid; gap:8px; margin-top:8px; max-width:420px; }
+.account-design-revision-form textarea { width:100%; border:1px solid #dbe4f0; border-radius:12px; padding:10px 12px; resize:vertical; font:inherit; }
+.account-design-revision-form button { justify-self:start; background:#2563eb; color:#fff; }
+.account-design-customer-note { color:#9f1239; font-weight:850; }

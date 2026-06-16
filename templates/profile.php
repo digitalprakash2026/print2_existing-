@@ -39,7 +39,7 @@ $statusLabels = [
     'cancelled' => 'Cancelled',
     'whatsapp_pending' => 'Pending',
 ];
-$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Proof Uploaded','approved'=>'Approved'];
+$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Waiting for Your Approval','revision_requested'=>'Revision Requested','approved'=>'Approved'];
 $progressStatuses = ['new_order', 'received', 'design_approved', 'printing', 'other_process', 'processing', 'ready', 'whatsapp_pending'];
 $totalOrders = count($orders);
 $progressOrders = count(array_filter($orders, static fn($order) => in_array((string)($order['status'] ?? ''), $progressStatuses, true)));
@@ -136,12 +136,25 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                     $proofMime = strtolower((string)($item['design_proof_mime_type'] ?? ''));
                     $proofExt = strtolower(pathinfo($proofName !== '' ? $proofName : (string)($item['design_proof_filename'] ?? ''), PATHINFO_EXTENSION));
                     $proofIsImage = str_starts_with($proofMime, 'image/') || in_array($proofExt, ['jpg','jpeg','png','gif','webp','svg'], true);
+                    $approvalId = (int)($item['design_approval_id'] ?? 0);
+                    $canReviewProof = $approvalId > 0 && !empty($item['design_proof_file_id']) && in_array($designStatus, ['proof_uploaded'], true);
                   ?>
-                    <li class="account-design-approval-item <?= $designStatus === 'issue_found' ? 'account-design-issue' : '' ?>">
+                    <li class="account-design-approval-item <?= in_array($designStatus, ['issue_found','revision_requested'], true) ? 'account-design-issue' : '' ?>" data-design-approval-item="<?= $approvalId ?>">
                       <div class="account-design-approval-main">
                         <span><?= $h($item['product_name'] ?? 'Product') ?> — <?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
                         <?php if (!empty($item['design_admin_note'])): ?><small><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
-                        <?php if (!empty($item['design_proof_file_id'])): ?><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener"><?= $h($proofName !== '' ? $proofName : 'Download corrected file') ?></a><?php endif; ?>
+                        <?php if (!empty($item['design_customer_note'])): ?><small class="account-design-customer-note">Your message: <?= $h($item['design_customer_note']) ?></small><?php endif; ?>
+                        <?php if (!empty($item['design_proof_file_id'])): ?><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener"><?= $h($proofName !== '' ? 'Open corrected file: ' . $proofName : 'Open corrected file') ?></a><?php endif; ?>
+                        <?php if ($canReviewProof): ?>
+                          <div class="account-design-review-actions">
+                            <button type="button" class="account-design-approve-btn" onclick="approveAccountDesign(<?= $approvalId ?>, this)">Approve Design</button>
+                            <button type="button" class="account-design-revision-btn" onclick="toggleDesignRevisionForm(<?= $approvalId ?>)">Request Revision</button>
+                          </div>
+                          <form class="account-design-revision-form" data-design-revision-form="<?= $approvalId ?>" onsubmit="sendDesignRevision(event, <?= $approvalId ?>)" hidden>
+                            <textarea name="message" rows="2" minlength="5" required placeholder="What should we change in this design?"></textarea>
+                            <button type="submit">Send Revision Request</button>
+                          </form>
+                        <?php endif; ?>
                       </div>
                       <?php if (!empty($item['design_proof_file_id']) && $proofIsImage && $proofPath !== ''): ?>
                         <a class="account-design-proof-preview" href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener" aria-label="Open corrected design"><img src="<?= $h($proofPath) ?>" alt="<?= $h($proofName !== '' ? $proofName : 'Corrected design preview') ?>" loading="lazy"></a>
@@ -651,6 +664,57 @@ async function removeWishlistItem(productId, btn) {
 window.addEventListener('hashchange', () => setAccountTab(location.hash.replace('#', ''), false));
 setAccountTab(location.hash.replace('#', ''), false, false);
 
+
+
+async function approveAccountDesign(id, btn) {
+  id = parseInt(id || '0', 10);
+  if (!id || !confirm('Approve this corrected design for printing?')) return;
+  if (btn) btn.disabled = true;
+  try {
+    const resp = await fetch(`/api/design-approvals/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
+      credentials: 'same-origin',
+      body: JSON.stringify({ note: 'Approved by customer.' }),
+    });
+    const data = await resp.json();
+    if (!data.ok) { alert(data.msg || 'Could not approve design.'); if (btn) btn.disabled = false; return; }
+    window.location.reload();
+  } catch (e) {
+    alert('Could not approve design right now.');
+    if (btn) btn.disabled = false;
+  }
+}
+
+function toggleDesignRevisionForm(id) {
+  const form = document.querySelector(`[data-design-revision-form="${id}"]`);
+  if (!form) return;
+  form.hidden = !form.hidden;
+  if (!form.hidden) form.querySelector('textarea')?.focus();
+}
+
+async function sendDesignRevision(event, id) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = form.querySelector('textarea')?.value.trim() || '';
+  if (message.length < 5) { alert('Please write a clear revision message.'); return; }
+  const btn = form.querySelector('button[type="submit"]');
+  if (btn) btn.disabled = true;
+  try {
+    const resp = await fetch(`/api/design-approvals/${id}/revision`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
+      credentials: 'same-origin',
+      body: JSON.stringify({ message }),
+    });
+    const data = await resp.json();
+    if (!data.ok) { alert(data.msg || 'Could not send revision request.'); if (btn) btn.disabled = false; return; }
+    window.location.reload();
+  } catch (e) {
+    alert('Could not send revision request right now.');
+    if (btn) btn.disabled = false;
+  }
+}
 
 function openAccountOrder(trigger) {
   const detail = trigger?.closest('.account-order-detail');

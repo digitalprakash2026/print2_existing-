@@ -1609,6 +1609,7 @@ if ($uri === '/admin/orders') {
                     oda.id AS design_approval_id,
                     oda.status AS design_approval_status,
                     oda.admin_note AS design_admin_note,
+                    oda.customer_note AS design_customer_note,
                     oda.approved_at AS design_approved_at,
                     oda.proof_file_id AS design_proof_file_id,
                     pf.original_name AS design_proof_original_name,

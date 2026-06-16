@@ -75,6 +75,20 @@ if ($uri === '/api/profile/password' && $method === 'POST') {
     json($result, ($result['ok'] ?? false) ? 200 : 422);
 }
 
+if (preg_match('#^/api/design-approvals/(\d+)/approve$#', $uri, $m) && $method === 'POST') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $result = \Orders\OrderManager::customerDesignDecision((int)$m[1], (int)$user['id'], 'approve', trim((string)($body['note'] ?? '')));
+    json($result, ($result['ok'] ?? false) ? 200 : 422);
+}
+
+if (preg_match('#^/api/design-approvals/(\d+)/revision$#', $uri, $m) && $method === 'POST') {
+    \Auth\Auth::require();
+    $user = \Auth\Auth::user();
+    $result = \Orders\OrderManager::customerDesignDecision((int)$m[1], (int)$user['id'], 'revision', trim((string)($body['message'] ?? '')));
+    json($result, ($result['ok'] ?? false) ? 200 : 422);
+}
+
 // ── Products ──────────────────────────────────────────────────
 
 if ($uri === '/api/products' && $method === 'GET') {

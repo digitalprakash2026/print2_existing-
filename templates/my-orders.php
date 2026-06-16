@@ -8,7 +8,7 @@ include INCLUDE_PATH . '/partials/header.php';
 $statusLabels = ['new_order'=>'New Order','received'=>'Received','design_approved'=>'Design Approved','processing'=>'Other Process','other_process'=>'Other Process','printing'=>'Printing','ready'=>'Dispatched','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'Pending'];
 $statusColors = ['new_order'=>'b-blue','received'=>'b-blue','design_approved'=>'b-green','processing'=>'b-amber','other_process'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
 $tlSteps = ['new_order','received','design_approved','printing','other_process','ready'];
-$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Proof Uploaded','approved'=>'Approved'];
+$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Waiting for Your Approval','revision_requested'=>'Revision Requested','approved'=>'Approved'];
 ?>
 <div class="myord-hdr">
   <div class="container">

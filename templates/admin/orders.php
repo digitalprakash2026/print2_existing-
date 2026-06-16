@@ -5,8 +5,8 @@ $admMainClass = 'adm-main--orders';
 include __DIR__ . '/layout.php';
 $statusColors = ['new_order'=>'b-blue','received'=>'b-blue','design_approved'=>'b-green','processing'=>'b-amber','other_process'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
 $statusLabels = ['new_order'=>'New Order','received'=>'Received','design_approved'=>'Design Approved','printing'=>'Printing','other_process'=>'Other Process','processing'=>'Other Process','ready'=>'Dispatched','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'WA Pending'];
-$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Proof Uploaded','approved'=>'Approved'];
-$designApprovalColors = ['pending_review'=>'b-amber','issue_found'=>'b-red','proof_uploaded'=>'b-blue','approved'=>'b-green'];
+$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Proof Sent','revision_requested'=>'Revision Requested','approved'=>'Approved'];
+$designApprovalColors = ['pending_review'=>'b-amber','issue_found'=>'b-red','proof_uploaded'=>'b-blue','revision_requested'=>'b-red','approved'=>'b-green'];
 $orders = $orders ?? [];
 $summaryCounts = $summaryCounts ?? [];
 $statusCounts = $statusCounts ?? ['all' => 0];
@@ -182,6 +182,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                 <?php endif; ?>
               </div>
               <?php if (!empty($item['design_admin_note'])): ?><div class="ord-design-note <?= $approvalStatus === 'issue_found' ? 'ord-design-note--issue' : '' ?>"><?= $approvalStatus === 'issue_found' ? '⚠ Issue for customer: ' : 'Note: ' ?><?= htmlspecialchars($item['design_admin_note']) ?></div><?php endif; ?>
+              <?php if (!empty($item['design_customer_note'])): ?><div class="ord-design-note ord-design-note--customer <?= $approvalStatus === 'revision_requested' ? 'ord-design-note--issue' : '' ?>">💬 Customer revision: <?= htmlspecialchars($item['design_customer_note']) ?></div><?php endif; ?>
             </div>
           <?php endforeach; ?>
         </section>
