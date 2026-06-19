@@ -1777,6 +1777,16 @@ if (preg_match('#^/admin/blogs/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     exit;
 }
 
+if (preg_match('#^/admin/deals/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
+    view('admin/deals-new', ['dealEditId' => (int)$m[1]]);
+    exit;
+}
+
+if (preg_match('#^/admin/coupons/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
+    view('admin/coupons-new', ['couponEditId' => (int)$m[1]]);
+    exit;
+}
+
 if (in_array($uri, ['/admin/admins', '/admin/approvals'], true)) {
     \Auth\Auth::requireSuperAdmin();
 }
@@ -1789,10 +1799,12 @@ $adminPage = match(true) {
     $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/deals'      => 'admin/deals',
+    $uri === '/admin/deals/new'  => 'admin/deals-new',
     $uri === '/admin/blogs'      => 'admin/blogs',
     $uri === '/admin/blogs/new'  => 'admin/blogs-new',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
+    $uri === '/admin/coupons/new' => 'admin/coupons-new',
     $uri === '/admin/reviews'    => 'admin/reviews',
     $uri === '/admin/customers'  => 'admin/customers',
     $uri === '/admin/leads'      => 'admin/leads',

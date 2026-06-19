@@ -7,7 +7,7 @@ include __DIR__ . '/layout.php';
 
 <div class="fsec" style="max-width:1100px">
   <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-    <div style="font-size:13px;color:var(--text2)">Manage home page slider images. Text, CTA buttons and click URLs are optional.</div>
+    <div style="font-size:13px;color:var(--text2)">Upload banner images and optionally make each banner clickable with a link.</div>
     <button class="btn btn-blue btn-sm" onclick="newBanner()">+ New Banner</button>
   </div>
 
@@ -16,68 +16,29 @@ include __DIR__ . '/layout.php';
   <div id="bnList"></div>
   <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
 
-  <div style="font-weight:700;margin-bottom:10px" id="bnFormTitle">Add Banner</div>
-  <div class="f2">
-    <div class="fg"><label>Eyebrow <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-eyebrow" placeholder="New Arrivals"></div>
-    <div class="fg"><label>Image Alt <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-alt" placeholder="Premium Business Card Printing"></div>
-  </div>
-  <div class="fg"><label>Title <span style="color:var(--text3);font-weight:500">(optional, use &lt;br&gt; for line break)</span></label><input class="fi" id="bn-title" placeholder="Print That Grows<br>Your Business"></div>
-  <div class="fg"><label>Subtitle <span style="color:var(--text3);font-weight:500">(optional, use &lt;br&gt; for line break)</span></label><textarea class="fi" id="bn-subtitle" style="height:72px"></textarea></div>
+  <div style="font-weight:800;margin-bottom:10px" id="bnFormTitle">Add Banner</div>
   <div class="f2">
     <div class="fg">
-      <label>Banner Image</label>
+      <label>Banner Image *</label>
       <input type="file" class="fi" id="bn-image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-      <div style="font-size:11px;color:var(--text3);margin-top:5px">Upload a wide banner image first, then save. Recommended ratio: 1024×384 or similar.</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:5px">Recommended ratio: 1024×384 or similar wide banner.</div>
     </div>
     <div class="fg"><label>Image Path *</label><input class="fi" id="bn-image-path" placeholder="/uploads/banners/..."></div>
   </div>
-  <div class="f2">
-    <div class="fg"><label>Primary CTA Text <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-ptext" placeholder="Order Now"></div>
-    <div class="fg"><label>Primary CTA URL <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-purl" placeholder="/categories"></div>
-  </div>
-  <div class="f2">
-    <div class="fg">
-      <label>Clickable Banner Image</label>
-      <select class="fi fi-sel" id="bn-click-enabled">
-        <option value="0">Disabled</option>
-        <option value="1">Enabled</option>
-      </select>
-      <div style="font-size:11px;color:var(--text3);margin-top:5px">Enable this to make the slide image clickable on the home page.</div>
-    </div>
-    <div class="fg"><label>Image Click URL <span style="color:var(--text3);font-weight:500">(required when enabled)</span></label><input class="fi" id="bn-click-url" placeholder="/categories"></div>
-  </div>
-  <div class="f2">
-    <div class="fg"><label>Secondary CTA Text <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-stext" placeholder="Get Free Design"></div>
-    <div class="fg">
-      <label>Secondary CTA Type</label>
-      <select class="fi fi-sel" id="bn-stype">
-        <option value="whatsapp">WhatsApp</option>
-        <option value="url">Custom URL</option>
-      </select>
-    </div>
-  </div>
-  <div class="f2">
-    <div class="fg"><label>Secondary CTA URL <span style="color:var(--text3);font-weight:500">(optional, for type=url)</span></label><input class="fi" id="bn-surl" placeholder="https://example.com/offer"></div>
-    <div class="fg"><label>Sort Order</label><input type="number" class="fi" id="bn-sort" value="0"></div>
-  </div>
-  <div class="fg">
-    <label>Status</label>
-    <select class="fi fi-sel" id="bn-active">
-      <option value="1">Active</option>
-      <option value="0">Inactive</option>
-    </select>
-  </div>
+  <div class="fg"><label>Clickable Banner Link <span style="color:var(--text3);font-weight:500">(optional)</span></label><input class="fi" id="bn-click-url" placeholder="/categories or https://example.com/offer"></div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+    <button class="btn btn-outline btn-sm" onclick="uploadBannerImage()">Upload Image</button>
     <button class="btn btn-blue btn-sm" onclick="saveBanner()" id="bnSaveBtn">Save Banner</button>
     <button class="btn btn-outline btn-sm" onclick="resetForm()">Reset</button>
-    <button class="btn btn-outline btn-sm" onclick="uploadBannerImage()">Upload Image</button>
   </div>
 </div>
 
 <script>
 let banners = [];
 let editId = 0;
+let currentSort = 0;
+let currentActive = 1;
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function toastMsg(msg,type='info'){ const w=document.getElementById('tw'); const t=document.createElement('div'); t.className='toast '+type; t.textContent=msg; w.appendChild(t); requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show'))); setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(),300);},2600); }
@@ -97,12 +58,12 @@ function renderBanners() {
     box.innerHTML = `<div style="padding:18px;border:1px dashed var(--border);border-radius:10px;color:var(--text2);font-size:13px">No banners added yet.</div>`;
     return;
   }
-  box.innerHTML = banners.map((b,idx)=>`
-    <div style="display:grid;grid-template-columns:100px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:#fff">
-      <img src="${esc(b.image_path)}" style="width:100px;height:58px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+  box.innerHTML = banners.map((b)=>`
+    <div style="display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:12px;margin-bottom:9px;background:#fff">
+      <img src="${esc(b.image_path)}" style="width:120px;height:68px;object-fit:cover;border-radius:10px;border:1px solid var(--border)">
       <div>
-        <div style="font-weight:700;font-size:13px">${esc(b.title || 'Image-only banner')}</div>
-        <div style="font-size:11px;color:var(--text2)">Order: ${Number(b.sort_order||0)} · ${b.is_active ? 'Active' : 'Inactive'} · Image click: ${Number(b.image_click_enabled||0) === 1 ? 'On' : 'Off'}</div>
+        <div style="font-weight:800;font-size:13px">Image Banner</div>
+        <div style="font-size:11px;color:var(--text2)">Order: ${Number(b.sort_order||0)} · ${b.is_active ? 'Active' : 'Inactive'} · Link: ${b.image_click_url ? esc(b.image_click_url) : 'Not clickable'}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
         <button class="btn btn-outline btn-sm" onclick="shiftOrder(${Number(b.id)}, -1)">↑</button>
@@ -116,51 +77,33 @@ function renderBanners() {
 
 function fillForm(b) {
   editId = Number(b.id || 0);
+  currentSort = Number(b.sort_order || 0);
+  currentActive = Number(b.is_active ?? 1) ? 1 : 0;
   document.getElementById('bnFormTitle').textContent = editId ? `Edit Banner #${editId}` : 'Add Banner';
-  document.getElementById('bn-eyebrow').value = b.eyebrow || '';
-  document.getElementById('bn-title').value = b.title || '';
-  document.getElementById('bn-subtitle').value = b.subtitle || '';
   document.getElementById('bn-image-path').value = b.image_path || '';
-  document.getElementById('bn-alt').value = b.image_alt || '';
-  document.getElementById('bn-ptext').value = b.cta_primary_text || '';
-  document.getElementById('bn-purl').value = b.cta_primary_url || '';
-  document.getElementById('bn-click-enabled').value = Number(b.image_click_enabled || 0) === 1 ? '1' : '0';
   document.getElementById('bn-click-url').value = b.image_click_url || '';
-  document.getElementById('bn-stext').value = b.cta_secondary_text || '';
-  document.getElementById('bn-stype').value = b.cta_secondary_type || 'whatsapp';
-  document.getElementById('bn-surl').value = b.cta_secondary_url || '';
-  document.getElementById('bn-sort').value = Number(b.sort_order || 0);
-  document.getElementById('bn-active').value = b.is_active ? '1' : '0';
 }
 
 function collectForm() {
+  const clickUrl = document.getElementById('bn-click-url').value.trim();
   return {
-    eyebrow: document.getElementById('bn-eyebrow').value.trim(),
-    title: document.getElementById('bn-title').value.trim(),
-    subtitle: document.getElementById('bn-subtitle').value.trim(),
+    eyebrow: '', title: '', subtitle: '', image_alt: '',
+    cta_primary_text: '', cta_primary_url: '', cta_secondary_text: '', cta_secondary_type: 'url', cta_secondary_url: '',
     image_path: document.getElementById('bn-image-path').value.trim(),
-    image_alt: document.getElementById('bn-alt').value.trim(),
-    cta_primary_text: document.getElementById('bn-ptext').value.trim(),
-    cta_primary_url: document.getElementById('bn-purl').value.trim(),
-    image_click_enabled: parseInt(document.getElementById('bn-click-enabled').value || '0', 10) || 0,
-    image_click_url: document.getElementById('bn-click-url').value.trim(),
-    cta_secondary_text: document.getElementById('bn-stext').value.trim(),
-    cta_secondary_type: document.getElementById('bn-stype').value,
-    cta_secondary_url: document.getElementById('bn-surl').value.trim(),
-    sort_order: parseInt(document.getElementById('bn-sort').value || '0', 10) || 0,
-    is_active: parseInt(document.getElementById('bn-active').value || '1', 10) || 0,
+    image_click_enabled: clickUrl ? 1 : 0,
+    image_click_url: clickUrl,
+    sort_order: currentSort,
+    is_active: currentActive,
   };
 }
 
-function resetForm(){ editId = 0; fillForm({}); showErr(''); }
+function resetForm(){ editId = 0; currentSort = banners.length; currentActive = 1; fillForm({sort_order:currentSort,is_active:1}); showErr(''); }
 function newBanner(){ resetForm(); window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
 function editBanner(id){ const b = banners.find(x=>Number(x.id)===Number(id)); if (!b) return; fillForm(b); window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
 
 async function saveBanner() {
   const payload = collectForm();
   if (!payload.image_path) { showErr('Banner image path required.'); return; }
-  if (payload.image_click_enabled && !payload.image_click_url) { showErr('Image Click URL required when clickable banner image is enabled.'); return; }
-  if (payload.cta_secondary_text && payload.cta_secondary_type === 'url' && !payload.cta_secondary_url) { showErr('Secondary CTA URL required when secondary CTA text uses type=url.'); return; }
   showErr('');
   const btn = document.getElementById('bnSaveBtn');
   btn.disabled = true;
