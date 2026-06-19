@@ -58,6 +58,41 @@ define('DB_PASS', env('DB_PASS', 'Printing@2026'));
 define('APP_URL',    rtrim(env('APP_URL', 'https://print.rcsgraphic.com'), '/'));
 define('APP_SECRET', env('APP_SECRET', 'change_me_now_32chars_minimum'));
 define('APP_DEBUG',  env('APP_DEBUG', 'false') === 'true');
+define('APP_TIMEZONE', env('APP_TIMEZONE', 'Asia/Kolkata'));
+define('DB_TIMEZONE', env('DB_TIMEZONE', '+05:30'));
+
+try {
+    date_default_timezone_set(APP_TIMEZONE);
+} catch (Throwable) {
+    date_default_timezone_set('Asia/Kolkata');
+}
+
+if (!function_exists('app_datetime')) {
+    function app_datetime(string|null $value, string $format = 'd M Y, H:i'): string
+    {
+        $raw = trim((string)$value);
+        if ($raw === '') return '';
+        try {
+            return (new DateTimeImmutable($raw, new DateTimeZone(APP_TIMEZONE)))->format($format);
+        } catch (Throwable) {
+            $ts = strtotime($raw);
+            return $ts ? date($format, $ts) : '';
+        }
+    }
+}
+
+if (!function_exists('app_timestamp')) {
+    function app_timestamp(string|null $value): int
+    {
+        $raw = trim((string)$value);
+        if ($raw === '') return time();
+        try {
+            return (new DateTimeImmutable($raw, new DateTimeZone(APP_TIMEZONE)))->getTimestamp();
+        } catch (Throwable) {
+            return strtotime($raw) ?: time();
+        }
+    }
+}
 
 // ── Required directories ──────────────────────────────────────
 foreach ([
