@@ -36,6 +36,7 @@ final class ContactLeadManager
                     KEY idx_contact_leads_email (email)
                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
             );
+            self::ensureColumns();
             self::$schemaReady = true;
         } catch (\Throwable $e) {
             error_log('Contact leads schema unavailable: ' . $e->getMessage());
@@ -77,21 +78,21 @@ final class ContactLeadManager
 
     public static function adminList(): array
     {
-        if (!self::ensureSchema()) return ['leads' => [], 'summary' => self::emptySummary()];
-        $leads = \Database::rows("SELECT * FROM contact_leads ORDER BY FIELD(status,'new','contacted','quoted','converted','closed','spam'), created_at DESC LIMIT 500");
+        if (!self::ensureSchema()) return ['leads' => [], 'summary' => self::emptySummary(), 'msg' => 'Lead system is not ready.'];
+        try {
+            $leads = \Database::rows("SELECT * FROM contact_leads ORDER BY FIELD(COALESCE(status,'new'),'new','contacted','quoted','converted','closed','spam'), created_at DESC LIMIT 500");
+        } catch (\Throwable $e) {
+            error_log('Contact leads list failed: ' . $e->getMessage());
+            return ['leads' => [], 'summary' => self::emptySummary(), 'msg' => 'Unable to load contact leads.'];
+        }
         $summary = self::emptySummary();
         foreach ($leads as &$lead) {
-            $lead['matched_customer'] = null;
-            if (!empty($lead['phone']) || !empty($lead['email'])) {
-                $lead['matched_customer'] = \Database::row(
-                    "SELECT id,name,email,phone FROM users WHERE (? <> '' AND phone = ?) OR (? <> '' AND email = ?) LIMIT 1",
-                    [(string)($lead['phone'] ?? ''), (string)($lead['phone'] ?? ''), (string)($lead['email'] ?? ''), (string)($lead['email'] ?? '')]
-                );
-            }
+            $lead['status'] = self::normalStatus((string)($lead['status'] ?? 'new'));
+            $lead['priority'] = self::normalPriority((string)($lead['priority'] ?? 'normal'));
+            $lead['matched_customer'] = self::matchedCustomer((string)($lead['phone'] ?? ''), (string)($lead['email'] ?? ''));
             $summary['total']++;
-            $status = (string)($lead['status'] ?? 'new');
-            if (isset($summary[$status])) $summary[$status]++;
-            if ((string)($lead['priority'] ?? 'normal') === 'urgent') $summary['urgent']++;
+            $summary[$lead['status']]++;
+            if ($lead['priority'] === 'urgent') $summary['urgent']++;
         }
         unset($lead);
         return ['leads' => $leads, 'summary' => $summary];
@@ -120,6 +121,54 @@ final class ContactLeadManager
         $params[] = $id;
         \Database::query("UPDATE contact_leads SET " . implode(', ', $sets) . " WHERE id = ?", $params);
         return ['ok' => true];
+    }
+
+    private static function ensureColumns(): void
+    {
+        $columns = [];
+        foreach (\Database::rows("SHOW COLUMNS FROM contact_leads") as $column) {
+            $columns[strtolower((string)$column['Field'])] = true;
+        }
+        $defs = [
+            'status' => "ALTER TABLE contact_leads ADD COLUMN status ENUM('new','contacted','quoted','converted','closed','spam') NOT NULL DEFAULT 'new' AFTER message",
+            'priority' => "ALTER TABLE contact_leads ADD COLUMN priority ENUM('normal','high','urgent') NOT NULL DEFAULT 'normal' AFTER status",
+            'source' => "ALTER TABLE contact_leads ADD COLUMN source VARCHAR(80) NOT NULL DEFAULT 'contact_page' AFTER priority",
+            'admin_note' => "ALTER TABLE contact_leads ADD COLUMN admin_note TEXT NULL AFTER source",
+            'ip_address' => "ALTER TABLE contact_leads ADD COLUMN ip_address VARCHAR(64) NULL AFTER admin_note",
+            'user_agent' => "ALTER TABLE contact_leads ADD COLUMN user_agent VARCHAR(255) NULL AFTER ip_address",
+            'last_followup_at' => "ALTER TABLE contact_leads ADD COLUMN last_followup_at DATETIME NULL AFTER user_agent",
+            'created_at' => "ALTER TABLE contact_leads ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER last_followup_at",
+            'updated_at' => "ALTER TABLE contact_leads ADD COLUMN updated_at DATETIME NULL AFTER created_at",
+        ];
+        foreach ($defs as $name => $sql) {
+            if (!isset($columns[$name])) \Database::query($sql);
+        }
+    }
+
+    private static function matchedCustomer(string $phone, string $email): ?array
+    {
+        $phone = trim($phone);
+        $email = trim($email);
+        if ($phone === '' && $email === '') return null;
+        try {
+            return \Database::row(
+                "SELECT id,name,email,phone FROM users WHERE (? <> '' AND phone = ?) OR (? <> '' AND email = ?) LIMIT 1",
+                [$phone, $phone, $email, $email]
+            );
+        } catch (\Throwable $e) {
+            error_log('Contact leads customer match skipped: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    private static function normalStatus(string $status): string
+    {
+        return in_array($status, ['new','contacted','quoted','converted','closed','spam'], true) ? $status : 'new';
+    }
+
+    private static function normalPriority(string $priority): string
+    {
+        return in_array($priority, ['normal','high','urgent'], true) ? $priority : 'normal';
     }
 
     private static function detectPriority(string $text): string

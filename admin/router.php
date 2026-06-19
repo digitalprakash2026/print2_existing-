@@ -1316,8 +1316,13 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
     if ($uri === '/admin/api/leads' && $method === 'GET') {
-        $data = \Leads\ContactLeadManager::adminList();
-        json(['ok' => true] + $data);
+        try {
+            $data = \Leads\ContactLeadManager::adminList();
+            json(['ok' => empty($data['msg'])] + $data, empty($data['msg']) ? 200 : 500);
+        } catch (\Throwable $e) {
+            error_log('Admin leads API failed: ' . $e->getMessage());
+            json(['ok' => false, 'leads' => [], 'summary' => [], 'msg' => 'Unable to load leads.'], 500);
+        }
     }
     if (preg_match('#^/admin/api/leads/(\d+)$#', $uri, $m) && $method === 'POST') {
         $result = \Leads\ContactLeadManager::update((int)$m[1], $body);
