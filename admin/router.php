@@ -93,10 +93,21 @@ if (str_starts_with($uri, '/admin/api/')) {
         return $value !== '' ? $value : 'blog-post';
     };
     $sanitizeBlogContent = static function (string $html): string {
-        $allowed = '<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><a><blockquote><img><figure><figcaption>';
+        $allowed = '<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><a><blockquote><img><figure><figcaption><div><span><hr><iframe><video><source>';
         $clean = strip_tags($html, $allowed);
         $clean = preg_replace('/\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $clean) ?? $clean;
         $clean = preg_replace('/(href|src)\s*=\s*("|\')\s*javascript:[^"\']*("|\')/i', '$1="#"', $clean) ?? $clean;
+        $clean = preg_replace_callback('/<iframe\b([^>]*)>/i', static function (array $m): string {
+            $attrs = $m[1] ?? '';
+            if (!preg_match('/src\s*=\s*("|\')([^"\']+)\1/i', $attrs, $srcMatch)) {
+                return '';
+            }
+            $src = $srcMatch[2];
+            if (!preg_match('#^https://(www\.)?(youtube\.com/embed/|player\.vimeo\.com/video/)#i', $src)) {
+                return '';
+            }
+            return '<iframe src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" loading="lazy" allowfullscreen></iframe>';
+        }, $clean) ?? $clean;
         return trim($clean);
     };
     $uniqueBlogSlug = static function (string $base, int $ignoreId = 0) use ($slugify): string {
@@ -1271,17 +1282,18 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
         $file = $_FILES['image'];
         if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
-        if ((int)$file['size'] > 6 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 6MB'], 400);
+        if ((int)$file['size'] > 30 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 30MB'], 400);
         $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        if (!in_array($ext, ['jpg','jpeg','png','webp','mp4','webm'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp, mp4, webm allowed'], 400);
         $mime = mime_content_type($file['tmp_name']) ?: '';
-        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $isVideo = in_array($mime, ['video/mp4','video/webm'], true);
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp','video/mp4','video/webm'], true)) json(['ok'=>false,'msg'=>'Invalid media type'], 400);
         $dir = PUBLIC_PATH . '/uploads/blogs/';
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
         $name = 'blog_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
         $target = $dir . $name;
         if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
-        json(['ok'=>true,'path'=>'/uploads/blogs/' . $name]);
+        json(['ok'=>true,'path'=>'/uploads/blogs/' . $name,'type'=>$isVideo ? 'video' : 'image']);
     }
 
 

@@ -18,10 +18,21 @@ $imageAlt = htmlspecialchars((string)(($blog['image_alt'] ?? '') ?: ($blog['titl
 $publishedAt = strtotime((string)($blog['published_at'] ?? '')) ?: time();
 $published = date('d M, Y', $publishedAt);
 $sanitizeBlogHtml = static function (string $html): string {
-  $allowed = '<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><a><blockquote><img><figure><figcaption>';
+  $allowed = '<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><a><blockquote><img><figure><figcaption><div><span><hr><iframe><video><source>';
   $clean = strip_tags($html, $allowed);
   $clean = preg_replace('/\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $clean) ?? $clean;
   $clean = preg_replace('/(href|src)\s*=\s*("|\')\s*javascript:[^"\']*("|\')/i', '$1="#"', $clean) ?? $clean;
+  $clean = preg_replace_callback('/<iframe\b([^>]*)>/i', static function (array $m): string {
+    $attrs = $m[1] ?? '';
+    if (!preg_match('/src\s*=\s*("|\')([^"\']+)\1/i', $attrs, $srcMatch)) {
+      return '';
+    }
+    $src = $srcMatch[2];
+    if (!preg_match('#^https://(www\.)?(youtube\.com/embed/|player\.vimeo\.com/video/)#i', $src)) {
+      return '';
+    }
+    return '<iframe src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" loading="lazy" allowfullscreen></iframe>';
+  }, $clean) ?? $clean;
   return $clean;
 };
 $content = $sanitizeBlogHtml((string)($blog['content'] ?? ''));

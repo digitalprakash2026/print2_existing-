@@ -69,27 +69,54 @@ include __DIR__ . '/layout.php';
     </div>
   </div>
 
-  <div class="fg">
-    <label>Blog Content *</label>
-    <div class="blog-editor-toolbar" aria-label="Rich text editor toolbar">
+  <div class="fg blog-composer-shell">
+    <div class="blog-composer-head">
+      <div>
+        <label>Blog Content *</label>
+        <p>Use image, video, CTA and tip blocks to create WordPress-style long-form posts.</p>
+      </div>
+      <div class="blog-live-stats"><span id="blogWordCount">0 words</span><span id="blogReadTime">1 min read</span></div>
+    </div>
+    <div class="blog-editor-toolbar blog-editor-toolbar-pro" aria-label="Rich text editor toolbar">
+      <button type="button" onclick="editorBlock('p')">Paragraph</button>
+      <button type="button" onclick="editorBlock('h2')">H2</button>
+      <button type="button" onclick="editorBlock('h3')">H3</button>
       <button type="button" onclick="editorCmd('bold')"><strong>B</strong></button>
       <button type="button" onclick="editorCmd('italic')"><em>I</em></button>
       <button type="button" onclick="editorCmd('underline')"><u>U</u></button>
-      <button type="button" onclick="editorBlock('h2')">H2</button>
-      <button type="button" onclick="editorBlock('h3')">H3</button>
       <button type="button" onclick="editorCmd('insertUnorderedList')">• List</button>
       <button type="button" onclick="editorCmd('insertOrderedList')">1. List</button>
       <button type="button" onclick="editorBlock('blockquote')">Quote</button>
       <button type="button" onclick="editorLink()">Link</button>
+      <button type="button" onclick="insertBlogImage()">Image</button>
+      <button type="button" onclick="insertBlogVideo()">Video</button>
+      <button type="button" onclick="insertCtaBlock()">CTA</button>
+      <button type="button" onclick="insertTipBlock()">Tip Box</button>
+      <button type="button" onclick="insertDivider()">Divider</button>
+      <button type="button" onclick="editorCmd('undo')">Undo</button>
       <button type="button" onclick="editorCmd('removeFormat')">Clear</button>
     </div>
-    <div id="blog-editor" class="blog-rich-editor" contenteditable="true" aria-label="Blog content editor"></div>
+    <div id="blog-editor" class="blog-rich-editor blog-rich-editor-pro" contenteditable="true" aria-label="Blog content editor"></div>
   </div>
 
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-    <button class="btn btn-blue btn-sm" onclick="saveBlog()" id="blogSaveBtn"><?= $blogEditId > 0 ? 'Update Blog' : 'Save Blog' ?></button>
-    <button class="btn btn-outline btn-sm" onclick="resetForm()">Reset</button>
-    <button class="btn btn-outline btn-sm" onclick="uploadBlogImage()">Upload Image</button>
+  <div class="blog-savebar">
+    <div class="blog-savebar-left">
+      <button class="btn btn-blue btn-sm" onclick="saveBlog()" id="blogSaveBtn"><?= $blogEditId > 0 ? 'Update Blog' : 'Save Blog' ?></button>
+      <button class="btn btn-outline btn-sm" onclick="previewBlog()">Preview</button>
+      <button class="btn btn-outline btn-sm" onclick="resetForm()">Reset</button>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="uploadBlogImage()">Upload Featured Image</button>
+  </div>
+</div>
+
+<input type="file" id="blog-inline-media" accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,image/jpeg,image/png,image/webp,video/mp4,video/webm" style="display:none">
+<div id="blogPreviewModal" class="blog-preview-modal" aria-hidden="true">
+  <div class="blog-preview-card">
+    <button type="button" class="blog-preview-close" onclick="closeBlogPreview()">×</button>
+    <div class="blog-preview-meta" id="blogPreviewMeta"></div>
+    <h1 id="blogPreviewTitle"></h1>
+    <p id="blogPreviewExcerpt"></p>
+    <div class="blog-detail-content" id="blogPreviewContent"></div>
   </div>
 </div>
 
@@ -106,9 +133,88 @@ function slugify(s){ return String(s||'').toLowerCase().trim().replace(/[^a-z0-9
 function autoSlug(){ if(!editId && !slugTouched) document.getElementById('blog-slug').value = slugify(document.getElementById('blog-title').value); }
 document.getElementById('blog-slug').addEventListener('input',()=>{ slugTouched = true; });
 
-function editorCmd(cmd){ document.execCommand(cmd, false, null); document.getElementById('blog-editor').focus(); }
-function editorBlock(tag){ document.execCommand('formatBlock', false, tag); document.getElementById('blog-editor').focus(); }
-function editorLink(){ const url = prompt('Enter URL'); if(url) document.execCommand('createLink', false, url); document.getElementById('blog-editor').focus(); }
+function editor(){ return document.getElementById('blog-editor'); }
+function editorCmd(cmd){ document.execCommand(cmd, false, null); editor().focus(); updateBlogStats(); }
+function editorBlock(tag){ document.execCommand('formatBlock', false, tag); editor().focus(); updateBlogStats(); }
+function editorLink(){ const url = prompt('Enter URL'); if(url) document.execCommand('createLink', false, url); editor().focus(); updateBlogStats(); }
+function insertHtmlAtCursor(html){ editor().focus(); document.execCommand('insertHTML', false, html); updateBlogStats(); }
+function safeAttr(s){ return esc(s).replace(/`/g,'&#96;'); }
+
+async function uploadBlogMedia(file){
+  const fd = new FormData();
+  fd.append('image', file);
+  const res = await fetch('/admin/api/blogs/upload', {method:'POST', headers:{'X-CSRF-TOKEN':CSRF}, body: fd}).then(r=>r.json());
+  if (!res.ok) throw new Error(res.msg || 'Upload failed');
+  return res;
+}
+function pickInlineMedia(){
+  return new Promise((resolve) => {
+    const input = document.getElementById('blog-inline-media');
+    input.value = '';
+    input.onchange = () => resolve(input.files?.[0] || null);
+    input.click();
+  });
+}
+async function insertBlogImage(){
+  try {
+    const file = await pickInlineMedia();
+    if (!file) return;
+    const res = await uploadBlogMedia(file);
+    if (res.type === 'video') {
+      insertHtmlAtCursor(`<figure class="blog-media-figure blog-video-figure"><video controls preload="metadata" src="${safeAttr(res.path)}"></video><figcaption>Video caption...</figcaption></figure><p><br></p>`);
+      return;
+    }
+    const alt = prompt('Image alt text / caption', '') || '';
+    insertHtmlAtCursor(`<figure class="blog-media-figure"><img src="${safeAttr(res.path)}" alt="${safeAttr(alt)}"><figcaption>${safeAttr(alt || 'Image caption...')}</figcaption></figure><p><br></p>`);
+  } catch (e) { showErr(e.message || 'Could not insert media'); }
+}
+function youtubeEmbed(url){
+  const value = String(url || '').trim();
+  let id = '';
+  const short = value.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/);
+  const watch = value.match(/[?&]v=([A-Za-z0-9_-]{6,})/);
+  const embed = value.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/);
+  if (short) id = short[1];
+  if (watch) id = watch[1];
+  if (embed) id = embed[1];
+  return id ? `https://www.youtube.com/embed/${id}` : '';
+}
+function insertBlogVideo(){
+  const url = prompt('Paste YouTube video URL');
+  const embed = youtubeEmbed(url);
+  if (!embed) { showErr('Please paste a valid YouTube URL.'); return; }
+  insertHtmlAtCursor(`<figure class="blog-media-figure blog-video-figure"><iframe src="${safeAttr(embed)}" title="Blog video" loading="lazy" allowfullscreen></iframe><figcaption>Video caption...</figcaption></figure><p><br></p>`);
+  showErr('');
+}
+function insertCtaBlock(){
+  const label = prompt('CTA button text', 'Get Quote on WhatsApp') || 'Get Quote on WhatsApp';
+  const url = prompt('CTA link URL', '/contact') || '/contact';
+  insertHtmlAtCursor(`<div class="blog-cta-block"><div><strong>Need premium printing support?</strong><p>Share your requirement with RCS Graphic and get quick guidance.</p></div><a href="${safeAttr(url)}">${safeAttr(label)}</a></div><p><br></p>`);
+}
+function insertTipBlock(){
+  insertHtmlAtCursor('<div class="blog-tip-block"><strong>Pro Tip</strong><p>Write a practical print/design tip here...</p></div><p><br></p>');
+}
+function insertDivider(){ insertHtmlAtCursor('<hr class="blog-divider"><p><br></p>'); }
+function updateBlogStats(){
+  const text = editor().innerText || '';
+  const words = (text.trim().match(/\S+/g) || []).length;
+  const mins = Math.max(1, Math.ceil(words / 200));
+  document.getElementById('blogWordCount').textContent = `${words} words`;
+  document.getElementById('blogReadTime').textContent = `${mins} min read`;
+}
+function previewBlog(){
+  const payload = collectForm();
+  document.getElementById('blogPreviewTitle').textContent = payload.title || 'Untitled blog';
+  document.getElementById('blogPreviewExcerpt').textContent = payload.excerpt || '';
+  document.getElementById('blogPreviewMeta').textContent = `${payload.category || 'Print Tips'} • ${payload.author_name || 'RCS Print Team'}`;
+  document.getElementById('blogPreviewContent').innerHTML = payload.content || '<p>No content yet.</p>';
+  document.getElementById('blogPreviewModal').classList.add('open');
+  document.getElementById('blogPreviewModal').setAttribute('aria-hidden','false');
+}
+function closeBlogPreview(){
+  document.getElementById('blogPreviewModal').classList.remove('open');
+  document.getElementById('blogPreviewModal').setAttribute('aria-hidden','true');
+}
 
 function toLocalInput(value){
   if(!value) return '';
@@ -134,7 +240,9 @@ function fillForm(b) {
   document.getElementById('blog-featured').value = Number(b.is_featured ?? 1) ? '1' : '0';
   document.getElementById('blog-active').value = Number(b.is_active ?? 1) ? '1' : '0';
   document.getElementById('blog-editor').innerHTML = b.content || '';
+  updateBlogStats();
 }
+
 
 function collectForm() {
   return {
@@ -208,6 +316,8 @@ async function uploadBlogImage(){
   toastMsg('Image uploaded', 'success');
 }
 
+editor().addEventListener('input', updateBlogStats);
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeBlogPreview(); });
 resetForm();
 </script>
     </div></div></div>
