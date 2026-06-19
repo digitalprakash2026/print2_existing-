@@ -432,3 +432,13 @@ body.admin-page-leads .lead-status-grid button.act { background:#7c3aed; color:#
 body.admin-page-leads #leadNote { width:100%; min-height:90px; border:1px solid #dbe4f0; border-radius:14px; padding:10px 12px; resize:vertical; font:inherit; margin-bottom:8px; }
 @media (max-width:1180px){ body.admin-page-leads .leads-stats{grid-template-columns:repeat(2,1fr)} body.admin-page-leads .leads-toolbar{grid-template-columns:1fr} body.admin-page-leads .leads-grid{grid-template-columns:1fr} }
 @media (max-width:720px){ body.admin-page-leads .leads-hero{align-items:flex-start;flex-direction:column} body.admin-page-leads .leads-stats{grid-template-columns:1fr} }
+body.admin-shell .adm-user-menu { display:block; }
+body.admin-shell .adm-user-btn-pro { width:auto; min-width:50px; gap:6px; padding:5px 8px; border:1px solid #dbe4f0; background:#fff; border-radius:16px; }
+body.admin-shell .adm-user-btn-pro span { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#dbeafe,#fde68a); color:#0f172a; font-weight:950; }
+body.admin-shell .adm-user-btn-pro b { color:#64748b; font-size:13px; }
+body.admin-shell .adm-user-panel-pro { right:0; width:220px; padding:8px; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 20px 50px rgba(15,23,42,.18); }
+body.admin-shell .adm-user-panel-pro .adm-user-name { display:grid; gap:3px; padding:10px; border:0; color:#0f172a; }
+body.admin-shell .adm-user-panel-pro .adm-user-name strong { font-size:13px; }
+body.admin-shell .adm-user-panel-pro .adm-user-name small { color:#64748b; font-weight:800; }
+body.admin-shell .adm-user-logout { margin-top:4px; background:#fef2f2; color:#b91c1c; font-weight:900; text-align:center; }
+body.admin-shell .adm-user-logout:hover { background:#fee2e2; color:#991b1b; }

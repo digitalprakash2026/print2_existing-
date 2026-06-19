@@ -1415,7 +1415,8 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true,'customers'=>$customers,'summary'=>$summary]);
     }
     if ($uri === '/admin/api/approvals' && $method === 'GET') {
-        json(['ok'=>true,'items'=>\Approvals\ContentApprovalManager::listPending(),'can_approve'=>\Auth\Auth::isSuperAdmin()]);
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
+        json(['ok'=>true,'items'=>\Approvals\ContentApprovalManager::listPending(),'can_approve'=>true]);
     }
     if (preg_match('#^/admin/api/approvals/([a-z_]+)/(\d+)/(approve|reject)$#', $uri, $m) && $method === 'POST') {
         $result = \Approvals\ContentApprovalManager::decide((string)$m[1], (int)$m[2], (string)$m[3], trim((string)($body['note'] ?? '')));
@@ -1423,6 +1424,7 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
     if ($uri === '/admin/api/admin-users' && $method === 'GET') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $hasMobile = $hasAdminUsersMobile();
         $mobileSelect = $hasMobile ? "mobile" : "'' AS mobile";
         $admins = Database::rows(
@@ -1761,6 +1763,10 @@ if ($uri === '/admin/orders') {
 if (preg_match('#^/admin/blogs/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     view('admin/blogs-new', ['blogEditId' => (int)$m[1]]);
     exit;
+}
+
+if (in_array($uri, ['/admin/admins', '/admin/approvals'], true)) {
+    \Auth\Auth::requireSuperAdmin();
 }
 
 $adminPage = match(true) {

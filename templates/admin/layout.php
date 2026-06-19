@@ -9,6 +9,9 @@
 $adminAppCssVersion = @filemtime(PUBLIC_PATH . '/assets/css/app.css') ?: time();
 $adminCssVersion = @filemtime(PUBLIC_PATH . '/assets/css/admin.css') ?: time();
 $adminPageClass = 'admin-page-' . preg_replace('/[^a-z0-9-]+/i', '-', (string)($currentAdmPage ?? 'dashboard'));
+$admin = \Auth\Auth::admin();
+$isSuperAdmin = \Auth\Auth::isSuperAdmin();
+$adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
 ?>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= (int)$adminAppCssVersion ?>">
 <link rel="stylesheet" href="/assets/css/admin.css?v=<?= (int)$adminCssVersion ?>">
@@ -30,7 +33,6 @@ $adminPageClass = 'admin-page-' . preg_replace('/[^a-z0-9-]+/i', '-', (string)($
     </form>
   </div>
   <div class="adm-hdr-right">
-    <?php $admin = \Auth\Auth::admin(); ?>
     <div class="adm-hdr-actions">
       <button class="adm-icon-btn" type="button" aria-label="Fullscreen" onclick="document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();">⛶</button>
       <div class="adm-notify" id="admNotify">
@@ -45,17 +47,17 @@ $adminPageClass = 'admin-page-' . preg_replace('/[^a-z0-9-]+/i', '-', (string)($
       <a class="adm-new-orders-link" href="/admin/orders?status=new_order">New Orders</a>
       <span class="adm-hdr-divider"></span>
       <div class="adm-admin-chip">
-        <span><strong><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></strong><small>Super Admin</small></span>
+        <span><strong><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></strong><small><?= htmlspecialchars($adminRoleLabel) ?></small></span>
         <em><?= strtoupper(substr((string)($admin['name'] ?? 'A'), 0, 1)) ?></em>
       </div>
     </div>
     <div class="adm-user-menu" id="admUserMenu">
-      <button class="adm-user-btn" id="admUserBtn" type="button" aria-expanded="false" aria-label="Admin actions">
-        ☰
+      <button class="adm-user-btn adm-user-btn-pro" id="admUserBtn" type="button" aria-expanded="false" aria-label="Admin account menu">
+        <span><?= strtoupper(substr((string)($admin['name'] ?? 'A'), 0, 1)) ?></span><b>⌄</b>
       </button>
-      <div class="adm-user-panel" id="admUserPanel">
-        <div class="adm-user-name"><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></div>
-        <a href="/admin/logout" class="adm-user-link">Logout</a>
+      <div class="adm-user-panel adm-user-panel-pro" id="admUserPanel">
+        <div class="adm-user-name"><strong><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></strong><small><?= htmlspecialchars($adminRoleLabel) ?></small></div>
+        <a href="/admin/logout" class="adm-user-link adm-user-logout">🚪 Logout</a>
       </div>
     </div>
   </div>
@@ -86,8 +88,10 @@ $adminPageClass = 'admin-page-' . preg_replace('/[^a-z0-9-]+/i', '-', (string)($
       <a href="/admin/reviews" class="adm-ni <?= $cur === 'reviews' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27z"/></svg>Reviews</a>
       <a href="/admin/customers" class="adm-ni <?= $cur === 'customers' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Customers</a>
       <a href="/admin/leads" class="adm-ni <?= $cur === 'leads' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>Leads</a>
+      <?php if ($isSuperAdmin): ?>
       <a href="/admin/approvals" class="adm-ni <?= $cur === 'approvals' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Approvals</a>
       <a href="/admin/admins" class="adm-ni <?= $cur === 'admins' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5 1.34 3.5 3 3.5zm-8 0c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm8 0c-.34 0-.71.02-1.1.06C16.22 13.98 17 15.33 17 17v2h7v-2c0-2.66-5.33-4-8-4z"/></svg>Admins</a>
+      <?php endif; ?>
       <div class="adm-nl">Config</div>
       <a href="/admin/design" class="adm-ni <?= $cur === 'design' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 3.58-9 8 0 3.31 2.69 6 6 6h1.5c.83 0 1.5.67 1.5 1.5S12.67 20 13.5 20H15c3.31 0 6-2.69 6-6.5C21 7.7 16.97 3 12 3zM6.5 11C5.67 11 5 10.33 5 9.5S5.67 8 6.5 8 8 8.67 8 9.5 7.33 11 6.5 11zm3-3C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5 11 5.67 11 6.5 10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5 16 5.67 16 6.5 15.33 8 14.5 8zm3 3c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8 19 8.67 19 9.5 18.33 11 17.5 11z"/></svg>Design Studio</a>
       <a href="/admin/settings" class="adm-ni <?= $cur === 'settings' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>Settings</a>
