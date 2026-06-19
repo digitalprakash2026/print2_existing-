@@ -346,11 +346,13 @@ if (str_starts_with($uri, '/admin/api/')) {
             }
         }
         $queue = [
-            'design_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('new_order','received','whatsapp_pending')")['c'] ?? 0),
-            'approval_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='whatsapp_pending'")['c'] ?? 0),
+            'new_order' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='new_order'")['c'] ?? 0),
+            'received' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='received'")['c'] ?? 0),
+            'design_approved' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='design_approved'")['c'] ?? 0),
             'printing' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='printing'")['c'] ?? 0),
-            'packing' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='processing'")['c'] ?? 0),
-            'ready_delivery' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0),
+            'other_process' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('other_process','processing')")['c'] ?? 0),
+            'ready' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0),
+            'delivered' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='delivered'")['c'] ?? 0),
         ];
         $byStatus    = Database::rows("SELECT status, COUNT(*) as count FROM orders GROUP BY status");
         $monthly     = Database::rows("SELECT DATE_FORMAT(created_at,'%b %Y') as month, SUM(total_amount) as revenue, COUNT(*) as orders FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH) GROUP BY YEAR(created_at), MONTH(created_at) ORDER BY created_at ASC");

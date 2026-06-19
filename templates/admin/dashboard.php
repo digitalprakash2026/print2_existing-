@@ -15,19 +15,11 @@ include __DIR__ . '/layout.php';
   </div>
 
   <section class="dash-ref-kpis dash-ref-kpis-top" aria-label="Primary dashboard metrics">
-    <a class="dash-ref-kpi kpi-bag" href="/admin/orders?status=new_order"><span><svg viewBox="0 0 24 24"><path d="M7 9V7a5 5 0 0 1 10 0v2h2l1 12H4L5 9h2Zm2 0h6V7a3 3 0 0 0-6 0v2Z"/></svg></span><div><b id="ds-new">—</b><strong>New Orders</strong><small id="tr-new" class="pos">Loading trend…</small></div></a>
-    <a class="dash-ref-kpi kpi-hour" href="/admin/orders?status=received"><span><svg viewBox="0 0 24 24"><path d="M6 2h12v6.2L14.2 12l3.8 3.8V22H6v-6.2L9.8 12 6 8.2V2Zm2 2v3.4l4 4 4-4V4H8Zm4 8.6-4 4V20h8v-3.4l-4-4Z"/></svg></span><div><b id="ds-pending">—</b><strong>Pending Orders</strong><small id="tr-pending" class="pos">Loading trend…</small></div></a>
-    <a class="dash-ref-kpi kpi-print" href="/admin/orders?status=printing"><span><svg viewBox="0 0 24 24"><path d="M7 3h10v5H7V3Zm-2 7h14a3 3 0 0 1 3 3v5h-4v3H6v-3H2v-5a3 3 0 0 1 3-3Zm3 6v3h8v-3H8Zm10-3a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"/></svg></span><div><b id="ds-production">—</b><strong>Printing Orders</strong><small id="tr-production">Loading trend…</small></div></a>
-    <a class="dash-ref-kpi kpi-box" href="/admin/orders?status=ready"><span><svg viewBox="0 0 24 24"><path d="M12 2 21 7v10l-9 5-9-5V7l9-5Zm0 2.3L6.2 7.5 12 10.7l5.8-3.2L12 4.3ZM5 9.2v6.6l6 3.3v-6.6L5 9.2Zm8 9.9 6-3.3V9.2l-6 3.3v6.6Z"/></svg></span><div><b id="ds-ready">—</b><strong>Ready Orders</strong><small id="tr-ready" class="neg">Loading trend…</small></div></a>
-    <a class="dash-ref-kpi kpi-truck" href="/admin/orders?status=delivered"><span><svg viewBox="0 0 24 24"><path d="M3 5h11v10h1.2A3 3 0 0 1 21 16h1v2h-2.2a3 3 0 0 1-5.6 0H9.8a3 3 0 0 1-5.6 0H3V5Zm13 3h3l3 4v3h-2a3 3 0 0 0-4-2.8V8ZM7 18.5A1.5 1.5 0 1 0 7 15.5a1.5 1.5 0 0 0 0 3Zm10 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></svg></span><div><b id="ds-delivered">—</b><strong>Delivered Orders</strong><small id="tr-delivered" class="pos">Loading trend…</small></div></a>
-    <a class="dash-ref-kpi kpi-rupee" href="/admin/analytics"><span>₹</span><div><b id="ds-rev">—</b><strong>Total Revenue</strong><small class="pos">↑ Paid orders</small></div></a>
-  </section>
-
-  <section class="dash-ref-kpis dash-ref-kpis-sub" aria-label="Secondary dashboard metrics">
+    <a class="dash-ref-kpi kpi-bag" href="/admin/orders"><span><svg viewBox="0 0 24 24"><path d="M7 9V7a5 5 0 0 1 10 0v2h2l1 12H4L5 9h2Zm2 0h6V7a3 3 0 0 0-6 0v2Z"/></svg></span><div><b id="ds-total-orders">—</b><strong>All Orders</strong><small>Total order list</small></div></a>
     <a class="dash-ref-kpi kpi-shield" href="/admin/orders"><span>◈</span><div><b id="ds-today-rev">—</b><strong>Today’s Revenue</strong><small id="tr-today-rev" class="pos">Loading trend…</small></div></a>
-    <a class="dash-ref-kpi kpi-chart" href="/admin/analytics"><span>↗</span><div><b id="ds-month-rev">—</b><strong>This Month Revenue</strong><small id="tr-month-rev" class="pos">Loading trend…</small></div></a>
-    <a class="dash-ref-kpi kpi-wallet" href="/admin/orders"><span>▧</span><div><b id="ds-payments">—</b><strong>Pending Payments</strong><small class="neg">↑ Follow up</small></div></a>
-    <a class="dash-ref-kpi kpi-aov" href="/admin/analytics"><span>▥</span><div><b id="ds-aov">—</b><strong>Average Order Value</strong><small id="tr-aov" class="pos">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-chart" href="/admin/orders"><span>↗</span><div><b id="ds-month-rev">—</b><strong>This Month Revenue</strong><small id="tr-month-rev" class="pos">Loading trend…</small></div></a>
+    <a class="dash-ref-kpi kpi-rupee" href="/admin/orders"><span>₹</span><div><b id="ds-rev">—</b><strong>Total Revenue</strong><small class="pos">Paid orders</small></div></a>
+    <a class="dash-ref-kpi kpi-aov" href="/admin/orders"><span>▥</span><div><b id="ds-aov">—</b><strong>Average Order Value</strong><small id="tr-aov" class="pos">Loading trend…</small></div></a>
     <a class="dash-ref-kpi kpi-users" href="/admin/customers"><span>●</span><div><b id="ds-customers">—</b><strong>Total Customers</strong><small id="tr-customers" class="pos">Loading trend…</small></div></a>
   </section>
 
@@ -38,7 +30,7 @@ include __DIR__ . '/layout.php';
     </article>
 
     <article class="dash-ref-card dash-ref-queue">
-      <div class="dash-ref-card-head"><div><h2>Production Queue</h2></div><a href="/admin/orders?status=attention">View All</a></div>
+      <div class="dash-ref-card-head"><div><h2>Production Queue</h2></div><a href="/admin/orders">View All</a></div>
       <div class="dash-ref-queue-list" id="prodQueue"><div class="dash-ref-empty">Loading…</div></div>
     </article>
 
@@ -110,22 +102,12 @@ async function loadDash(){
   }
   if (!res.ok) { if (btn) btn.classList.remove('loading'); return; }
   const s = res.stats || {};
-  document.getElementById('ds-new').textContent = Number(s.new_orders||0).toLocaleString('en-IN');
-  document.getElementById('ds-pending').textContent = Number(s.pending_orders||0).toLocaleString('en-IN');
-  document.getElementById('ds-production').textContent = Number(s.production_orders||0).toLocaleString('en-IN');
-  document.getElementById('ds-ready').textContent = Number(s.ready_orders||0).toLocaleString('en-IN');
-  document.getElementById('ds-delivered').textContent = Number(s.delivered_orders||0).toLocaleString('en-IN');
+  document.getElementById('ds-total-orders').textContent = Number(s.total_orders||0).toLocaleString('en-IN');
   document.getElementById('ds-rev').textContent = money(s.total_revenue);
   document.getElementById('ds-today-rev').textContent = money(s.today_revenue);
   document.getElementById('ds-month-rev').textContent = money(s.month_revenue || 0);
-  document.getElementById('ds-payments').textContent = money(s.pending_payments || 0);
   document.getElementById('ds-aov').textContent = money(s.avg_order_value || 0);
   document.getElementById('ds-customers').textContent = Number(s.total_customers||0).toLocaleString('en-IN');
-  setTrend('tr-new', s.new_orders_trend, s.new_orders_trend_label);
-  setTrend('tr-pending', s.pending_orders_trend, s.pending_orders_trend_label, true);
-  setTrend('tr-production', s.production_orders_trend, s.production_orders_trend_label);
-  setTrend('tr-ready', s.ready_orders_trend, s.ready_orders_trend_label);
-  setTrend('tr-delivered', s.delivered_orders_trend, s.delivered_orders_trend_label);
   setTrend('tr-today-rev', s.today_revenue_trend, s.today_revenue_trend_label);
   setTrend('tr-month-rev', s.month_revenue_trend, s.month_revenue_trend_label);
   setTrend('tr-aov', s.avg_order_value_trend, s.avg_order_value_trend_label);
@@ -157,13 +139,15 @@ function drawRevenue(monthly){
 }
 function drawQueue(q){
   const rows = [
-    ['Design Pending','Waiting for design work', q.design_pending || 0, '✂','purple'],
-    ['Customer Approval','Waiting for customer approval', q.approval_pending || 0, '⌘','orange'],
-    ['Printing','In printing process', q.printing || 0, '▣','blue'],
-    ['Packing','Ready for packaging', q.packing || 0, '▤','cyan'],
-    ['Ready for Delivery','Ready to dispatch', q.ready_delivery || 0, '▰','green']
+    ['New Order','Fresh paid orders', q.new_order || 0, '●','purple', 'new_order'],
+    ['Received','Order received by team', q.received || 0, '▣','blue', 'received'],
+    ['Design Approved','Ready after design approval', q.design_approved || 0, '✓','green', 'design_approved'],
+    ['Printing','In printing process', q.printing || 0, '▤','orange', 'printing'],
+    ['Other Process','Finishing / processing', q.other_process || 0, '⌘','cyan', 'other_process'],
+    ['Dispatched','Ready to dispatch', q.ready || 0, '▰','green', 'ready'],
+    ['Delivered','Completed orders', q.delivered || 0, '✓','blue', 'delivered']
   ];
-  document.getElementById('prodQueue').innerHTML = rows.map(r=>`<div class="dash-ref-queue-row"><span class="${r[4]}">${r[3]}</span><div><strong>${r[0]}</strong><small>${r[1]}</small></div><b class="${r[4]}">${r[2]}</b></div>`).join('');
+  document.getElementById('prodQueue').innerHTML = rows.map(r=>`<a class="dash-ref-queue-row" href="/admin/orders?status=${encodeURIComponent(r[5])}"><span class="${r[4]}">${r[3]}</span><div><strong>${r[0]}</strong><small>${r[1]}</small></div><b class="${r[4]}">${r[2]}</b></a>`).join('');
 }
 function drawProducts(products){
   const el = document.getElementById('topProds');
