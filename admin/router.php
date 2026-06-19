@@ -1316,7 +1316,61 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
     if ($uri === '/admin/api/customers' && $method === 'GET') {
-        json(['ok'=>true,'customers'=>Database::rows("SELECT u.*,COUNT(o.id) as order_count, COALESCE(SUM(o.total_amount),0) as total_spent FROM users u LEFT JOIN orders o ON o.user_id=u.id GROUP BY u.id ORDER BY total_spent DESC")]);
+        $customers = Database::rows(
+            "SELECT u.id, u.name, u.email, u.phone, u.company, u.created_at,
+                    COUNT(o.id) AS order_count,
+                    COALESCE(SUM(o.total_amount),0) AS total_spent,
+                    COALESCE(AVG(o.total_amount),0) AS avg_order_value,
+                    MAX(o.created_at) AS last_order_at,
+                    SUM(CASE WHEN o.status IN ('new_order','received','design_approved','printing','other_process','processing','ready','whatsapp_pending') THEN 1 ELSE 0 END) AS active_orders,
+                    SUM(CASE WHEN o.status='delivered' THEN 1 ELSE 0 END) AS delivered_orders,
+                    SUM(CASE WHEN o.status='cancelled' THEN 1 ELSE 0 END) AS cancelled_orders,
+                    (SELECT oi.product_name
+                       FROM order_items oi
+                       INNER JOIN orders lo ON lo.id = oi.order_id
+                      WHERE lo.user_id = u.id
+                      ORDER BY lo.created_at DESC, oi.id ASC
+                      LIMIT 1) AS last_product
+             FROM users u
+             LEFT JOIN orders o ON o.user_id = u.id
+             GROUP BY u.id
+             ORDER BY total_spent DESC, last_order_at DESC"
+        );
+        $summary = [
+            'total_customers' => count($customers),
+            'repeat_customers' => 0,
+            'high_value_customers' => 0,
+            'inactive_customers' => 0,
+            'total_revenue' => 0,
+        ];
+        $now = time();
+        foreach ($customers as &$customer) {
+            $orders = (int)($customer['order_count'] ?? 0);
+            $spent = (float)($customer['total_spent'] ?? 0);
+            $lastOrderAt = (string)($customer['last_order_at'] ?? '');
+            $daysSince = $lastOrderAt !== '' ? (int)floor(max(0, $now - app_timestamp($lastOrderAt)) / 86400) : null;
+            $segment = 'new';
+            if ($orders === 0) $segment = 'no_orders';
+            elseif ($daysSince !== null && $daysSince >= 60) $segment = 'inactive';
+            elseif ($spent >= 25000) $segment = 'high_value';
+            elseif ($orders >= 2) $segment = 'repeat';
+            $customer['segment'] = $segment;
+            $customer['days_since_last_order'] = $daysSince;
+            $customer['recent_orders'] = Database::rows(
+                "SELECT order_id, total_amount, status, payment_status, created_at
+                   FROM orders
+                  WHERE user_id = ?
+                  ORDER BY created_at DESC
+                  LIMIT 4",
+                [(int)$customer['id']]
+            );
+            if ($orders >= 2) $summary['repeat_customers']++;
+            if ($spent >= 25000) $summary['high_value_customers']++;
+            if ($segment === 'inactive') $summary['inactive_customers']++;
+            $summary['total_revenue'] += $spent;
+        }
+        unset($customer);
+        json(['ok'=>true,'customers'=>$customers,'summary'=>$summary]);
     }
     if ($uri === '/admin/api/admin-users' && $method === 'GET') {
         $hasMobile = $hasAdminUsersMobile();
