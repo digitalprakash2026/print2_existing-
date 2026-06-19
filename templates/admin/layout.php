@@ -46,10 +46,6 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
       </div>
       <a class="adm-new-orders-link" href="/admin/orders?status=new_order">New Orders</a>
       <span class="adm-hdr-divider"></span>
-      <div class="adm-admin-chip">
-        <span><strong><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></strong><small><?= htmlspecialchars($adminRoleLabel) ?></small></span>
-        <em><?= strtoupper(substr((string)($admin['name'] ?? 'A'), 0, 1)) ?></em>
-      </div>
     </div>
     <div class="adm-user-menu" id="admUserMenu">
       <button class="adm-user-btn adm-user-btn-pro" id="admUserBtn" type="button" aria-expanded="false" aria-label="Admin account menu">
@@ -67,19 +63,17 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
   <div class="adm-lay">
     <!-- Sidebar -->
     <div class="adm-sb" id="admSidebar">
-      <div class="adm-sb-logo">
-        <div class="adm-sb-t"><span>RCS</span> Graphic</div>
+      <div class="adm-sb-logo adm-sb-logo-img">
+        <img src="/assets/images/rcs-graphic-logo.png" alt="RCS Print Logo" loading="eager" decoding="async">
         <div class="adm-sb-s">Admin Panel</div>
       </div>
       <div class="adm-nl">Main</div>
       <?php $cur = $currentAdmPage ?? ''; ?>
       <a href="/admin/dashboard" class="adm-ni <?= $cur === 'dashboard' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</a>
       <a href="/admin/orders"   class="adm-ni <?= $cur === 'orders' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Orders</a>
-      <a href="/admin/analytics" class="adm-ni <?= $cur === 'analytics' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>Analytics</a>
       <div class="adm-nl">Catalog</div>
       <a href="/admin/products" class="adm-ni <?= $cur === 'products' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>Products</a>
       <a href="/admin/categories" class="adm-ni <?= $cur === 'categories' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M10 4H4v6h6V4zm10 0h-8v6h8V4zM10 14H4v6h6v-6zm10 0h-8v6h8v-6z"/></svg>Categories</a>
-      <a href="/admin/products/new" class="adm-ni <?= $cur === 'products-new' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Add Product</a>
       <a href="/admin/banners" class="adm-ni <?= $cur === 'banners' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M3 5h18v14H3V5zm2 2v10h14V7H5zm2 2h10v2H7V9zm0 4h7v2H7v-2z"/></svg>Banner Slider</a>
       <a href="/admin/deals" class="adm-ni <?= $cur === 'deals' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.12 0-2.1.61-2.62 1.52L12 4.17l-.38-.65C11.1 2.61 10.12 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1S9.55 6 9 6 8 5.55 8 5s.45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 12 7.4l3.38 4.6L17 10.83 14.92 8H20v6z"/></svg>Best Deals</a>
       <a href="/admin/blogs" class="adm-ni <?= $cur === 'blogs' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6v-2h12v2zm0-4H6v-2h12v2zm0-4H6V5h12v6z"/></svg>Blogs</a>

@@ -442,3 +442,5 @@ body.admin-shell .adm-user-panel-pro .adm-user-name strong { font-size:13px; }
 body.admin-shell .adm-user-panel-pro .adm-user-name small { color:#64748b; font-weight:800; }
 body.admin-shell .adm-user-logout { margin-top:4px; background:#fef2f2; color:#b91c1c; font-weight:900; text-align:center; }
 body.admin-shell .adm-user-logout:hover { background:#fee2e2; color:#991b1b; }
+body.admin-shell .adm-sb-logo-img { display:grid; gap:6px; align-items:center; justify-items:start; }
+body.admin-shell .adm-sb-logo-img img { width:132px; max-width:100%; height:auto; display:block; object-fit:contain; filter:drop-shadow(0 8px 18px rgba(15,23,42,.18)); }
