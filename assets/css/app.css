@@ -12985,3 +12985,7 @@ body:has(.dash-ref-page) .adm-admin-chip em::after { content:''; position:absolu
 .account-design-file-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .account-design-file-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:30px; padding:6px 10px; border-radius:999px; background:#eef6ff; color:#1d4ed8; font-weight:900; text-decoration:none; }
 .account-design-file-actions a:last-child { background:#f8fafc; color:#334155; border:1px solid #dbe4f0; }
+.contact-form-message { margin-top:12px; min-height:20px; color:#64748b; font-size:13px; font-weight:800; }
+.contact-form-message.ok { color:#047857; }
+.contact-form-message.bad { color:#b91c1c; }
+.contact-send-btn:disabled { opacity:.65; cursor:not-allowed; }

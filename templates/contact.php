@@ -40,7 +40,7 @@ $waText = rawurlencode('Hello RCS Print, I need help with a printing requirement
 
   <section class="contact-main-section">
     <div class="contact-showcase-container contact-main-grid">
-      <form class="contact-message-card" id="contactQuickForm" action="https://wa.me/<?= $bizWa ?>" method="get" target="_blank">
+      <form class="contact-message-card" id="contactQuickForm">
         <h2>Send Us a Message</h2>
         <div class="contact-form-grid">
           <label>Your Name <b>*</b><input type="text" name="name" placeholder="Enter your full name" required></label>
@@ -48,8 +48,10 @@ $waText = rawurlencode('Hello RCS Print, I need help with a printing requirement
           <label>Phone Number<input type="tel" name="phone" placeholder="Enter your phone number"></label>
           <label>Subject <b>*</b><input type="text" name="subject" placeholder="How can we help you?" required></label>
           <label class="contact-full-field">Your Message <b>*</b><textarea name="message" rows="5" placeholder="Type your message here..." required></textarea></label>
+          <input type="text" name="website_url" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0" aria-hidden="true">
         </div>
         <button class="contact-send-btn" type="submit"><i class="fa-regular fa-paper-plane" aria-hidden="true"></i> Send Message</button>
+        <div id="contactFormMsg" class="contact-form-message" role="status" aria-live="polite"></div>
       </form>
 
       <aside class="contact-touch-card">
@@ -125,18 +127,39 @@ $waText = rawurlencode('Hello RCS Print, I need help with a printing requirement
 (function(){
   const form = document.getElementById('contactQuickForm');
   if (!form) return;
-  form.addEventListener('submit', function(event) {
+  form.addEventListener('submit', async function(event) {
     event.preventDefault();
     const data = new FormData(form);
-    const lines = [
-      'Hello <?= $bizName ?>, I want to discuss a print requirement.',
-      'Name: ' + (data.get('name') || '-'),
-      'Email: ' + (data.get('email') || '-'),
-      'Phone: ' + (data.get('phone') || '-'),
-      'Subject: ' + (data.get('subject') || '-'),
-      'Message: ' + (data.get('message') || '-')
-    ];
-    window.open('https://wa.me/<?= $bizWa ?>?text=' + encodeURIComponent(lines.join('\n')), '_blank', 'noopener');
+    const msg = document.getElementById('contactFormMsg');
+    const btn = form.querySelector('button[type="submit"]');
+    const payload = Object.fromEntries(data.entries());
+    if (msg) { msg.textContent = 'Sending your enquiry...'; msg.className = 'contact-form-message'; }
+    if (btn) btn.disabled = true;
+    try {
+      const res = await fetch('/api/contact-leads', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'},
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.msg || 'Could not submit enquiry.');
+      if (msg) { msg.textContent = json.msg || 'Thank you! Our team will contact you soon.'; msg.classList.add('ok'); }
+      const lines = [
+        'Hello <?= $bizName ?>, I want to discuss a print requirement.',
+        'Name: ' + (data.get('name') || '-'),
+        'Email: ' + (data.get('email') || '-'),
+        'Phone: ' + (data.get('phone') || '-'),
+        'Subject: ' + (data.get('subject') || '-'),
+        'Message: ' + (data.get('message') || '-')
+      ];
+      form.reset();
+      window.setTimeout(() => window.open('https://wa.me/<?= $bizWa ?>?text=' + encodeURIComponent(lines.join('\n')), '_blank', 'noopener'), 350);
+    } catch (err) {
+      if (msg) { msg.textContent = err.message || 'Could not submit enquiry.'; msg.classList.add('bad'); }
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   });
 })();
 </script>

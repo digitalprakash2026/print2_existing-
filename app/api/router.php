@@ -89,6 +89,11 @@ if (preg_match('#^/api/design-approvals/(\d+)/revision$#', $uri, $m) && $method 
     json($result, ($result['ok'] ?? false) ? 200 : 422);
 }
 
+if ($uri === '/api/contact-leads' && $method === 'POST') {
+    $result = \Leads\ContactLeadManager::create($body);
+    json($result, ($result['ok'] ?? false) ? 200 : 422);
+}
+
 // ── Products ──────────────────────────────────────────────────
 
 if ($uri === '/api/products' && $method === 'GET') {

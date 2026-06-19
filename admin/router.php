@@ -1315,6 +1315,15 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true]);
     }
 
+    if ($uri === '/admin/api/leads' && $method === 'GET') {
+        $data = \Leads\ContactLeadManager::adminList();
+        json(['ok' => true] + $data);
+    }
+    if (preg_match('#^/admin/api/leads/(\d+)$#', $uri, $m) && $method === 'POST') {
+        $result = \Leads\ContactLeadManager::update((int)$m[1], $body);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+
     if ($uri === '/admin/api/customers' && $method === 'GET') {
         $customers = Database::rows(
             "SELECT u.id, u.name, u.email, u.phone, u.company, u.created_at,
@@ -1723,6 +1732,7 @@ $adminPage = match(true) {
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/reviews'    => 'admin/reviews',
     $uri === '/admin/customers'  => 'admin/customers',
+    $uri === '/admin/leads'      => 'admin/leads',
     $uri === '/admin/admins'     => 'admin/admins',
     $uri === '/admin/settings'   => 'admin/settings',
     $uri === '/admin/design'     => 'admin/design',
