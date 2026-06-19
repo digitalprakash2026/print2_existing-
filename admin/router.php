@@ -615,7 +615,11 @@ if (str_starts_with($uri, '/admin/api/')) {
             $id = Database::insert("INSERT INTO product_images (product_id, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?)",
                 [$pid, $body['url'] ?? $body['image_path'] ?? '', $body['alt_text']??'', $body['is_primary']??0, $body['sort_order']??0]);
         }
-        if (!empty($body['is_primary'])) Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=? AND id!=?", [$pid,$id]);
+        if (!empty($body['is_primary'])) {
+            Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=? AND id!=?", [$pid,$id]);
+            $primaryPath = (string)($body['image_path'] ?? $body['url'] ?? '');
+            try { Database::query("UPDATE products SET image_path=? WHERE id=?", [$primaryPath, $pid]); } catch (\Throwable) {}
+        }
         json(['ok'=>true,'id'=>$id]);
     }
     if (preg_match('#^/admin/api/products/(\d+)/images/(\d+)$#', $uri, $m) && $method === 'DELETE') {
