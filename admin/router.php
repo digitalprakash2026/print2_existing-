@@ -1504,13 +1504,15 @@ if (preg_match('#^/admin/invoice/(.+)$#', $uri, $m)) {
     exit;
 }
 
-if (preg_match('#^/admin/artwork/(\d+)/download$#', $uri, $m)) {
+if (preg_match('#^/admin/artwork/(\d+)/(download|view)$#', $uri, $m)) {
     $file = Database::row("SELECT * FROM artwork_files WHERE id=?", [$m[1]]);
     if (!$file) { http_response_code(404); exit('Not found'); }
     $full = PUBLIC_PATH . ($file['file_path'] ?? '');
     if (!is_file($full)) { http_response_code(404); exit('File missing'); }
+    $downloadName = str_replace(['"', "\r", "\n"], '', basename($file['original_name'] ?: $file['filename']));
+    $disposition = ($m[2] ?? 'download') === 'view' ? 'inline' : 'attachment';
     header('Content-Type: ' . ($file['mime_type'] ?: 'application/octet-stream'));
-    header('Content-Disposition: attachment; filename="' . basename($file['original_name'] ?: $file['filename']) . '"');
+    header('Content-Disposition: ' . $disposition . '; filename="' . $downloadName . '"');
     header('Content-Length: ' . filesize($full));
     readfile($full);
     exit;

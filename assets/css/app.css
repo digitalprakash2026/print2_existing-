@@ -12982,3 +12982,6 @@ body:has(.dash-ref-page) .adm-admin-chip em::after { content:''; position:absolu
 .account-design-revision-form textarea { width:100%; border:1px solid #dbe4f0; border-radius:12px; padding:10px 12px; resize:vertical; font:inherit; }
 .account-design-revision-form button { justify-self:start; background:#2563eb; color:#fff; }
 .account-design-customer-note { color:#9f1239; font-weight:850; }
+.account-design-file-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.account-design-file-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:30px; padding:6px 10px; border-radius:999px; background:#eef6ff; color:#1d4ed8; font-weight:900; text-decoration:none; }
+.account-design-file-actions a:last-child { background:#f8fafc; color:#334155; border:1px solid #dbe4f0; }

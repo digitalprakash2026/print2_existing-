@@ -144,7 +144,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                         <span><?= $h($item['product_name'] ?? 'Product') ?> — <?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
                         <?php if (!empty($item['design_admin_note'])): ?><small><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
                         <?php if (!empty($item['design_customer_note'])): ?><small class="account-design-customer-note">Your message: <?= $h($item['design_customer_note']) ?></small><?php endif; ?>
-                        <?php if (!empty($item['design_proof_file_id'])): ?><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener"><?= $h($proofName !== '' ? 'Open corrected file: ' . $proofName : 'Open corrected file') ?></a><?php endif; ?>
+                        <?php if (!empty($item['design_proof_file_id'])): ?><span class="account-design-file-actions"><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener"><?= $h($proofName !== '' ? 'View corrected file: ' . $proofName : 'View corrected file') ?></a><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener">Download</a></span><?php endif; ?>
                         <?php if ($canReviewProof): ?>
                           <div class="account-design-review-actions">
                             <button type="button" class="account-design-approve-btn" onclick="approveAccountDesign(<?= $approvalId ?>, this)">Approve Design</button>
@@ -157,7 +157,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                         <?php endif; ?>
                       </div>
                       <?php if (!empty($item['design_proof_file_id']) && $proofIsImage && $proofPath !== ''): ?>
-                        <a class="account-design-proof-preview" href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener" aria-label="Open corrected design"><img src="<?= $h($proofPath) ?>" alt="<?= $h($proofName !== '' ? $proofName : 'Corrected design preview') ?>" loading="lazy"></a>
+                        <a class="account-design-proof-preview" href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener" aria-label="Open corrected design"><img src="<?= $h($proofPath) ?>" alt="<?= $h($proofName !== '' ? $proofName : 'Corrected design preview') ?>" loading="lazy"></a>
                       <?php endif; ?>
                     </li>
                   <?php endforeach; ?>
@@ -390,7 +390,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                     </div>
                     <div class="account-design-actions">
                       <?php if ($designId > 0): ?>
-                        <a href="/account/artwork/<?= $designId ?>/download" class="btn btn-blue btn-sm"><i class="fa-solid fa-download"></i> Download</a>
+                        <a href="/account/artwork/<?= $designId ?>/view" class="btn btn-outline btn-sm" target="_blank" rel="noopener"><i class="fa-regular fa-eye"></i> View</a><a href="/account/artwork/<?= $designId ?>/download" class="btn btn-blue btn-sm"><i class="fa-solid fa-download"></i> Download</a>
                       <?php endif; ?>
                       <?php if ($productSlug !== ''): ?>
                         <a href="/product/<?= $h($productSlug) ?>" class="btn btn-outline btn-sm">Reorder</a>

@@ -323,3 +323,5 @@ body.admin-page-orders .ord-design-actions .aoc-btn--approve { min-width:132px; 
   body.admin-page-orders .ord-design-actions { flex-wrap:nowrap; }
 }
 body.admin-page-orders .ord-design-note--customer { border-color:#fed7aa; background:#fff7ed; color:#9a3412; }
+body.admin-page-orders .ord-artwork-actions { display:inline-flex; align-items:center; gap:7px; justify-content:flex-end; flex-wrap:wrap; }
+body.admin-page-orders .ord-artwork-link--view { border-radius:9px; padding:7px 10px; background:#eef6ff; border:1px solid #bfdbfe; color:#1d4ed8 !important; text-decoration:none; font-weight:900; }

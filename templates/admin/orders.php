@@ -158,7 +158,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                   <strong><?= $isRcsDesign ? 'Customer Brief / Assets' : 'Customer Artwork' ?></strong>
                   <?php if (!empty($item['artwork_file_id'])): ?>
                     <span><?= htmlspecialchars($item['artwork_original_name'] ?: $item['artwork_filename'] ?: 'Artwork File') ?></span>
-                    <a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/download" class="ord-artwork-link ord-artwork-link--primary">Download Customer File</a>
+                    <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/download" class="ord-artwork-link ord-artwork-link--primary">Download</a></span>
                   <?php else: ?>
                     <span class="ord-artwork-empty"><?= $isRcsDesign ? 'Use WhatsApp/customer communication for brief and assets.' : 'No artwork uploaded' ?></span>
                   <?php endif; ?>
@@ -167,7 +167,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                   <strong>Corrected File</strong>
                   <?php if (!empty($item['design_proof_file_id'])): ?>
                     <span><?= htmlspecialchars($item['design_proof_original_name'] ?: $item['design_proof_filename'] ?: 'Proof File') ?></span>
-                    <a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" class="ord-artwork-link">Download</a>
+                    <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" class="ord-artwork-link">Download</a></span>
                   <?php else: ?>
                     <span class="ord-artwork-empty">No proof uploaded yet</span>
                   <?php endif; ?>
