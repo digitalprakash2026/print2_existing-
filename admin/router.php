@@ -61,6 +61,7 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
 };
 \Orders\OrderManager::ensureWorkflowSchema();
 \Orders\OrderManager::ensureDesignApprovalSchema();
+\Approvals\ContentApprovalManager::ensureSchema();
 
 $adminUsersHasMobile = null;
 $hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
@@ -426,20 +427,28 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     }
     if ($uri === '/admin/api/products' && $method === 'POST') {
-        json(\Catalog\ProductCatalog::upsert($body));
+        if (!\Auth\Auth::isSuperAdmin()) $body['is_active'] = 0;
+        $result = \Catalog\ProductCatalog::upsert($body);
+        if (!empty($result['ok']) && !empty($result['id'])) \Approvals\ContentApprovalManager::applySaveState('products', (int)$result['id']);
+        json($result);
     }
     if (preg_match('#^/admin/api/products/(\d+)$#', $uri, $m) && $method === 'GET') {
         $p = \Catalog\ProductCatalog::byId((int)$m[1]);
         json($p ? ['ok'=>true,'product'=>$p] : ['ok'=>false,'msg'=>'Not found'], $p ? 200 : 404);
     }
     if (preg_match('#^/admin/api/products/(\d+)$#', $uri, $m) && $method === 'PUT') {
-        json(\Catalog\ProductCatalog::upsert($body, (int)$m[1]));
+        if (!\Auth\Auth::isSuperAdmin()) $body['is_active'] = 0;
+        $result = \Catalog\ProductCatalog::upsert($body, (int)$m[1]);
+        if (!empty($result['ok'])) \Approvals\ContentApprovalManager::applySaveState('products', (int)$m[1]);
+        json($result);
     }
     if (preg_match('#^/admin/api/products/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         Database::query("UPDATE products SET is_active = NOT is_active WHERE id=?", [$m[1]]);
         json(['ok'=>true]);
     }
     if (preg_match('#^/admin/api/products/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         Database::query("DELETE FROM products WHERE id=?", [$m[1]]);
         json(['ok'=>true]);
     }
@@ -714,29 +723,31 @@ if (str_starts_with($uri, '/admin/api/')) {
         if ($scopeType === 'category' && $categoryId <= 0) {
             json(['ok'=>false,'msg'=>'Please select a category for category-specific coupon.'], 422);
         }
+        $active = \Auth\Auth::isSuperAdmin() ? 1 : 0;
         try {
             $id = Database::insert(
                 "INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_uses,valid_from,valid_until,scope_type,category_id,is_active)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,1)",
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 [
                     $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
                     (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
                     (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null,
-                    $scopeType, $scopeType === 'category' ? $categoryId : null,
+                    $scopeType, $scopeType === 'category' ? $categoryId : null, $active,
                 ]
             );
         } catch (\Throwable) {
             $id = Database::insert(
                 "INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_uses,valid_from,valid_until,is_active)
-                 VALUES (?,?,?,?,?,?,?,?,1)",
+                 VALUES (?,?,?,?,?,?,?,?,?)",
                 [
                     $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
                     (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
-                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null,
+                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null, $active,
                 ]
             );
         }
         \Orders\AdminAudit::log('coupon_created',"Coupon: $code");
+        \Approvals\ContentApprovalManager::applySaveState('coupons', (int)$id);
         json(['ok'=>true,'id'=>$id]);
     }
     if (preg_match('#^/admin/api/coupons/(\d+)$#', $uri, $m) && $method === 'PUT') {
@@ -774,13 +785,16 @@ if (str_starts_with($uri, '/admin/api/')) {
             );
         }
         \Orders\AdminAudit::log('coupon_updated',"Coupon: $code");
+        \Approvals\ContentApprovalManager::applySaveState('coupons', $id);
         json(['ok'=>true,'id'=>$id]);
     }
     if (preg_match('#^/admin/api/coupons/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         Database::query("UPDATE coupons SET is_active=NOT is_active WHERE id=?",[$m[1]]);
         json(['ok'=>true]);
     }
     if (preg_match('#^/admin/api/coupons/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         Database::query("DELETE FROM coupons WHERE id=?",[$m[1]]);
         json(['ok'=>true]);
     }
@@ -825,6 +839,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         $imageAlt = trim((string)($body['image_alt'] ?? '')) ?: ($name . ' category image');
         $sort = (int)($body['sort_order'] ?? 0);
         $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : 1;
+        if (!\Auth\Auth::isSuperAdmin()) $active = 0;
         try {
             $id = Database::insert(
                 "INSERT INTO categories (name,slug,code_prefix,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?)",
@@ -844,6 +859,7 @@ if (str_starts_with($uri, '/admin/api/')) {
             }
         }
         \Orders\AdminAudit::log('category_created', "Category #{$id}: {$name}");
+        \Approvals\ContentApprovalManager::applySaveState('categories', (int)$id);
         json(['ok'=>true,'id'=>$id]);
     }
     if (preg_match('#^/admin/api/categories/(\d+)$#', $uri, $m) && $method === 'PUT') {
@@ -863,6 +879,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         $imageAlt = trim((string)($body['image_alt'] ?? ($existing['image_alt'] ?? ''))) ?: ($name . ' category image');
         $sort = (int)($body['sort_order'] ?? ($existing['sort_order'] ?? 0));
         $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : (int)($existing['is_active'] ?? 1);
+        if (!\Auth\Auth::isSuperAdmin()) $active = 0;
 
         try {
             Database::query(
@@ -883,15 +900,18 @@ if (str_starts_with($uri, '/admin/api/')) {
             }
         }
         \Orders\AdminAudit::log('category_updated', "Category #{$id}: {$name}");
+        \Approvals\ContentApprovalManager::applySaveState('categories', $id);
         json(['ok'=>true]);
     }
     if (preg_match('#^/admin/api/categories/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $id = (int)$m[1];
         Database::query("UPDATE categories SET is_active = CASE WHEN is_active=1 THEN 0 ELSE 1 END WHERE id=?", [$id]);
         \Orders\AdminAudit::log('category_toggled', "Category #{$id} status toggled");
         json(['ok'=>true]);
     }
     if (preg_match('#^/admin/api/categories/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $id = (int)$m[1];
         $cat = Database::row("SELECT id,name FROM categories WHERE id=?", [$id]);
         if (!$cat) json(['ok'=>false,'msg'=>'Category not found'], 404);
@@ -1061,9 +1081,10 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['cta_url'] ?? '/categories')) ?: '/categories',
                     $theme,
                     (int)($body['sort_order'] ?? 0),
-                    (int)($body['is_active'] ?? 1),
+                    \Auth\Auth::isSuperAdmin() ? (int)($body['is_active'] ?? 1) : 0,
                 ]
             );
+            \Approvals\ContentApprovalManager::applySaveState('home_deals', (int)$id);
             json(['ok'=>true,'id'=>$id]);
         } catch (\Throwable) {
             json(['ok'=>false,'msg'=>'Could not create deal. Run migration first.'], 500);
@@ -1098,16 +1119,18 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['cta_url'] ?? '/categories')) ?: '/categories',
                     $theme,
                     (int)($body['sort_order'] ?? 0),
-                    (int)($body['is_active'] ?? 1),
+                    \Auth\Auth::isSuperAdmin() ? (int)($body['is_active'] ?? 1) : 0,
                     (int)$m[1],
                 ]
             );
+            \Approvals\ContentApprovalManager::applySaveState('home_deals', (int)$m[1]);
             json(['ok'=>true]);
         } catch (\Throwable) {
             json(['ok'=>false,'msg'=>'Could not update deal'], 500);
         }
     }
     if (preg_match('#^/admin/api/deals/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         try {
             Database::query("DELETE FROM home_deals WHERE id=?", [(int)$m[1]]);
             json(['ok'=>true]);
@@ -1116,6 +1139,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     }
     if ($uri === '/admin/api/deals/reorder' && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         foreach (($body['items'] ?? []) as $item) {
             Database::query("UPDATE home_deals SET sort_order=?, updated_at=NOW() WHERE id=?", [(int)($item['sort_order'] ?? 0), (int)($item['id'] ?? 0)]);
         }
@@ -1390,6 +1414,14 @@ if (str_starts_with($uri, '/admin/api/')) {
         unset($customer);
         json(['ok'=>true,'customers'=>$customers,'summary'=>$summary]);
     }
+    if ($uri === '/admin/api/approvals' && $method === 'GET') {
+        json(['ok'=>true,'items'=>\Approvals\ContentApprovalManager::listPending(),'can_approve'=>\Auth\Auth::isSuperAdmin()]);
+    }
+    if (preg_match('#^/admin/api/approvals/([a-z_]+)/(\d+)/(approve|reject)$#', $uri, $m) && $method === 'POST') {
+        $result = \Approvals\ContentApprovalManager::decide((string)$m[1], (int)$m[2], (string)$m[3], trim((string)($body['note'] ?? '')));
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+
     if ($uri === '/admin/api/admin-users' && $method === 'GET') {
         $hasMobile = $hasAdminUsersMobile();
         $mobileSelect = $hasMobile ? "mobile" : "'' AS mobile";
@@ -1401,11 +1433,13 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok' => true, 'admins' => $admins, 'has_mobile_column' => $hasMobile]);
     }
     if ($uri === '/admin/api/admin-users' && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $name = trim((string)($body['name'] ?? ''));
         $email = strtolower(trim((string)($body['email'] ?? '')));
         $mobile = trim((string)($body['mobile'] ?? ''));
         $password = (string)($body['password'] ?? '');
         $role = trim((string)($body['role'] ?? 'admin')) ?: 'admin';
+        $role = in_array($role, ['admin','super'], true) ? $role : 'admin';
 
         if ($name === '' || $email === '' || $mobile === '' || $password === '') {
             json(['ok'=>false,'msg'=>'Name, email, mobile and password are required.'], 422);
@@ -1447,6 +1481,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok' => true, 'id' => $id]);
     }
     if (preg_match('#^/admin/api/admin-users/(\d+)/password$#', $uri, $m) && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $adminId = (int)$m[1];
         $newPassword = (string)($body['new_password'] ?? '');
         if (strlen($newPassword) < 6) {
@@ -1460,6 +1495,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok' => true]);
     }
     if (preg_match('#^/admin/api/admin-users/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $targetId = (int)$m[1];
         $current = \Auth\Auth::admin();
         $currentId = (int)($current['id'] ?? 0);
@@ -1742,6 +1778,7 @@ $adminPage = match(true) {
     $uri === '/admin/reviews'    => 'admin/reviews',
     $uri === '/admin/customers'  => 'admin/customers',
     $uri === '/admin/leads'      => 'admin/leads',
+    $uri === '/admin/approvals'  => 'admin/approvals',
     $uri === '/admin/admins'     => 'admin/admins',
     $uri === '/admin/settings'   => 'admin/settings',
     $uri === '/admin/design'     => 'admin/design',

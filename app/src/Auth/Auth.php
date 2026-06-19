@@ -427,6 +427,19 @@ class Auth
 
     public static function isAdmin(): bool { return !empty($_SESSION['admin']['id']); }
     public static function admin(): ?array  { return $_SESSION['admin'] ?? null; }
+    public static function isSuperAdmin(): bool
+    {
+        $role = strtolower((string)($_SESSION['admin']['role'] ?? ''));
+        return in_array($role, ['super','super_admin','super-admin','owner'], true);
+    }
+
+    public static function requireSuperAdmin(): void
+    {
+        if (!self::isSuperAdmin()) {
+            if (self::isApiRequest()) { http_response_code(403); echo json_encode(['ok'=>false,'msg'=>'Only Super Admin can perform this action.']); exit; }
+            header('Location: /admin/dashboard'); exit;
+        }
+    }
 
     public static function requireAdmin(): void
     {
