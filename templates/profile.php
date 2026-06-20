@@ -106,7 +106,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
         $productTitle = implode(', ', array_filter(array_map(static fn($item) => (string)($item['product_name'] ?? ''), $items)));
         $orderPublicId = (string)($order['order_id'] ?? $order['id'] ?? '');
         $isPaid = in_array((string)($order['payment_status'] ?? ''), ['paid'], true);
-        $trackSteps = ['new_order', 'received', 'design_approved', 'printing', 'other_process', 'ready'];
+        $trackSteps = ['received', 'design_approved', 'printing', 'other_process', 'ready'];
         $trackStatus = $status === 'processing' ? 'other_process' : $status;
         $trackIndex = array_search($trackStatus, $trackSteps, true);
         $trackIndex = $trackIndex === false ? -1 : (int)$trackIndex;
@@ -129,15 +129,6 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
             <span class="account-mini-btn">Actions <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
           </summary>
           <div class="account-order-expanded">
-            <div class="account-order-expanded-head">
-              <div>
-                <small>Order Summary</small>
-                <strong>#<?= $h($order['order_id'] ?? $order['id'] ?? '') ?></strong>
-              </div>
-              <span><?= count($items) ?> item<?= count($items) === 1 ? '' : 's' ?></span>
-              <span>₹<?= number_format((float)($order['total_amount'] ?? 0)) ?></span>
-              <span class="account-status status-<?= $h($statusClass) ?>"><?= $h($statusLabels[$status] ?? ucfirst($status)) ?></span>
-            </div>
             <div class="account-order-items-panel">
               <div class="account-order-block-title"><strong>Order Items & Files</strong><span>Artwork and proofs are separated item-wise</span></div>
               <?php if (empty($items)): ?>
@@ -201,12 +192,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                         <?php if ($canReviewProof): ?>
                           <div class="account-design-review-actions">
                             <button type="button" class="account-design-approve-btn" onclick="approveAccountDesign(<?= $approvalId ?>, this)">Approve Design</button>
-                            <button type="button" class="account-design-revision-btn" onclick="toggleDesignRevisionForm(<?= $approvalId ?>)">Request Revision</button>
                           </div>
-                          <form class="account-design-revision-form" data-design-revision-form="<?= $approvalId ?>" onsubmit="sendDesignRevision(event, <?= $approvalId ?>)" hidden>
-                            <textarea name="message" rows="2" minlength="5" required placeholder="What should we change in this design?"></textarea>
-                            <button type="submit">Send Revision Request</button>
-                          </form>
                         <?php else: ?>
                           <span><?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
                         <?php endif; ?>
@@ -215,8 +201,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                   <?php endforeach; ?>
                 </div>
               <?php endif; ?>
-            </div>
-            <div class="account-order-side-rail">
+            <div class="account-order-bottom-bar">
             <div class="account-order-info-card">
               <strong>Payment</strong>
               <p><?= $h(ucfirst((string)($order['payment_status'] ?? 'pending'))) ?> · <?= $h(ucfirst((string)($order['payment_method'] ?? ''))) ?></p>
@@ -230,6 +215,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
               <?php else: ?>
                 <span class="account-order-action-disabled"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Invoice after payment</span>
               <?php endif; ?>
+            </div>
             </div>
             <div class="account-order-tracking" aria-label="Tracking detail">
               <div class="account-track-head">
@@ -252,7 +238,6 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                   <?php endforeach; ?>
                 </div>
               <?php endif; ?>
-            </div>
             </div>
           </div>
         </details>
