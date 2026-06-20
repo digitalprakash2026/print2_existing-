@@ -414,7 +414,13 @@ class OrderManager
         if (!$order) return null;
 
         $order['items'] = \Database::rows(
-            "SELECT oi.*, af.filename, af.original_name, af.file_path, af.mime_type,
+            "SELECT oi.*,
+                    COALESCE(pi.image_path, pi.url) AS product_image,
+                    af.id AS artwork_file_id,
+                    af.filename AS artwork_filename,
+                    af.original_name AS artwork_original_name,
+                    af.file_path AS artwork_file_path,
+                    af.mime_type AS artwork_mime_type,
                     oda.id AS design_approval_id,
                     oda.status AS design_approval_status,
                     oda.admin_note AS design_admin_note,
@@ -426,6 +432,7 @@ class OrderManager
                     pf.file_path AS design_proof_file_path,
                     pf.mime_type AS design_proof_mime_type
              FROM order_items oi
+             LEFT JOIN product_images pi ON pi.product_id = oi.product_id AND pi.is_primary = 1
              LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
              LEFT JOIN artwork_files af ON af.id = oda.customer_artwork_file_id
              LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
@@ -462,6 +469,12 @@ class OrderManager
         foreach ($orders as &$order) {
             $order['items'] = \Database::rows(
                 "SELECT oi.*,
+                        COALESCE(pi.image_path, pi.url) AS product_image,
+                        af.id AS artwork_file_id,
+                        af.original_name AS artwork_original_name,
+                        af.filename AS artwork_filename,
+                        af.file_path AS artwork_file_path,
+                        af.mime_type AS artwork_mime_type,
                         oda.id AS design_approval_id,
                         oda.status AS design_approval_status,
                         oda.admin_note AS design_admin_note,
@@ -473,7 +486,9 @@ class OrderManager
                         pf.file_path AS design_proof_file_path,
                         pf.mime_type AS design_proof_mime_type
                  FROM order_items oi
+                 LEFT JOIN product_images pi ON pi.product_id = oi.product_id AND pi.is_primary = 1
                  LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
+                 LEFT JOIN artwork_files af ON af.id = oda.customer_artwork_file_id
                  LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
                  WHERE oi.order_id = ?",
                 [$order['id']]

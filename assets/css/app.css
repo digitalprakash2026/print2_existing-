@@ -12985,6 +12985,37 @@ body:has(.dash-ref-page) .adm-admin-chip em::after { content:''; position:absolu
 .account-design-file-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .account-design-file-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:30px; padding:6px 10px; border-radius:999px; background:#eef6ff; color:#1d4ed8; font-weight:900; text-decoration:none; }
 .account-design-file-actions a:last-child { background:#f8fafc; color:#334155; border:1px solid #dbe4f0; }
+.account-order-items-panel { grid-column:1/-1; min-width:0; }
+.account-order-item-cards { display:grid; gap:10px; }
+.account-order-item-card { display:grid; grid-template-columns:72px minmax(0,1fr); gap:12px; align-items:start; padding:12px; border:1px solid #e2e8f0; border-radius:16px; background:linear-gradient(180deg,#fff,#f8fafc); }
+.account-order-item-card.account-design-issue { border-color:#fecaca; background:#fff7f7; }
+.account-order-item-thumb { width:72px; height:72px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #dbe4f0; border-radius:14px; background:#fff; color:#64748b; }
+.account-order-item-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.account-order-item-main { min-width:0; display:grid; gap:7px; }
+.account-order-item-title { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.account-order-item-title strong { margin:0; font-size:14px; }
+.account-order-item-title span { display:inline-flex; align-items:center; min-height:26px; padding:4px 9px; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-size:11px; font-weight:950; }
+.account-order-item-main p { color:#64748b; font-size:12px; font-weight:800; }
+.account-order-file-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.account-order-file { min-width:0; display:grid; gap:6px; padding:9px; border:1px dashed #dbe4f0; border-radius:13px; background:#fff; }
+.account-order-file b { margin:0; color:#0f172a; font-size:11px; font-weight:950; text-transform:uppercase; letter-spacing:.04em; }
+.account-order-file > a { min-width:0; display:flex; align-items:center; gap:8px; color:#334155; text-decoration:none; }
+.account-order-file > a:hover em { color:#1d4ed8; text-decoration:underline; }
+.account-order-file > a span { width:44px; height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc; color:#64748b; }
+.account-order-file > a span img { width:100%; height:100%; object-fit:cover; display:block; }
+.account-order-file em { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#334155; font-size:12px; font-style:normal; font-weight:900; }
+.account-order-file small { color:#94a3b8; font-size:12px; font-weight:800; }
+@media (max-width:760px) {
+  .account-order-expanded { min-width:0; grid-template-columns:1fr; }
+  .account-order-item-card { grid-template-columns:58px minmax(0,1fr); padding:10px; }
+  .account-order-item-thumb { width:58px; height:58px; border-radius:12px; }
+  .account-order-file-grid { grid-template-columns:1fr; }
+  .account-order-file > a span { width:38px; height:38px; flex-basis:38px; }
+}
+@media (max-width:520px) {
+  .account-order-item-card { grid-template-columns:1fr; }
+  .account-order-item-thumb { width:100%; height:132px; }
+}
 .contact-form-message { margin-top:12px; min-height:20px; color:#64748b; font-size:13px; font-weight:800; }
 .contact-form-message.ok { color:#047857; }
 .contact-form-message.bad { color:#b91c1c; }

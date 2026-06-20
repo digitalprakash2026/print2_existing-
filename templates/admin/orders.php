@@ -25,6 +25,26 @@ $orderUrl = static function (array $params = []): string {
     $params = array_filter($params, static fn($v) => $v !== '' && $v !== null);
     return '/admin/orders' . ($params ? ('?' . http_build_query($params)) : '');
 };
+$shortFileName = static function (?string $name, string $fallback = 'File'): string {
+    $name = trim((string)$name);
+    if ($name === '') return $fallback;
+    if (strlen($name) <= 24) return $name;
+    $ext = pathinfo($name, PATHINFO_EXTENSION);
+    $base = pathinfo($name, PATHINFO_FILENAME);
+    $short = substr($base !== '' ? $base : $name, 0, 16);
+    return $short . '…' . ($ext !== '' ? '.' . $ext : '');
+};
+$normalizeAssetPath = static function (?string $path): string {
+    $path = trim((string)$path);
+    if ($path === '') return '';
+    return $path[0] === '/' ? $path : '/' . $path;
+};
+$isImageFile = static function (?string $mime, ?string $name, ?string $path = null): bool {
+    $mime = strtolower(trim((string)$mime));
+    $source = trim((string)($name ?: $path));
+    $ext = strtolower(pathinfo($source, PATHINFO_EXTENSION));
+    return str_starts_with($mime, 'image/') || in_array($ext, ['jpg','jpeg','png','gif','webp','svg'], true);
+};
 
 $baseCardParams = [];
 foreach (['search' => $search, 'payment_status' => $paymentStatus, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'sort' => $sort] as $k => $v) {
@@ -148,16 +168,33 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
               $designChoice = (string)($item['design_choice'] ?? 'upload');
               $isRcsDesign = $designChoice === 'rcs';
             ?>
+            <?php
+              $productImg = $normalizeAssetPath($item['product_image'] ?? '');
+              $artworkName = (string)($item['artwork_original_name'] ?: $item['artwork_filename'] ?: '');
+              $artworkPath = $normalizeAssetPath($item['artwork_file_path'] ?? '');
+              $artworkIsImage = $isImageFile($item['artwork_mime_type'] ?? '', $artworkName, $artworkPath);
+              $proofName = (string)($item['design_proof_original_name'] ?: $item['design_proof_filename'] ?: '');
+              $proofPath = $normalizeAssetPath($item['design_proof_file_path'] ?? '');
+              $proofIsImage = $isImageFile($item['design_proof_mime_type'] ?? '', $proofName, $proofPath);
+            ?>
             <div class="ord-item-row ord-design-workflow ord-design-workflow--<?= htmlspecialchars($approvalStatus) ?> <?= !$isRcsDesign ? 'ord-design-workflow--customer-upload' : 'ord-design-workflow--rcs' ?>">
               <div class="ord-design-head">
-                <div><div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?> <span class="ord-design-inline-choice"><?= $isRcsDesign ? 'RCS Design' : 'Customer Upload' ?></span></div><div class="ord-meta"><?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?> · <?= $isRcsDesign ? 'RCS will prepare proof' : 'Customer artwork approval required' ?></div></div>
+                <div class="ord-item-product">
+                  <span class="ord-item-thumb">
+                    <?php if ($productImg !== ''): ?><img src="<?= htmlspecialchars($productImg) ?>" alt="<?= htmlspecialchars($item['product_name'] ?? 'Product') ?>" loading="lazy"><?php else: ?>📦<?php endif; ?>
+                  </span>
+                  <div><div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?> <span class="ord-design-inline-choice"><?= $isRcsDesign ? 'RCS Design' : 'Customer Upload' ?></span></div><div class="ord-meta"><?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?> · <?= $isRcsDesign ? 'RCS will prepare proof' : 'Customer artwork approval required' ?></div></div>
+                </div>
                 <div class="ord-design-badges"><span class="badge <?= $isRcsDesign ? 'b-purple' : 'b-blue' ?>"><?= $isRcsDesign ? '🎨 RCS Design' : '📁 Customer Upload' ?></span><span class="badge <?= $designApprovalColors[$approvalStatus] ?? 'b-amber' ?>"><?= htmlspecialchars($designApprovalLabels[$approvalStatus] ?? $approvalStatus) ?></span></div>
               </div>
               <div class="ord-design-strip">
                 <div class="ord-design-filebox">
                   <strong><?= $isRcsDesign ? 'Customer Brief / Assets' : 'Customer Artwork' ?></strong>
                   <?php if (!empty($item['artwork_file_id'])): ?>
-                    <span><?= htmlspecialchars($item['artwork_original_name'] ?: $item['artwork_filename'] ?: 'Artwork File') ?></span>
+                    <a class="ord-file-preview" href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= htmlspecialchars($artworkName ?: 'Artwork File') ?>">
+                      <span class="ord-file-thumb"><?= ($artworkIsImage && $artworkPath !== '') ? '<img src="' . htmlspecialchars($artworkPath) . '" alt="">' : '📄' ?></span>
+                      <span class="ord-file-name"><?= htmlspecialchars($shortFileName($artworkName, 'Artwork File')) ?></span>
+                    </a>
                     <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/download" class="ord-artwork-link ord-artwork-link--primary">Download</a></span>
                   <?php else: ?>
                     <span class="ord-artwork-empty"><?= $isRcsDesign ? 'Use WhatsApp/customer communication for brief and assets.' : 'No artwork uploaded' ?></span>
@@ -166,7 +203,10 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                 <div class="ord-design-filebox ord-design-filebox--proof">
                   <strong>Corrected File</strong>
                   <?php if (!empty($item['design_proof_file_id'])): ?>
-                    <span><?= htmlspecialchars($item['design_proof_original_name'] ?: $item['design_proof_filename'] ?: 'Proof File') ?></span>
+                    <a class="ord-file-preview" href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= htmlspecialchars($proofName ?: 'Proof File') ?>">
+                      <span class="ord-file-thumb"><?= ($proofIsImage && $proofPath !== '') ? '<img src="' . htmlspecialchars($proofPath) . '" alt="">' : '📄' ?></span>
+                      <span class="ord-file-name"><?= htmlspecialchars($shortFileName($proofName, 'Proof File')) ?></span>
+                    </a>
                     <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" class="ord-artwork-link">Download</a></span>
                   <?php else: ?>
                     <span class="ord-artwork-empty">No proof uploaded yet</span>
