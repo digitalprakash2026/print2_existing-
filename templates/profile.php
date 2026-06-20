@@ -171,31 +171,33 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                         <p><?= number_format((float)($item['quantity'] ?? 0)) ?> qty × <?= $h($item['quality_name'] ?? 'Standard') ?></p>
                         <?php if (!empty($item['design_admin_note'])): ?><small><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
                         <?php if (!empty($item['design_customer_note'])): ?><small class="account-design-customer-note">Your message: <?= $h($item['design_customer_note']) ?></small><?php endif; ?>
-                        <div class="account-order-file-grid">
-                          <div class="account-order-file">
-                            <b>Your artwork</b>
-                            <?php if (!empty($item['artwork_file_id'])): ?>
-                              <a href="/account/artwork/<?= (int)$item['artwork_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= $h($artworkName ?: 'Artwork File') ?>">
-                                <span><?php if ($artworkIsImage && $artworkPath !== ''): ?><img src="<?= $h($artworkPath) ?>" alt="" loading="lazy"><?php else: ?><i class="fa-regular fa-file-lines"></i><?php endif; ?></span>
-                                <em><?= $h($accountShortFileName($artworkName, 'Artwork File')) ?></em>
-                              </a>
-                            <?php else: ?>
-                              <small>No artwork uploaded</small>
-                            <?php endif; ?>
-                          </div>
-                          <div class="account-order-file">
-                            <b>Corrected file</b>
-                            <?php if (!empty($item['design_proof_file_id'])): ?>
-                              <a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= $h($proofName ?: 'Proof File') ?>">
-                                <span><?php if ($proofIsImage && $proofPath !== ''): ?><img src="<?= $h($proofPath) ?>" alt="" loading="lazy"><?php else: ?><i class="fa-regular fa-file-lines"></i><?php endif; ?></span>
-                                <em><?= $h($accountShortFileName($proofName, 'Proof File')) ?></em>
-                              </a>
-                              <span class="account-design-file-actions"><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener">Download</a></span>
-                            <?php else: ?>
-                              <small>No proof uploaded yet</small>
-                            <?php endif; ?>
-                          </div>
+                      </div>
+                      <div class="account-order-file-grid">
+                        <div class="account-order-file">
+                          <b>Your artwork</b>
+                          <?php if (!empty($item['artwork_file_id'])): ?>
+                            <a href="/account/artwork/<?= (int)$item['artwork_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= $h($artworkName ?: 'Artwork File') ?>">
+                              <span><?php if ($artworkIsImage && $artworkPath !== ''): ?><img src="<?= $h($artworkPath) ?>" alt="" loading="lazy"><?php else: ?><i class="fa-regular fa-file-lines"></i><?php endif; ?></span>
+                              <em><?= $h($accountShortFileName($artworkName, 'Artwork File')) ?></em>
+                            </a>
+                          <?php else: ?>
+                            <small>No artwork uploaded</small>
+                          <?php endif; ?>
                         </div>
+                        <div class="account-order-file">
+                          <b>Corrected file</b>
+                          <?php if (!empty($item['design_proof_file_id'])): ?>
+                            <a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= $h($proofName ?: 'Proof File') ?>">
+                              <span><?php if ($proofIsImage && $proofPath !== ''): ?><img src="<?= $h($proofPath) ?>" alt="" loading="lazy"><?php else: ?><i class="fa-regular fa-file-lines"></i><?php endif; ?></span>
+                              <em><?= $h($accountShortFileName($proofName, 'Proof File')) ?></em>
+                            </a>
+                            <span class="account-design-file-actions"><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener">Download</a></span>
+                          <?php else: ?>
+                            <small>No proof uploaded yet</small>
+                          <?php endif; ?>
+                        </div>
+                      </div>
+                      <div class="account-order-item-actions">
                         <?php if ($canReviewProof): ?>
                           <div class="account-design-review-actions">
                             <button type="button" class="account-design-approve-btn" onclick="approveAccountDesign(<?= $approvalId ?>, this)">Approve Design</button>
@@ -205,6 +207,8 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                             <textarea name="message" rows="2" minlength="5" required placeholder="What should we change in this design?"></textarea>
                             <button type="submit">Send Revision Request</button>
                           </form>
+                        <?php else: ?>
+                          <span><?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
                         <?php endif; ?>
                       </div>
                     </article>
@@ -212,6 +216,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                 </div>
               <?php endif; ?>
             </div>
+            <div class="account-order-side-rail">
             <div class="account-order-info-card">
               <strong>Payment</strong>
               <p><?= $h(ucfirst((string)($order['payment_status'] ?? 'pending'))) ?> · <?= $h(ucfirst((string)($order['payment_method'] ?? ''))) ?></p>
@@ -247,6 +252,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                   <?php endforeach; ?>
                 </div>
               <?php endif; ?>
+            </div>
             </div>
           </div>
         </details>
