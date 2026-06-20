@@ -272,15 +272,46 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
 <?php endif; ?>
 
 <script>
-function toggleOrderCard(btn) {
-  const card = btn.closest('[data-order-card]');
+const ADM_OPEN_ORDER_KEY = 'adm_open_order_cards';
+function getOpenOrderCards() {
+  try { return JSON.parse(sessionStorage.getItem(ADM_OPEN_ORDER_KEY) || '[]'); }
+  catch (e) { return []; }
+}
+function saveOpenOrderCard(card, open) {
+  if (!card?.id) return;
+  const ids = new Set(getOpenOrderCards());
+  if (open) ids.add(card.id);
+  else ids.delete(card.id);
+  sessionStorage.setItem(ADM_OPEN_ORDER_KEY, JSON.stringify([...ids]));
+}
+function setOrderCardOpen(card, open, persist = true) {
   const body = card?.querySelector('.adm-order-card-body');
   if (!card || !body) return;
-  const open = card.classList.toggle('open');
+  card.classList.toggle('open', open);
   body.hidden = !open;
   card.querySelectorAll('[data-order-toggle]').forEach((toggle) => {
     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
+  if (persist) saveOpenOrderCard(card, open);
+}
+function rememberCardForControl(control) {
+  const card = control?.closest?.('[data-order-card]');
+  if (card) saveOpenOrderCard(card, true);
+}
+function rememberCardForApproval(id) {
+  const input = document.getElementById(`proof_${id}`);
+  rememberCardForControl(input);
+}
+function restoreOpenOrderCards() {
+  getOpenOrderCards().forEach((id) => {
+    const card = document.getElementById(id);
+    if (card) setOrderCardOpen(card, true, false);
+  });
+}
+function toggleOrderCard(btn) {
+  const card = btn.closest('[data-order-card]');
+  if (!card) return;
+  setOrderCardOpen(card, !card.classList.contains('open'));
 }
 function toast(msg, type='info') {
   const w = document.getElementById('tw');
@@ -296,6 +327,8 @@ function updOrdFromSel(id) {
 }
 
 async function updOrd(id, status) {
+  const statusSelect = document.getElementById(`ord_status_${id}`);
+  rememberCardForControl(statusSelect);
   const resp = await fetch(`/admin/api/orders/${id}/status`, {
     method: 'POST', headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'},
     body: JSON.stringify({ status })
@@ -313,6 +346,7 @@ async function setDesignApproval(id, status) {
     toast('Please add an issue note for the customer', 'error');
     return;
   }
+  rememberCardForApproval(id);
   const resp = await fetch(`/admin/api/design-approvals/${id}`, {
     method: 'POST',
     headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'},
@@ -331,6 +365,7 @@ function chooseDesignProof(id) {
 async function uploadDesignProof(id) {
   const input = document.getElementById(`proof_${id}`);
   if (!input || !input.files.length) { toast('Please choose a proof file first', 'error'); return; }
+  rememberCardForControl(input);
   const note = window.prompt('Optional proof note for customer/admin', 'Proof uploaded for review.') ?? '';
   const fd = new FormData();
   fd.append('proof', input.files[0]);
@@ -344,6 +379,7 @@ async function uploadDesignProof(id) {
   if (data.ok) { toast('Proof uploaded', 'success'); setTimeout(() => location.reload(), 500); }
   else toast(data.msg || 'Proof upload failed', 'error');
 }
+document.addEventListener('DOMContentLoaded', restoreOpenOrderCards);
 
 async function saveShipping(id) {
   const payload = {

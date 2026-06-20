@@ -129,8 +129,17 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
             <span class="account-mini-btn">Actions <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
           </summary>
           <div class="account-order-expanded">
+            <div class="account-order-expanded-head">
+              <div>
+                <small>Order Summary</small>
+                <strong>#<?= $h($order['order_id'] ?? $order['id'] ?? '') ?></strong>
+              </div>
+              <span><?= count($items) ?> item<?= count($items) === 1 ? '' : 's' ?></span>
+              <span>₹<?= number_format((float)($order['total_amount'] ?? 0)) ?></span>
+              <span class="account-status status-<?= $h($statusClass) ?>"><?= $h($statusLabels[$status] ?? ucfirst($status)) ?></span>
+            </div>
             <div class="account-order-items-panel">
-              <strong>Order Items & Files</strong>
+              <div class="account-order-block-title"><strong>Order Items & Files</strong><span>Artwork and proofs are separated item-wise</span></div>
               <?php if (empty($items)): ?>
                 <p>No product items found for this order.</p>
               <?php else: ?>
@@ -203,7 +212,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                 </div>
               <?php endif; ?>
             </div>
-            <div>
+            <div class="account-order-info-card">
               <strong>Payment</strong>
               <p><?= $h(ucfirst((string)($order['payment_status'] ?? 'pending'))) ?> · <?= $h(ucfirst((string)($order['payment_method'] ?? ''))) ?></p>
               <?php if (!empty($order['payment_id'])): ?><small>Payment ID: <?= $h($order['payment_id']) ?></small><?php endif; ?>
