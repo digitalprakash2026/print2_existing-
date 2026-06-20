@@ -21,35 +21,18 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
 
 <!-- Admin Header -->
 <header class="header adm-header adm-header-pro" style="z-index:950">
-  <div class="adm-hdr-left">
-    <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false" onclick="document.body.classList.toggle('adm-sb-open');this.setAttribute('aria-expanded',document.body.classList.contains('adm-sb-open')?'true':'false');">
-      <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-    </button>
-  </div>
-  <div class="adm-hdr-center">
-    <form class="adm-global-search" action="/admin/orders" method="GET" role="search">
-      <input name="search" type="search" placeholder="Search orders, customers, products..." aria-label="Search admin records">
-      <button type="submit" aria-label="Search">⌕</button>
-    </form>
-  </div>
+  <div class="adm-hdr-left"></div>
+  <div class="adm-hdr-center"></div>
   <div class="adm-hdr-right">
     <div class="adm-hdr-actions">
       <button class="adm-icon-btn" type="button" aria-label="Fullscreen" onclick="document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();">⛶</button>
-      <div class="adm-notify" id="admNotify">
-        <button class="adm-notify-btn" type="button" id="admNotifyBtn" aria-expanded="false" aria-label="New order notifications">
-          🔔 <span class="adm-notify-count" id="admNotifyCount" style="display:none">0</span>
-        </button>
-        <div class="adm-notify-panel" id="admNotifyPanel">
-          <div class="adm-notify-head"><strong>New Orders</strong><a href="/admin/orders?status=new_order">View all</a></div>
-          <div id="admNotifyList" class="adm-notify-list"><div class="adm-notify-empty">Loading…</div></div>
-        </div>
-      </div>
-      <a class="adm-new-orders-link" href="/admin/orders?status=new_order">New Orders</a>
       <span class="adm-hdr-divider"></span>
     </div>
     <div class="adm-user-menu" id="admUserMenu">
       <button class="adm-user-btn adm-user-btn-pro" id="admUserBtn" type="button" aria-expanded="false" aria-label="Admin account menu">
-        <span><?= strtoupper(substr((string)($admin['name'] ?? 'A'), 0, 1)) ?></span><b>⌄</b>
+        <span class="adm-user-avatar"><?= strtoupper(substr((string)($admin['name'] ?? 'A'), 0, 1)) ?></span>
+        <span class="adm-user-meta"><strong><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></strong><small><?= htmlspecialchars($adminRoleLabel) ?></small></span>
+        <b>⌄</b>
       </button>
       <div class="adm-user-panel adm-user-panel-pro" id="admUserPanel">
         <div class="adm-user-name"><strong><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></strong><small><?= htmlspecialchars($adminRoleLabel) ?></small></div>
@@ -103,54 +86,36 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
     (function(){
       const sb = document.getElementById('admSidebar');
       const t = document.getElementById('admMobToggle');
-      if (!sb || !t) return;
-      sb.addEventListener('click', function (e) {
-        if (window.innerWidth <= 900 && e.target.closest('.adm-ni')) {
-          document.body.classList.remove('adm-sb-open');
-          t.setAttribute('aria-expanded', 'false');
-        }
-      });
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-          document.body.classList.remove('adm-sb-open');
-          t.setAttribute('aria-expanded', 'false');
-        }
-      });
-      window.addEventListener('resize', function () {
-        if (window.innerWidth > 900) {
-          document.body.classList.remove('adm-sb-open');
-          t.setAttribute('aria-expanded', 'false');
-        }
-      });
-
-      const notify = document.getElementById('admNotify');
-      const notifyBtn = document.getElementById('admNotifyBtn');
-      const notifyPanel = document.getElementById('admNotifyPanel');
-      const notifyCount = document.getElementById('admNotifyCount');
-      const notifyList = document.getElementById('admNotifyList');
-      function escAdm(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-      async function loadAdminNotifications(){
-        if (!notifyCount || !notifyList) return;
-        try {
-          const res = await fetch('/admin/api/order-notifications').then(r=>r.json());
-          if (!res.ok) return;
-          const count = Number(res.count || 0);
-          notifyCount.textContent = count > 99 ? '99+' : String(count);
-          notifyCount.style.display = count > 0 ? '' : 'none';
-          notifyList.innerHTML = (res.orders || []).length
-            ? res.orders.map(o => `<a class="adm-notify-item" href="/admin/orders?status=new_order"><span>#${escAdm(o.order_id)}</span><small>${escAdm(o.customer_name)} · ₹${Number(o.total_amount||0).toLocaleString('en-IN')}</small></a>`).join('')
-            : '<div class="adm-notify-empty">No new orders pending review.</div>';
-        } catch (e) {}
-      }
-      if (notifyBtn && notify) {
-        notifyBtn.addEventListener('click', function(e){
-          e.stopPropagation();
-          const open = notify.classList.toggle('open');
-          notifyBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-          if (open) loadAdminNotifications();
+      if (sb && t) {
+        sb.addEventListener('click', function (e) {
+          if (window.innerWidth <= 900 && e.target.closest('.adm-ni')) {
+            document.body.classList.remove('adm-sb-open');
+            t.setAttribute('aria-expanded', 'false');
+          }
         });
-        loadAdminNotifications();
-        setInterval(loadAdminNotifications, 60000);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') {
+            document.body.classList.remove('adm-sb-open');
+            t.setAttribute('aria-expanded', 'false');
+          }
+        });
+        window.addEventListener('resize', function () {
+          if (window.innerWidth > 900) {
+            document.body.classList.remove('adm-sb-open');
+            t.setAttribute('aria-expanded', 'false');
+          }
+        });
+      } else {
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') {
+            document.body.classList.remove('adm-sb-open');
+          }
+        });
+        window.addEventListener('resize', function () {
+          if (window.innerWidth > 900) {
+            document.body.classList.remove('adm-sb-open');
+          }
+        });
       }
 
       const userBtn = document.getElementById('admUserBtn');
@@ -165,10 +130,6 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
           if (!userMenu.contains(e.target)) {
             userMenu.classList.remove('open');
             userBtn.setAttribute('aria-expanded', 'false');
-          }
-          if (notify && !notify.contains(e.target)) {
-            notify.classList.remove('open');
-            notifyBtn?.setAttribute('aria-expanded', 'false');
           }
         });
       }
