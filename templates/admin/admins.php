@@ -3,6 +3,7 @@ $pageTitle = 'Admins — RCS Admin';
 $currentAdmPage = 'admins';
 include __DIR__ . '/layout.php';
 $currentAdmin = \Auth\Auth::admin();
+$canManageAdmins = \Auth\Auth::isSuperAdmin();
 ?>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">
   <div>
@@ -12,6 +13,7 @@ $currentAdmin = \Auth\Auth::admin();
   <span id="admCount" style="font-size:12px;color:var(--text2)"></span>
 </div>
 
+<?php if ($canManageAdmins): ?>
 <div class="fsec" style="margin-bottom:14px">
   <div class="fsec-t">➕ Add New Admin</div>
   <div class="f2">
@@ -20,14 +22,21 @@ $currentAdmin = \Auth\Auth::admin();
   </div>
   <div class="f2">
     <div class="fg"><label>Mobile *</label><input class="fi" id="adm-mobile" placeholder="9876543210" maxlength="15"></div>
+    <div class="fg"><label>Role *</label><select class="fi" id="adm-role"><option value="admin">Admin</option><option value="super">Super Admin</option></select></div>
+  </div>
+  <div class="f2">
     <div class="fg" style="position:relative">
       <label>Password *</label>
       <input class="fi" id="adm-password" type="password" placeholder="Minimum 6 characters" style="padding-right:42px">
       <button type="button" onclick="togglePass('adm-password', this)" aria-label="Show password" style="position:absolute;right:8px;top:34px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:16px">👁️</button>
     </div>
+    <div></div>
   </div>
   <button class="btn btn-blue" onclick="createAdmin()" style="padding:10px 16px;border-radius:9px">Create Admin</button>
 </div>
+<?php else: ?>
+<div class="fsec" style="margin-bottom:14px;border-left:4px solid #f59e0b"><strong>Read-only access</strong><br><span style="font-size:12px;color:var(--text2)">Only Super Admin can add, edit or remove admin users.</span></div>
+<?php endif; ?>
 
 <div class="fsec" style="padding:0;overflow:hidden">
   <div style="padding:14px 14px 10px;border-bottom:1px solid var(--border);font-weight:700">All Admin Users</div>
@@ -58,6 +67,7 @@ $currentAdmin = \Auth\Auth::admin();
 <script>
 const CSRF = '<?= htmlspecialchars($csrf ?? '') ?>';
 const CURRENT_ADMIN_ID = Number('<?= (int)($currentAdmin['id'] ?? 0) ?>');
+const CAN_MANAGE_ADMINS = <?= $canManageAdmins ? 'true' : 'false' ?>;
 let passAdminId = 0;
 let passAdminName = '';
 
@@ -89,31 +99,31 @@ async function loadAdmins() {
           <div style="font-size:11px;color:var(--text3)">Last login: ${fmtDate(a.last_login)}</div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap">
-        <button class="btn btn-outline btn-xs js-pass-btn" data-id="${Number(a.id)}" data-name="${escH(a.name || 'Admin')}">🔑 Change Password</button>
-        <button class="btn btn-red btn-xs js-remove-btn" data-id="${Number(a.id)}" data-name="${escH(a.name || 'Admin')}" ${Number(a.id)===CURRENT_ADMIN_ID ? 'disabled title="Cannot remove current login"' : ''}>🗑️ Remove</button>
-      </div>
+      ${CAN_MANAGE_ADMINS ? `<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap"><button class="btn btn-outline btn-xs js-pass-btn" data-id="${Number(a.id)}" data-name="${escH(a.name || 'Admin')}">🔑 Change Password</button><button class="btn btn-red btn-xs js-remove-btn" data-id="${Number(a.id)}" data-name="${escH(a.name || 'Admin')}" ${Number(a.id)===CURRENT_ADMIN_ID ? 'disabled title="Cannot remove current login"' : ''}>🗑️ Remove</button></div>` : ''}
     </div>
   `).join('');
 }
 
 async function createAdmin() {
+  if (!CAN_MANAGE_ADMINS) { toast('Only Super Admin can create admin users', 'error'); return; }
   const name = document.getElementById('adm-name').value.trim();
   const email = document.getElementById('adm-email').value.trim();
   const mobile = document.getElementById('adm-mobile').value.trim();
   const password = document.getElementById('adm-password').value;
+  const role = document.getElementById('adm-role')?.value === 'super' ? 'super' : 'admin';
 
   if (!name || !email || !mobile || !password) { toast('Please fill all required fields', 'error'); return; }
   const resp = await fetch('/admin/api/admin-users', {
     method:'POST',
     headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},
     credentials:'same-origin',
-    body: JSON.stringify({ name, email, mobile, password, role: 'admin' })
+    body: JSON.stringify({ name, email, mobile, password, role })
   }).then(r=>r.json());
 
   if (!resp.ok) { toast(resp.msg || 'Could not create admin', 'error'); return; }
   toast('Admin user created successfully', 'success');
   ['adm-name','adm-email','adm-mobile','adm-password'].forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
+  const roleEl = document.getElementById('adm-role'); if (roleEl) roleEl.value = 'admin';
   document.getElementById('adm-password').type = 'password';
   loadAdmins();
 }
@@ -132,6 +142,7 @@ function closePassModal() {
 }
 
 async function saveAdminPassword() {
+  if (!CAN_MANAGE_ADMINS) { toast('Only Super Admin can update passwords', 'error'); return; }
   const p1 = document.getElementById('adm-pass-new').value;
   const p2 = document.getElementById('adm-pass-confirm').value;
   if (!passAdminId) { toast('Select admin first', 'error'); return; }
@@ -157,6 +168,7 @@ async function saveAdminPassword() {
 }
 
 async function removeAdmin(id, name) {
+  if (!CAN_MANAGE_ADMINS) { toast('Only Super Admin can remove admins', 'error'); return; }
   const adminId = Number(id || 0);
   if (!adminId) return;
   if (adminId === CURRENT_ADMIN_ID) {

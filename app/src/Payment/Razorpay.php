@@ -69,6 +69,8 @@ class Razorpay
         string $razorpayPaymentId,
         string $razorpaySignature
     ): array {
+        \Orders\OrderManager::ensureWorkflowSchema();
+
         if (!self::verifyPayment($razorpayOrderId, $razorpayPaymentId, $razorpaySignature)) {
             // Log suspicious activity
             error_log("Razorpay signature verification FAILED for order {$internalOrderId}. Possible tampering.");
@@ -99,9 +101,15 @@ class Razorpay
             // Update order
             \Database::query(
                 "UPDATE orders SET payment_status = 'paid', payment_id = ?,
-                    razorpay_order_id = ?, status = 'received', updated_at = NOW()
+                    razorpay_order_id = ?, status = 'new_order', updated_at = NOW()
                  WHERE id = ?",
                 [$razorpayPaymentId, $razorpayOrderId, $internalOrderId]
+            );
+
+            \Database::insert(
+                "INSERT INTO order_status_history (order_id, status, note, created_by, created_at)
+                 VALUES (?, 'new_order', 'Payment captured; order moved to New Order queue', ?, NOW())",
+                [$internalOrderId, 'system']
             );
 
             $db->commit();

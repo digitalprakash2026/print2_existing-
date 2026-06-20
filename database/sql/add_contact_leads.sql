@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS contact_leads (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(160) NOT NULL,
+  email VARCHAR(190) NULL,
+  phone VARCHAR(40) NULL,
+  subject VARCHAR(220) NOT NULL,
+  message TEXT NOT NULL,
+  status ENUM('new','contacted','quoted','converted','closed','spam') NOT NULL DEFAULT 'new',
+  priority ENUM('normal','high','urgent') NOT NULL DEFAULT 'normal',
+  source VARCHAR(80) NOT NULL DEFAULT 'contact_page',
+  admin_note TEXT NULL,
+  ip_address VARCHAR(64) NULL,
+  user_agent VARCHAR(255) NULL,
+  last_followup_at DATETIME NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NULL,
+  KEY idx_contact_leads_status (status),
+  KEY idx_contact_leads_priority (priority),
+  KEY idx_contact_leads_created (created_at),
+  KEY idx_contact_leads_phone (phone),
+  KEY idx_contact_leads_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -26,7 +26,19 @@ class ProductCatalog
 
     private static function primaryImageExpr(): string
     {
-        return "COALESCE(p.image_path, (SELECT COALESCE(pi.image_path, pi.url) FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1))";
+        return "COALESCE(
+                    (SELECT COALESCE(pi.image_path, pi.url)
+                     FROM product_images pi
+                     WHERE pi.product_id = p.id AND pi.is_primary = 1
+                     ORDER BY pi.sort_order ASC, pi.id ASC
+                     LIMIT 1),
+                    p.image_path,
+                    (SELECT COALESCE(pi2.image_path, pi2.url)
+                     FROM product_images pi2
+                     WHERE pi2.product_id = p.id
+                     ORDER BY pi2.sort_order ASC, pi2.id ASC
+                     LIMIT 1)
+                )";
     }
 
     private static function categoryCodePrefixExpr(): string
@@ -53,7 +65,11 @@ class ProductCatalog
             return \Database::rows(
                 "SELECT p.*, c.name as category_name, c.slug as category_slug,
                         {$categoryPrefixExpr} as category_code_prefix,
-                        (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 LIMIT 1) as primary_image,
+                        COALESCE(
+                            (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id AND pi.is_primary = 1 ORDER BY pi.sort_order ASC, pi.id ASC LIMIT 1),
+                            p.image_path,
+                            (SELECT pi2.url FROM product_images pi2 WHERE pi2.product_id = p.id ORDER BY pi2.sort_order ASC, pi2.id ASC LIMIT 1)
+                        ) as primary_image,
                         " . self::legacyMinPriceExpr() . " as min_price
                  FROM products p
                  LEFT JOIN categories c ON c.id = p.category_id
@@ -473,12 +489,12 @@ class ProductCatalog
     {
         try {
             $product['images'] = \Database::rows(
-                "SELECT id, product_id, COALESCE(image_path, url) as url, COALESCE(image_path, url) as image_path, alt_text, is_primary, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
+                "SELECT id, product_id, COALESCE(image_path, url) as url, COALESCE(image_path, url) as image_path, alt_text, is_primary, sort_order FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, sort_order ASC, id ASC",
                 [$product['id']]
             );
         } catch (\Throwable) {
             $product['images'] = \Database::rows(
-                "SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
+                "SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, sort_order ASC, id ASC",
                 [$product['id']]
             );
             foreach ($product['images'] as &$img) {

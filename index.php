@@ -265,7 +265,7 @@ if ($uri === '/profile' && $method === 'GET') {
 }
 
 
-if (preg_match('#^/account/artwork/(\d+)/download$#', $uri, $m) && $method === 'GET') {
+if (preg_match('#^/account/artwork/(\d+)/(download|view)$#', $uri, $m) && $method === 'GET') {
     \Auth\Auth::require();
     $user = \Auth\Auth::user();
     $file = \Designs\UserDesigns::downloadForUser((int)$user['id'], (int)$m[1]);
@@ -286,8 +286,9 @@ if (preg_match('#^/account/artwork/(\d+)/download$#', $uri, $m) && $method === '
 
     $downloadName = basename((string)($file['original_name'] ?: $file['filename'] ?: 'artwork-file'));
     $downloadName = str_replace(['"', "\r", "\n"], '', $downloadName);
+    $disposition = ($m[2] ?? 'download') === 'view' ? 'inline' : 'attachment';
     header('Content-Type: ' . (($file['mime_type'] ?? '') ?: 'application/octet-stream'));
-    header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+    header('Content-Disposition: ' . $disposition . '; filename="' . $downloadName . '"');
     header('Content-Length: ' . filesize($realPath));
     readfile($realPath);
     exit;

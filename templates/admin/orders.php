@@ -3,8 +3,10 @@ $pageTitle = 'Orders — RCS Admin';
 $currentAdmPage = 'orders';
 $admMainClass = 'adm-main--orders';
 include __DIR__ . '/layout.php';
-$statusColors = ['received'=>'b-blue','processing'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
-$statusLabels = ['received'=>'Received','processing'=>'Processing','printing'=>'Printing','ready'=>'Ready','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'WA Pending'];
+$statusColors = ['new_order'=>'b-blue','received'=>'b-blue','design_approved'=>'b-green','processing'=>'b-amber','other_process'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
+$statusLabels = ['new_order'=>'New Order','received'=>'Received','design_approved'=>'Design Approved','printing'=>'Printing','other_process'=>'Other Process','processing'=>'Other Process','ready'=>'Dispatched','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'WA Pending'];
+$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Proof Sent','revision_requested'=>'Revision Requested','approved'=>'Approved'];
+$designApprovalColors = ['pending_review'=>'b-amber','issue_found'=>'b-red','proof_uploaded'=>'b-blue','revision_requested'=>'b-red','approved'=>'b-green'];
 $orders = $orders ?? [];
 $summaryCounts = $summaryCounts ?? [];
 $statusCounts = $statusCounts ?? ['all' => 0];
@@ -23,79 +25,65 @@ $orderUrl = static function (array $params = []): string {
     $params = array_filter($params, static fn($v) => $v !== '' && $v !== null);
     return '/admin/orders' . ($params ? ('?' . http_build_query($params)) : '');
 };
+
+$baseCardParams = [];
+foreach (['search' => $search, 'payment_status' => $paymentStatus, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'sort' => $sort] as $k => $v) {
+    if ($v !== '' && !in_array($v, ['all', 'newest'], true)) $baseCardParams[$k] = $v;
+}
+$orderStatusCards = [
+    ['key'=>'all','label'=>'All Order','icon'=>'▦','class'=>'blue','params'=>[],'count'=>$statusCounts['all'] ?? 0],
+    ['key'=>'new_order','label'=>'New Order','icon'=>'●','class'=>'pink','params'=>['status'=>'new_order'],'count'=>$statusCounts['new_order'] ?? 0],
+    ['key'=>'received','label'=>'Received','icon'=>'▣','class'=>'cyan','params'=>['status'=>'received'],'count'=>$statusCounts['received'] ?? 0],
+    ['key'=>'design_approved','label'=>'Design Approved','icon'=>'✓','class'=>'green','params'=>['status'=>'design_approved'],'count'=>$statusCounts['design_approved'] ?? 0],
+    ['key'=>'printing','label'=>'Printing','icon'=>'▤','class'=>'purple','params'=>['status'=>'printing'],'count'=>$statusCounts['printing'] ?? 0],
+    ['key'=>'other_process','label'=>'Other Process','icon'=>'⚙','class'=>'amber','params'=>['status'=>'other_process'],'count'=>$statusCounts['other_process'] ?? 0],
+    ['key'=>'ready_dispatch','label'=>'Dispatched','icon'=>'▰','class'=>'lime','params'=>['status'=>'ready'],'count'=>$statusCounts['ready_dispatch'] ?? 0],
+    ['key'=>'delivered','label'=>'Delivered','icon'=>'◆','class'=>'slate','params'=>['status'=>'delivered'],'count'=>$statusCounts['delivered'] ?? 0],
+];
+$isCardActive = static function (array $card) use ($status, $seen): bool {
+    return match ($card['key']) {
+        'all' => ($status === '' || $status === 'all') && $seen === 'all',
+        'new_order' => $status === 'new_order' && $seen !== 'new',
+        'ready_dispatch' => $status === 'ready' && $seen !== 'new',
+        default => $status === $card['key'] && $seen !== 'new',
+    };
+};
 ?>
 
 <div class="adm-orders-page">
 <section class="adm-orders-command">
   <div class="adm-orders-command-bg" aria-hidden="true"></div>
-  <div class="adm-orders-head">
-    <div>
-      <div class="adm-orders-kicker">Production dashboard</div>
-      <div class="adm-pt" style="margin:0">Order Command Center</div>
-      <div class="adm-orders-sub">Track urgent print orders, manage customer actions, and keep production moving.</div>
-    </div>
+  <div class="adm-orders-head adm-orders-head--compact">
+    <div aria-hidden="true"></div>
     <a href="/admin/export/orders" class="btn btn-outline btn-sm adm-orders-export" target="_blank">⬇ Export CSV</a>
   </div>
 
-  <div class="adm-orders-stats">
-  <a class="adm-order-stat adm-order-stat--blue" href="<?= htmlspecialchars($orderUrl(['search' => $search])) ?>">
-    <span class="adm-order-stat-i">🆕</span>
-    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['new_today'] ?? 0)) ?></span>
-    <span class="adm-order-stat-l">New Today</span>
-    <span class="adm-order-stat-cta">View latest →</span>
-  </a>
-  <a class="adm-order-stat adm-order-stat--amber" href="<?= htmlspecialchars($orderUrl(['status' => 'attention', 'search' => $search])) ?>">
-    <span class="adm-order-stat-i">⚠️</span>
-    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['pending_orders'] ?? 0)) ?></span>
-    <span class="adm-order-stat-l">Pending</span>
-    <span class="adm-order-stat-cta">Review now →</span>
-  </a>
-  <a class="adm-order-stat adm-order-stat--orange" href="<?= htmlspecialchars($orderUrl(['status' => 'processing', 'search' => $search])) ?>">
-    <span class="adm-order-stat-i">⚙️</span>
-    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['processing_orders'] ?? 0)) ?></span>
-    <span class="adm-order-stat-l">Processing</span>
-    <span class="adm-order-stat-cta">Track flow →</span>
-  </a>
-  <a class="adm-order-stat adm-order-stat--green" href="<?= htmlspecialchars($orderUrl(['status' => 'ready', 'search' => $search])) ?>">
-    <span class="adm-order-stat-i">✅</span>
-    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['ready_orders'] ?? 0)) ?></span>
-    <span class="adm-order-stat-l">Ready</span>
-    <span class="adm-order-stat-cta">Dispatch →</span>
-  </a>
-  <a class="adm-order-stat adm-order-stat--red" href="<?= htmlspecialchars($orderUrl(['status' => 'delayed', 'search' => $search])) ?>">
-    <span class="adm-order-stat-i">🔥</span>
-    <span class="adm-order-stat-v"><?= number_format((int)($summaryCounts['delayed_orders'] ?? 0)) ?></span>
-    <span class="adm-order-stat-l">Delayed / Attention</span>
-    <span class="adm-order-stat-cta">Fix first →</span>
-  </a>
+  <div class="adm-orders-status-grid" aria-label="Order status summary filters">
+  <?php foreach ($orderStatusCards as $card): ?>
+    <?php
+      $hrefParams = array_merge($baseCardParams, $card['params']);
+      $href = $orderUrl($hrefParams);
+      $active = $isCardActive($card);
+    ?>
+    <a class="adm-order-status-card adm-order-status-card--<?= htmlspecialchars($card['class']) ?> <?= $active ? 'act' : '' ?>" href="<?= htmlspecialchars($href) ?>">
+      <span class="adm-order-status-icon"><?= htmlspecialchars($card['icon']) ?></span>
+      <span class="adm-order-status-copy">
+        <b><?= number_format((int)$card['count']) ?></b>
+        <strong><?= htmlspecialchars($card['label']) ?></strong>
+      </span>
+      <em><?= $active ? 'Showing' : 'View' ?> →</em>
+    </a>
+  <?php endforeach; ?>
 </div>
 </section>
 
 <div class="adm-orders-control-panel">
-<div class="adm-orders-tabs" aria-label="Order status filters">
-  <?php
-    $quickStatuses = ['all' => 'All', 'attention' => 'Attention', 'delayed' => 'Delayed', 'received' => 'New', 'whatsapp_pending' => 'WA Pending', 'processing' => 'Processing', 'printing' => 'Printing', 'ready' => 'Ready', 'delivered' => 'Delivered', 'cancelled' => 'Cancelled'];
-    foreach ($quickStatuses as $key => $label):
-      $hrefParams = ['status' => $key];
-      if ($key === 'all') unset($hrefParams['status']);
-      if ($search !== '') $hrefParams['search'] = $search;
-      $href = $orderUrl($hrefParams);
-      $active = ($status === $key) || ($key === 'all' && ($status === '' || $status === 'all'));
-  ?>
-  <a href="<?= htmlspecialchars($href) ?>" class="adm-orders-tab <?= $active ? 'act' : '' ?>">
-    <span><?= htmlspecialchars($label) ?></span>
-    <b><?= number_format((int)($statusCounts[$key] ?? 0)) ?></b>
-  </a>
-  <?php endforeach; ?>
-</div>
-
 <form method="GET" class="adm-orders-filters">
   <input name="search" class="fi" placeholder="Search order ID, name, phone…" value="<?= htmlspecialchars($search) ?>">
   <select name="status" class="fi fi-sel" onchange="this.form.submit()">
     <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>All Statuses</option>
-    <option value="attention" <?= $status === 'attention' ? 'selected' : '' ?>>Attention Required</option>
-    <option value="delayed" <?= $status === 'delayed' ? 'selected' : '' ?>>Delayed / Needs Attention</option>
     <?php foreach ($statusLabels as $k => $v): ?>
+    <?php if ($k === 'processing' || $k === 'whatsapp_pending') continue; ?>
     <option value="<?= $k ?>" <?= $status === $k ? 'selected' : '' ?>><?= $v ?></option>
     <?php endforeach; ?>
   </select>
@@ -104,11 +92,6 @@ $orderUrl = static function (array $params = []): string {
     <?php foreach (['paid'=>'Paid','pending'=>'Pending','failed'=>'Failed','refunded'=>'Refunded'] as $k => $v): ?>
     <option value="<?= $k ?>" <?= $paymentStatus === $k ? 'selected' : '' ?>><?= $v ?></option>
     <?php endforeach; ?>
-  </select>
-  <select name="seen" class="fi fi-sel" onchange="this.form.submit()">
-    <option value="all" <?= $seen === 'all' ? 'selected' : '' ?>>All Orders</option>
-    <option value="new" <?= $seen === 'new' ? 'selected' : '' ?>>New / Unseen</option>
-    <?php if ($hasSeen): ?><option value="seen" <?= $seen === 'seen' ? 'selected' : '' ?>>Seen</option><?php endif; ?>
   </select>
   <input type="date" name="date_from" class="fi" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="Date from">
   <input type="date" name="date_to" class="fi" value="<?= htmlspecialchars($dateTo) ?>" aria-label="Date to">
@@ -126,151 +109,88 @@ $orderUrl = static function (array $params = []): string {
 <?php if (!$orders): ?>
 <div style="text-align:center;padding:44px;color:var(--text2)"><div style="font-size:40px;margin-bottom:9px">📋</div><div>No orders found</div></div>
 <?php else: ?>
-<div class="adm-orders-wrap">
-  <table class="adm-orders-table">
-    <colgroup>
-      <col style="width:14%">
-      <col style="width:17%">
-      <col style="width:29%">
-      <col style="width:10%">
-      <col style="width:10%">
-      <col style="width:20%">
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Order</th>
-        <th>Customer</th>
-        <th>Items & Specifications</th>
-        <th>Value</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php foreach ($orders as $o): ?>
-      <?php
-        $orderNotesRaw = trim((string)($o['notes'] ?? ''));
-        $orderNotesJson = $orderNotesRaw !== '' ? json_decode($orderNotesRaw, true) : null;
-        $orderBilling = (is_array($orderNotesJson) && is_array($orderNotesJson['billing'] ?? null))
-            ? $orderNotesJson['billing']
-            : null;
-        $orderShipping = (is_array($orderNotesJson) && is_array($orderNotesJson['shipping'] ?? null))
-            ? $orderNotesJson['shipping']
-            : null;
-        $orderStatus = (string)($o['status'] ?? 'received');
-        $createdTs = strtotime((string)($o['created_at'] ?? '')) ?: time();
-        $isUnseenOrder = $hasSeen ? ((int)($o['is_seen'] ?? 1) === 0) : false;
-        $activeOrder = !in_array($orderStatus, ['delivered','cancelled'], true);
-        $isNewOrder = $activeOrder && $createdTs >= strtotime('-24 hours');
-        $isDelayedOrder = in_array($orderStatus, ['received','whatsapp_pending','processing','printing'], true) && $createdTs < strtotime('-24 hours');
-        $ageSeconds = max(0, time() - $createdTs);
-        $orderAge = $ageSeconds >= 86400 ? floor($ageSeconds / 86400) . 'd old' : floor($ageSeconds / 3600) . 'h old';
-        $rowClasses = ['order-row', 'order-row--' . preg_replace('/[^a-z0-9_-]+/i', '-', $orderStatus)];
-        if ($isNewOrder || $isUnseenOrder) $rowClasses[] = 'order-row--new';
-        if ($isDelayedOrder) $rowClasses[] = 'order-row--delayed';
-      ?>
-      <tr id="ord-<?= (int)$o['id'] ?>" class="<?= htmlspecialchars(implode(' ', $rowClasses)) ?>">
-        <td>
-          <div class="ord-id">#<?= htmlspecialchars($o['order_id']) ?></div>
-          <div class="ord-alerts">
-            <?php if ($isNewOrder || $isUnseenOrder): ?><span class="ord-mini-badge ord-mini-badge--new"><?= $isUnseenOrder ? 'Unseen' : 'New' ?></span><?php endif; ?>
-            <?php if ($isDelayedOrder): ?><span class="ord-mini-badge ord-mini-badge--delay">Needs attention</span><?php endif; ?>
-          </div>
-          <div class="ord-date"><?= date('d M Y, H:i', strtotime($o['created_at'])) ?></div>
-          <div class="ord-age">⏱ <?= htmlspecialchars($orderAge) ?></div>
-          <div class="ord-meta">Internal ID: <?= (int)$o['id'] ?></div>
-        </td>
-        <td>
-          <div class="ord-customer"><?= htmlspecialchars($o['customer_name']) ?></div>
-          <div class="ord-meta"><?= htmlspecialchars($o['customer_phone']) ?></div>
-          <?php if (!empty($o['customer_email'])): ?><div class="ord-meta"><?= htmlspecialchars($o['customer_email']) ?></div><?php endif; ?>
-          <?php if ($orderBilling): ?>
-          <div class="ord-meta" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">
-            <div style="font-weight:700;color:var(--text)">🧾 Billing</div>
-            <div><?= htmlspecialchars($orderBilling['legal_name'] ?? '-') ?></div>
-            <div>GSTIN: <?= htmlspecialchars($orderBilling['gst_no'] ?? '-') ?></div>
-            <?php if (!empty($orderBilling['phone'])): ?><div>Phone: <?= htmlspecialchars($orderBilling['phone']) ?></div><?php endif; ?>
-            <?php if (!empty($orderBilling['email'])): ?><div>Email: <?= htmlspecialchars($orderBilling['email']) ?></div><?php endif; ?>
-            <div>
-              <?= htmlspecialchars($orderBilling['address_line1'] ?? '') ?>
-              <?php if (!empty($orderBilling['address_line2'])): ?>, <?= htmlspecialchars($orderBilling['address_line2']) ?><?php endif; ?>
-            </div>
-            <div>
-              <?= htmlspecialchars($orderBilling['city'] ?? '') ?>, <?= htmlspecialchars($orderBilling['state'] ?? '') ?>
-              - <?= htmlspecialchars($orderBilling['pincode'] ?? '') ?>
-            </div>
-          </div>
-          <?php endif; ?>
-          <div class="ord-cust-actions">
-            <a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn">📞 Call</a>
-            <button class="aoc-btn" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($o['status']) ?>')">💬 WA</button>
-          </div>
-        </td>
-        <td>
-          <div class="ord-items-hdr"><?= count($o['items'] ?? []) ?> item(s)</div>
+<div class="adm-order-card-list" aria-label="Orders list">
+  <?php foreach ($orders as $o): ?>
+  <?php
+    $orderNotesRaw = trim((string)($o['notes'] ?? ''));
+    $orderNotesJson = $orderNotesRaw !== '' ? json_decode($orderNotesRaw, true) : null;
+    $orderBilling = (is_array($orderNotesJson) && is_array($orderNotesJson['billing'] ?? null)) ? $orderNotesJson['billing'] : null;
+    $orderShipping = (is_array($orderNotesJson) && is_array($orderNotesJson['shipping'] ?? null)) ? $orderNotesJson['shipping'] : null;
+    $orderStatus = (string)($o['status'] ?? 'new_order');
+    $createdTs = app_timestamp((string)($o['created_at'] ?? ''));
+    $isNewOrder = $orderStatus === 'new_order';
+    $ageSeconds = max(0, time() - $createdTs);
+    $orderAge = $ageSeconds >= 86400 ? floor($ageSeconds / 86400) . 'd old' : floor($ageSeconds / 3600) . 'h old';
+    $cardClasses = ['adm-order-card', 'adm-order-card--' . preg_replace('/[^a-z0-9_-]+/i', '-', $orderStatus)];
+    if ($isNewOrder) $cardClasses[] = 'adm-order-card--new';
+  ?>
+  <article id="ord-<?= (int)$o['id'] ?>" class="<?= htmlspecialchars(implode(' ', $cardClasses)) ?>" data-order-card>
+    <div class="adm-order-card-head">
+      <button class="adm-order-card-summary" type="button" aria-expanded="false" data-order-toggle onclick="toggleOrderCard(this)">
+        <span class="adm-order-card-id"><strong>#<?= htmlspecialchars($o['order_id']) ?></strong><small><?= htmlspecialchars(app_datetime((string)($o['created_at'] ?? ''), 'd M Y, H:i')) ?> · <?= htmlspecialchars($orderAge) ?></small></span>
+        <span class="adm-order-card-customer"><strong><?= htmlspecialchars($o['customer_name']) ?></strong><small><?= htmlspecialchars($o['customer_phone']) ?><?= !empty($o['customer_email']) ? ' · ' . htmlspecialchars($o['customer_email']) : '' ?></small></span>
+        <span class="adm-order-card-meta"><b>₹<?= number_format((float)$o['total_amount']) ?></b><small><?= count($o['items'] ?? []) ?> item(s)</small></span>
+        <span class="adm-order-card-badges"><span class="badge <?= $statusColors[$orderStatus] ?? 'b-blue' ?>"><?= htmlspecialchars($statusLabels[$orderStatus] ?? $orderStatus) ?></span><span class="badge <?= $o['payment_status'] === 'paid' ? 'b-green' : 'b-amber' ?>"><?= ucfirst($o['payment_status']) ?></span></span>
+      </button>
+      <div class="adm-order-card-quick" aria-label="Quick order actions">
+        <select class="fi fi-sel" id="ord_status_<?= (int)$o['id'] ?>" aria-label="Update status for order <?= htmlspecialchars($o['order_id']) ?>"><?php foreach (['new_order','received','design_approved','printing','other_process','ready','delivered','cancelled'] as $s): ?><option value="<?= $s ?>" <?= $orderStatus === $s ? 'selected' : '' ?>><?= $statusLabels[$s] ?? ucfirst($s) ?></option><?php endforeach; ?></select>
+        <button class="btn btn-outline btn-sm" type="button" onclick="updOrdFromSel(<?= (int)$o['id'] ?>)">Update</button>
+      </div>
+      <button class="adm-order-card-toggle" type="button" aria-label="Expand order <?= htmlspecialchars($o['order_id']) ?>" aria-expanded="false" data-order-toggle onclick="toggleOrderCard(this)">⌄</button>
+    </div>
+    <div class="adm-order-card-body" hidden>
+      <div class="adm-order-card-grid">
+        <section class="adm-order-card-section adm-order-card-section--full adm-order-card-section--flush">
           <?php foreach (($o['items'] ?? []) as $item): ?>
-          <div class="ord-item-row">
-            <div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?></div>
-            <div class="ord-meta">
-              <?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?>
-              <?= $item['design_choice'] === 'rcs' ? ' · 🎨 RCS Design' : ' · 📁 Upload' ?>
+            <?php
+              $approvalId = (int)($item['design_approval_id'] ?? 0);
+              $approvalStatus = (string)($item['design_approval_status'] ?? 'pending_review');
+              $designChoice = (string)($item['design_choice'] ?? 'upload');
+              $isRcsDesign = $designChoice === 'rcs';
+            ?>
+            <div class="ord-item-row ord-design-workflow ord-design-workflow--<?= htmlspecialchars($approvalStatus) ?> <?= !$isRcsDesign ? 'ord-design-workflow--customer-upload' : 'ord-design-workflow--rcs' ?>">
+              <div class="ord-design-head">
+                <div><div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?> <span class="ord-design-inline-choice"><?= $isRcsDesign ? 'RCS Design' : 'Customer Upload' ?></span></div><div class="ord-meta"><?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?> · <?= $isRcsDesign ? 'RCS will prepare proof' : 'Customer artwork approval required' ?></div></div>
+                <div class="ord-design-badges"><span class="badge <?= $isRcsDesign ? 'b-purple' : 'b-blue' ?>"><?= $isRcsDesign ? '🎨 RCS Design' : '📁 Customer Upload' ?></span><span class="badge <?= $designApprovalColors[$approvalStatus] ?? 'b-amber' ?>"><?= htmlspecialchars($designApprovalLabels[$approvalStatus] ?? $approvalStatus) ?></span></div>
+              </div>
+              <div class="ord-design-strip">
+                <div class="ord-design-filebox">
+                  <strong><?= $isRcsDesign ? 'Customer Brief / Assets' : 'Customer Artwork' ?></strong>
+                  <?php if (!empty($item['artwork_file_id'])): ?>
+                    <span><?= htmlspecialchars($item['artwork_original_name'] ?: $item['artwork_filename'] ?: 'Artwork File') ?></span>
+                    <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/download" class="ord-artwork-link ord-artwork-link--primary">Download</a></span>
+                  <?php else: ?>
+                    <span class="ord-artwork-empty"><?= $isRcsDesign ? 'Use WhatsApp/customer communication for brief and assets.' : 'No artwork uploaded' ?></span>
+                  <?php endif; ?>
+                </div>
+                <div class="ord-design-filebox ord-design-filebox--proof">
+                  <strong>Corrected File</strong>
+                  <?php if (!empty($item['design_proof_file_id'])): ?>
+                    <span><?= htmlspecialchars($item['design_proof_original_name'] ?: $item['design_proof_filename'] ?: 'Proof File') ?></span>
+                    <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" class="ord-artwork-link">Download</a></span>
+                  <?php else: ?>
+                    <span class="ord-artwork-empty">No proof uploaded yet</span>
+                  <?php endif; ?>
+                </div>
+                <?php if ($approvalId > 0): ?>
+                <div class="ord-design-actions">
+                  <input type="file" id="proof_<?= $approvalId ?>" class="ord-proof-input" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" onchange="uploadDesignProof(<?= $approvalId ?>)">
+                  <button class="aoc-btn" type="button" onclick="chooseDesignProof(<?= $approvalId ?>)">Upload Proof</button>
+                  <button class="aoc-btn aoc-btn--danger" type="button" onclick="setDesignApproval(<?= $approvalId ?>,'issue_found')">Mark Issue</button>
+                  <button class="aoc-btn aoc-btn--approve" type="button" onclick="setDesignApproval(<?= $approvalId ?>,'approved')">Approve Design</button>
+                </div>
+                <?php endif; ?>
+              </div>
+              <?php if (!empty($item['design_admin_note'])): ?><div class="ord-design-note <?= $approvalStatus === 'issue_found' ? 'ord-design-note--issue' : '' ?>"><?= $approvalStatus === 'issue_found' ? '⚠ Issue for customer: ' : 'Note: ' ?><?= htmlspecialchars($item['design_admin_note']) ?></div><?php endif; ?>
+              <?php if (!empty($item['design_customer_note'])): ?><div class="ord-design-note ord-design-note--customer <?= $approvalStatus === 'revision_requested' ? 'ord-design-note--issue' : '' ?>">💬 Customer revision: <?= htmlspecialchars($item['design_customer_note']) ?></div><?php endif; ?>
             </div>
-            <?php if (!empty($item['artwork_file_id'])): ?>
-            <div class="ord-artwork">
-              <span>📎 <?= htmlspecialchars($item['artwork_original_name'] ?: $item['artwork_filename'] ?: 'Artwork File') ?></span>
-              <a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/download" class="ord-artwork-link">Download</a>
-            </div>
-            <?php elseif (($item['design_choice'] ?? '') !== 'rcs'): ?>
-            <div class="ord-artwork ord-artwork-empty">No artwork uploaded</div>
-            <?php endif; ?>
-          </div>
           <?php endforeach; ?>
-        </td>
-        <td>
-          <div class="ord-amt">₹<?= number_format((float)$o['total_amount']) ?></div>
-          <?php if (!empty($o['coupon_code'])): ?><div class="ord-meta" style="color:var(--green)">Coupon: <?= htmlspecialchars($o['coupon_code']) ?></div><?php endif; ?>
-        </td>
-        <td>
-          <div class="ord-status-stack">
-            <span class="badge <?= $statusColors[$o['status']] ?? 'b-blue' ?>"><?= $statusLabels[$o['status']] ?? $o['status'] ?></span>
-            <span class="badge <?= $o['payment_status'] === 'paid' ? 'b-green' : 'b-amber' ?>"><?= ucfirst($o['payment_status']) ?></span>
-          </div>
-        </td>
-        <td>
-          <div class="ord-actions">
-            <?php if ($isUnseenOrder): ?><button class="aoc-btn" onclick="markOrderSeen(<?= (int)$o['id'] ?>)">✓ Mark seen</button><?php endif; ?>
-            <a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">🧾 Invoice</a>
-            <a href="/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn" target="_blank">👁 View</a>
-            <button
-              class="aoc-btn"
-              onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'
-            >📍 Addresses</button>
-          </div>
-
-          <div class="ord-status-row">
-            <select class="fi fi-sel" id="ord_status_<?= (int)$o['id'] ?>">
-              <?php foreach (['received','processing','printing','ready','delivered','cancelled'] as $s): ?>
-              <option value="<?= $s ?>" <?= $o['status'] === $s ? 'selected' : '' ?>><?= $statusLabels[$s] ?? ucfirst($s) ?></option>
-              <?php endforeach; ?>
-            </select>
-            <button class="btn btn-outline btn-sm" onclick="updOrdFromSel(<?= (int)$o['id'] ?>)">Update</button>
-          </div>
-
-          <details class="ord-ship">
-            <summary>Shipping details</summary>
-            <div class="ord-ship-grid">
-              <input class="fi" id="ship_provider_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['shipping_provider'] ?? '') ?>" placeholder="Provider">
-              <input class="fi" id="ship_track_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['tracking_code'] ?? '') ?>" placeholder="Tracking code">
-              <input class="fi" id="ship_status_<?= (int)$o['id'] ?>" value="<?= htmlspecialchars($o['shipping_status'] ?? '') ?>" placeholder="Shipping status">
-              <button class="btn btn-outline btn-sm" onclick="saveShipping(<?= (int)$o['id'] ?>)">Save</button>
-            </div>
-            <textarea class="fi" id="ship_notes_<?= (int)$o['id'] ?>" style="height:56px" placeholder="Shipping notes"><?= htmlspecialchars($o['shipping_notes'] ?? '') ?></textarea>
-          </details>
-        </td>
-      </tr>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
+        </section>
+        <section class="adm-order-card-section adm-order-card-section--full adm-order-action-strip"><span class="ord-action-strip-label">Quick actions</span><div class="ord-actions ord-actions--compact"><a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn aoc-btn--call">📞 Call Customer</a><button class="aoc-btn aoc-btn--wa" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($orderStatus) ?>')">💬 WhatsApp</button><a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn aoc-btn--invoice" target="_blank">🧾 Invoice</a><button class="aoc-btn aoc-btn--address" onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'>📍 Address</button></div></section>
+      </div>
+    </div>
+  </article>
+  <?php endforeach; ?>
 </div>
 <?php endif; ?>
 
@@ -305,24 +225,28 @@ $orderUrl = static function (array $params = []): string {
 <?php if ($total > $perPage): ?>
 <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap">
   <?php for ($i = 1; $i <= ceil($total / $perPage); $i++): ?>
-  <a href="?page=<?= $i ?>&status=<?= urlencode($status) ?>&search=<?= urlencode($search) ?>" class="btn <?= $page === $i ? 'btn-blue' : 'btn-outline' ?> btn-sm"><?= $i ?></a>
+  <?php $pageHref = $orderUrl(['page'=>$i,'status'=>$status,'search'=>$search,'payment_status'=>$paymentStatus,'seen'=>$seen,'sort'=>$sort,'date_from'=>$dateFrom,'date_to'=>$dateTo]); ?>
+  <a href="<?= htmlspecialchars($pageHref) ?>" class="btn <?= $page === $i ? 'btn-blue' : 'btn-outline' ?> btn-sm"><?= $i ?></a>
   <?php endfor; ?>
 </div>
 <?php endif; ?>
 
 <script>
+function toggleOrderCard(btn) {
+  const card = btn.closest('[data-order-card]');
+  const body = card?.querySelector('.adm-order-card-body');
+  if (!card || !body) return;
+  const open = card.classList.toggle('open');
+  body.hidden = !open;
+  card.querySelectorAll('[data-order-toggle]').forEach((toggle) => {
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+}
 function toast(msg, type='info') {
   const w = document.getElementById('tw');
   const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg; w.appendChild(t);
   requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
-}
-
-async function markOrderSeen(id) {
-  const resp = await fetch(`/admin/api/orders/${id}/seen`, {method:'POST', headers:{'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'}});
-  const data = await resp.json();
-  if (data.ok) { toast('Order marked as seen', 'success'); setTimeout(() => location.reload(), 450); }
-  else toast(data.msg || 'Could not mark seen', 'error');
 }
 
 function updOrdFromSel(id) {
@@ -339,6 +263,46 @@ async function updOrd(id, status) {
   const data = await resp.json();
   if (data.ok) { toast('Order updated to ' + status, 'success'); setTimeout(() => location.reload(), 500); }
   else toast('Update failed', 'error');
+}
+
+async function setDesignApproval(id, status) {
+  const label = status === 'approved' ? 'Approve design?' : 'Describe the artwork/design issue for the customer';
+  const note = window.prompt(label, status === 'approved' ? 'Design approved for printing.' : '');
+  if (note === null) return;
+  if (status === 'issue_found' && !note.trim()) {
+    toast('Please add an issue note for the customer', 'error');
+    return;
+  }
+  const resp = await fetch(`/admin/api/design-approvals/${id}`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'},
+    body: JSON.stringify({ status, admin_note: note })
+  });
+  const data = await resp.json();
+  if (data.ok) { toast('Design approval updated', 'success'); setTimeout(() => location.reload(), 500); }
+  else toast(data.msg || 'Could not update design approval', 'error');
+}
+
+function chooseDesignProof(id) {
+  const input = document.getElementById(`proof_${id}`);
+  if (input) input.click();
+}
+
+async function uploadDesignProof(id) {
+  const input = document.getElementById(`proof_${id}`);
+  if (!input || !input.files.length) { toast('Please choose a proof file first', 'error'); return; }
+  const note = window.prompt('Optional proof note for customer/admin', 'Proof uploaded for review.') ?? '';
+  const fd = new FormData();
+  fd.append('proof', input.files[0]);
+  fd.append('admin_note', note);
+  const resp = await fetch(`/admin/api/design-approvals/${id}/proof`, {
+    method: 'POST',
+    headers: {'X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'},
+    body: fd
+  });
+  const data = await resp.json();
+  if (data.ok) { toast('Proof uploaded', 'success'); setTimeout(() => location.reload(), 500); }
+  else toast(data.msg || 'Proof upload failed', 'error');
 }
 
 async function saveShipping(id) {

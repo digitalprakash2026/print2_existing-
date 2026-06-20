@@ -59,6 +59,9 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
         return false;
     }
 };
+\Orders\OrderManager::ensureWorkflowSchema();
+\Orders\OrderManager::ensureDesignApprovalSchema();
+\Approvals\ContentApprovalManager::ensureSchema();
 
 $adminUsersHasMobile = null;
 $hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
@@ -90,10 +93,21 @@ if (str_starts_with($uri, '/admin/api/')) {
         return $value !== '' ? $value : 'blog-post';
     };
     $sanitizeBlogContent = static function (string $html): string {
-        $allowed = '<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><a><blockquote><img><figure><figcaption>';
+        $allowed = '<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><a><blockquote><img><figure><figcaption><div><span><hr><iframe><video><source>';
         $clean = strip_tags($html, $allowed);
         $clean = preg_replace('/\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $clean) ?? $clean;
         $clean = preg_replace('/(href|src)\s*=\s*("|\')\s*javascript:[^"\']*("|\')/i', '$1="#"', $clean) ?? $clean;
+        $clean = preg_replace_callback('/<iframe\b([^>]*)>/i', static function (array $m): string {
+            $attrs = $m[1] ?? '';
+            if (!preg_match('/src\s*=\s*("|\')([^"\']+)\1/i', $attrs, $srcMatch)) {
+                return '';
+            }
+            $src = $srcMatch[2];
+            if (!preg_match('#^https://(www\.)?(youtube\.com/embed/|player\.vimeo\.com/video/)#i', $src)) {
+                return '';
+            }
+            return '<iframe src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" loading="lazy" allowfullscreen></iframe>';
+        }, $clean) ?? $clean;
         return trim($clean);
     };
     $uniqueBlogSlug = static function (string $base, int $ignoreId = 0) use ($slugify): string {
@@ -261,15 +275,15 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/dashboard' && $method === 'GET') {
         $hasSeen = $ensureOrderSeenColumn();
-        $newOrderWhere = $hasSeen ? "is_seen = 0" : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
-        $stats = [
+        $newOrderWhere = "status='new_order'";
+        $statRows = [
             'total_orders'      => Database::row("SELECT COUNT(*) as c FROM orders")['c'] ?? 0,
             'new_orders'        => Database::row("SELECT COUNT(*) as c FROM orders WHERE $newOrderWhere")['c'] ?? 0,
             'total_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status='paid'")['r'] ?? 0,
             'today_revenue'     => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE DATE(created_at)=CURDATE() AND payment_status='paid'")['r'] ?? 0,
             'today_orders'      => Database::row("SELECT COUNT(*) as c FROM orders WHERE DATE(created_at)=CURDATE()")['c'] ?? 0,
-            'pending_orders'    => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending')")['c'] ?? 0,
-            'production_orders' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('processing','printing')")['c'] ?? 0,
+            'pending_orders'    => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('new_order','received','whatsapp_pending')")['c'] ?? 0,
+            'production_orders' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('design_approved','other_process','processing','printing')")['c'] ?? 0,
             'ready_orders'      => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0,
             'delivered_orders'  => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='delivered'")['c'] ?? 0,
             'pending_payments'  => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE payment_status IS NULL OR payment_status <> 'paid'")['r'] ?? 0,
@@ -277,12 +291,68 @@ if (str_starts_with($uri, '/admin/api/')) {
             'avg_order_value'   => Database::row("SELECT COALESCE(AVG(total_amount),0) as a FROM orders WHERE payment_status='paid'")['a'] ?? 0,
             'total_customers'   => Database::row("SELECT COUNT(*) as c FROM users")['c'] ?? 0,
         ];
+        $trendPct = static function ($current, $previous): ?float {
+            $current = (float)$current;
+            $previous = (float)$previous;
+            if ($previous <= 0) {
+                return $current > 0 ? 100.0 : 0.0;
+            }
+            return round((($current - $previous) / $previous) * 100, 2);
+        };
+        $comparisonRows = [
+            'new_orders' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='new_order' AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'pending_orders' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('new_order','received','whatsapp_pending') AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'production_orders' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('design_approved','other_process','processing','printing') AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'ready_orders' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready' AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'delivered_orders' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM orders WHERE status='delivered' AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)")['c'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'today_revenue' => [
+                'previous' => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND payment_status='paid'")['r'] ?? 0,
+                'label' => 'vs yesterday',
+            ],
+            'month_revenue' => [
+                'previous' => Database::row("SELECT COALESCE(SUM(total_amount),0) as r FROM orders WHERE created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH),'%Y-%m-01') AND created_at < DATE_FORMAT(CURDATE(),'%Y-%m-01') AND payment_status='paid'")['r'] ?? 0,
+                'label' => 'vs last month',
+            ],
+            'avg_order_value' => [
+                'previous' => Database::row("SELECT COALESCE(AVG(total_amount),0) as a FROM orders WHERE created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH),'%Y-%m-01') AND created_at < DATE_FORMAT(CURDATE(),'%Y-%m-01') AND payment_status='paid'")['a'] ?? 0,
+                'label' => 'vs last month',
+            ],
+            'total_customers' => [
+                'previous' => Database::row("SELECT COUNT(*) as c FROM users WHERE created_at < DATE_FORMAT(CURDATE(),'%Y-%m-01')")['c'] ?? 0,
+                'label' => 'vs last month',
+            ],
+        ];
+        $stats = [];
+        foreach ($statRows as $key => $value) {
+            $stats[$key] = $value;
+            if (isset($comparisonRows[$key])) {
+                $stats[$key . '_trend'] = $trendPct($value, $comparisonRows[$key]['previous']);
+                $stats[$key . '_trend_label'] = $comparisonRows[$key]['label'];
+            }
+        }
         $queue = [
-            'design_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('received','whatsapp_pending')")['c'] ?? 0),
-            'approval_pending' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='whatsapp_pending'")['c'] ?? 0),
+            'new_order' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='new_order'")['c'] ?? 0),
+            'received' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='received'")['c'] ?? 0),
+            'design_approved' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='design_approved'")['c'] ?? 0),
             'printing' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='printing'")['c'] ?? 0),
-            'packing' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='processing'")['c'] ?? 0),
-            'ready_delivery' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0),
+            'other_process' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status IN ('other_process','processing')")['c'] ?? 0),
+            'ready' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='ready'")['c'] ?? 0),
+            'delivered' => (int)(Database::row("SELECT COUNT(*) as c FROM orders WHERE status='delivered'")['c'] ?? 0),
         ];
         $byStatus    = Database::rows("SELECT status, COUNT(*) as count FROM orders GROUP BY status");
         $monthly     = Database::rows("SELECT DATE_FORMAT(created_at,'%b %Y') as month, SUM(total_amount) as revenue, COUNT(*) as orders FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH) GROUP BY YEAR(created_at), MONTH(created_at) ORDER BY created_at ASC");
@@ -294,7 +364,7 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/order-notifications' && $method === 'GET') {
         $hasSeen = $ensureOrderSeenColumn();
-        $newOrderWhere = $hasSeen ? "is_seen = 0" : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
+        $newOrderWhere = "status='new_order'";
         $count = (int)(Database::row("SELECT COUNT(*) AS c FROM orders WHERE $newOrderWhere")['c'] ?? 0);
         $orders = Database::rows("SELECT id, order_id, customer_name, total_amount, status, created_at FROM orders WHERE $newOrderWhere ORDER BY created_at DESC LIMIT 5");
         json(['ok'=>true,'count'=>$count,'orders'=>$orders,'seen_supported'=>$hasSeen]);
@@ -311,7 +381,14 @@ if (str_starts_with($uri, '/admin/api/')) {
         $q      = trim($_GET['q'] ?? '');
         $where = [];
         $params = [];
-        if ($status && $status !== 'all') { $where[] = 'o.status = ?'; $params[] = $status; }
+        if ($status && $status !== 'all') {
+            if ($status === 'other_process') {
+                $where[] = "o.status IN ('other_process','processing')";
+            } else {
+                $where[] = 'o.status = ?';
+                $params[] = $status;
+            }
+        }
         if ($q) {
             $where[] = '(o.order_id LIKE ? OR o.customer_name LIKE ? OR o.customer_phone LIKE ? OR o.customer_email LIKE ?)';
             $like = '%' . $q . '%';
@@ -363,20 +440,28 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     }
     if ($uri === '/admin/api/products' && $method === 'POST') {
-        json(\Catalog\ProductCatalog::upsert($body));
+        if (!\Auth\Auth::isSuperAdmin()) $body['is_active'] = 0;
+        $result = \Catalog\ProductCatalog::upsert($body);
+        if (!empty($result['ok']) && !empty($result['id'])) \Approvals\ContentApprovalManager::applySaveState('products', (int)$result['id']);
+        json($result);
     }
     if (preg_match('#^/admin/api/products/(\d+)$#', $uri, $m) && $method === 'GET') {
         $p = \Catalog\ProductCatalog::byId((int)$m[1]);
         json($p ? ['ok'=>true,'product'=>$p] : ['ok'=>false,'msg'=>'Not found'], $p ? 200 : 404);
     }
     if (preg_match('#^/admin/api/products/(\d+)$#', $uri, $m) && $method === 'PUT') {
-        json(\Catalog\ProductCatalog::upsert($body, (int)$m[1]));
+        if (!\Auth\Auth::isSuperAdmin()) $body['is_active'] = 0;
+        $result = \Catalog\ProductCatalog::upsert($body, (int)$m[1]);
+        if (!empty($result['ok'])) \Approvals\ContentApprovalManager::applySaveState('products', (int)$m[1]);
+        json($result);
     }
     if (preg_match('#^/admin/api/products/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         Database::query("UPDATE products SET is_active = NOT is_active WHERE id=?", [$m[1]]);
         json(['ok'=>true]);
     }
     if (preg_match('#^/admin/api/products/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         Database::query("DELETE FROM products WHERE id=?", [$m[1]]);
         json(['ok'=>true]);
     }
@@ -552,7 +637,11 @@ if (str_starts_with($uri, '/admin/api/')) {
             $id = Database::insert("INSERT INTO product_images (product_id, url, alt_text, is_primary, sort_order) VALUES (?,?,?,?,?)",
                 [$pid, $body['url'] ?? $body['image_path'] ?? '', $body['alt_text']??'', $body['is_primary']??0, $body['sort_order']??0]);
         }
-        if (!empty($body['is_primary'])) Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=? AND id!=?", [$pid,$id]);
+        if (!empty($body['is_primary'])) {
+            Database::query("UPDATE product_images SET is_primary=0 WHERE product_id=? AND id!=?", [$pid,$id]);
+            $primaryPath = (string)($body['image_path'] ?? $body['url'] ?? '');
+            try { Database::query("UPDATE products SET image_path=? WHERE id=?", [$primaryPath, $pid]); } catch (\Throwable) {}
+        }
         json(['ok'=>true,'id'=>$id]);
     }
     if (preg_match('#^/admin/api/products/(\d+)/images/(\d+)$#', $uri, $m) && $method === 'DELETE') {
@@ -647,29 +736,31 @@ if (str_starts_with($uri, '/admin/api/')) {
         if ($scopeType === 'category' && $categoryId <= 0) {
             json(['ok'=>false,'msg'=>'Please select a category for category-specific coupon.'], 422);
         }
+        $active = \Auth\Auth::isSuperAdmin() ? 1 : 0;
         try {
             $id = Database::insert(
                 "INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_uses,valid_from,valid_until,scope_type,category_id,is_active)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,1)",
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 [
                     $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
                     (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
                     (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null,
-                    $scopeType, $scopeType === 'category' ? $categoryId : null,
+                    $scopeType, $scopeType === 'category' ? $categoryId : null, $active,
                 ]
             );
         } catch (\Throwable) {
             $id = Database::insert(
                 "INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_uses,valid_from,valid_until,is_active)
-                 VALUES (?,?,?,?,?,?,?,?,1)",
+                 VALUES (?,?,?,?,?,?,?,?,?)",
                 [
                     $code, $body['description'] ?? '', $body['discount_type'] ?? 'percent',
                     (float)($body['discount_value'] ?? 0), (float)($body['min_order_amount'] ?? 0),
-                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null,
+                    (int)($body['max_uses'] ?? 0), $body['valid_from'] ?: null, $body['valid_until'] ?: null, $active,
                 ]
             );
         }
         \Orders\AdminAudit::log('coupon_created',"Coupon: $code");
+        \Approvals\ContentApprovalManager::applySaveState('coupons', (int)$id);
         json(['ok'=>true,'id'=>$id]);
     }
     if (preg_match('#^/admin/api/coupons/(\d+)$#', $uri, $m) && $method === 'PUT') {
@@ -707,13 +798,16 @@ if (str_starts_with($uri, '/admin/api/')) {
             );
         }
         \Orders\AdminAudit::log('coupon_updated',"Coupon: $code");
+        \Approvals\ContentApprovalManager::applySaveState('coupons', $id);
         json(['ok'=>true,'id'=>$id]);
     }
     if (preg_match('#^/admin/api/coupons/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         Database::query("UPDATE coupons SET is_active=NOT is_active WHERE id=?",[$m[1]]);
         json(['ok'=>true]);
     }
     if (preg_match('#^/admin/api/coupons/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         Database::query("DELETE FROM coupons WHERE id=?",[$m[1]]);
         json(['ok'=>true]);
     }
@@ -758,6 +852,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         $imageAlt = trim((string)($body['image_alt'] ?? '')) ?: ($name . ' category image');
         $sort = (int)($body['sort_order'] ?? 0);
         $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : 1;
+        if (!\Auth\Auth::isSuperAdmin()) $active = 0;
         try {
             $id = Database::insert(
                 "INSERT INTO categories (name,slug,code_prefix,icon,image_path,image_alt,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?)",
@@ -777,6 +872,7 @@ if (str_starts_with($uri, '/admin/api/')) {
             }
         }
         \Orders\AdminAudit::log('category_created', "Category #{$id}: {$name}");
+        \Approvals\ContentApprovalManager::applySaveState('categories', (int)$id);
         json(['ok'=>true,'id'=>$id]);
     }
     if (preg_match('#^/admin/api/categories/(\d+)$#', $uri, $m) && $method === 'PUT') {
@@ -796,6 +892,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         $imageAlt = trim((string)($body['image_alt'] ?? ($existing['image_alt'] ?? ''))) ?: ($name . ' category image');
         $sort = (int)($body['sort_order'] ?? ($existing['sort_order'] ?? 0));
         $active = isset($body['is_active']) ? (int)((int)$body['is_active'] > 0) : (int)($existing['is_active'] ?? 1);
+        if (!\Auth\Auth::isSuperAdmin()) $active = 0;
 
         try {
             Database::query(
@@ -816,15 +913,18 @@ if (str_starts_with($uri, '/admin/api/')) {
             }
         }
         \Orders\AdminAudit::log('category_updated', "Category #{$id}: {$name}");
+        \Approvals\ContentApprovalManager::applySaveState('categories', $id);
         json(['ok'=>true]);
     }
     if (preg_match('#^/admin/api/categories/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $id = (int)$m[1];
         Database::query("UPDATE categories SET is_active = CASE WHEN is_active=1 THEN 0 ELSE 1 END WHERE id=?", [$id]);
         \Orders\AdminAudit::log('category_toggled', "Category #{$id} status toggled");
         json(['ok'=>true]);
     }
     if (preg_match('#^/admin/api/categories/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $id = (int)$m[1];
         $cat = Database::row("SELECT id,name FROM categories WHERE id=?", [$id]);
         if (!$cat) json(['ok'=>false,'msg'=>'Category not found'], 404);
@@ -994,9 +1094,10 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['cta_url'] ?? '/categories')) ?: '/categories',
                     $theme,
                     (int)($body['sort_order'] ?? 0),
-                    (int)($body['is_active'] ?? 1),
+                    \Auth\Auth::isSuperAdmin() ? (int)($body['is_active'] ?? 1) : 0,
                 ]
             );
+            \Approvals\ContentApprovalManager::applySaveState('home_deals', (int)$id);
             json(['ok'=>true,'id'=>$id]);
         } catch (\Throwable) {
             json(['ok'=>false,'msg'=>'Could not create deal. Run migration first.'], 500);
@@ -1031,16 +1132,18 @@ if (str_starts_with($uri, '/admin/api/')) {
                     trim((string)($body['cta_url'] ?? '/categories')) ?: '/categories',
                     $theme,
                     (int)($body['sort_order'] ?? 0),
-                    (int)($body['is_active'] ?? 1),
+                    \Auth\Auth::isSuperAdmin() ? (int)($body['is_active'] ?? 1) : 0,
                     (int)$m[1],
                 ]
             );
+            \Approvals\ContentApprovalManager::applySaveState('home_deals', (int)$m[1]);
             json(['ok'=>true]);
         } catch (\Throwable) {
             json(['ok'=>false,'msg'=>'Could not update deal'], 500);
         }
     }
     if (preg_match('#^/admin/api/deals/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         try {
             Database::query("DELETE FROM home_deals WHERE id=?", [(int)$m[1]]);
             json(['ok'=>true]);
@@ -1049,6 +1152,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     }
     if ($uri === '/admin/api/deals/reorder' && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         foreach (($body['items'] ?? []) as $item) {
             Database::query("UPDATE home_deals SET sort_order=?, updated_at=NOW() WHERE id=?", [(int)($item['sort_order'] ?? 0), (int)($item['id'] ?? 0)]);
         }
@@ -1180,17 +1284,18 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
         $file = $_FILES['image'];
         if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
-        if ((int)$file['size'] > 6 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 6MB'], 400);
+        if ((int)$file['size'] > 30 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 30MB'], 400);
         $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        if (!in_array($ext, ['jpg','jpeg','png','webp','mp4','webm'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp, mp4, webm allowed'], 400);
         $mime = mime_content_type($file['tmp_name']) ?: '';
-        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $isVideo = in_array($mime, ['video/mp4','video/webm'], true);
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp','video/mp4','video/webm'], true)) json(['ok'=>false,'msg'=>'Invalid media type'], 400);
         $dir = PUBLIC_PATH . '/uploads/blogs/';
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
         $name = 'blog_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
         $target = $dir . $name;
         if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
-        json(['ok'=>true,'path'=>'/uploads/blogs/' . $name]);
+        json(['ok'=>true,'path'=>'/uploads/blogs/' . $name,'type'=>$isVideo ? 'video' : 'image']);
     }
 
 
@@ -1252,10 +1357,88 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true]);
     }
 
-    if ($uri === '/admin/api/customers' && $method === 'GET') {
-        json(['ok'=>true,'customers'=>Database::rows("SELECT u.*,COUNT(o.id) as order_count, COALESCE(SUM(o.total_amount),0) as total_spent FROM users u LEFT JOIN orders o ON o.user_id=u.id GROUP BY u.id ORDER BY total_spent DESC")]);
+    if ($uri === '/admin/api/leads' && $method === 'GET') {
+        try {
+            $data = \Leads\ContactLeadManager::adminList();
+            json(['ok' => empty($data['msg'])] + $data, empty($data['msg']) ? 200 : 500);
+        } catch (\Throwable $e) {
+            error_log('Admin leads API failed: ' . $e->getMessage());
+            json(['ok' => false, 'leads' => [], 'summary' => [], 'msg' => 'Unable to load leads.'], 500);
+        }
     }
+    if (preg_match('#^/admin/api/leads/(\d+)$#', $uri, $m) && $method === 'POST') {
+        $result = \Leads\ContactLeadManager::update((int)$m[1], $body);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+
+    if ($uri === '/admin/api/customers' && $method === 'GET') {
+        $customers = Database::rows(
+            "SELECT u.id, u.name, u.email, u.phone, u.company, u.created_at,
+                    COUNT(o.id) AS order_count,
+                    COALESCE(SUM(o.total_amount),0) AS total_spent,
+                    COALESCE(AVG(o.total_amount),0) AS avg_order_value,
+                    MAX(o.created_at) AS last_order_at,
+                    SUM(CASE WHEN o.status IN ('new_order','received','design_approved','printing','other_process','processing','ready','whatsapp_pending') THEN 1 ELSE 0 END) AS active_orders,
+                    SUM(CASE WHEN o.status='delivered' THEN 1 ELSE 0 END) AS delivered_orders,
+                    SUM(CASE WHEN o.status='cancelled' THEN 1 ELSE 0 END) AS cancelled_orders,
+                    (SELECT oi.product_name
+                       FROM order_items oi
+                       INNER JOIN orders lo ON lo.id = oi.order_id
+                      WHERE lo.user_id = u.id
+                      ORDER BY lo.created_at DESC, oi.id ASC
+                      LIMIT 1) AS last_product
+             FROM users u
+             LEFT JOIN orders o ON o.user_id = u.id
+             GROUP BY u.id
+             ORDER BY total_spent DESC, last_order_at DESC"
+        );
+        $summary = [
+            'total_customers' => count($customers),
+            'repeat_customers' => 0,
+            'high_value_customers' => 0,
+            'inactive_customers' => 0,
+            'total_revenue' => 0,
+        ];
+        $now = time();
+        foreach ($customers as &$customer) {
+            $orders = (int)($customer['order_count'] ?? 0);
+            $spent = (float)($customer['total_spent'] ?? 0);
+            $lastOrderAt = (string)($customer['last_order_at'] ?? '');
+            $daysSince = $lastOrderAt !== '' ? (int)floor(max(0, $now - app_timestamp($lastOrderAt)) / 86400) : null;
+            $segment = 'new';
+            if ($orders === 0) $segment = 'no_orders';
+            elseif ($daysSince !== null && $daysSince >= 60) $segment = 'inactive';
+            elseif ($spent >= 25000) $segment = 'high_value';
+            elseif ($orders >= 2) $segment = 'repeat';
+            $customer['segment'] = $segment;
+            $customer['days_since_last_order'] = $daysSince;
+            $customer['recent_orders'] = Database::rows(
+                "SELECT order_id, total_amount, status, payment_status, created_at
+                   FROM orders
+                  WHERE user_id = ?
+                  ORDER BY created_at DESC
+                  LIMIT 4",
+                [(int)$customer['id']]
+            );
+            if ($orders >= 2) $summary['repeat_customers']++;
+            if ($spent >= 25000) $summary['high_value_customers']++;
+            if ($segment === 'inactive') $summary['inactive_customers']++;
+            $summary['total_revenue'] += $spent;
+        }
+        unset($customer);
+        json(['ok'=>true,'customers'=>$customers,'summary'=>$summary]);
+    }
+    if ($uri === '/admin/api/approvals' && $method === 'GET') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
+        json(['ok'=>true,'items'=>\Approvals\ContentApprovalManager::listPending(),'can_approve'=>true]);
+    }
+    if (preg_match('#^/admin/api/approvals/([a-z_]+)/(\d+)/(approve|reject)$#', $uri, $m) && $method === 'POST') {
+        $result = \Approvals\ContentApprovalManager::decide((string)$m[1], (int)$m[2], (string)$m[3], trim((string)($body['note'] ?? '')));
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+
     if ($uri === '/admin/api/admin-users' && $method === 'GET') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $hasMobile = $hasAdminUsersMobile();
         $mobileSelect = $hasMobile ? "mobile" : "'' AS mobile";
         $admins = Database::rows(
@@ -1266,11 +1449,13 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok' => true, 'admins' => $admins, 'has_mobile_column' => $hasMobile]);
     }
     if ($uri === '/admin/api/admin-users' && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $name = trim((string)($body['name'] ?? ''));
         $email = strtolower(trim((string)($body['email'] ?? '')));
         $mobile = trim((string)($body['mobile'] ?? ''));
         $password = (string)($body['password'] ?? '');
         $role = trim((string)($body['role'] ?? 'admin')) ?: 'admin';
+        $role = in_array($role, ['admin','super'], true) ? $role : 'admin';
 
         if ($name === '' || $email === '' || $mobile === '' || $password === '') {
             json(['ok'=>false,'msg'=>'Name, email, mobile and password are required.'], 422);
@@ -1312,6 +1497,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok' => true, 'id' => $id]);
     }
     if (preg_match('#^/admin/api/admin-users/(\d+)/password$#', $uri, $m) && $method === 'POST') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $adminId = (int)$m[1];
         $newPassword = (string)($body['new_password'] ?? '');
         if (strlen($newPassword) < 6) {
@@ -1325,6 +1511,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok' => true]);
     }
     if (preg_match('#^/admin/api/admin-users/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        \Approvals\ContentApprovalManager::requireSuperAdmin();
         $targetId = (int)$m[1];
         $current = \Auth\Auth::admin();
         $currentId = (int)($current['id'] ?? 0);
@@ -1351,6 +1538,43 @@ if (str_starts_with($uri, '/admin/api/')) {
     if (preg_match('#^/admin/api/artwork/(\d+)$#', $uri, $m) && $method === 'GET') {
         $file = Database::row("SELECT * FROM artwork_files WHERE id=?",[$m[1]]);
         json($file ? ['ok'=>true,'file'=>$file] : ['ok'=>false,'msg'=>'Not found'],404);
+    }
+    if (preg_match('#^/admin/api/design-approvals/(\d+)$#', $uri, $m) && $method === 'POST') {
+        $status = trim((string)($body['status'] ?? 'pending_review'));
+        $note = trim((string)($body['admin_note'] ?? ''));
+        $ok = \Orders\OrderManager::updateDesignApproval((int)$m[1], $status, $note);
+        json(['ok' => $ok]);
+    }
+    if (preg_match('#^/admin/api/design-approvals/(\d+)/proof$#', $uri, $m) && $method === 'POST') {
+        $approval = Database::row("SELECT * FROM order_design_approvals WHERE id = ?", [(int)$m[1]]);
+        if (!$approval) json(['ok' => false, 'msg' => 'Design approval not found'], 404);
+        if (empty($_FILES['proof'])) json(['ok' => false, 'msg' => 'No proof file uploaded'], 400);
+
+        $file = $_FILES['proof'];
+        $maxMb = (int)Database::setting('upload_max_mb', env('UPLOAD_MAX_SIZE_MB', '50'));
+        if ($file['size'] > ($maxMb * 1024 * 1024)) json(['ok' => false, 'msg' => "File too large. Max {$maxMb}MB."], 400);
+        $allowed = explode(',', Database::setting('upload_allowed_ext', 'pdf,ai,eps,png,jpg,jpeg,psd,cdr,svg,tif,tiff,zip'));
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowed, true)) json(['ok' => false, 'msg' => "File type .{$ext} not allowed."], 400);
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        $dir = UPLOAD_PATH . '/artwork/proofs/' . date('Y/m/');
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $filename = uniqid('proof_', true) . '.' . $ext;
+        $filepath = $dir . $filename;
+        $publicPath = '/uploads/artwork/proofs/' . date('Y/m/') . $filename;
+        if (!move_uploaded_file($file['tmp_name'], $filepath)) json(['ok' => false, 'msg' => 'Upload failed'], 500);
+
+        $adminId = (int)($admin['id'] ?? 0);
+        $fileId = Database::insert(
+            "INSERT INTO artwork_files (uploaded_by, order_item_id, filename, original_name, file_path, mime_type, file_size, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+            [$adminId ?: 0, (int)$approval['order_item_id'], $filename, $file['name'], $publicPath, $mime, $file['size']]
+        );
+        \Orders\OrderManager::updateDesignApproval((int)$m[1], 'proof_uploaded', trim((string)($_POST['admin_note'] ?? '')), (int)$fileId);
+        json(['ok' => true, 'file_id' => (int)$fileId]);
     }
     if ($uri === '/admin/api/sheets/retry' && $method === 'POST') {
         $failed = Database::rows("SELECT * FROM sheets_sync_log WHERE resolved=0 LIMIT 20");
@@ -1404,13 +1628,15 @@ if (preg_match('#^/admin/invoice/(.+)$#', $uri, $m)) {
     exit;
 }
 
-if (preg_match('#^/admin/artwork/(\d+)/download$#', $uri, $m)) {
+if (preg_match('#^/admin/artwork/(\d+)/(download|view)$#', $uri, $m)) {
     $file = Database::row("SELECT * FROM artwork_files WHERE id=?", [$m[1]]);
     if (!$file) { http_response_code(404); exit('Not found'); }
     $full = PUBLIC_PATH . ($file['file_path'] ?? '');
     if (!is_file($full)) { http_response_code(404); exit('File missing'); }
+    $downloadName = str_replace(['"', "\r", "\n"], '', basename($file['original_name'] ?: $file['filename']));
+    $disposition = ($m[2] ?? 'download') === 'view' ? 'inline' : 'attachment';
     header('Content-Type: ' . ($file['mime_type'] ?: 'application/octet-stream'));
-    header('Content-Disposition: attachment; filename="' . basename($file['original_name'] ?: $file['filename']) . '"');
+    header('Content-Disposition: ' . $disposition . '; filename="' . $downloadName . '"');
     header('Content-Length: ' . filesize($full));
     readfile($full);
     exit;
@@ -1438,10 +1664,10 @@ if ($uri === '/admin/orders') {
         "SELECT
             COUNT(*) AS total_orders,
             SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS new_today,
-            SUM(CASE WHEN status IN ('received','whatsapp_pending') THEN 1 ELSE 0 END) AS pending_orders,
-            SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) AS processing_orders,
+            SUM(CASE WHEN status IN ('new_order','received','whatsapp_pending') THEN 1 ELSE 0 END) AS pending_orders,
+            SUM(CASE WHEN status IN ('other_process','processing') THEN 1 ELSE 0 END) AS processing_orders,
             SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) AS ready_orders,
-            SUM(CASE WHEN status IN ('received','whatsapp_pending','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS delayed_orders
+            SUM(CASE WHEN status IN ('new_order','received','whatsapp_pending','design_approved','other_process','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS delayed_orders
          FROM orders"
     ) ?: [];
     $summaryCounts = [
@@ -1457,19 +1683,25 @@ if ($uri === '/admin/orders') {
     foreach ($statusCountRows as $row) {
         $statusCounts[(string)$row['status']] = (int)($row['c'] ?? 0);
     }
-    $statusCounts['attention'] = ($statusCounts['received'] ?? 0) + ($statusCounts['whatsapp_pending'] ?? 0) + ($statusCounts['processing'] ?? 0) + ($statusCounts['printing'] ?? 0);
+    $statusCounts['new_order'] = (int)($statusCounts['new_order'] ?? 0);
+    $statusCounts['design_approved'] = (int)($statusCounts['design_approved'] ?? 0);
+    $statusCounts['other_process'] = (int)($statusCounts['other_process'] ?? 0) + (int)($statusCounts['processing'] ?? 0);
+    $statusCounts['ready_dispatch'] = (int)($statusCounts['ready'] ?? 0);
+    $statusCounts['attention'] = ($statusCounts['received'] ?? 0) + ($statusCounts['whatsapp_pending'] ?? 0) + ($statusCounts['design_approved'] ?? 0) + ($statusCounts['other_process'] ?? 0) + ($statusCounts['printing'] ?? 0);
     $statusCounts['delayed'] = $summaryCounts['delayed_orders'];
 
     $where = [];
     $params = [];
     if ($status === 'attention') {
-        $where[] = "status IN ('received','whatsapp_pending','processing','printing')";
+        $where[] = "status IN ('new_order','received','whatsapp_pending','design_approved','other_process','processing','printing')";
     } elseif ($status === 'delayed') {
-        $where[] = "status IN ('received','whatsapp_pending','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)";
+        $where[] = "status IN ('new_order','received','whatsapp_pending','design_approved','other_process','processing','printing') AND created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)";
+    } elseif ($status === 'other_process') {
+        $where[] = "status IN ('other_process','processing')";
     } elseif ($status !== 'all' && $status !== '') { $where[] = 'status = ?'; $params[] = $status; }
     if ($paymentStatus !== 'all' && $paymentStatus !== '') { $where[] = 'payment_status = ?'; $params[] = $paymentStatus; }
     if ($seen === 'new') {
-        $where[] = $hasSeen ? 'is_seen = 0' : "DATE(created_at)=CURDATE() AND status NOT IN ('delivered','cancelled')";
+        $where[] = "status = 'new_order'";
     } elseif ($seen === 'seen' && $hasSeen) {
         $where[] = 'is_seen = 1';
     }
@@ -1484,7 +1716,7 @@ if ($uri === '/admin/orders') {
     $orderSql = match ($sort) {
         'oldest' => 'created_at ASC',
         'high_value' => 'total_amount DESC, created_at DESC',
-        'urgent' => ($hasSeen ? 'is_seen ASC, ' : '') . "FIELD(status,'received','whatsapp_pending','processing','printing','ready','delivered','cancelled'), created_at ASC",
+        'urgent' => ($hasSeen ? 'is_seen ASC, ' : '') . "FIELD(status,'new_order','received','whatsapp_pending','design_approved','other_process','processing','printing','ready','delivered','cancelled'), created_at ASC",
         default => 'created_at DESC',
     };
 
@@ -1499,13 +1731,43 @@ if ($uri === '/admin/orders') {
                     af.id AS artwork_file_id,
                     af.original_name AS artwork_original_name,
                     af.filename AS artwork_filename,
-                    af.file_path AS artwork_file_path
+                    af.file_path AS artwork_file_path,
+                    oda.id AS design_approval_id,
+                    oda.status AS design_approval_status,
+                    oda.admin_note AS design_admin_note,
+                    oda.customer_note AS design_customer_note,
+                    oda.approved_at AS design_approved_at,
+                    oda.proof_file_id AS design_proof_file_id,
+                    pf.original_name AS design_proof_original_name,
+                    pf.filename AS design_proof_filename,
+                    pf.file_path AS design_proof_file_path,
+                    pf.mime_type AS design_proof_mime_type
              FROM order_items oi
-             LEFT JOIN artwork_files af ON af.order_item_id = oi.id
+             LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
+             LEFT JOIN artwork_files af ON af.id = oda.customer_artwork_file_id
+             LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
              WHERE oi.order_id=?
              ORDER BY oi.id ASC",
             [$o['id']]
         );
+        foreach ($o['items'] as &$item) {
+            if (empty($item['design_approval_id'])) {
+                $customerArtwork = Database::row(
+                    "SELECT af.id FROM artwork_files af
+                      WHERE af.order_item_id = ?
+                        AND NOT EXISTS (SELECT 1 FROM order_design_approvals oda2 WHERE oda2.proof_file_id = af.id)
+                      ORDER BY af.id ASC LIMIT 1",
+                    [(int)$item['id']]
+                );
+                \Orders\OrderManager::ensureDesignApprovalForItem(
+                    (int)$o['id'],
+                    (int)$item['id'],
+                    (string)($item['design_choice'] ?? 'upload'),
+                    !empty($customerArtwork['id']) ? (int)$customerArtwork['id'] : null
+                );
+            }
+        }
+        unset($item);
     }
 
     view('admin/orders', compact('orders','total','page','perPage','status','search','summaryCounts','statusCounts','paymentStatus','seen','sort','dateFrom','dateTo','hasSeen'));
@@ -1517,6 +1779,20 @@ if (preg_match('#^/admin/blogs/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     exit;
 }
 
+if (preg_match('#^/admin/deals/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
+    view('admin/deals-new', ['dealEditId' => (int)$m[1]]);
+    exit;
+}
+
+if (preg_match('#^/admin/coupons/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
+    view('admin/coupons-new', ['couponEditId' => (int)$m[1]]);
+    exit;
+}
+
+if (in_array($uri, ['/admin/admins', '/admin/approvals'], true)) {
+    \Auth\Auth::requireSuperAdmin();
+}
+
 $adminPage = match(true) {
     $uri === '/admin' || $uri === '/admin/dashboard' => 'admin/dashboard',
     $uri === '/admin/analytics'  => 'admin/analytics',
@@ -1525,12 +1801,16 @@ $adminPage = match(true) {
     $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/deals'      => 'admin/deals',
+    $uri === '/admin/deals/new'  => 'admin/deals-new',
     $uri === '/admin/blogs'      => 'admin/blogs',
     $uri === '/admin/blogs/new'  => 'admin/blogs-new',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
+    $uri === '/admin/coupons/new' => 'admin/coupons-new',
     $uri === '/admin/reviews'    => 'admin/reviews',
     $uri === '/admin/customers'  => 'admin/customers',
+    $uri === '/admin/leads'      => 'admin/leads',
+    $uri === '/admin/approvals'  => 'admin/approvals',
     $uri === '/admin/admins'     => 'admin/admins',
     $uri === '/admin/settings'   => 'admin/settings',
     $uri === '/admin/design'     => 'admin/design',

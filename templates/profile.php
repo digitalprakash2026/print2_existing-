@@ -28,15 +28,19 @@ $hasSavedAddress = trim((string)($shipping['address_line1'] ?? '')) !== '' || tr
 $savedAddressCount = $hasSavedAddress ? 1 : 0;
 
 $statusLabels = [
+    'new_order' => 'New Order',
     'received' => 'Received',
-    'processing' => 'In Progress',
+    'design_approved' => 'Design Approved',
     'printing' => 'Printing',
-    'ready' => 'Ready',
+    'other_process' => 'Other Process',
+    'processing' => 'Other Process',
+    'ready' => 'Dispatched',
     'delivered' => 'Delivered',
     'cancelled' => 'Cancelled',
     'whatsapp_pending' => 'Pending',
 ];
-$progressStatuses = ['received', 'processing', 'printing', 'ready', 'whatsapp_pending'];
+$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Waiting for Your Approval','revision_requested'=>'Revision Requested','approved'=>'Approved'];
+$progressStatuses = ['new_order', 'received', 'design_approved', 'printing', 'other_process', 'processing', 'ready', 'whatsapp_pending'];
 $totalOrders = count($orders);
 $progressOrders = count(array_filter($orders, static fn($order) => in_array((string)($order['status'] ?? ''), $progressStatuses, true)));
 $completedOrders = count(array_filter($orders, static fn($order) => (string)($order['status'] ?? '') === 'delivered'));
@@ -59,7 +63,7 @@ if ($accountBizWa === '') {
     $accountBizWa = $accountBizPhoneHref;
 }
 
-$renderOrders = static function (array $list, bool $compact = false) use ($h, $statusLabels): void {
+$renderOrders = static function (array $list, bool $compact = false) use ($h, $statusLabels, $designApprovalLabels): void {
     if (empty($list)) {
         ?>
         <div class="account-empty-state">
@@ -78,13 +82,14 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
       </div>
       <?php foreach ($list as $order):
         $items = is_array($order['items'] ?? null) ? $order['items'] : [];
-        $status = (string)($order['status'] ?? 'received');
+        $status = (string)($order['status'] ?? 'new_order');
         $statusClass = preg_replace('/[^a-z0-9_-]/i', '', $status);
         $productTitle = implode(', ', array_filter(array_map(static fn($item) => (string)($item['product_name'] ?? ''), $items)));
         $orderPublicId = (string)($order['order_id'] ?? $order['id'] ?? '');
         $isPaid = in_array((string)($order['payment_status'] ?? ''), ['paid'], true);
-        $trackSteps = ['received', 'processing', 'printing', 'ready', 'delivered'];
-        $trackIndex = array_search($status, $trackSteps, true);
+        $trackSteps = ['new_order', 'received', 'design_approved', 'printing', 'other_process', 'ready'];
+        $trackStatus = $status === 'processing' ? 'other_process' : $status;
+        $trackIndex = array_search($trackStatus, $trackSteps, true);
         $trackIndex = $trackIndex === false ? -1 : (int)$trackIndex;
         $isCancelled = $status === 'cancelled';
         $isWhatsappPending = $status === 'whatsapp_pending';
@@ -113,6 +118,48 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                 <ul>
                   <?php foreach ($items as $item): ?>
                     <li><?= $h($item['product_name'] ?? 'Product') ?> — <?= number_format((float)($item['quantity'] ?? 0)) ?> × <?= $h($item['quality_name'] ?? 'Standard') ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              <?php endif; ?>
+            </div>
+            <div>
+              <strong>Design Approval</strong>
+              <?php if (empty($items)): ?>
+                <p>Design details will appear after order processing starts.</p>
+              <?php else: ?>
+                <ul>
+                  <?php foreach ($items as $item):
+                    $designStatus = (string)($item['design_approval_status'] ?? 'pending_review');
+                    $proofName = (string)($item['design_proof_original_name'] ?? $item['design_proof_filename'] ?? '');
+                    $proofPath = trim((string)($item['design_proof_file_path'] ?? ''));
+                    if ($proofPath !== '' && $proofPath[0] !== '/') { $proofPath = '/' . $proofPath; }
+                    $proofMime = strtolower((string)($item['design_proof_mime_type'] ?? ''));
+                    $proofExt = strtolower(pathinfo($proofName !== '' ? $proofName : (string)($item['design_proof_filename'] ?? ''), PATHINFO_EXTENSION));
+                    $proofIsImage = str_starts_with($proofMime, 'image/') || in_array($proofExt, ['jpg','jpeg','png','gif','webp','svg'], true);
+                    $approvalId = (int)($item['design_approval_id'] ?? 0);
+                    $canReviewProof = $approvalId > 0 && !empty($item['design_proof_file_id']) && in_array($designStatus, ['proof_uploaded'], true);
+                  ?>
+                    <li class="account-design-approval-item <?= in_array($designStatus, ['issue_found','revision_requested'], true) ? 'account-design-issue' : '' ?>" data-design-approval-item="<?= $approvalId ?>">
+                      <div class="account-design-approval-main">
+                        <span><?= $h($item['product_name'] ?? 'Product') ?> — <?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
+                        <?php if (!empty($item['design_admin_note'])): ?><small><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
+                        <?php if (!empty($item['design_customer_note'])): ?><small class="account-design-customer-note">Your message: <?= $h($item['design_customer_note']) ?></small><?php endif; ?>
+                        <?php if (!empty($item['design_proof_file_id'])): ?><span class="account-design-file-actions"><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener"><?= $h($proofName !== '' ? 'View corrected file: ' . $proofName : 'View corrected file') ?></a><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener">Download</a></span><?php endif; ?>
+                        <?php if ($canReviewProof): ?>
+                          <div class="account-design-review-actions">
+                            <button type="button" class="account-design-approve-btn" onclick="approveAccountDesign(<?= $approvalId ?>, this)">Approve Design</button>
+                            <button type="button" class="account-design-revision-btn" onclick="toggleDesignRevisionForm(<?= $approvalId ?>)">Request Revision</button>
+                          </div>
+                          <form class="account-design-revision-form" data-design-revision-form="<?= $approvalId ?>" onsubmit="sendDesignRevision(event, <?= $approvalId ?>)" hidden>
+                            <textarea name="message" rows="2" minlength="5" required placeholder="What should we change in this design?"></textarea>
+                            <button type="submit">Send Revision Request</button>
+                          </form>
+                        <?php endif; ?>
+                      </div>
+                      <?php if (!empty($item['design_proof_file_id']) && $proofIsImage && $proofPath !== ''): ?>
+                        <a class="account-design-proof-preview" href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener" aria-label="Open corrected design"><img src="<?= $h($proofPath) ?>" alt="<?= $h($proofName !== '' ? $proofName : 'Corrected design preview') ?>" loading="lazy"></a>
+                      <?php endif; ?>
+                    </li>
                   <?php endforeach; ?>
                 </ul>
               <?php endif; ?>
@@ -343,7 +390,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                     </div>
                     <div class="account-design-actions">
                       <?php if ($designId > 0): ?>
-                        <a href="/account/artwork/<?= $designId ?>/download" class="btn btn-blue btn-sm"><i class="fa-solid fa-download"></i> Download</a>
+                        <a href="/account/artwork/<?= $designId ?>/view" class="btn btn-outline btn-sm" target="_blank" rel="noopener"><i class="fa-regular fa-eye"></i> View</a><a href="/account/artwork/<?= $designId ?>/download" class="btn btn-blue btn-sm"><i class="fa-solid fa-download"></i> Download</a>
                       <?php endif; ?>
                       <?php if ($productSlug !== ''): ?>
                         <a href="/product/<?= $h($productSlug) ?>" class="btn btn-outline btn-sm">Reorder</a>
@@ -617,6 +664,57 @@ async function removeWishlistItem(productId, btn) {
 window.addEventListener('hashchange', () => setAccountTab(location.hash.replace('#', ''), false));
 setAccountTab(location.hash.replace('#', ''), false, false);
 
+
+
+async function approveAccountDesign(id, btn) {
+  id = parseInt(id || '0', 10);
+  if (!id || !confirm('Approve this corrected design for printing?')) return;
+  if (btn) btn.disabled = true;
+  try {
+    const resp = await fetch(`/api/design-approvals/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
+      credentials: 'same-origin',
+      body: JSON.stringify({ note: 'Approved by customer.' }),
+    });
+    const data = await resp.json();
+    if (!data.ok) { alert(data.msg || 'Could not approve design.'); if (btn) btn.disabled = false; return; }
+    window.location.reload();
+  } catch (e) {
+    alert('Could not approve design right now.');
+    if (btn) btn.disabled = false;
+  }
+}
+
+function toggleDesignRevisionForm(id) {
+  const form = document.querySelector(`[data-design-revision-form="${id}"]`);
+  if (!form) return;
+  form.hidden = !form.hidden;
+  if (!form.hidden) form.querySelector('textarea')?.focus();
+}
+
+async function sendDesignRevision(event, id) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = form.querySelector('textarea')?.value.trim() || '';
+  if (message.length < 5) { alert('Please write a clear revision message.'); return; }
+  const btn = form.querySelector('button[type="submit"]');
+  if (btn) btn.disabled = true;
+  try {
+    const resp = await fetch(`/api/design-approvals/${id}/revision`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
+      credentials: 'same-origin',
+      body: JSON.stringify({ message }),
+    });
+    const data = await resp.json();
+    if (!data.ok) { alert(data.msg || 'Could not send revision request.'); if (btn) btn.disabled = false; return; }
+    window.location.reload();
+  } catch (e) {
+    alert('Could not send revision request right now.');
+    if (btn) btn.disabled = false;
+  }
+}
 
 function openAccountOrder(trigger) {
   const detail = trigger?.closest('.account-order-detail');

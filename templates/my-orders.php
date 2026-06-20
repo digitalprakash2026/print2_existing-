@@ -5,9 +5,10 @@ include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 // cart-drawer is included by header.php — do not include again
 
-$statusLabels = ['received'=>'Received','processing'=>'Processing','printing'=>'Printing','ready'=>'Ready','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'Pending'];
-$statusColors = ['received'=>'b-blue','processing'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
-$tlSteps = ['received','processing','printing','ready','delivered'];
+$statusLabels = ['new_order'=>'New Order','received'=>'Received','design_approved'=>'Design Approved','processing'=>'Other Process','other_process'=>'Other Process','printing'=>'Printing','ready'=>'Dispatched','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'Pending'];
+$statusColors = ['new_order'=>'b-blue','received'=>'b-blue','design_approved'=>'b-green','processing'=>'b-amber','other_process'=>'b-amber','printing'=>'b-orange','ready'=>'b-green','delivered'=>'b-ink','cancelled'=>'b-red','whatsapp_pending'=>'b-amber'];
+$tlSteps = ['new_order','received','design_approved','printing','other_process','ready'];
+$designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Waiting for Your Approval','revision_requested'=>'Revision Requested','approved'=>'Approved'];
 ?>
 <div class="myord-hdr">
   <div class="container">
@@ -28,7 +29,8 @@ $tlSteps = ['received','processing','printing','ready','delivered'];
   </div>
   <?php else: ?>
   <?php foreach ($orders as $order):
-    $si = array_search($order['status'], $tlSteps);
+    $orderTrackStatus = ($order['status'] ?? '') === 'processing' ? 'other_process' : ($order['status'] ?? '');
+    $si = array_search($orderTrackStatus, $tlSteps);
     $si = $si === false ? -1 : $si;
     $items = $order['items'] ?? [];
     $itemDesc = implode(' + ', array_column($items, 'product_name'));
@@ -67,6 +69,13 @@ $tlSteps = ['received','processing','printing','ready','delivered'];
       <div style="font-size:12px;color:var(--text2)">
         <?php foreach ($items as $item): ?>
         <?= htmlspecialchars($item['product_name']) ?>: <?= number_format($item['quantity']) ?> × <?= htmlspecialchars($item['quality_name']) ?> |
+        <?php endforeach; ?>
+      </div>
+      <div style="font-size:12px;color:var(--text2);flex-basis:100%">
+        <?php foreach ($items as $item): ?>
+          <?php $ds = (string)($item['design_approval_status'] ?? 'pending_review'); ?>
+          <span style="<?= $ds === 'issue_found' ? 'display:inline-block;margin:3px 0;padding:6px 8px;border-radius:9px;background:#fff1f2;color:#be123c;font-weight:700' : '' ?>"><?= $ds === 'issue_found' ? '⚠ ' : '' ?><?= htmlspecialchars($item['product_name']) ?> design: <?= htmlspecialchars($designApprovalLabels[$ds] ?? ucfirst(str_replace('_', ' ', $ds))) ?><?= !empty($item['design_admin_note']) ? ' — ' . htmlspecialchars($item['design_admin_note']) : '' ?></span>
+          <?php if (!empty($item['design_proof_file_id'])): ?> · <a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank">Download proof</a><?php endif; ?> |
         <?php endforeach; ?>
       </div>
       <div style="display:flex;gap:7px">
