@@ -1801,6 +1801,7 @@ $adminPage = match(true) {
     $uri === '/admin/analytics'  => 'admin/analytics',
     $uri === '/admin/products'   => 'admin/products',
     $uri === '/admin/categories' => 'admin/categories',
+    $uri === '/admin/media'      => 'admin/media',
     $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/deals'      => 'admin/deals',

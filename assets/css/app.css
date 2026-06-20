@@ -13018,7 +13018,7 @@ body:has(.dash-ref-page) .adm-admin-chip em::after { content:''; position:absolu
 .account-design-revision-form--inline { display:grid; gap:7px; margin:0; }
 .account-design-revision-form--inline textarea { min-height:52px; }
 .account-artwork-reupload-form { display:grid; gap:6px; margin-top:7px; }
-.account-artwork-reupload-form input { width:100%; max-width:180px; font-size:11px; color:#64748b; }
+.account-artwork-reupload-form input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
 .account-artwork-reupload-form button { min-height:30px; border:1px solid #bfdbfe; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-size:11px; font-weight:950; cursor:pointer; }
 .account-artwork-reupload-form button:disabled,
 .account-artwork-reupload-form input:disabled { opacity:.55; cursor:not-allowed; }

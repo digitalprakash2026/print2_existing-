@@ -7,6 +7,13 @@ $statusColors = ['new_order'=>'b-blue','received'=>'b-blue','design_approved'=>'
 $statusLabels = ['new_order'=>'New Order','received'=>'Received','design_approved'=>'Design Approved','printing'=>'Printing','other_process'=>'Other Process','processing'=>'Other Process','ready'=>'Dispatched','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'WA Pending'];
 $designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Proof Sent','revision_requested'=>'Revision Requested','approved'=>'Approved'];
 $designApprovalColors = ['pending_review'=>'b-amber','issue_found'=>'b-red','proof_uploaded'=>'b-blue','revision_requested'=>'b-red','approved'=>'b-green'];
+$designCustomerNoteMeta = static function (string $status): array {
+    return match ($status) {
+        'approved' => ['label' => '✅ Design Approved', 'title' => 'Design Approved By Customer', 'tone' => 'approved', 'hint' => 'Customer confirmation for this item'],
+        'revision_requested' => ['label' => '💬 Revision Request', 'title' => 'Revision Request', 'tone' => 'revision', 'hint' => 'Customer message for this item'],
+        default => ['label' => '💬 Customer Note', 'title' => 'Customer Note', 'tone' => 'note', 'hint' => 'Customer message for this item'],
+    };
+};
 $orders = $orders ?? [];
 $summaryCounts = $summaryCounts ?? [];
 $statusCounts = $statusCounts ?? ['all' => 0];
@@ -222,7 +229,12 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                 <?php endif; ?>
               </div>
               <?php if (!empty($item['design_admin_note'])): ?><div class="ord-design-note <?= $approvalStatus === 'issue_found' ? 'ord-design-note--issue' : '' ?>"><?= $approvalStatus === 'issue_found' ? '⚠ Issue for customer: ' : 'Note: ' ?><?= htmlspecialchars($item['design_admin_note']) ?></div><?php endif; ?>
-              <?php if (!empty($item['design_customer_note'])): ?><div class="ord-design-note ord-design-note--customer <?= $approvalStatus === 'revision_requested' ? 'ord-design-note--issue' : '' ?>"><button class="ord-revision-chip" type="button" onclick='openRevisionNote(<?= json_encode($item['product_name'] ?? 'Product', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($item['design_customer_note'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>💬 Revision Request</button></div><?php endif; ?>
+              <?php if (!empty($item['design_customer_note'])): ?>
+                <?php $noteMeta = $designCustomerNoteMeta($approvalStatus); ?>
+                <div class="ord-design-note ord-design-note--customer">
+                  <button class="ord-customer-note-chip ord-customer-note-chip--<?= htmlspecialchars($noteMeta['tone']) ?>" type="button" onclick='openCustomerDesignNote(<?= json_encode($item['product_name'] ?? 'Product', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($item['design_customer_note'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($noteMeta['title'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($noteMeta['hint'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($noteMeta['tone'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'><?= htmlspecialchars($noteMeta['label']) ?></button>
+                </div>
+              <?php endif; ?>
             </div>
           <?php endforeach; ?>
         </section>
@@ -236,7 +248,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
 
 <div id="revisionModal" class="ord-revision-modal" style="display:none">
   <div class="ord-revision-dialog">
-    <div class="ord-revision-head"><div><strong id="revisionModalTitle">Revision Request</strong><small>Customer message for this item</small></div><button type="button" onclick="closeRevisionNote()">×</button></div>
+    <div class="ord-revision-head"><div><strong id="revisionModalTitle">Revision Request</strong><small id="revisionModalHint">Customer message for this item</small></div><button type="button" onclick="closeRevisionNote()">×</button></div>
     <p id="revisionModalText"></p>
   </div>
 </div>
@@ -327,9 +339,12 @@ function toast(msg, type='info') {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
 }
 
-function openRevisionNote(product, note) {
+function openCustomerDesignNote(product, note, title='Customer Note', hint='Customer message for this item', tone='note') {
   const modal = document.getElementById('revisionModal');
-  document.getElementById('revisionModalTitle').textContent = `Revision Request — ${product || 'Item'}`;
+  const dialog = modal?.querySelector('.ord-revision-dialog');
+  if (dialog) dialog.dataset.tone = tone || 'note';
+  document.getElementById('revisionModalTitle').textContent = `${title || 'Customer Note'} — ${product || 'Item'}`;
+  document.getElementById('revisionModalHint').textContent = hint || 'Customer message for this item';
   document.getElementById('revisionModalText').textContent = note || 'No message provided.';
   if (modal) modal.style.display = 'flex';
 }

@@ -169,11 +169,11 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                             <small>No artwork uploaded</small>
                           <?php endif; ?>
                           <?php if ($approvalId > 0): ?>
-                            <form class="account-artwork-reupload-form" onsubmit="uploadAccountArtworkRevision(event, <?= $approvalId ?>)">
-                              <input type="file" name="artwork" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" <?= $designStatus === 'issue_found' ? '' : 'disabled' ?>>
-                              <button type="submit" <?= $designStatus === 'issue_found' ? '' : 'disabled' ?>>Reupload Design</button>
-                              <small><?= $designStatus === 'issue_found' ? 'Upload corrected artwork for admin review.' : 'Available only after admin marks an issue.' ?></small>
-                            </form>
+                            <div class="account-artwork-reupload-form">
+                              <input id="artwork-reupload-<?= $approvalId ?>" type="file" name="artwork" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" onchange="uploadAccountArtworkRevision(this, <?= $approvalId ?>)" <?= $designStatus === 'issue_found' ? '' : 'disabled' ?>>
+                              <button type="button" onclick="chooseAccountArtworkRevision(<?= $approvalId ?>)" <?= $designStatus === 'issue_found' ? '' : 'disabled' ?>>Reupload Design</button>
+                              <small><?= $designStatus === 'issue_found' ? 'One click: choose file and upload starts automatically.' : 'Available only after admin marks an issue.' ?></small>
+                            </div>
                           <?php endif; ?>
                         </div>
                         <div class="account-order-file">
@@ -760,16 +760,21 @@ async function sendDesignRevision(event, id) {
   }
 }
 
-async function uploadAccountArtworkRevision(event, id) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const input = form.querySelector('input[type="file"]');
-  const btn = form.querySelector('button[type="submit"]');
+function chooseAccountArtworkRevision(id) {
+  const input = document.getElementById(`artwork-reupload-${id}`);
+  if (!input || input.disabled) { alert('Reupload is available only after admin marks an issue.'); return; }
+  input.click();
+}
+
+async function uploadAccountArtworkRevision(input, id) {
+  const form = input?.closest('.account-artwork-reupload-form');
+  const btn = form?.querySelector('button[type="button"]');
   if (!input || input.disabled) { alert('Reupload is available only after admin marks an issue.'); return; }
   if (!input.files.length) { alert('Please choose a design file to reupload.'); return; }
   const fd = new FormData();
   fd.append('artwork', input.files[0]);
-  if (btn) btn.disabled = true;
+  const oldText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
   try {
     const resp = await fetch(`/api/design-approvals/${id}/artwork`, {
       method: 'POST',
@@ -778,11 +783,17 @@ async function uploadAccountArtworkRevision(event, id) {
       body: fd,
     });
     const data = await resp.json();
-    if (!data.ok) { alert(data.msg || 'Could not reupload design.'); if (btn) btn.disabled = false; return; }
+    if (!data.ok) {
+      alert(data.msg || 'Could not reupload design.');
+      if (btn) { btn.disabled = false; btn.textContent = oldText || 'Reupload Design'; }
+      input.value = '';
+      return;
+    }
     window.location.reload();
   } catch (e) {
     alert('Could not reupload design right now.');
-    if (btn) btn.disabled = false;
+    if (btn) { btn.disabled = false; btn.textContent = oldText || 'Reupload Design'; }
+    input.value = '';
   }
 }
 
