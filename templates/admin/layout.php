@@ -30,9 +30,7 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
     </div>
     <div class="adm-user-menu" id="admUserMenu">
       <button class="adm-user-btn adm-user-btn-pro" id="admUserBtn" type="button" aria-expanded="false" aria-label="Admin account menu">
-        <span class="adm-user-avatar"><?= strtoupper(substr((string)($admin['name'] ?? 'A'), 0, 1)) ?></span>
-        <span class="adm-user-meta"><strong><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></strong><small><?= htmlspecialchars($adminRoleLabel) ?></small></span>
-        <b>⌄</b>
+        <span><?= strtoupper(substr((string)($admin['name'] ?? 'A'), 0, 1)) ?></span><b>⌄</b>
       </button>
       <div class="adm-user-panel adm-user-panel-pro" id="admUserPanel">
         <div class="adm-user-name"><strong><?= htmlspecialchars($admin['name'] ?? 'Admin') ?></strong><small><?= htmlspecialchars($adminRoleLabel) ?></small></div>
