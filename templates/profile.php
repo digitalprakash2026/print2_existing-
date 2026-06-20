@@ -117,13 +117,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
           <summary class="account-order-row" role="row">
             <strong>#<?= $h($order['order_id'] ?? $order['id'] ?? '') ?></strong>
             <span><?= !empty($order['created_at']) ? date('d M, Y', strtotime((string)$order['created_at'])) : '—' ?></span>
-            <span class="account-product-mini" title="<?= $h($productTitle) ?>">
-              <?php foreach (array_slice($items, 0, 3) as $idx => $item): ?>
-                <i style="--mini:<?= (int)$idx ?>"><?= $h(strtoupper(substr((string)($item['product_name'] ?? 'P'), 0, 1))) ?></i>
-              <?php endforeach; ?>
-              <?php if (count($items) > 3): ?><em>+<?= count($items) - 3 ?></em><?php endif; ?>
-              <?php if (empty($items)): ?><em>0</em><?php endif; ?>
-            </span>
+            <span class="account-product-count" title="<?= $h($productTitle) ?>"><?= count($items) ?> item<?= count($items) === 1 ? '' : 's' ?></span>
             <b>₹<?= number_format((float)($order['total_amount'] ?? 0)) ?></b>
             <span class="account-status status-<?= $h($statusClass) ?>"><?= $h($statusLabels[$status] ?? ucfirst($status)) ?></span>
             <span class="account-mini-btn">Actions <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
@@ -174,6 +168,13 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                           <?php else: ?>
                             <small>No artwork uploaded</small>
                           <?php endif; ?>
+                          <?php if ($approvalId > 0): ?>
+                            <form class="account-artwork-reupload-form" onsubmit="uploadAccountArtworkRevision(event, <?= $approvalId ?>)">
+                              <input type="file" name="artwork" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" <?= $designStatus === 'issue_found' ? '' : 'disabled' ?>>
+                              <button type="submit" <?= $designStatus === 'issue_found' ? '' : 'disabled' ?>>Reupload Design</button>
+                              <small><?= $designStatus === 'issue_found' ? 'Upload corrected artwork for admin review.' : 'Available only after admin marks an issue.' ?></small>
+                            </form>
+                          <?php endif; ?>
                         </div>
                         <div class="account-order-file">
                           <b>Corrected file</b>
@@ -190,6 +191,10 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                       </div>
                       <div class="account-order-item-actions">
                         <?php if ($canReviewProof): ?>
+                          <form class="account-design-revision-form account-design-revision-form--inline" data-design-revision-form="<?= $approvalId ?>" onsubmit="sendDesignRevision(event, <?= $approvalId ?>)">
+                            <textarea name="message" rows="2" minlength="5" required placeholder="Request revision message..."></textarea>
+                            <button type="submit">Submit Revision</button>
+                          </form>
                           <div class="account-design-review-actions">
                             <button type="button" class="account-design-approve-btn" onclick="approveAccountDesign(<?= $approvalId ?>, this)">Approve Design</button>
                           </div>
@@ -751,6 +756,32 @@ async function sendDesignRevision(event, id) {
     window.location.reload();
   } catch (e) {
     alert('Could not send revision request right now.');
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function uploadAccountArtworkRevision(event, id) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const input = form.querySelector('input[type="file"]');
+  const btn = form.querySelector('button[type="submit"]');
+  if (!input || input.disabled) { alert('Reupload is available only after admin marks an issue.'); return; }
+  if (!input.files.length) { alert('Please choose a design file to reupload.'); return; }
+  const fd = new FormData();
+  fd.append('artwork', input.files[0]);
+  if (btn) btn.disabled = true;
+  try {
+    const resp = await fetch(`/api/design-approvals/${id}/artwork`, {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': APP.csrfToken },
+      credentials: 'same-origin',
+      body: fd,
+    });
+    const data = await resp.json();
+    if (!data.ok) { alert(data.msg || 'Could not reupload design.'); if (btn) btn.disabled = false; return; }
+    window.location.reload();
+  } catch (e) {
+    alert('Could not reupload design right now.');
     if (btn) btn.disabled = false;
   }
 }

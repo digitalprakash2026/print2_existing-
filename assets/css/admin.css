@@ -295,6 +295,14 @@ body.admin-page-orders .ord-file-preview:hover .ord-file-name { color:#1d4ed8; t
 body.admin-page-orders .ord-file-thumb { width:42px; height:42px; flex:0 0 42px; border-radius:10px; font-size:18px; }
 body.admin-page-orders .ord-file-name { min-width:0; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 body.admin-page-orders .ord-design-note--issue { color:#b91c1c; border:1px solid #fecaca; background:#fee2e2; border-radius:10px; padding:10px; }
+body.admin-page-orders .ord-revision-chip { min-height:30px; padding:6px 10px; border:1px solid #fecaca; border-radius:999px; background:#fff1f2; color:#be123c; font-size:12px; font-weight:950; cursor:pointer; }
+body.admin-page-orders .ord-revision-modal { position:fixed; inset:0; z-index:1300; align-items:center; justify-content:center; padding:18px; background:rgba(15,23,42,.55); }
+body.admin-page-orders .ord-revision-dialog { width:min(440px,100%); border:1px solid #fee2e2; border-radius:18px; background:#fff; box-shadow:0 24px 70px rgba(15,23,42,.25); padding:16px; }
+body.admin-page-orders .ord-revision-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+body.admin-page-orders .ord-revision-head strong { display:block; color:#0f172a; font-size:16px; font-weight:950; }
+body.admin-page-orders .ord-revision-head small { display:block; margin-top:3px; color:#64748b; font-size:12px; font-weight:800; }
+body.admin-page-orders .ord-revision-head button { width:32px; height:32px; border:1px solid #e2e8f0; border-radius:999px; background:#f8fafc; color:#334155; font-size:20px; cursor:pointer; }
+body.admin-page-orders .ord-revision-dialog p { margin:0; padding:12px; border-radius:12px; background:#fff7ed; color:#7c2d12; font-size:13px; font-weight:800; line-height:1.55; white-space:pre-wrap; }
 body.admin-page-orders .ord-artwork-link--primary { justify-self:start; border-radius:9px; padding:7px 10px; background:#2563eb; color:#fff !important; text-decoration:none; font-weight:900; }
 body.admin-page-orders .aoc-btn--danger { border-color:#fecaca !important; background:#fff1f2 !important; color:#be123c !important; }
 body.admin-page-orders .aoc-btn--approve { border-color:#bbf7d0 !important; background:#ecfdf5 !important; color:#047857 !important; }

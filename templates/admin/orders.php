@@ -222,7 +222,7 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                 <?php endif; ?>
               </div>
               <?php if (!empty($item['design_admin_note'])): ?><div class="ord-design-note <?= $approvalStatus === 'issue_found' ? 'ord-design-note--issue' : '' ?>"><?= $approvalStatus === 'issue_found' ? '⚠ Issue for customer: ' : 'Note: ' ?><?= htmlspecialchars($item['design_admin_note']) ?></div><?php endif; ?>
-              <?php if (!empty($item['design_customer_note'])): ?><div class="ord-design-note ord-design-note--customer <?= $approvalStatus === 'revision_requested' ? 'ord-design-note--issue' : '' ?>">💬 Customer revision: <?= htmlspecialchars($item['design_customer_note']) ?></div><?php endif; ?>
+              <?php if (!empty($item['design_customer_note'])): ?><div class="ord-design-note ord-design-note--customer <?= $approvalStatus === 'revision_requested' ? 'ord-design-note--issue' : '' ?>"><button class="ord-revision-chip" type="button" onclick='openRevisionNote(<?= json_encode($item['product_name'] ?? 'Product', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($item['design_customer_note'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>💬 Revision Request</button></div><?php endif; ?>
             </div>
           <?php endforeach; ?>
         </section>
@@ -233,6 +233,13 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
   <?php endforeach; ?>
 </div>
 <?php endif; ?>
+
+<div id="revisionModal" class="ord-revision-modal" style="display:none">
+  <div class="ord-revision-dialog">
+    <div class="ord-revision-head"><div><strong id="revisionModalTitle">Revision Request</strong><small>Customer message for this item</small></div><button type="button" onclick="closeRevisionNote()">×</button></div>
+    <p id="revisionModalText"></p>
+  </div>
+</div>
 
 <div id="addrModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:1200;align-items:center;justify-content:center;padding:18px">
   <div style="width:min(620px,100%);max-height:86vh;overflow:auto;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--sh-lg);padding:18px">
@@ -318,6 +325,17 @@ function toast(msg, type='info') {
   const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg; w.appendChild(t);
   requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+function openRevisionNote(product, note) {
+  const modal = document.getElementById('revisionModal');
+  document.getElementById('revisionModalTitle').textContent = `Revision Request — ${product || 'Item'}`;
+  document.getElementById('revisionModalText').textContent = note || 'No message provided.';
+  if (modal) modal.style.display = 'flex';
+}
+function closeRevisionNote() {
+  const modal = document.getElementById('revisionModal');
+  if (modal) modal.style.display = 'none';
 }
 
 function updOrdFromSel(id) {

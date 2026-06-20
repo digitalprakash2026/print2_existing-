@@ -403,6 +403,11 @@ class OrderManager
             if ($order && in_array((string)$order['status'], ['new_order', 'received'], true)) {
                 self::updateStatus($orderId, 'design_approved', 'All designs approved', 'system');
             }
+        } else {
+            $order = \Database::row("SELECT status FROM orders WHERE id = ?", [$orderId]);
+            if ($order && (string)($order['status'] ?? '') === 'design_approved') {
+                self::updateStatus($orderId, 'received', 'Design approval pending for one or more items', 'system');
+            }
         }
     }
 
