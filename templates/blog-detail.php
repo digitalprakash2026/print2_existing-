@@ -15,6 +15,14 @@ $category = htmlspecialchars((string)($blog['category'] ?? 'Print Tips'), ENT_QU
 $author = htmlspecialchars((string)($blog['author_name'] ?? 'RCS Print Team'), ENT_QUOTES, 'UTF-8');
 $image = htmlspecialchars((string)($blog['featured_image'] ?? ''), ENT_QUOTES, 'UTF-8');
 $imageAlt = htmlspecialchars((string)(($blog['image_alt'] ?? '') ?: ($blog['title'] ?? 'Blog image')), ENT_QUOTES, 'UTF-8');
+$sidebarBannerImageRaw = trim((string)($settingsMap['blog_sidebar_banner_image'] ?? ''));
+$sidebarBannerUrlRaw = trim((string)($settingsMap['blog_sidebar_banner_url'] ?? ''));
+$sidebarBannerAltRaw = trim((string)($settingsMap['blog_sidebar_banner_alt'] ?? ''));
+$sidebarBannerActive = (int)($settingsMap['blog_sidebar_banner_active'] ?? 0) === 1 && $sidebarBannerImageRaw !== '';
+$sidebarBannerNewTab = (int)($settingsMap['blog_sidebar_banner_new_tab'] ?? 0) === 1;
+$sidebarBannerImage = htmlspecialchars($sidebarBannerImageRaw, ENT_QUOTES, 'UTF-8');
+$sidebarBannerUrl = htmlspecialchars($sidebarBannerUrlRaw !== '' ? $sidebarBannerUrlRaw : '#', ENT_QUOTES, 'UTF-8');
+$sidebarBannerAlt = htmlspecialchars($sidebarBannerAltRaw !== '' ? $sidebarBannerAltRaw : 'RCS Print banner', ENT_QUOTES, 'UTF-8');
 $publishedAt = strtotime((string)($blog['published_at'] ?? '')) ?: time();
 $published = date('d M, Y', $publishedAt);
 $sanitizeBlogHtml = static function (string $html): string {
@@ -78,6 +86,11 @@ $content = $sanitizeBlogHtml((string)($blog['content'] ?? ''));
               </a>
             <?php endforeach; ?>
           </div>
+        <?php endif; ?>
+        <?php if ($sidebarBannerActive): ?>
+          <a class="blog-sidebar-banner" href="<?= $sidebarBannerUrl ?>" <?= $sidebarBannerNewTab ? 'target="_blank" rel="noopener noreferrer"' : '' ?> aria-label="<?= $sidebarBannerAlt ?>">
+            <img src="<?= $sidebarBannerImage ?>" alt="<?= $sidebarBannerAlt ?>" loading="lazy">
+          </a>
         <?php endif; ?>
       </aside>
     </div>

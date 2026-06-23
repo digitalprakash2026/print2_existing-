@@ -2587,6 +2587,26 @@ textarea.fi  { resize:vertical; }
   font-weight:800;
   text-transform:uppercase;
 }
+.blog-sidebar-banner {
+  display:block;
+  margin-top:18px;
+  border-radius:18px;
+  overflow:hidden;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  box-shadow:0 12px 28px rgba(15,23,42,.08);
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+.blog-sidebar-banner:hover {
+  transform:translateY(-2px);
+  box-shadow:0 18px 38px rgba(15,23,42,.13);
+}
+.blog-sidebar-banner img {
+  width:100%;
+  display:block;
+  aspect-ratio:4/5;
+  object-fit:cover;
+}
 .blog-related-link {
   display:block;
   color:#111827;
