@@ -81,6 +81,15 @@ if ($reviewCount === 0 && !empty($productReviews)) {
 }
 $reviewStarCount = $reviewCount > 0 ? max(1, min(5, (int)round($reviewAverage))) : 0;
 $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $reviewStarCount);
+$productFaqs = [];
+try { $productFaqs = \Faq\FaqManager::listByPage('product_detail'); } catch (\Throwable) { $productFaqs = []; }
+if (!$productFaqs) {
+    $productFaqs = [
+        ['question' => 'Can I upload my own design?', 'answer' => 'Yes, you can upload PDF, AI, PSD, PNG, JPG and other supported artwork files up to 50MB.'],
+        ['question' => 'Can RCS Graphic create the design for me?', 'answer' => 'Yes, select the free design option and our team will connect with you for the design brief and confirmation.'],
+        ['question' => 'How long does delivery take?', 'answer' => 'Standard delivery usually takes 3 - 5 working days after artwork and order confirmation.'],
+    ];
+}
 ?>
 
 <div class="pd-page-wrap">
@@ -349,18 +358,12 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
           <div class="pd-tab-panel" id="pd-panel-faqs" role="tabpanel" aria-labelledby="pd-tab-faqs" data-tab-panel="faqs" hidden>
             <h2>FAQs</h2>
             <div class="pd-faq-list">
-              <details open>
-                <summary>Can I upload my own design?</summary>
-                <p>Yes, you can upload PDF, AI, PSD, PNG, JPG and other supported artwork files up to 50MB.</p>
+              <?php foreach ($productFaqs as $idx => $faq): ?>
+              <details <?= $idx === 0 ? 'open' : '' ?>>
+                <summary><?= htmlspecialchars((string)($faq['question'] ?? ''), ENT_QUOTES, 'UTF-8') ?></summary>
+                <p><?= nl2br(htmlspecialchars((string)($faq['answer'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></p>
               </details>
-              <details>
-                <summary>Can RCS Graphic create the design for me?</summary>
-                <p>Yes, select the free design option and our team will connect with you for the design brief and confirmation.</p>
-              </details>
-              <details>
-                <summary>How long does delivery take?</summary>
-                <p>Standard delivery usually takes 3 - 5 working days after artwork and order confirmation.</p>
-              </details>
+              <?php endforeach; ?>
             </div>
           </div>
         </div>

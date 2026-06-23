@@ -62,6 +62,7 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
 \Orders\OrderManager::ensureWorkflowSchema();
 \Orders\OrderManager::ensureDesignApprovalSchema();
 \Approvals\ContentApprovalManager::ensureSchema();
+\Faq\FaqManager::ensureSchema();
 
 $adminUsersHasMobile = null;
 $hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
@@ -128,6 +129,26 @@ if (str_starts_with($uri, '/admin/api/')) {
             $i++;
         }
     };
+
+    if ($uri === '/admin/api/faqs' && $method === 'GET') {
+        json(['ok' => true, 'faqs' => \Faq\FaqManager::all(), 'page_labels' => \Faq\FaqManager::PAGE_LABELS]);
+    }
+    if ($uri === '/admin/api/faqs' && $method === 'POST') {
+        $result = \Faq\FaqManager::save($body);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+    if (preg_match('#^/admin/api/faqs/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $result = \Faq\FaqManager::save($body, (int)$m[1]);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+    if (preg_match('#^/admin/api/faqs/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
+        $result = \Faq\FaqManager::toggle((int)$m[1]);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+    if (preg_match('#^/admin/api/faqs/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        $result = \Faq\FaqManager::delete((int)$m[1]);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
 
     $adminProductImages = static function (int $productId): array {
         try {
@@ -1812,6 +1833,7 @@ $adminPage = match(true) {
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/coupons/new' => 'admin/coupons-new',
     $uri === '/admin/reviews'    => 'admin/reviews',
+    $uri === '/admin/faqs'       => 'admin/faqs',
     $uri === '/admin/customers'  => 'admin/customers',
     $uri === '/admin/leads'      => 'admin/leads',
     $uri === '/admin/approvals'  => 'admin/approvals',

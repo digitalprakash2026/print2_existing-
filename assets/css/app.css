@@ -2234,16 +2234,36 @@ textarea.fi  { resize:vertical; }
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  margin-bottom:8px;
+  margin-bottom:18px;
   text-decoration:none;
 }
 .footer-logo-img {
-  width:148px;
+  width:176px;
   max-width:100%;
   height:auto;
   display:block;
   object-fit:contain;
   filter:drop-shadow(0 12px 24px rgba(0,0,0,.26));
+}
+.all-blogs-page,
+.blog-page,
+.blog-detail-page,
+.contact-showcase-page {
+  font-family:var(--fn);
+}
+.all-blogs-page h1,
+.all-blogs-page h2,
+.all-blogs-page h3,
+.blog-page h1,
+.blog-page h2,
+.blog-page h3,
+.blog-detail-page h1,
+.blog-detail-page h2,
+.blog-detail-page h3,
+.contact-showcase-page h1,
+.contact-showcase-page h2,
+.contact-showcase-page h3 {
+  font-family:'Poppins', var(--fn) !important;
 }
 .footer-logo-main {
   display:block;
