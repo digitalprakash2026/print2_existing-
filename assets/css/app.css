@@ -2228,11 +2228,18 @@ textarea.fi  { resize:vertical; }
 .footer-brand-col { min-width:0; }
 .footer-logo {
   display:inline-flex;
-  flex-direction:column;
-  align-items:flex-start;
-  color:#fff;
-  line-height:1;
+  align-items:center;
+  justify-content:center;
   margin-bottom:8px;
+  text-decoration:none;
+}
+.footer-logo-img {
+  width:148px;
+  max-width:100%;
+  height:auto;
+  display:block;
+  object-fit:contain;
+  filter:drop-shadow(0 12px 24px rgba(0,0,0,.26));
 }
 .footer-logo-main {
   display:block;

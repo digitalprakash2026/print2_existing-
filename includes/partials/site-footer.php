@@ -49,8 +49,7 @@ $sfCategoryHref = static function (string $label, array $aliases = [], string $f
     <div class="footer-main">
       <div class="footer-brand-col">
         <a href="/" class="footer-logo" aria-label="<?= $sfBizName ?> home">
-          <span class="footer-logo-main">RCS</span>
-          <span class="footer-logo-sub">PRINT</span>
+          <img src="/assets/images/rcs-graphic-logo.png" alt="<?= htmlspecialchars($sfBizName) ?> Logo" class="footer-logo-img" loading="lazy" decoding="async">
         </a>
         <p class="footer-desc" data-design-target="footer.links">Your one-stop solution for all your printing needs. Quality prints that represent your brand perfectly.</p>
         <div class="footer-social" aria-label="Social links">

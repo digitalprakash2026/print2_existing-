@@ -42,8 +42,8 @@ include __DIR__ . '/layout.php';
   <div class="f2">
     <div class="fg">
       <label>Featured Image</label>
-      <input type="file" class="fi" id="blog-image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-      <div style="font-size:11px;color:var(--text3);margin-top:5px">Recommended ratio: 16:10 or 900×560.</div>
+      <input type="file" class="fi" id="blog-image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onchange="uploadBlogImage()">
+      <div id="blogImageState" style="font-size:11px;color:var(--text3);margin-top:5px">Recommended ratio: 16:10 or 900×560. Choose image — upload starts automatically.</div>
     </div>
     <div class="fg"><label>Image Path</label><input class="fi" id="blog-image-path" placeholder="/uploads/blogs/..."></div>
   </div>
@@ -105,7 +105,7 @@ include __DIR__ . '/layout.php';
       <button class="btn btn-outline btn-sm" onclick="previewBlog()">Preview</button>
       <button class="btn btn-outline btn-sm" onclick="resetForm()">Reset</button>
     </div>
-    <button class="btn btn-outline btn-sm" onclick="uploadBlogImage()">Upload Featured Image</button>
+    <span id="blogImageSaveHint" style="align-self:center;font-size:11px;color:var(--text3);font-weight:800">Featured image uploads immediately after selection.</span>
   </div>
 </div>
 
@@ -281,6 +281,8 @@ async function resetForm(){
   fillForm({category:'Print Tips', badge_theme:'purple', author_name:'RCS Print Team', is_featured:1, is_active:1, content:'<p>Write your blog content here...</p>'});
   slugTouched = false;
   showErr('');
+  const imageState = document.getElementById('blogImageState');
+  if (imageState) { imageState.textContent = 'Recommended ratio: 16:10 or 900×560. Choose image — upload starts automatically.'; imageState.style.color = 'var(--text3)'; }
 }
 
 async function saveBlog() {
@@ -305,15 +307,28 @@ async function saveBlog() {
 }
 
 async function uploadBlogImage(){
-  const file = document.getElementById('blog-image').files?.[0];
+  const input = document.getElementById('blog-image');
+  const state = document.getElementById('blogImageState');
+  const file = input?.files?.[0];
   if (!file) { showErr('Select image first.'); return; }
+  if (input) input.disabled = true;
+  if (state) { state.textContent = 'Uploading featured image…'; state.style.color = 'var(--blue)'; }
   const fd = new FormData();
   fd.append('image', file);
-  const res = await fetch('/admin/api/blogs/upload', {method:'POST', headers:{'X-CSRF-TOKEN':CSRF}, body: fd}).then(r=>r.json());
-  if (!res.ok) { showErr(res.msg || 'Upload failed'); return; }
-  document.getElementById('blog-image-path').value = res.path || '';
-  showErr('');
-  toastMsg('Image uploaded', 'success');
+  try {
+    const res = await fetch('/admin/api/blogs/upload', {method:'POST', headers:{'X-CSRF-TOKEN':CSRF}, body: fd}).then(r=>r.json());
+    if (!res.ok) {
+      showErr(res.msg || 'Upload failed');
+      if (state) { state.textContent = 'Upload failed. Choose image again.'; state.style.color = 'var(--red)'; }
+      return;
+    }
+    document.getElementById('blog-image-path').value = res.path || '';
+    showErr('');
+    if (state) { state.textContent = 'Featured image uploaded automatically.'; state.style.color = 'var(--green)'; }
+    toastMsg('Image uploaded', 'success');
+  } finally {
+    if (input) input.disabled = false;
+  }
 }
 
 editor().addEventListener('input', updateBlogStats);
