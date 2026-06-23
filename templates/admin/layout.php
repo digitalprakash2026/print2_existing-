@@ -45,7 +45,7 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
     <!-- Sidebar -->
     <div class="adm-sb" id="admSidebar">
       <div class="adm-sb-logo adm-sb-logo-img">
-        <img src="/assets/images/rcs-graphic-logo.png" alt="RCS Print Logo" loading="eager" decoding="async">
+        <img src="/assets/images/RCS%20PRINT%20LOGO-white.png" alt="RCS Print Logo" loading="eager" decoding="async">
         <div class="adm-sb-s">Admin Panel</div>
       </div>
       <div class="adm-nl">Main</div>

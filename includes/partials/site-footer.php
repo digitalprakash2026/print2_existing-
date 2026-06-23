@@ -49,15 +49,9 @@ $sfCategoryHref = static function (string $label, array $aliases = [], string $f
     <div class="footer-main">
       <div class="footer-brand-col">
         <a href="/" class="footer-logo" aria-label="<?= $sfBizName ?> home">
-          <img src="/assets/images/rcs-graphic-logo.png" alt="<?= htmlspecialchars($sfBizName) ?> Logo" class="footer-logo-img" loading="lazy" decoding="async">
+          <img src="/assets/images/RCS%20PRINT%20LOGO-white.png" alt="<?= htmlspecialchars($sfBizName) ?> Logo" class="footer-logo-img" loading="lazy" decoding="async">
         </a>
         <p class="footer-desc" data-design-target="footer.links">Your one-stop solution for all your printing needs. Quality prints that represent your brand perfectly.</p>
-        <div class="footer-social" aria-label="Social links">
-          <a href="/contact" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
-          <a href="/contact" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
-          <a href="https://wa.me/<?= $sfWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
-          <a href="/contact" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
-        </div>
       </div>
 
       <nav class="footer-col" aria-label="Quick links">
@@ -72,13 +66,12 @@ $sfCategoryHref = static function (string $label, array $aliases = [], string $f
 
       <nav class="footer-col" aria-label="Products">
         <h3>Products</h3>
-        <a href="<?= $sfCategoryHref('Business Cards', ['Visiting Cards'], 'business-cards') ?>">Business Cards</a>
-        <a href="<?= $sfCategoryHref('Flyers', [], 'flyers') ?>">Flyers</a>
-        <a href="<?= $sfCategoryHref('Brochures', ['Brochure'], 'brochures') ?>">Brochures</a>
-        <a href="<?= $sfCategoryHref('Posters', [], 'posters') ?>">Posters</a>
-        <a href="<?= $sfCategoryHref('Diaries', ['Diary'], 'diaries') ?>">Diaries</a>
-        <a href="<?= $sfCategoryHref('Calendars', ['Calendar'], 'calendars') ?>">Calendars</a>
-        <a href="<?= $sfCategoryHref('Stationery & More', ['Stationery'], 'stationery') ?>">Stationery &amp; More</a>
+        <a href="<?= $sfCategoryHref('Visiting Card', ['Visiting Cards', 'Business Cards'], 'visiting-cards') ?>">Visiting Card</a>
+        <a href="<?= $sfCategoryHref('Brochure', ['Brochures'], 'brochures') ?>">Brochure</a>
+        <a href="<?= $sfCategoryHref('Flyer', ['Flyers'], 'flyers') ?>">Flyer</a>
+        <a href="<?= $sfCategoryHref('Diary', ['Diaries'], 'diaries') ?>">Diary</a>
+        <a href="<?= $sfCategoryHref('Calendar', ['Calendars'], 'calendars') ?>">Calendar</a>
+        <a href="<?= $sfCategoryHref('Flex Banner', ['Flex Banners', 'Banner', 'Banners'], 'banners') ?>">Flex Banner</a>
       </nav>
 
       <nav class="footer-col" aria-label="Customer service">

@@ -185,26 +185,26 @@ foreach ($categories as $cat) {
 
     <div class="why-print-panel" aria-label="Why choose RCS Print">
       <article class="why-print-item">
-        <div class="why-print-icon why-print-purple"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></div>
-        <div class="why-print-copy">
-          <h3>Fast Delivery</h3>
-          <p>On-time delivery always guaranteed.</p>
-        </div>
-      </article>
-
-      <article class="why-print-item">
-        <div class="why-print-icon why-print-orange"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div>
-        <div class="why-print-copy">
-          <h3>Free Design Support</h3>
-          <p>Professional design support at no extra cost.</p>
-        </div>
-      </article>
-
-      <article class="why-print-item">
         <div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div>
         <div class="why-print-copy">
           <h3>Premium Quality</h3>
           <p>Best quality materials and printing.</p>
+        </div>
+      </article>
+
+      <article class="why-print-item">
+        <div class="why-print-icon why-print-orange"><i class="fa-regular fa-thumbs-up" aria-hidden="true"></i></div>
+        <div class="why-print-copy">
+          <h3>100% Satisfaction</h3>
+          <p>Your happiness matters.</p>
+        </div>
+      </article>
+
+      <article class="why-print-item">
+        <div class="why-print-icon why-print-purple"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div>
+        <div class="why-print-copy">
+          <h3>Free Design Support</h3>
+          <p>Professional design support at no extra cost.</p>
         </div>
       </article>
 

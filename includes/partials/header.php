@@ -12,7 +12,7 @@ try {
     $bizSettings   = [];
     $settingRows   = Database::rows(
         "SELECT `key`, value FROM settings
-         WHERE `key` IN ('biz_name','biz_tagline','biz_whatsapp','biz_phone','razorpay_key_id','gst_percent','design_fee')"
+         WHERE `key` IN ('biz_name','biz_tagline','biz_whatsapp','biz_phone','biz_email','razorpay_key_id','gst_percent','design_fee')"
     );
     foreach ($settingRows as $r) $bizSettings[$r['key']] = $r['value'];
 } catch (\Throwable) {
@@ -20,6 +20,10 @@ try {
 }
 
 $navBizName  = htmlspecialchars($bizSettings['biz_name']         ?? 'RCS Graphic');
+$navPhoneRaw = (string)($bizSettings['biz_phone']                ?? '+91 98765 43210');
+$navPhone    = htmlspecialchars($navPhoneRaw);
+$navPhoneHref= htmlspecialchars(preg_replace('/\D+/', '', $navPhoneRaw));
+$navEmail    = htmlspecialchars($bizSettings['biz_email']        ?? 'hello@rcsgraphic.in');
 $navWa       = htmlspecialchars($bizSettings['biz_whatsapp']     ?? '919876543210');
 $navRazKey   = htmlspecialchars($bizSettings['razorpay_key_id']  ?? '');
 $navGst      = (int)($bizSettings['gst_percent'] ?? 18);
@@ -63,16 +67,9 @@ foreach ($navProducts as $p) {
       </div>
 
       <div class="topbar-right rcs-topbar-right">
-        <div class="topbar-links rcs-topbar-links">
-          <a href="/my-orders" aria-label="Track Order">Track Order</a>
-          <span class="topbar-divider rcs-topbar-divider" aria-hidden="true"></span>
-          <a href="/#quick-help-sec" aria-label="Help Center">Help Center</a>
-        </div>
-
-        <div class="social-links rcs-social-links" aria-label="Social links">
-          <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-          <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="https://wa.me/<?= $navWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
+        <div class="topbar-links rcs-topbar-links rcs-topbar-contact-links">
+          <a href="tel:<?= $navPhoneHref ?>" aria-label="Call <?= $navPhone ?>"><i class="fa-solid fa-phone" aria-hidden="true"></i><?= $navPhone ?></a>
+          <a href="mailto:<?= $navEmail ?>" aria-label="Email <?= $navEmail ?>"><i class="fa-regular fa-envelope" aria-hidden="true"></i><?= $navEmail ?></a>
         </div>
       </div>
     </div>
@@ -149,9 +146,6 @@ foreach ($navProducts as $p) {
       </div>
 
       <div class="navbar-actions rcs-navbar-actions">
-        <a href="/categories" class="action-btn rcs-action-btn" aria-label="Search">
-          <i class="fa-solid fa-magnifying-glass"></i>
-        </a>
         <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="action-btn rcs-action-btn" aria-label="My Account">
           <i class="fa-regular fa-user"></i>
         </a>
@@ -216,7 +210,6 @@ foreach ($navProducts as $p) {
     <a href="/about"     class="md-item" onclick="closeDrawer()">⭐ About Us</a>
     <a href="/contact" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
     <a href="/blogs"    class="md-item" onclick="closeDrawer()">📝 Blog</a>
-    <a href="/categories"      class="md-item" onclick="closeDrawer()">🔎 Search Products</a>
     <a href="/cart" class="md-item md-action" onclick="closeDrawer()">
       🛒 Cart <span class="md-cart-badge">0</span>
     </a>

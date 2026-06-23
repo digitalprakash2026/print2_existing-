@@ -140,6 +140,9 @@ body:has(#siteHeader) { --site-hh:126px; --post-header-gap:50px; }
   gap:14px;
 }
 .topbar-links a {
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
   opacity:.96;
   transition:opacity .25s ease;
 }
@@ -184,8 +187,8 @@ body:has(#siteHeader) { --site-hh:126px; --post-header-gap:50px; }
 .brand-img {
   display:block;
   width:auto;
-  height:64px;
-  max-width:190px;
+  height:76px;
+  max-width:224px;
   object-fit:contain;
 }
 .nav-center {
@@ -499,12 +502,13 @@ body:has(#siteHeader) .confirm-page {
 @media (max-width:1100px) {
   .nav-menu { gap:24px; }
   .brand { min-width:170px; }
-  .brand-img { height:58px; max-width:170px; }
+  .brand-img { height:66px; max-width:195px; }
   .navbar-actions { min-width:132px; }
 }
 @media (max-width:920px) {
   .topbar-right { gap:12px; }
   .topbar-links { gap:10px; }
+  .rcs-topbar-contact-links { flex-wrap:wrap; justify-content:flex-end; }
   .social-links { gap:10px; }
   .navbar-inner { gap:18px; }
   .nav-menu { gap:18px; }
@@ -538,7 +542,7 @@ body:has(#siteHeader) .confirm-page {
   .navbar-actions .action-btn { display:none; }
   .menu-toggle { display:inline-flex; }
   .brand { min-width:0; }
-  .brand-img { height:52px; max-width:165px; }
+  .brand-img { height:58px; max-width:180px; }
   body:has(#siteHeader) .mob-drawer {
     top:var(--site-hh,129px);
     left:0;
@@ -615,7 +619,7 @@ body:has(#siteHeader) .confirm-page {
     font-size:11px;
   }
   .navbar-inner { min-height:76px; }
-  .brand-img { height:48px; max-width:150px; }
+  .brand-img { height:54px; max-width:168px; }
 }
 @media (max-width:380px) {
   body:has(#siteHeader) { --site-hh:154px; }
