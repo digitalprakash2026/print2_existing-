@@ -1,8 +1,6 @@
 <?php
 $pageTitle = 'Contact RCS Graphic — Print Order Help & Bulk Quotes';
 $pageDesc = 'Contact RCS Graphic for printing support, bulk quotes, design guidance, order help, WhatsApp support and delivery questions.';
-include INCLUDE_PATH . '/partials/head.php';
-include INCLUDE_PATH . '/partials/header.php';
 
 $settingsMap = is_array($settingsMap ?? null) ? $settingsMap : [];
 $bizName = htmlspecialchars($settingsMap['biz_name'] ?? 'RCS Print', ENT_QUOTES, 'UTF-8');
@@ -23,6 +21,17 @@ if (!$contactFaqs) {
         ['question' => 'Can I get a sample before placing a bulk order?', 'answer' => 'For selected products and bulk requirements, sample or proof options can be discussed with our team.'],
     ];
 }
+$pageSchema = [[
+    '@context' => 'https://schema.org',
+    '@type' => 'FAQPage',
+    'mainEntity' => array_map(static fn($faq) => [
+        '@type' => 'Question',
+        'name' => (string)($faq['question'] ?? ''),
+        'acceptedAnswer' => ['@type' => 'Answer', 'text' => strip_tags((string)($faq['answer'] ?? ''))],
+    ], $contactFaqs),
+]];
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
 ?>
 <main class="contact-showcase-page">
   <section class="contact-showcase-hero">

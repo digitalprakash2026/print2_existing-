@@ -6,6 +6,17 @@
  */
 $pageTitle = ($settingsMap['biz_name'] ?? 'RCS Graphic') . ' — Premium Print Ordering';
 $pageDesc  = 'Professional printing services in Rajkot — business cards, brochures, banners and more. Fast delivery, GST invoice, secure payment.';
+$pageImage = '/assets/images/rcs-graphic-logo.png';
+if (!empty($homeBanners ?? [])) {
+  foreach ($homeBanners as $bannerSeo) {
+    $bannerSeoImage = trim((string)($bannerSeo['image_path'] ?? ''));
+    if ($bannerSeoImage !== '') {
+      $pageImage = $bannerSeoImage;
+      $pagePreloadImage = $bannerSeoImage;
+      break;
+    }
+  }
+}
 include INCLUDE_PATH . '/partials/head.php';    // outputs <!DOCTYPE><html><head>...</head><body>
 include INCLUDE_PATH . '/partials/header.php';  // outputs header + cart drawer + global JS
 
@@ -75,10 +86,10 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
   <div class="bs-slide <?= $hasContent ? 'has-content' : 'image-only' ?>">
     <?php if ($slideClickUrl !== ''): ?>
       <a class="bs-image-link" href="<?= $slideClickUrl ?>" aria-label="<?= $alt ?>">
-        <img src="<?= $img ?>" alt="<?= $alt ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async">
+        <img src="<?= $img ?>" alt="<?= $alt ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async" fetchpriority="<?= $i === 0 ? 'high' : 'auto' ?>">
       </a>
     <?php else: ?>
-      <img src="<?= $img ?>" alt="<?= $alt ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async">
+      <img src="<?= $img ?>" alt="<?= $alt ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async" fetchpriority="<?= $i === 0 ? 'high' : 'auto' ?>">
     <?php endif; ?>
     <?php if ($hasContent): ?>
       <div class="bs-overlay" aria-hidden="true"></div>

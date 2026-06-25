@@ -1,6 +1,28 @@
 <?php
 $pageTitle = ($blog['meta_title'] ?? $blog['title'] ?? 'Blog') . ' — RCS Print';
 $pageDesc = $blog['meta_description'] ?? $blog['excerpt'] ?? 'RCS Print blog article.';
+$pageOgType = 'article';
+$pageImage = trim((string)($blog['featured_image'] ?? '')) ?: '/assets/images/rcs-graphic-logo.png';
+$blogBaseUrl = defined('APP_URL') ? rtrim((string)APP_URL, '/') : '';
+$blogSchemaImage = preg_match('#^https?://#i', $pageImage) ? $pageImage : ($blogBaseUrl . '/' . ltrim($pageImage, '/'));
+$blogPublishedRaw = (string)($blog['published_at'] ?? $blog['created_at'] ?? 'now');
+$blogModifiedRaw = (string)($blog['updated_at'] ?? $blog['published_at'] ?? $blogPublishedRaw);
+$pageSchema = [[
+  '@context' => 'https://schema.org',
+  '@type' => 'BlogPosting',
+  'headline' => (string)($blog['title'] ?? 'RCS Print Blog'),
+  'description' => strip_tags((string)$pageDesc),
+  'image' => $blogSchemaImage,
+  'datePublished' => date('c', strtotime($blogPublishedRaw) ?: time()),
+  'dateModified' => date('c', strtotime($blogModifiedRaw) ?: time()),
+  'author' => ['@type' => 'Person', 'name' => (string)($blog['author_name'] ?? 'RCS Print Team')],
+  'publisher' => [
+    '@type' => 'Organization',
+    'name' => (string)($settingsMap['biz_name'] ?? 'RCS Print'),
+    'logo' => ['@type' => 'ImageObject', 'url' => $blogBaseUrl . '/assets/images/rcs-graphic-logo.png'],
+  ],
+  'mainEntityOfPage' => $blogBaseUrl . '/blog/' . rawurlencode((string)($blog['slug'] ?? '')),
+]];
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 

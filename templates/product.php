@@ -6,7 +6,7 @@
  * FIX: design fee from admin settings
  * IMPROVEMENT: larger title, better spacing, related products with CTA
  */
-$pageTitle = htmlspecialchars($product['name']) . ' — RCS Graphic';
+$pageTitle = trim((string)($product['meta_title'] ?? '')) ?: ((string)($product['name'] ?? 'Product') . ' Printing — RCS Graphic');
 $settingsMap = [];
 try {
     $settings    = Database::rows("SELECT `key`, value FROM settings");
@@ -15,10 +15,6 @@ try {
 
 // Design fee from admin settings (Admin → Settings → design_fee)
 $designFee = (float)($product['design_fee'] ?? ($settingsMap['design_fee'] ?? 0));
-
-include INCLUDE_PATH . '/partials/head.php';
-include INCLUDE_PATH . '/partials/header.php';
-// Note: cart-drawer is already included by header.php — do NOT include again
 
 // Gallery
 $imgs       = $product['images'] ?? [];
@@ -90,6 +86,50 @@ if (!$productFaqs) {
         ['question' => 'How long does delivery take?', 'answer' => 'Standard delivery usually takes 3 - 5 working days after artwork and order confirmation.'],
     ];
 }
+$productDescription = trim(strip_tags((string)($product['description'] ?? '')));
+$pageDesc = trim((string)($product['meta_description'] ?? '')) ?: ($productDescription !== '' ? (function_exists('mb_substr') ? mb_substr($productDescription, 0, 155) : substr($productDescription, 0, 155)) : ('Order ' . (string)($product['name'] ?? 'printing products') . ' online from RCS Graphic with premium quality printing and support.'));
+$pageImage = $primaryImg;
+$pageOgType = 'product';
+$productSchema = [
+    '@context' => 'https://schema.org',
+    '@type' => 'Product',
+    'name' => (string)($product['name'] ?? 'Product'),
+    'description' => $pageDesc,
+    'image' => preg_match('#^https?://#i', $primaryImg) ? $primaryImg : ((defined('APP_URL') ? rtrim((string)APP_URL, '/') : '') . '/' . ltrim($primaryImg, '/')),
+    'brand' => ['@type' => 'Brand', 'name' => 'RCS Graphic'],
+    'sku' => $productCode !== '' ? $productCode : (string)($product['id'] ?? ''),
+];
+if ($startingPrice > 0) {
+    $productSchema['offers'] = [
+        '@type' => 'Offer',
+        'url' => (defined('APP_URL') ? rtrim((string)APP_URL, '/') : '') . '/product/' . rawurlencode((string)($product['slug'] ?? '')),
+        'priceCurrency' => 'INR',
+        'price' => number_format($startingPrice, 2, '.', ''),
+        'availability' => 'https://schema.org/InStock',
+    ];
+}
+if ($reviewCount > 0 && $reviewAverage > 0) {
+    $productSchema['aggregateRating'] = [
+        '@type' => 'AggregateRating',
+        'ratingValue' => number_format($reviewAverage, 1, '.', ''),
+        'reviewCount' => $reviewCount,
+    ];
+}
+$pageSchema = [$productSchema];
+if (!empty($productFaqs)) {
+    $pageSchema[] = [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => array_map(static fn($faq) => [
+            '@type' => 'Question',
+            'name' => (string)($faq['question'] ?? ''),
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => strip_tags((string)($faq['answer'] ?? ''))],
+        ], $productFaqs),
+    ];
+}
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
+// Note: cart-drawer is already included by header.php — do NOT include again
 ?>
 
 <div class="pd-page-wrap">

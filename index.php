@@ -61,6 +61,79 @@ header('X-Frame-Options: SAMEORIGIN');
 //  ROUTES — Public Pages
 // ═══════════════════════════════════════════════════════════════
 
+
+// SEO Sitemap — dynamic URLs for launch indexing
+if ($uri === '/sitemap.xml' && $method === 'GET') {
+    $baseUrl = defined('APP_URL') ? rtrim((string)APP_URL, '/') : 'https://print.rcsgraphic.com';
+    $today = date('Y-m-d');
+    $urls = [];
+    $addUrl = static function (string $path, string $priority = '0.80', string $changefreq = 'weekly', ?string $lastmod = null) use (&$urls, $baseUrl, $today): void {
+        $path = '/' . ltrim($path, '/');
+        $urls[$path] = [
+            'loc' => $baseUrl . $path,
+            'lastmod' => $lastmod ?: $today,
+            'changefreq' => $changefreq,
+            'priority' => $priority,
+        ];
+    };
+
+    $addUrl('/', '1.00', 'daily');
+    $addUrl('/products', '0.90', 'daily');
+    $addUrl('/categories', '0.80', 'weekly');
+    $addUrl('/blogs', '0.70', 'weekly');
+    $addUrl('/about', '0.70', 'monthly');
+    $addUrl('/contact', '0.70', 'monthly');
+    $addUrl('/shipping-policy', '0.40', 'monthly');
+    $addUrl('/refund-return-policy', '0.40', 'monthly');
+    $addUrl('/terms-and-conditions', '0.40', 'monthly');
+    $addUrl('/privacy-policy', '0.40', 'monthly');
+
+    try {
+        foreach (\Catalog\ProductCatalog::categories() as $category) {
+            $slug = trim((string)($category['slug'] ?? ''));
+            if ($slug !== '') $addUrl('/category/' . rawurlencode($slug), '0.80', 'weekly');
+        }
+    } catch (\Throwable $e) {
+        error_log('Sitemap categories unavailable: ' . $e->getMessage());
+    }
+
+    try {
+        foreach (\Catalog\ProductCatalog::all(true) as $product) {
+            $slug = trim((string)($product['slug'] ?? ''));
+            if ($slug !== '') $addUrl('/product/' . rawurlencode($slug), '0.90', 'weekly', substr((string)($product['updated_at'] ?? ''), 0, 10) ?: null);
+        }
+    } catch (\Throwable $e) {
+        error_log('Sitemap products unavailable: ' . $e->getMessage());
+    }
+
+    try {
+        $blogs = Database::rows("SELECT slug, updated_at, published_at FROM blogs WHERE is_active = 1 ORDER BY published_at DESC, id DESC");
+        foreach ($blogs as $blog) {
+            $slug = trim((string)($blog['slug'] ?? ''));
+            if ($slug !== '') {
+                $lastmod = substr((string)($blog['updated_at'] ?? $blog['published_at'] ?? ''), 0, 10) ?: null;
+                $addUrl('/blog/' . rawurlencode($slug), '0.70', 'monthly', $lastmod);
+            }
+        }
+    } catch (\Throwable $e) {
+        error_log('Sitemap blogs unavailable: ' . $e->getMessage());
+    }
+
+    header('Content-Type: application/xml; charset=utf-8');
+    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+    foreach ($urls as $url) {
+        echo "  <url>\n";
+        echo '    <loc>' . htmlspecialchars($url['loc'], ENT_XML1, 'UTF-8') . "</loc>\n";
+        echo '    <lastmod>' . htmlspecialchars($url['lastmod'], ENT_XML1, 'UTF-8') . "</lastmod>\n";
+        echo '    <changefreq>' . htmlspecialchars($url['changefreq'], ENT_XML1, 'UTF-8') . "</changefreq>\n";
+        echo '    <priority>' . htmlspecialchars($url['priority'], ENT_XML1, 'UTF-8') . "</priority>\n";
+        echo "  </url>\n";
+    }
+    echo '</urlset>';
+    exit;
+}
+
 // Home Page
 if ($uri === '/' && $method === 'GET') {
     try {
