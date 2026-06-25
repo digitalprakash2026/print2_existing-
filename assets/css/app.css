@@ -13430,3 +13430,55 @@ body:not(.admin-shell) :is(.contact-faq-section,.info-cta-section) {
     max-width:76%;
   }
 }
+
+/* Blog detail final layout fix: full-bleed featured image inside article + fixed desktop sidebar */
+.blog-detail-article > .blog-detail-image {
+  display:block;
+  width:100% !important;
+  max-width:none !important;
+  margin:0 0 24px !important;
+  padding:0 !important;
+  line-height:0;
+  font-size:0;
+  background:#eef2f7;
+}
+.blog-detail-article > .blog-detail-image > img {
+  display:block !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:100% !important;
+  height:clamp(340px, 44vw, 520px) !important;
+  object-fit:cover !important;
+  object-position:center center !important;
+}
+@media (min-width:901px) {
+  .blog-detail-layout {
+    grid-template-columns:minmax(0, 1fr) 340px;
+    overflow:visible;
+  }
+  .blog-detail-sidebar {
+    position:fixed;
+    top:calc(var(--site-hh, var(--hh)) + 18px);
+    right:max(calc(var(--page-gutter) / 2), calc((100vw - 1180px) / 2));
+    width:340px;
+    max-height:calc(100vh - var(--site-hh, var(--hh)) - 36px);
+    overflow-y:auto;
+    z-index:50;
+  }
+}
+@media (max-width:900px) {
+  .blog-detail-sidebar {
+    position:static;
+    width:auto;
+    max-height:none;
+    overflow:visible;
+    padding-right:0;
+  }
+}
+@media (max-width:768px) {
+  .blog-detail-article > .blog-detail-image > img {
+    height:auto !important;
+    min-height:0 !important;
+    aspect-ratio:16/10;
+  }
+}
