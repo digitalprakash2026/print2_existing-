@@ -196,14 +196,17 @@ if (preg_match('#^/blog/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
             "SELECT * FROM blogs WHERE slug = ? AND is_active = 1 LIMIT 1",
             [$m[1]]
         );
-        $relatedBlogs = Database::rows(
-            "SELECT id,title,slug,excerpt,featured_image,image_alt,category,published_at
-             FROM blogs
-             WHERE is_active = 1 AND slug <> ?
-             ORDER BY is_featured DESC, sort_order ASC, published_at DESC, id DESC
-             LIMIT 3",
-            [$m[1]]
-        );
+        $relatedBlogs = [];
+        if ($blog) {
+            $relatedBlogs = Database::rows(
+                "SELECT id,title,slug,excerpt,featured_image,image_alt,category,published_at
+                 FROM blogs
+                 WHERE is_active = 1 AND slug <> ?
+                 ORDER BY CASE WHEN category = ? THEN 0 ELSE 1 END, is_featured DESC, sort_order ASC, published_at DESC, id DESC
+                 LIMIT 10",
+                [$m[1], (string)($blog['category'] ?? '')]
+            );
+        }
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {

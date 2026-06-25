@@ -66,6 +66,11 @@ $sanitizeBlogHtml = static function (string $html): string {
   return $clean;
 };
 $content = $sanitizeBlogHtml((string)($blog['content'] ?? ''));
+$suggestedBlogs = array_slice(is_array($relatedBlogs ?? null) ? $relatedBlogs : [], 0, 4);
+$blogThumb = static function (array $item): string {
+  $src = trim((string)($item['featured_image'] ?? ''));
+  return $src !== '' ? $src : 'https://placehold.co/420x280/EEF3FD/4A148C?text=RCS+Print';
+};
 ?>
 
 <main class="blog-detail-page">
@@ -91,6 +96,35 @@ $content = $sanitizeBlogHtml((string)($blog['content'] ?? ''));
           </figure>
         <?php endif; ?>
         <div class="blog-detail-content"><?= $content ?></div>
+        <?php if (!empty($suggestedBlogs)): ?>
+          <section class="blog-bottom-suggestions" aria-labelledby="blogMoreGuidesTitle">
+            <div class="blog-bottom-head">
+              <span>Keep learning</span>
+              <h2 id="blogMoreGuidesTitle">Related Printing Guides</h2>
+              <p>Handpicked articles to help you plan better designs, materials and print orders.</p>
+            </div>
+            <div class="blog-suggestion-grid">
+              <?php foreach ($suggestedBlogs as $sb): ?>
+                <?php
+                  $sbTitle = (string)($sb['title'] ?? 'Blog article');
+                  $sbUrl = '/blog/' . rawurlencode((string)($sb['slug'] ?? ''));
+                  $sbImg = htmlspecialchars($blogThumb($sb), ENT_QUOTES, 'UTF-8');
+                  $sbAlt = htmlspecialchars((string)(($sb['image_alt'] ?? '') ?: $sbTitle), ENT_QUOTES, 'UTF-8');
+                  $sbExcerpt = trim(strip_tags((string)($sb['excerpt'] ?? '')));
+                  if (function_exists('mb_substr')) $sbExcerpt = mb_substr($sbExcerpt, 0, 96); else $sbExcerpt = substr($sbExcerpt, 0, 96);
+                ?>
+                <a class="blog-suggestion-card" href="<?= htmlspecialchars($sbUrl, ENT_QUOTES, 'UTF-8') ?>">
+                  <span class="blog-suggestion-img"><img src="<?= $sbImg ?>" alt="<?= $sbAlt ?>" loading="lazy"></span>
+                  <span class="blog-suggestion-copy">
+                    <small><?= htmlspecialchars((string)($sb['category'] ?? 'Print Tips'), ENT_QUOTES, 'UTF-8') ?></small>
+                    <strong><?= htmlspecialchars($sbTitle, ENT_QUOTES, 'UTF-8') ?></strong>
+                    <?php if ($sbExcerpt !== ''): ?><em><?= htmlspecialchars($sbExcerpt, ENT_QUOTES, 'UTF-8') ?>...</em><?php endif; ?>
+                  </span>
+                </a>
+              <?php endforeach; ?>
+            </div>
+          </section>
+        <?php endif; ?>
       </article>
 
       <aside class="blog-detail-sidebar">
@@ -100,13 +134,26 @@ $content = $sanitizeBlogHtml((string)($blog['content'] ?? ''));
           <button type="button" onclick="window.open('https://wa.me/<?= $bizWa ?>','_blank')">Chat on WhatsApp</button>
         </div>
         <?php if (!empty($relatedBlogs ?? [])): ?>
-          <div class="blog-side-card">
+          <div class="blog-side-card blog-side-more-card">
             <h2>More Blogs</h2>
-            <?php foreach ($relatedBlogs as $rb): ?>
-              <a class="blog-related-link" href="/blog/<?= htmlspecialchars((string)$rb['slug'], ENT_QUOTES, 'UTF-8') ?>">
-                <?= htmlspecialchars((string)$rb['title'], ENT_QUOTES, 'UTF-8') ?>
-              </a>
-            <?php endforeach; ?>
+            <div class="blog-related-list">
+              <?php foreach ($relatedBlogs as $rb): ?>
+                <?php
+                  $rbTitle = (string)($rb['title'] ?? 'Blog article');
+                  $rbUrl = '/blog/' . rawurlencode((string)($rb['slug'] ?? ''));
+                  $rbImg = htmlspecialchars($blogThumb($rb), ENT_QUOTES, 'UTF-8');
+                  $rbAlt = htmlspecialchars((string)(($rb['image_alt'] ?? '') ?: $rbTitle), ENT_QUOTES, 'UTF-8');
+                  $rbDate = !empty($rb['published_at']) ? date('M d, Y', strtotime((string)$rb['published_at'])) : '';
+                ?>
+                <a class="blog-related-link" href="<?= htmlspecialchars($rbUrl, ENT_QUOTES, 'UTF-8') ?>">
+                  <span class="blog-related-thumb"><img src="<?= $rbImg ?>" alt="<?= $rbAlt ?>" loading="lazy"></span>
+                  <span class="blog-related-copy">
+                    <strong><?= htmlspecialchars($rbTitle, ENT_QUOTES, 'UTF-8') ?></strong>
+                    <small><?= htmlspecialchars((string)($rb['category'] ?? 'Print Tips'), ENT_QUOTES, 'UTF-8') ?><?= $rbDate !== '' ? ' · ' . htmlspecialchars($rbDate, ENT_QUOTES, 'UTF-8') : '' ?></small>
+                  </span>
+                </a>
+              <?php endforeach; ?>
+            </div>
           </div>
         <?php endif; ?>
         <?php if ($sidebarBannerActive): ?>
