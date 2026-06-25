@@ -18,7 +18,7 @@ include __DIR__ . '/layout.php';
 <div class="fsec blog-banner-admin" style="max-width:1180px;margin-top:16px">
   <div class="blog-banner-admin-head">
     <div>
-      <div style="font-weight:900;color:var(--text);font-size:15px">Blog Sidebar Banner</div>
+      <div style="font-weight:700;color:var(--text);font-size:15px">Blog Sidebar Banner</div>
       <div style="font-size:12px;color:var(--text2);margin-top:3px">This clickable image appears below “Need Printing Help?” and “More Blogs” on blog article pages.</div>
     </div>
     <span id="blogBannerStatus" class="blog-banner-status">Loading…</span>
@@ -96,7 +96,7 @@ function renderBlogs() {
       <div style="display:grid;grid-template-columns:98px 1fr auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:#fff">
         ${img}
         <div>
-          <div style="font-weight:800;font-size:13px;margin-bottom:2px">${esc(b.title)}</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:2px">${esc(b.title)}</div>
           <div style="font-size:11px;color:var(--text2)">/${esc(b.slug)} · ${esc(b.category || 'Blog')} · ${Number(b.is_featured) ? 'Featured' : 'Hidden from home'} · ${Number(b.is_active) ? 'Published' : 'Draft'}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:3px">${esc(b.excerpt || '').slice(0,120)}</div>
         </div>

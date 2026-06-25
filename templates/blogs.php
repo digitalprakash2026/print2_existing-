@@ -32,7 +32,7 @@ include INCLUDE_PATH . '/partials/header.php';
 
     <section style="padding:26px 0 22px;border-bottom:1px solid var(--border);margin-bottom:28px">
       <div class="sec-ey">RCS Print Blog</div>
-      <h1 style="font-family:var(--fd);font-size:clamp(26px,4.5vw,42px);font-weight:800;color:var(--ink);line-height:1.1;margin:0 0 8px">
+      <h1 style="font-family:var(--fd);font-size:clamp(26px,4.5vw,42px);font-weight:700;color:var(--ink);line-height:1.1;margin:0 0 8px">
         Printing Tips, Ideas &amp; Guides
       </h1>
       <p style="font-size:14px;color:var(--text2);margin:0;max-width:720px;line-height:1.7">
@@ -43,7 +43,7 @@ include INCLUDE_PATH . '/partials/header.php';
     <?php if (empty($blogs ?? [])): ?>
       <div style="text-align:center;padding:80px 20px;background:#fff;border:1px solid var(--border);border-radius:18px">
         <div style="font-size:48px;margin-bottom:12px">📝</div>
-        <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:6px">No blogs published yet</div>
+        <div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:6px">No blogs published yet</div>
         <p style="font-size:13px;color:var(--text2);margin:0">Please check back soon for new printing tips.</p>
       </div>
     <?php else: ?>

@@ -38,7 +38,7 @@ include INCLUDE_PATH . '/partials/header.php';
     <?php if (empty($activeCategories)): ?>
       <div style="text-align:center;padding:80px 20px;background:#fff;border:1px solid var(--border);border-radius:18px">
         <div style="font-size:48px;margin-bottom:12px">🗂️</div>
-        <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:6px">No categories yet</div>
+        <div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:6px">No categories yet</div>
         <p style="font-size:13px;color:var(--text2);margin-bottom:20px">Please check back soon or contact us on WhatsApp.</p>
         <a href="https://wa.me/<?= htmlspecialchars($bizWa) ?>" target="_blank" rel="noopener" class="btn btn-green">💬 WhatsApp Us</a>
       </div>

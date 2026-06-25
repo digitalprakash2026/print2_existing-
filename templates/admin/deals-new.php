@@ -20,7 +20,7 @@ include __DIR__ . '/layout.php';
   <div class="f2"><div class="fg"><label>Image Alt</label><input class="fi" id="deal-alt" placeholder="500 visiting cards printing deal"></div><div class="fg"><label>Sort Order</label><input type="number" class="fi" id="deal-sort" value="0"></div></div>
   <div class="f2"><div class="fg"><label>CTA Text</label><input class="fi" id="deal-cta-text" placeholder="Order Now"></div><div class="fg"><label>CTA URL</label><input class="fi" id="deal-cta-url" placeholder="/categories"></div></div>
   <div class="fg"><label>Status</label><select class="fi fi-sel" id="deal-active"><option value="1">Active</option><option value="0">Inactive</option></select></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><span id="dealUploadState" style="align-self:center;font-size:11px;color:var(--text3);font-weight:800">Deal image uploads immediately after selection.</span><button class="btn btn-blue btn-sm" onclick="saveDeal()" id="dealSaveBtn"><?= $dealEditId > 0 ? 'Update Deal' : 'Save Deal' ?></button><a class="btn btn-outline btn-sm" href="/admin/deals">Cancel</a></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><span id="dealUploadState" style="align-self:center;font-size:11px;color:var(--text3);font-weight:700">Deal image uploads immediately after selection.</span><button class="btn btn-blue btn-sm" onclick="saveDeal()" id="dealSaveBtn"><?= $dealEditId > 0 ? 'Update Deal' : 'Save Deal' ?></button><a class="btn btn-outline btn-sm" href="/admin/deals">Cancel</a></div>
 </div>
 <script>
 const DEAL_EDIT_ID = <?= (int)$dealEditId ?>;

@@ -47,7 +47,7 @@ include __DIR__ . '/layout.php';
         <div style="flex:1;min-width:240px">
           <div class="fg" style="margin-bottom:8px"><label>Category Square Image</label><input id="cat-image-file" type="file" class="fi" accept="image/jpeg,image/png,image/webp" onchange="uploadCategoryImage()"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <span id="catUploadState" style="min-height:32px;display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:var(--text3)">Choose an image — upload starts automatically.</span>
+            <span id="catUploadState" style="min-height:32px;display:inline-flex;align-items:center;font-size:11px;font-weight:700;color:var(--text3)">Choose an image — upload starts automatically.</span>
             <button class="btn btn-outline btn-sm" type="button" onclick="clearCategoryImage()">Remove</button>
           </div>
           <div style="font-size:11px;color:var(--text3);line-height:1.45">Recommended: square 600×600 or 800×800 JPG/PNG/WebP. This image is used in the home page “Shop By Category” cards.</div>

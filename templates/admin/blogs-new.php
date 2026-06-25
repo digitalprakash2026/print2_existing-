@@ -105,7 +105,7 @@ include __DIR__ . '/layout.php';
       <button class="btn btn-outline btn-sm" onclick="previewBlog()">Preview</button>
       <button class="btn btn-outline btn-sm" onclick="resetForm()">Reset</button>
     </div>
-    <span id="blogImageSaveHint" style="align-self:center;font-size:11px;color:var(--text3);font-weight:800">Featured image uploads immediately after selection.</span>
+    <span id="blogImageSaveHint" style="align-self:center;font-size:11px;color:var(--text3);font-weight:700">Featured image uploads immediately after selection.</span>
   </div>
 </div>
 

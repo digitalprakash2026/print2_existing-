@@ -30,7 +30,7 @@ $bizName = Database::setting('biz_name', 'RCS Graphic');
       <div class="cr"><span class="cr-l">GST (<?= $order['gst_percent'] ?>%)</span><span class="cr-v">₹<?= number_format($order['gst_amount']) ?></span></div>
       <div class="cr"><span class="cr-l">Total <?= $order['payment_status'] === 'paid' ? 'Paid' : '' ?></span><span class="cr-v" style="color:var(--blue);font-size:16px;font-family:var(--fd)">₹<?= number_format($order['total_amount']) ?></span></div>
       <?php if ($order['payment_id']): ?>
-      <div class="cr"><span class="cr-l">Payment ID</span><span class="cr-v" style="font-family:monospace;font-size:11px"><?= htmlspecialchars($order['payment_id']) ?></span></div>
+      <div class="cr"><span class="cr-l">Payment ID</span><span class="cr-v" style="font-family:var(--fn);font-size:11px"><?= htmlspecialchars($order['payment_id']) ?></span></div>
       <?php endif; ?>
     </div>
     <div style="display:flex;flex-direction:column;gap:9px">
