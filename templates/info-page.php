@@ -94,19 +94,15 @@ $aboutReviews = is_array($aboutReviews ?? null) ? array_slice($aboutReviews, 0, 
     </div>
   </section>
 
-  <section class="about-choose-section">
-    <div class="about-showcase-container">
-      <div class="about-section-head">
-        <p class="about-kicker">Why Choose Us</p>
-        <h2>Quality That <span>Sets Us Apart</span></h2>
-      </div>
-      <div class="about-choose-grid">
-        <article><i class="fa-solid fa-certificate" aria-hidden="true"></i><h3>Premium Quality</h3><p>We use the best materials and latest technology to deliver flawless prints.</p></article>
-        <article><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><h3>Fast Delivery</h3><p>Quick turnaround and on-time delivery you can count on.</p></article>
-        <article><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i><h3>Free Design Support</h3><p>Our expert designers help you create the perfect design.</p></article>
-        <article><i class="fa-solid fa-circle-dollar-to-slot" aria-hidden="true"></i><h3>Affordable Pricing</h3><p>Top-notch quality at prices that fit your budget.</p></article>
-        <article><i class="fa-solid fa-headset" aria-hidden="true"></i><h3>24/7 Support</h3><p>We're always here to assist you at every step.</p></article>
-        <article><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><h3>Secure &amp; Reliable</h3><p>Your data and orders are safe with 100% confidentiality.</p></article>
+  <section class="why-print-section about-choose-section">
+    <div class="why-print-container">
+      <h2 class="why-print-heading">Why Choose <span>RCS PRINT?</span></h2>
+      <div class="why-print-panel" aria-label="Why choose RCS Print">
+        <article class="why-print-item"><div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Premium Quality</h3><p>Best quality materials and printing.</p></div></article>
+        <article class="why-print-item"><div class="why-print-icon why-print-orange"><i class="fa-regular fa-thumbs-up" aria-hidden="true"></i></div><div class="why-print-copy"><h3>100% Satisfaction</h3><p>Your happiness matters.</p></div></article>
+        <article class="why-print-item"><div class="why-print-icon why-print-purple"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Free Design Support</h3><p>Professional design support at no extra cost.</p></div></article>
+        <article class="why-print-item"><div class="why-print-icon why-print-purple"><i class="fa-solid fa-tags" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Affordable Pricing</h3><p>Low price with the best value.</p></div></article>
+        <article class="why-print-item"><div class="why-print-icon why-print-orange"><i class="fa-solid fa-cube" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Bulk Order Specialist</h3><p>Special prices for bulk requirements.</p></div></article>
       </div>
     </div>
   </section>
