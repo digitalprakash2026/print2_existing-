@@ -24,7 +24,7 @@ body.admin-shell {
   margin:0;
   background:var(--adm-bg) !important;
   color:var(--adm-ink);
-  font-family:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 body.admin-shell .adm-lay { display:block; min-height:100vh; }
 body.admin-shell .adm-main {
@@ -124,7 +124,7 @@ body.admin-shell .adm-sb {
   z-index:960;
 }
 body.admin-shell .adm-sb-logo { min-height:90px; padding:22px 20px 18px; border-bottom:1px solid rgba(255,255,255,.08); }
-body.admin-shell .adm-sb-t { font-family:'Poppins',system-ui,sans-serif; font-size:24px; line-height:1.08; font-weight:900; color:#fff; letter-spacing:-.055em; }
+body.admin-shell .adm-sb-t { font-family:'Montserrat',system-ui,sans-serif; font-size:24px; line-height:1.08; font-weight:900; color:#fff; letter-spacing:-.055em; }
 body.admin-shell .adm-sb-t span { color:#ec4899; }
 body.admin-shell .adm-sb-t::first-letter { color:inherit; }
 body.admin-shell .adm-sb-s { margin-top:5px; color:#93a4bc; font-size:12px; }
@@ -199,7 +199,7 @@ body.admin-page-dashboard .dash-ref-table th { padding:11px 14px; text-align:lef
 body.admin-page-dashboard .dash-ref-table td { padding:12px 14px; border-bottom:1px solid #f0f3f8; background:#fff8e8; color:#111827; font-size:13px; font-weight:700; }
 body.admin-page-dashboard .dash-ref-actions-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
 body.admin-page-dashboard .dash-ref-actions-grid a { min-height:96px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; border:1px solid var(--adm-line); border-radius:10px; background:#fff; box-shadow:0 8px 20px rgba(15,23,42,.04); text-align:center; color:#111827; text-decoration:none; }
-body.admin-page-dashboard .dash-ref-actions-grid span { font-family:'Poppins',system-ui,sans-serif; font-size:34px; line-height:1; font-weight:900; }
+body.admin-page-dashboard .dash-ref-actions-grid span { font-family:'Montserrat',system-ui,sans-serif; font-size:34px; line-height:1; font-weight:900; }
 
 @media (min-width:1501px) {
   body.admin-page-dashboard .dash-ref-revenue,

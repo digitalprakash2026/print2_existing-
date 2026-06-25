@@ -33,7 +33,7 @@
   --space-1:6px; --space-2:10px; --space-3:14px; --space-4:18px; --space-5:24px;
   --r:12px; --rs:8px;
   --tr:.2s cubic-bezier(.4,0,.2,1);
-  --fd:'Poppins',sans-serif; --fn:'Poppins',sans-serif;
+  --fd:'Montserrat',sans-serif; --fn:'Montserrat',sans-serif;
   --hh:66px;
   --post-header-gap:50px;
   --site-section-gap:50px;
@@ -93,7 +93,7 @@ body:has(#siteHeader) { --site-hh:126px; --post-header-gap:50px; }
   width:100%;
   background:#fff;
   color:var(--header-text);
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
 }
 .header-container {
   width:min(var(--page-max), calc(100vw - var(--page-gutter)));
@@ -976,7 +976,7 @@ textarea.fi  { resize:vertical; }
   box-shadow:14px 0 0 var(--orange);
 }
 .bs-title {
-  font-family:'Poppins', var(--fd);
+  font-family:'Montserrat', var(--fd);
   font-size:clamp(24px,4.2vw,54px);
   font-weight:800;
   line-height:1.08;
@@ -1015,7 +1015,7 @@ textarea.fi  { resize:vertical; }
   gap:8px;
   border:none;
   cursor:pointer;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   box-shadow:0 10px 22px rgba(234,88,12,.26);
   transition:transform .2s, box-shadow .2s;
   white-space:nowrap;
@@ -1034,7 +1034,7 @@ textarea.fi  { resize:vertical; }
   align-items:center;
   gap:8px;
   cursor:pointer;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   box-shadow:0 10px 22px rgba(109,40,217,.24);
   transition:transform .2s, box-shadow .2s;
   white-space:nowrap;
@@ -1139,7 +1139,7 @@ textarea.fi  { resize:vertical; }
   margin-bottom:22px;
 }
 .shop-cat-title {
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:clamp(24px,2.5vw,36px);
   line-height:1;
   letter-spacing:-.04em;
@@ -1265,7 +1265,7 @@ textarea.fi  { resize:vertical; }
 .shop-cat-name {
   min-width:0;
   color:var(--orange);
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:16px;
   font-weight:800;
   line-height:1.25;
@@ -1348,7 +1348,7 @@ textarea.fi  { resize:vertical; }
   margin:0 auto;
 }
 .why-print-heading {
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:clamp(23px,2.1vw,34px);
   line-height:1.05;
   letter-spacing:-.035em;
@@ -1400,7 +1400,7 @@ textarea.fi  { resize:vertical; }
 .why-print-orange { background:linear-gradient(135deg,#ff7a18,var(--orange)); }
 .why-print-green { background:linear-gradient(135deg,#22a647,#15803d); }
 .why-print-copy h3 {
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:15px;
   line-height:1.15;
   font-weight:800;
@@ -1424,7 +1424,7 @@ textarea.fi  { resize:vertical; }
   margin:0 auto;
 }
 .best-deals-heading {
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:clamp(24px,2.2vw,36px);
   line-height:1;
   letter-spacing:-.04em;
@@ -1482,7 +1482,7 @@ textarea.fi  { resize:vertical; }
 .deal-orange .deal-card-band { background:linear-gradient(135deg,#ff7a18,var(--orange)); }
 .deal-purple .deal-card-band { background:linear-gradient(135deg,#5b21b6,#43178d); }
 .deal-copy h3 {
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:15px;
   line-height:1.15;
   font-weight:800;
@@ -1497,7 +1497,7 @@ textarea.fi  { resize:vertical; }
 }
 .deal-copy strong {
   display:block;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:26px;
   line-height:1;
   font-weight:800;
@@ -1513,7 +1513,7 @@ textarea.fi  { resize:vertical; }
   border-radius:7px;
   background:#fff;
   color:var(--orange);
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:11px;
   font-weight:800;
   text-transform:uppercase;
@@ -1540,7 +1540,7 @@ textarea.fi  { resize:vertical; }
   max-width:310px;
 }
 .deal-promo-copy h3 {
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:clamp(26px,2.3vw,40px);
   line-height:1.15;
   letter-spacing:-.045em;
@@ -1557,7 +1557,7 @@ textarea.fi  { resize:vertical; }
   border-radius:8px;
   background:linear-gradient(135deg,#ff8a1f,var(--orange));
   color:#fff;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:12px;
   font-weight:800;
   text-transform:uppercase;
@@ -1690,7 +1690,7 @@ textarea.fi  { resize:vertical; }
   top:14px;
   left:50%;
   transform:translateX(-50%);
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:clamp(22px,2vw,34px);
   line-height:1;
   letter-spacing:-.04em;
@@ -1753,7 +1753,7 @@ textarea.fi  { resize:vertical; }
 .how-icon-green::after { background:#ff8a1f; }
 .how-copy span {
   display:block;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:21px;
   line-height:1;
   font-weight:800;
@@ -1763,14 +1763,14 @@ textarea.fi  { resize:vertical; }
 .how-step:nth-of-type(2) .how-copy span,
 .how-step:nth-of-type(4) .how-copy span { color:#fff; }
 .how-copy h3 {
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:14px;
   line-height:1.25;
   font-weight:800;
   color:#fff;
 }
 .how-arrow {
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:54px;
   line-height:1;
   font-weight:300;
@@ -1783,7 +1783,7 @@ textarea.fi  { resize:vertical; }
 .customer-say-section {
   padding:0 0 44px;
   background:#fff;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
 }
 .customer-say-container {
   width:min(var(--page-max), calc(100vw - var(--page-gutter)));
@@ -1930,7 +1930,7 @@ textarea.fi  { resize:vertical; }
 .blog-section {
   padding:0 0 50px;
   background:#fff;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
 }
 .blog-container {
   width:min(var(--page-max), calc(100vw - var(--page-gutter)));
@@ -2113,7 +2113,7 @@ textarea.fi  { resize:vertical; }
 .quick-help-section {
   padding:0 0 46px;
   background:#fff;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
 }
 .quick-help-container {
   width:min(var(--page-max), calc(100vw - var(--page-gutter)));
@@ -2138,7 +2138,7 @@ textarea.fi  { resize:vertical; }
   gap:15px;
   padding:14px 30px;
   text-align:left;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   transition:filter .2s ease, transform .2s ease;
 }
 .quick-help-item:hover { filter:brightness(1.02); }
@@ -2217,7 +2217,7 @@ textarea.fi  { resize:vertical; }
     radial-gradient(680px 180px at 4% 0%, rgba(255,255,255,.09), transparent 60%),
     linear-gradient(90deg,#4d168e 0%,#511694 42%,#431174 100%);
   color:#fff;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   padding:22px 0 0;
 }
 .footer-container {
@@ -2265,11 +2265,11 @@ textarea.fi  { resize:vertical; }
 .contact-showcase-page h1,
 .contact-showcase-page h2,
 .contact-showcase-page h3 {
-  font-family:'Poppins', var(--fn) !important;
+  font-family:'Montserrat', var(--fn) !important;
 }
 .footer-logo-main {
   display:block;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:62px;
   line-height:.78;
   letter-spacing:.03em;
@@ -2450,7 +2450,7 @@ textarea.fi  { resize:vertical; }
 .blog-detail-page {
   background:#fff;
   padding-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
 }
 .blog-detail-container {
   width:min(1180px, calc(100vw - var(--page-gutter)));
@@ -3601,7 +3601,7 @@ html[data-motion='minimal'] .pd-main:hover img { transform:none !important; }
   color:var(--purple);
   margin-bottom:12px;
 }
-.pd-name { font-family:'Poppins', var(--fd); font-weight:800; color:#071225; margin-bottom:10px; }
+.pd-name { font-family:'Montserrat', var(--fd); font-weight:800; color:#071225; margin-bottom:10px; }
 .pd-rating-row {
   display:flex;
   align-items:center;
@@ -4272,7 +4272,7 @@ body:has(#siteHeader) .banner-slider {
 .all-cat-hero-copy h1 {
   margin:0 0 12px;
   color:#071225;
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:clamp(42px, 5.2vw, 70px);
   line-height:.98;
   letter-spacing:-.025em;
@@ -4460,7 +4460,7 @@ body:has(#siteHeader) .banner-slider {
   gap:12px;
   color:#fff;
   background:linear-gradient(135deg,var(--orange),#ff6700);
-  font-family:'Poppins', var(--fn);
+  font-family:'Montserrat', var(--fn);
   font-size:11px;
   line-height:1;
   font-weight:700;
@@ -13024,7 +13024,7 @@ body:has(.dash-ref-page) { background:#f7f9fc !important; }
 .dash-ref-kpi::after { content:'View'; position:absolute; right:14px; top:12px; color:#94a3b8; font-size:10px; font-weight:900; letter-spacing:.05em; opacity:0; transform:translateY(-4px); transition:.18s ease; }
 .dash-ref-kpi:hover { transform:translateY(-3px); box-shadow:0 18px 38px rgba(15,23,42,.095); border-color:#cbd5e1; }
 .dash-ref-kpi:hover::after { opacity:1; transform:translateY(0); }
-.dash-ref-kpi span { font-family:Inter,system-ui,sans-serif; font-weight:900; }
+.dash-ref-kpi span { font-family:'Montserrat',system-ui,sans-serif; font-weight:900; }
 .dash-ref-card-head small { display:block; margin-top:5px; color:#64748b; font-size:12px; font-weight:700; }
 .dash-ref-table tbody tr { transition:background .16s ease, transform .16s ease; }
 .dash-ref-table tbody tr:hover td { background:#fff3d2; }
@@ -13041,7 +13041,7 @@ body:has(.dash-ref-page) .adm-lay { min-height:calc(100vh - 76px); }
 body:has(.dash-ref-page) .adm-header-pro { height:76px; left:242px; width:calc(100% - 242px); padding:0 32px 0 28px; border-bottom:1px solid #e6ebf3; background:rgba(255,255,255,.96) !important; box-shadow:0 8px 28px rgba(15,23,42,.045); }
 body:has(.dash-ref-page) .adm-sb { width:242px; top:76px; height:calc(100vh - 76px); padding:0 0 18px; background:linear-gradient(180deg,#101b31 0%,#071225 100%) !important; box-shadow:18px 0 48px rgba(2,6,23,.16); }
 body:has(.dash-ref-page) .adm-sb-logo { min-height:90px; padding:22px 20px 18px; }
-body:has(.dash-ref-page) .adm-sb-t { font-family:Inter,system-ui,sans-serif; font-size:24px; font-weight:900; letter-spacing:-.055em; }
+body:has(.dash-ref-page) .adm-sb-t { font-family:'Montserrat',system-ui,sans-serif; font-size:24px; font-weight:900; letter-spacing:-.055em; }
 body:has(.dash-ref-page) .adm-sb-t span { color:#ec4899; }
 body:has(.dash-ref-page) .adm-sb-t::first-letter { color:inherit; }
 body:has(.dash-ref-page) .adm-sb-s { margin-top:5px; font-size:12px; color:#93a4bc; }
@@ -13080,7 +13080,7 @@ body:has(.dash-ref-page) .adm-main:has(.dash-ref-page) { padding:28px 28px 34px;
 .dash-ref-table td { padding:12px 14px; background:#fff8e8; }
 .dash-ref-actions-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
 .dash-ref-actions-grid a { min-height:96px; border-radius:10px; }
-.dash-ref-actions-grid span { font-family:Inter,system-ui,sans-serif; font-size:34px; font-weight:900; }
+.dash-ref-actions-grid span { font-family:'Montserrat',system-ui,sans-serif; font-size:34px; font-weight:900; }
 @media (max-width:1500px) {
   .dash-ref-kpis-top { grid-template-columns:repeat(3,minmax(0,1fr)); }
   .dash-ref-kpis-sub { grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -13145,7 +13145,7 @@ body:has(.dash-ref-page) .adm-admin-chip em::after { content:''; position:absolu
 .admin-dashboard-shell .adm-header-pro .adm-hdr-right { margin-left:auto; }
 .admin-dashboard-shell .adm-global-search { width:382px; height:42px; border-radius:12px; }
 .admin-dashboard-shell .adm-sb-logo { min-height:90px; padding:22px 20px 18px; }
-.admin-dashboard-shell .adm-sb-t { font-family:Inter,system-ui,sans-serif; font-size:24px; font-weight:900; letter-spacing:-.055em; }
+.admin-dashboard-shell .adm-sb-t { font-family:'Montserrat',system-ui,sans-serif; font-size:24px; font-weight:900; letter-spacing:-.055em; }
 .admin-dashboard-shell .adm-sb-t span { color:#ec4899; }
 .admin-dashboard-shell .adm-sb-t::first-letter { color:inherit; }
 .admin-dashboard-shell .adm-sb-s { margin-top:5px; font-size:12px; color:#93a4bc; }
