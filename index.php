@@ -82,6 +82,7 @@ if ($uri === '/sitemap.xml' && $method === 'GET') {
     $addUrl('/categories', '0.80', 'weekly');
     $addUrl('/blogs', '0.70', 'weekly');
     $addUrl('/about', '0.70', 'monthly');
+    $addUrl('/portfolio', '0.70', 'monthly');
     $addUrl('/contact', '0.70', 'monthly');
     $addUrl('/shipping-policy', '0.40', 'monthly');
     $addUrl('/refund-return-policy', '0.40', 'monthly');
@@ -378,6 +379,7 @@ if ($uri === '/profile/security' && $method === 'GET') {
 // Static information pages
 $sitePageRoutes = [
     '/about' => 'about',
+    '/portfolio' => 'portfolio',
     '/shipping-policy' => 'shipping-policy',
     '/refund-return-policy' => 'refund-return-policy',
     '/terms-and-conditions' => 'terms-and-conditions',
