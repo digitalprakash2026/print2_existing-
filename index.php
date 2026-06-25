@@ -311,13 +311,18 @@ if (isset($sitePageRoutes[$uri]) && $method === 'GET') {
     $sitePages = require APP_PATH . '/data/site_pages.php';
     $page = $sitePages[$sitePageRoutes[$uri]] ?? null;
     if (!$page) { http_response_code(404); view('404'); exit; }
+    $aboutReviews = [];
     try {
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
+        if ($sitePageRoutes[$uri] === 'about') {
+            $aboutReviews = \Reviews\ProductReview::featured(3);
+        }
     } catch (\Throwable) {
         $settingsMap = [];
+        $aboutReviews = [];
     }
-    view('info-page', compact('page', 'settingsMap'));
+    view('info-page', compact('page', 'settingsMap', 'aboutReviews'));
     exit;
 }
 

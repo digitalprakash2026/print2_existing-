@@ -11328,6 +11328,7 @@ body:has(#siteHeader) .banner-slider {
 .about-testimonial-grid article > i { color:#4b148c; font-size:34px; margin-bottom:8px; }
 .about-testimonial-grid p { margin:0 0 8px; color:#222b3a; font-size:14px; line-height:1.55; }
 .about-stars { color:#ff7a00; letter-spacing:2px; font-size:17px; font-weight:900; }
+.about-stars i { letter-spacing:0; margin-right:2px; }
 .about-customer { display:flex; align-items:center; gap:12px; margin-top:8px; }
 .about-customer span {
   display:grid;
@@ -11341,6 +11342,9 @@ body:has(#siteHeader) .banner-slider {
 }
 .about-customer strong { display:grid; gap:2px; color:#141322; font-size:15px; }
 .about-customer small { color:#222b3a; font-size:12px; font-weight:500; }
+.about-customer small a { color:#4b148c; text-decoration:none; font-weight:800; }
+.about-customer small a:hover { text-decoration:underline; }
+.about-testimonial-empty { grid-column:1 / -1; max-width:520px; margin:0 auto; }
 .about-slider-btn {
   position:absolute;
   top:50%;
@@ -11387,6 +11391,7 @@ body:has(#siteHeader) .banner-slider {
 .about-contact-phone i { color:#4b148c; }
 .about-contact-whatsapp { color:#fff; background:#2ca343; }
 .about-contact-download { color:#fff; background:#ff5b08; }
+.about-quick-help-section { padding:14px 0 56px; }
 @media (max-width:1180px) {
   .about-hero-grid,
   .about-story-grid { grid-template-columns:1fr; gap:34px; }

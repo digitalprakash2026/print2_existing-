@@ -30,6 +30,7 @@ $phoneRaw = (string)($settingsMap['biz_phone'] ?? '+91 98765 43210');
 $phone = htmlspecialchars($phoneRaw, ENT_QUOTES, 'UTF-8');
 $phoneHref = htmlspecialchars(preg_replace('/\D+/', '', $phoneRaw), ENT_QUOTES, 'UTF-8');
 $wa = htmlspecialchars((string)($settingsMap['biz_whatsapp'] ?? '919876543210'), ENT_QUOTES, 'UTF-8');
+$aboutReviews = is_array($aboutReviews ?? null) ? array_slice($aboutReviews, 0, 3) : [];
 ?>
 <main class="about-showcase-page">
   <section class="about-showcase-hero">
@@ -133,21 +134,53 @@ $wa = htmlspecialchars((string)($settingsMap['biz_whatsapp'] ?? '919876543210'),
       <div class="about-testimonial-wrap">
         <button class="about-slider-btn about-slider-prev" type="button" aria-label="Previous testimonial"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
         <div class="about-testimonial-grid">
-          <article><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Excellent printing quality and super fast service. Highly recommended!</p><div class="about-stars">★★★★★</div><div class="about-customer"><span>RM</span><strong>Rakesh Mehta<small>Business Owner</small></strong></div></article>
-          <article><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Very professional team, support and premium quality prints.</p><div class="about-stars">★★★★★</div><div class="about-customer"><span>KS</span><strong>Khushbu Shah<small>Marketing Head</small></strong></div></article>
-          <article><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Best experience for bulk printing. Great price and on-time delivery.</p><div class="about-stars">★★★★★</div><div class="about-customer"><span>JP</span><strong>Jigar Patel<small>Event Organizer</small></strong></div></article>
+          <?php if ($aboutReviews): ?>
+            <?php foreach ($aboutReviews as $review):
+              $rating = max(1, min(5, (int)($review['rating'] ?? 5)));
+              $productName = trim((string)($review['product_name'] ?? 'Verified Customer'));
+              $productSlug = trim((string)($review['product_slug'] ?? ''));
+              $productUrl = $productSlug !== '' ? '/product/' . rawurlencode($productSlug) : '/products';
+            ?>
+              <article>
+                <i class="fa-solid fa-quote-left" aria-hidden="true"></i>
+                <p><?= htmlspecialchars((string)($review['comment'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+                <div class="about-stars" aria-label="<?= $rating ?> out of 5 stars">
+                  <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <i class="fa-<?= $i <= $rating ? 'solid' : 'regular' ?> fa-star" aria-hidden="true"></i>
+                  <?php endfor; ?>
+                </div>
+                <div class="about-customer">
+                  <span><?= htmlspecialchars((string)($review['customer_initials'] ?? 'RC'), ENT_QUOTES, 'UTF-8') ?></span>
+                  <strong><?= htmlspecialchars((string)($review['customer_name'] ?? 'RCS Customer'), ENT_QUOTES, 'UTF-8') ?><small><a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?></a></small></strong>
+                </div>
+              </article>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <article class="about-testimonial-empty"><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Approved customer reviews will appear here once verified customers share their printing experience.</p><div class="about-stars" aria-label="0 out of 5 stars"><i class="fa-regular fa-star" aria-hidden="true"></i><i class="fa-regular fa-star" aria-hidden="true"></i><i class="fa-regular fa-star" aria-hidden="true"></i><i class="fa-regular fa-star" aria-hidden="true"></i><i class="fa-regular fa-star" aria-hidden="true"></i></div><div class="about-customer"><span>★</span><strong>No approved reviews yet<small>Verified customers only</small></strong></div></article>
+          <?php endif; ?>
         </div>
         <button class="about-slider-btn about-slider-next" type="button" aria-label="Next testimonial"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <div class="about-slider-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      <?php if (count($aboutReviews) > 1): ?><div class="about-slider-dots" aria-hidden="true"><span></span><span></span><span></span></div><?php endif; ?>
     </div>
   </section>
 
-  <section class="about-contact-strip" aria-label="Quick contact actions">
-    <div class="about-showcase-container about-contact-grid">
-      <a href="tel:<?= $phoneHref ?>" class="about-contact-card about-contact-phone"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i><span>Need Help? Call Us<strong><?= $phone ?></strong></span></a>
-      <a href="https://wa.me/<?= $wa ?>" target="_blank" rel="noopener" class="about-contact-card about-contact-whatsapp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i><span>Chat with us on WhatsApp<strong>We are here to help!</strong></span></a>
-      <a href="/contact" class="about-contact-card about-contact-download"><i class="fa-solid fa-download" aria-hidden="true"></i><span>Download Brochure<strong>For Bulk Orders</strong></span></a>
+  <section class="quick-help-section about-quick-help-section" aria-label="Quick help and bulk order actions">
+    <div class="quick-help-container">
+      <div class="quick-help-bar">
+        <a class="quick-help-item quick-help-call" href="tel:<?= $phoneHref ?>">
+          <span class="quick-help-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><span>Need Help? Call Us</span><strong><?= $phone ?></strong></span>
+        </a>
+        <button class="quick-help-item quick-help-whatsapp" type="button" onclick="window.open('https://wa.me/<?= $wa ?>','_blank')">
+          <span class="quick-help-icon"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><strong>Chat with us on WhatsApp</strong><span>We are here to help!</span></span>
+        </button>
+        <a class="quick-help-item quick-help-download" href="/categories" aria-label="Download our brochure for all products">
+          <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><strong>Download Our Brochure</strong><span>For All Products</span></span>
+        </a>
+      </div>
     </div>
   </section>
 </main>
