@@ -33,9 +33,11 @@
   --space-1:6px; --space-2:10px; --space-3:14px; --space-4:18px; --space-5:24px;
   --r:12px; --rs:8px;
   --tr:.2s cubic-bezier(.4,0,.2,1);
-  --fd:'Merriweather',serif; --fn:'Inter',sans-serif;
+  --fd:'Poppins',sans-serif; --fn:'Poppins',sans-serif;
   --hh:66px;
   --post-header-gap:50px;
+  --site-section-gap:50px;
+  --site-section-gap-mobile:38px;
   --page-max:1680px;
   --page-gutter:40px;
 }
@@ -4114,7 +4116,7 @@ html[data-motion='minimal'] .pd-main:hover img { transform:none !important; }
 /* Home page section rhythm: keep vertical spacing consistent between sections. */
 :root {
   --home-header-gap:0px;
-  --home-section-gap:50px;
+  --home-section-gap:var(--site-section-gap);
 }
 body:has(#siteHeader) .banner-slider {
   margin-top:var(--site-hh, 126px);
@@ -4132,10 +4134,63 @@ body:has(#siteHeader) .banner-slider {
 .banner-slider ~ .footer {
   padding-top:var(--home-section-gap);
 }
+/* Public page rhythm: keep section gaps consistent with the Home banner → category gap. */
+.shop-cat-section,
+.why-print-section,
+.best-deals-section,
+.how-works-section,
+.customer-say-section,
+.blog-section,
+.quick-help-section,
+.blog-detail-body-section,
+.info-section,
+.contact-main-section,
+.contact-benefits-section,
+.contact-location-section,
+.about-story-section,
+.about-choose-section,
+.about-process-section,
+.about-testimonials-section,
+.register-main-section,
+.pd-tabs-section,
+.pd-design-section,
+.ym-section {
+  padding-top:var(--site-section-gap);
+  padding-bottom:var(--site-section-gap);
+}
+.contact-faq-section,
+.info-cta-section,
+.register-trust-section {
+  padding-top:var(--site-section-gap);
+  padding-bottom:calc(var(--site-section-gap) + 20px);
+}
+.all-blogs-page,
+.blog-page,
+.blog-detail-page,
+.contact-showcase-page,
+.about-showcase-page,
+.register-page,
+.auth-page,
+.info-page,
+.info-page-simple {
+  font-family:var(--fn);
+}
+.all-blogs-page :is(h1,h2,h3,h4),
+.blog-page :is(h1,h2,h3,h4),
+.blog-detail-page :is(h1,h2,h3,h4),
+.contact-showcase-page :is(h1,h2,h3,h4),
+.about-showcase-page :is(h1,h2,h3,h4),
+.register-page :is(h1,h2,h3,h4),
+.auth-page :is(h1,h2,h3,h4),
+.info-page :is(h1,h2,h3,h4),
+.info-page-simple :is(h1,h2,h3,h4) {
+  font-family:var(--fd);
+}
 @media (max-width:768px) {
   :root {
     --home-header-gap:0px;
-    --home-section-gap:50px;
+    --home-section-gap:var(--site-section-gap-mobile);
+    --site-section-gap:var(--site-section-gap-mobile);
   }
   body:has(#siteHeader) .banner-slider {
     margin-top:var(--site-hh, 129px);
@@ -4144,7 +4199,7 @@ body:has(#siteHeader) .banner-slider {
 @media (max-width:480px) {
   :root {
     --home-header-gap:0px;
-    --home-section-gap:50px;
+    --home-section-gap:var(--site-section-gap-mobile);
   }
   body:has(#siteHeader) .banner-slider {
     margin-top:var(--site-hh, 144px);
@@ -13227,3 +13282,40 @@ body:has(.dash-ref-page) .adm-admin-chip em::after { content:''; position:absolu
 .blog-preview-card h1 { margin:0 42px 10px 0; color:#0f172a; font-size:clamp(28px,4vw,44px); line-height:1.08; letter-spacing:-.04em; }
 .blog-preview-card > p { color:#64748b; font-weight:700; line-height:1.7; }
 @media (max-width:760px){ .blog-composer-head,.blog-savebar,.blog-cta-block{align-items:flex-start;flex-direction:column}.blog-editor-toolbar-pro{top:0}.blog-rich-editor-pro{min-height:320px;padding:16px}.blog-preview-card{padding:24px 18px}.blog-cta-block a{width:100%} }
+
+/* Final consistency pass: equal public section rhythm + site-wide typography. */
+body:not(.admin-shell) {
+  font-family:var(--fn);
+}
+body:not(.admin-shell) :is(h1,h2,h3,h4,.sec-t,.shop-cat-title,.why-title,.deals-title,.how-title,.customer-title,.blog-title,.auth-t,.register-hero-copy h1,.register-form-head h2,.register-why-card h2) {
+  font-family:var(--fd);
+}
+body:not(.admin-shell) :is(
+  .shop-cat-section,
+  .why-print-section,
+  .best-deals-section,
+  .how-works-section,
+  .customer-say-section,
+  .blog-section,
+  .quick-help-section,
+  .blog-detail-body-section,
+  .info-section,
+  .contact-main-section,
+  .contact-benefits-section,
+  .contact-location-section,
+  .about-story-section,
+  .about-choose-section,
+  .about-process-section,
+  .about-testimonials-section,
+  .register-main-section,
+  .register-trust-section,
+  .pd-tabs-section,
+  .pd-design-section
+) {
+  padding-top:var(--site-section-gap);
+  padding-bottom:var(--site-section-gap);
+}
+body:not(.admin-shell) :is(.contact-faq-section,.info-cta-section) {
+  padding-top:var(--site-section-gap);
+  padding-bottom:calc(var(--site-section-gap) + 20px);
+}

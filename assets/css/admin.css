@@ -65,6 +65,18 @@ body.admin-shell .adm-mob-toggle {
   color:var(--adm-ink);
   box-shadow:0 4px 14px rgba(15,23,42,.04);
 }
+body.admin-shell .adm-mob-toggle span {
+  width:18px;
+  height:2px;
+  display:block;
+  border-radius:99px;
+  background:currentColor;
+  transition:transform .18s ease, opacity .18s ease;
+}
+body.admin-shell .adm-mob-toggle { gap:4px; flex-direction:column; }
+body.admin-shell.adm-sb-open .adm-mob-toggle span:nth-child(1) { transform:translateY(6px) rotate(45deg); }
+body.admin-shell.adm-sb-open .adm-mob-toggle span:nth-child(2) { opacity:0; }
+body.admin-shell.adm-sb-open .adm-mob-toggle span:nth-child(3) { transform:translateY(-6px) rotate(-45deg); }
 body.admin-shell .adm-global-search {
   width:382px;
   max-width:42vw;
@@ -205,16 +217,40 @@ body.admin-page-dashboard .dash-ref-actions-grid span { font-family:Inter,system
 }
 @media (max-width:900px) {
   body.admin-shell .adm-header-pro { left:0; width:100%; padding:0 14px; }
-  body.admin-shell .adm-sb { transform:translateX(-100%); transition:transform .2s ease; }
+  body.admin-shell .adm-header-pro .adm-hdr-left { width:auto; flex:0 0 auto; }
+  body.admin-shell .adm-header-pro .adm-hdr-center { display:none; }
+  body.admin-shell .adm-sb { transform:translateX(-100%); transition:transform .2s ease; z-index:1100; width:min(84vw, var(--adm-sidebar-w)); }
   body.admin-shell.adm-sb-open .adm-sb { transform:translateX(0); }
-  body.admin-shell .adm-main { margin-left:0; padding:18px 14px 24px; }
-  body.admin-shell .adm-global-search { width:min(360px,52vw); }
+  body.admin-shell .adm-sb-backdrop { position:fixed; inset:0; z-index:1090; display:none; background:rgba(15,23,42,.48); backdrop-filter:blur(2px); }
+  body.admin-shell.adm-sb-open .adm-sb-backdrop { display:block; }
+  body.admin-shell.adm-sb-open { overflow:hidden; }
+  body.admin-shell .adm-main { margin-left:0; padding:18px 14px 24px; max-width:100vw; overflow-x:hidden; }
+  body.admin-shell .adm-hdr-actions .adm-icon-btn,
+  body.admin-shell .adm-hdr-divider { display:none; }
+  body.admin-shell .fsec,
+  body.admin-shell .card,
+  body.admin-shell .panel { max-width:100% !important; }
+  body.admin-shell table { min-width:720px; }
+  body.admin-shell .fsec { overflow-x:auto; }
+  body.admin-shell input.fi,
+  body.admin-shell select.fi,
+  body.admin-shell textarea.fi,
+  body.admin-shell .fi { max-width:100%; }
   body.admin-page-dashboard .dash-ref-titlebar { flex-direction:column; align-items:flex-start; }
   body.admin-page-dashboard .dash-ref-kpis-top,
   body.admin-page-dashboard .dash-ref-kpis-sub,
   body.admin-page-dashboard .dash-ref-main-row,
   body.admin-page-dashboard .dash-ref-bottom-row { grid-template-columns:1fr; }
   body.admin-page-dashboard .dash-ref-actions-grid { grid-template-columns:1fr 1fr; }
+}
+@media (min-width:901px) {
+  body.admin-shell .adm-mob-toggle,
+  body.admin-shell .adm-sb-backdrop { display:none; }
+}
+@media (max-width:560px) {
+  body.admin-shell .adm-main { padding:14px 10px 22px; }
+  body.admin-shell .adm-user-panel-pro { right:0; width:min(280px, calc(100vw - 24px)); }
+  body.admin-page-dashboard .dash-ref-actions-grid { grid-template-columns:1fr; }
 }
 
 /* Orders command center: 8 primary status cards */

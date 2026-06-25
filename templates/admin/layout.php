@@ -21,7 +21,11 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
 
 <!-- Admin Header -->
 <header class="header adm-header adm-header-pro" style="z-index:950">
-  <div class="adm-hdr-left"></div>
+  <div class="adm-hdr-left">
+    <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-expanded="false" onclick="document.body.classList.toggle('adm-sb-open');this.setAttribute('aria-expanded', document.body.classList.contains('adm-sb-open') ? 'true' : 'false');">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
   <div class="adm-hdr-center"></div>
   <div class="adm-hdr-right">
     <div class="adm-hdr-actions">
