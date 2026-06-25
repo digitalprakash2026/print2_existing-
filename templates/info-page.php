@@ -66,27 +66,29 @@ $wa = htmlspecialchars((string)($settingsMap['biz_whatsapp'] ?? '919876543210'),
   </section>
 
   <section class="about-story-section">
-    <div class="about-showcase-container about-story-grid">
-      <div class="about-story-media">
-        <div class="about-dots about-dots-left" aria-hidden="true"></div>
-        <div class="about-triangle" aria-hidden="true"></div>
-        <figure class="about-story-photo about-story-photo-large">
-          <img src="/assets/img/categories/print-category.svg" alt="Printing press and printed material" loading="lazy" decoding="async">
-        </figure>
-        <figure class="about-story-photo about-story-photo-small">
-          <img src="/assets/images/sample-products/stationery/stationery-3.svg" alt="Design desk with RCS PRINT artwork" loading="lazy" decoding="async">
-        </figure>
+    <div class="about-showcase-container about-story-grid about-story-clean-grid">
+      <div class="about-story-copy about-story-clean-copy">
+        <span class="about-story-mark" aria-hidden="true"></span>
+        <h2>Our Story</h2>
+        <p>RCS PRINT was founded with a simple goal — to deliver premium printing at affordable prices without compromising on quality.</p>
+        <p>What started as a small printing service in Rajkot has grown into a trusted brand known for reliability, creativity, and customer satisfaction.</p>
+        <p>We combine advanced technology, skilled professionals, and dedicated support to make every project a success.</p>
       </div>
-      <div class="about-story-copy">
-        <p class="about-kicker">Our Story</p>
-        <h2>The Story Behind<br><span class="rcs-word"><span>R</span><span>C</span><span>S</span></span> PRINT</h2>
-        <p>RCS PRINT was founded with a simple mission — to deliver high-quality printing solutions that help businesses grow and make a lasting impression.</p>
-        <p>With state-of-the-art technology, a passionate team, and a customer-first approach, we ensure every print we deliver reflects perfection.</p>
-        <div class="about-story-pills">
-          <div><i class="fa-solid fa-rocket" aria-hidden="true"></i><strong>Modern<br>Technology</strong></div>
-          <div><i class="fa-solid fa-people-group" aria-hidden="true"></i><strong>Expert<br>Team</strong></div>
-          <div><i class="fa-regular fa-heart" aria-hidden="true"></i><strong>Customer<br>First</strong></div>
-        </div>
+      <div class="about-story-cards" aria-label="RCS PRINT mission and vision">
+        <article class="about-story-info-card about-story-mission">
+          <i class="fa-solid fa-bullseye" aria-hidden="true"></i>
+          <div>
+            <h3>Our Mission</h3>
+            <p>To empower businesses and individuals through high-quality, innovative, and affordable printing solutions that help their brand stand out.</p>
+          </div>
+        </article>
+        <article class="about-story-info-card about-story-vision">
+          <i class="fa-regular fa-eye" aria-hidden="true"></i>
+          <div>
+            <h3>Our Vision</h3>
+            <p>To be India's most trusted online printing platform, recognized for quality, innovation, and customer delight.</p>
+          </div>
+        </article>
       </div>
     </div>
   </section>

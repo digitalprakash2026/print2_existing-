@@ -11116,12 +11116,94 @@ body:has(#siteHeader) .banner-slider {
 .about-shopping-bag small { margin-top:-98px; letter-spacing:.44em; font-weight:900; color:#111827; }
 .about-business-card { left:260px; bottom:54px; width:190px; transform:rotate(-8deg); }
 .about-brochure-small { right:112px; bottom:40px; width:250px; transform:rotate(5deg); }
-.about-story-section { padding:18px 0 36px; }
+.about-story-section { padding:34px 0 36px; }
 .about-story-grid {
   display:grid;
   grid-template-columns:minmax(480px, .94fr) minmax(450px, 1.06fr);
   gap:76px;
   align-items:center;
+}
+.about-story-clean-grid {
+  grid-template-columns:minmax(0, .9fr) minmax(520px, 1.1fr);
+  gap:42px;
+  align-items:stretch;
+}
+.about-story-clean-copy {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height:210px;
+}
+.about-story-mark {
+  width:34px;
+  height:4px;
+  border-radius:999px;
+  background:var(--about-purple);
+  margin-bottom:14px;
+}
+.about-story-clean-copy h2 {
+  margin:0 0 18px;
+  color:#111322;
+  font-size:clamp(26px, 2.6vw, 34px);
+  font-weight:900;
+  line-height:1.1;
+  letter-spacing:-.03em;
+}
+.about-story-clean-copy p {
+  max-width:610px;
+  margin:0 0 13px;
+  color:#252b37;
+  font-size:14.5px;
+  font-weight:500;
+  line-height:1.72;
+}
+.about-story-cards {
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:18px;
+  align-items:stretch;
+}
+.about-story-info-card {
+  min-height:220px;
+  display:grid;
+  grid-template-columns:56px 1fr;
+  gap:18px;
+  align-items:flex-start;
+  padding:34px 30px;
+  border:1px solid #ececf3;
+  border-radius:18px;
+  background:#f8f8f9;
+  box-shadow:0 10px 24px rgba(15,23,42,.04);
+}
+.about-story-info-card i {
+  width:54px;
+  height:54px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  color:#fff;
+  font-size:23px;
+  background:linear-gradient(135deg,#6c31d6,#3d0f8b);
+  box-shadow:0 12px 28px rgba(75,20,140,.18);
+}
+.about-story-vision i {
+  background:linear-gradient(135deg,#35b84e,#1d8f33);
+  box-shadow:0 12px 28px rgba(44,163,67,.18);
+}
+.about-story-info-card h3 {
+  margin:4px 0 18px;
+  color:#121322;
+  font-size:20px;
+  font-weight:900;
+  line-height:1.2;
+}
+.about-story-info-card p {
+  margin:0;
+  color:#222b3a;
+  font-size:13.5px;
+  font-weight:500;
+  line-height:1.7;
 }
 .about-story-media { position:relative; min-height:390px; }
 .about-triangle {
@@ -11308,6 +11390,7 @@ body:has(#siteHeader) .banner-slider {
 @media (max-width:1180px) {
   .about-hero-grid,
   .about-story-grid { grid-template-columns:1fr; gap:34px; }
+  .about-story-clean-grid { gap:22px; }
   .about-hero-visual { min-height:480px; transform:none; }
   .about-story-media { max-width:660px; width:100%; margin:0 auto; }
   .about-choose-grid { grid-template-columns:repeat(3, minmax(0, 1fr)); }
@@ -11321,6 +11404,8 @@ body:has(#siteHeader) .banner-slider {
   .about-hero-features { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px; }
   .about-hero-visual { min-height:390px; transform:scale(.78); transform-origin:top center; margin-bottom:-80px; }
   .about-story-grid { gap:20px; }
+  .about-story-cards { grid-template-columns:1fr; }
+  .about-story-info-card { min-height:auto; padding:26px 22px; }
   .about-story-media { min-height:320px; transform:scale(.82); transform-origin:top center; margin-bottom:-52px; }
   .about-story-pills { grid-template-columns:1fr; gap:16px; }
   .about-choose-grid,
