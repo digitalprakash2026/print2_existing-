@@ -64,6 +64,63 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
 \Approvals\ContentApprovalManager::ensureSchema();
 \Faq\FaqManager::ensureSchema();
 
+$ensurePortfolioSchema = static function (): void {
+    try {
+        Database::query("CREATE TABLE IF NOT EXISTS portfolio_categories (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(160) NOT NULL,
+            slug VARCHAR(180) NOT NULL UNIQUE,
+            icon VARCHAR(80) NOT NULL DEFAULT 'fa-border-all',
+            sort_order INT NOT NULL DEFAULT 0,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        Database::query("CREATE TABLE IF NOT EXISTS portfolio_items (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            category_id INT NULL,
+            title VARCHAR(220) NOT NULL,
+            slug VARCHAR(240) NOT NULL UNIQUE,
+            short_description VARCHAR(500) NULL,
+            description MEDIUMTEXT NULL,
+            main_image VARCHAR(500) NOT NULL DEFAULT '',
+            image_alt VARCHAR(255) NULL,
+            client_name VARCHAR(180) NULL,
+            project_type VARCHAR(180) NULL,
+            project_date DATE NULL,
+            tags VARCHAR(500) NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            is_featured TINYINT(1) NOT NULL DEFAULT 0,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_portfolio_items_active (is_active, sort_order, created_at),
+            INDEX idx_portfolio_items_category (category_id),
+            CONSTRAINT fk_portfolio_items_category FOREIGN KEY (category_id) REFERENCES portfolio_categories(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $defaults = [
+            ['Business Cards','business-cards','fa-id-card-clip',10],
+            ['Flyers','flyers','fa-file-image',20],
+            ['Brochures','brochures','fa-images',30],
+            ['Posters','posters','fa-newspaper',40],
+            ['Stationery','stationery','fa-file-lines',50],
+            ['Packaging','packaging','fa-cube',60],
+            ['Others','others','fa-ellipsis',70],
+        ];
+        foreach ($defaults as $cat) {
+            Database::query(
+                "INSERT INTO portfolio_categories (name, slug, icon, sort_order, is_active)
+                 SELECT ?,?,?,?,1 FROM DUAL
+                 WHERE NOT EXISTS (SELECT 1 FROM portfolio_categories WHERE slug = ? LIMIT 1)",
+                [$cat[0], $cat[1], $cat[2], $cat[3], $cat[1]]
+            );
+        }
+    } catch (\Throwable $e) {
+        error_log('Portfolio schema unavailable: ' . $e->getMessage());
+    }
+};
+$ensurePortfolioSchema();
+
 $adminUsersHasMobile = null;
 $hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
     if ($adminUsersHasMobile !== null) return $adminUsersHasMobile;
@@ -118,6 +175,24 @@ if (str_starts_with($uri, '/admin/api/')) {
         while (true) {
             $params = [$candidate];
             $sql = "SELECT id FROM blogs WHERE slug = ?";
+            if ($ignoreId > 0) {
+                $sql .= " AND id <> ?";
+                $params[] = $ignoreId;
+            }
+            $sql .= " LIMIT 1";
+            $row = Database::row($sql, $params);
+            if (!$row) return $candidate;
+            $candidate = $slug . '-' . $i;
+            $i++;
+        }
+    };
+    $uniquePortfolioSlug = static function (string $base, int $ignoreId = 0) use ($slugify): string {
+        $slug = $slugify($base);
+        $candidate = $slug;
+        $i = 2;
+        while (true) {
+            $params = [$candidate];
+            $sql = "SELECT id FROM portfolio_items WHERE slug = ?";
             if ($ignoreId > 0) {
                 $sql .= " AND id <> ?";
                 $params[] = $ignoreId;
@@ -1320,6 +1395,159 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
 
+    if ($uri === '/admin/api/portfolio-categories' && $method === 'GET') {
+        try {
+            $rows = Database::rows("SELECT * FROM portfolio_categories ORDER BY sort_order ASC, name ASC");
+            json(['ok'=>true,'categories'=>$rows]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Portfolio category table unavailable','categories'=>[]], 500);
+        }
+    }
+    if ($uri === '/admin/api/portfolio-categories' && $method === 'POST') {
+        $name = trim((string)($body['name'] ?? ''));
+        if ($name === '') json(['ok'=>false,'msg'=>'Category name is required'], 400);
+        $slug = $slugify(trim((string)($body['slug'] ?? '')) ?: $name);
+        try {
+            Database::insert(
+                "INSERT INTO portfolio_categories (name, slug, icon, sort_order, is_active, created_at, updated_at) VALUES (?,?,?,?,?,NOW(),NOW())",
+                [$name, $slug, trim((string)($body['icon'] ?? 'fa-border-all')) ?: 'fa-border-all', (int)($body['sort_order'] ?? 0), (int)($body['is_active'] ?? 1)]
+            );
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not save category. Slug may already exist.'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/portfolio-categories/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $id = (int)$m[1];
+        $name = trim((string)($body['name'] ?? ''));
+        if ($name === '') json(['ok'=>false,'msg'=>'Category name is required'], 400);
+        $slug = $slugify(trim((string)($body['slug'] ?? '')) ?: $name);
+        try {
+            Database::query(
+                "UPDATE portfolio_categories SET name=?, slug=?, icon=?, sort_order=?, is_active=?, updated_at=NOW() WHERE id=?",
+                [$name, $slug, trim((string)($body['icon'] ?? 'fa-border-all')) ?: 'fa-border-all', (int)($body['sort_order'] ?? 0), (int)($body['is_active'] ?? 1), $id]
+            );
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not update category'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/portfolio-categories/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        try {
+            Database::query("DELETE FROM portfolio_categories WHERE id=?", [(int)$m[1]]);
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not delete category. Remove or reassign portfolio items first.'], 500);
+        }
+    }
+
+    if ($uri === '/admin/api/portfolio' && $method === 'GET') {
+        try {
+            $rows = Database::rows(
+                "SELECT pi.*, pc.name AS category_name, pc.slug AS category_slug, pc.icon AS category_icon
+                 FROM portfolio_items pi
+                 LEFT JOIN portfolio_categories pc ON pc.id = pi.category_id
+                 ORDER BY pi.sort_order ASC, pi.is_featured DESC, pi.created_at DESC, pi.id DESC"
+            );
+            json(['ok'=>true,'items'=>$rows]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Portfolio table unavailable','items'=>[]], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/portfolio/(\d+)$#', $uri, $m) && $method === 'GET') {
+        $item = Database::row("SELECT * FROM portfolio_items WHERE id=?", [(int)$m[1]]);
+        if (!$item) json(['ok'=>false,'msg'=>'Portfolio item not found'], 404);
+        json(['ok'=>true,'item'=>$item]);
+    }
+    if ($uri === '/admin/api/portfolio' && $method === 'POST') {
+        $title = trim((string)($body['title'] ?? ''));
+        if ($title === '') json(['ok'=>false,'msg'=>'Portfolio title is required'], 400);
+        try {
+            $slug = $uniquePortfolioSlug(trim((string)($body['slug'] ?? '')) ?: $title);
+            $id = Database::insert(
+                "INSERT INTO portfolio_items (category_id,title,slug,short_description,description,main_image,image_alt,client_name,project_type,project_date,tags,sort_order,is_featured,is_active,created_at,updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",
+                [
+                    (int)($body['category_id'] ?? 0) ?: null,
+                    $title,
+                    $slug,
+                    trim((string)($body['short_description'] ?? '')),
+                    trim((string)($body['description'] ?? '')),
+                    trim((string)($body['main_image'] ?? '')),
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['client_name'] ?? '')),
+                    trim((string)($body['project_type'] ?? '')),
+                    trim((string)($body['project_date'] ?? '')) ?: null,
+                    trim((string)($body['tags'] ?? '')),
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_featured'] ?? 0),
+                    (int)($body['is_active'] ?? 1),
+                ]
+            );
+            json(['ok'=>true,'id'=>$id,'slug'=>$slug]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not create portfolio item'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/portfolio/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $id = (int)$m[1];
+        $title = trim((string)($body['title'] ?? ''));
+        if ($title === '') json(['ok'=>false,'msg'=>'Portfolio title is required'], 400);
+        try {
+            $slug = $uniquePortfolioSlug(trim((string)($body['slug'] ?? '')) ?: $title, $id);
+            Database::query(
+                "UPDATE portfolio_items SET category_id=?, title=?, slug=?, short_description=?, description=?, main_image=?, image_alt=?, client_name=?, project_type=?, project_date=?, tags=?, sort_order=?, is_featured=?, is_active=?, updated_at=NOW() WHERE id=?",
+                [
+                    (int)($body['category_id'] ?? 0) ?: null,
+                    $title,
+                    $slug,
+                    trim((string)($body['short_description'] ?? '')),
+                    trim((string)($body['description'] ?? '')),
+                    trim((string)($body['main_image'] ?? '')),
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['client_name'] ?? '')),
+                    trim((string)($body['project_type'] ?? '')),
+                    trim((string)($body['project_date'] ?? '')) ?: null,
+                    trim((string)($body['tags'] ?? '')),
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_featured'] ?? 0),
+                    (int)($body['is_active'] ?? 1),
+                    $id,
+                ]
+            );
+            json(['ok'=>true,'slug'=>$slug]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not update portfolio item'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/portfolio/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        try {
+            Database::query("DELETE FROM portfolio_items WHERE id=?", [(int)$m[1]]);
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not delete portfolio item'], 500);
+        }
+    }
+    if ($uri === '/admin/api/portfolio/upload' && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 8 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 8MB'], 400);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $dir = PUBLIC_PATH . '/uploads/portfolio/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'portfolio_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        json(['ok'=>true,'path'=>'/uploads/portfolio/' . $name]);
+    }
+
+
     if ($uri === '/admin/api/theme' && $method === 'GET') {
         try {
             $theme = \Theme\SiteTheme::load();
@@ -1803,6 +2031,11 @@ if (preg_match('#^/admin/blogs/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     exit;
 }
 
+if (preg_match('#^/admin/portfolio/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
+    view('admin/portfolio-new', ['portfolioEditId' => (int)$m[1]]);
+    exit;
+}
+
 if (preg_match('#^/admin/deals/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     view('admin/deals-new', ['dealEditId' => (int)$m[1]]);
     exit;
@@ -1823,6 +2056,8 @@ $adminPage = match(true) {
     $uri === '/admin/products'   => 'admin/products',
     $uri === '/admin/categories' => 'admin/categories',
     $uri === '/admin/media'      => 'admin/media',
+    $uri === '/admin/portfolio'  => 'admin/portfolio',
+    $uri === '/admin/portfolio/new' => 'admin/portfolio-new',
     $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/deals'      => 'admin/deals',

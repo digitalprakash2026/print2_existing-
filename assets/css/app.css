@@ -14006,3 +14006,5 @@ body:not(.admin-shell) .blog-view-all {
   .portfolio-usp-bar { grid-template-columns:1fr; }
   .portfolio-usp-bar article { border-right:0; border-bottom:1px solid var(--pf-line); }
 }
+.portfolio-filter { text-decoration:none; }
+.portfolio-empty-state { margin:8px 0 24px; padding:34px; border:1px dashed var(--pf-line); border-radius:18px; background:#fff; color:#4b5563; font-weight:600; text-align:center; }

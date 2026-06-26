@@ -18,31 +18,34 @@ $bizPhoneHref = htmlspecialchars(preg_replace('/\D+/', '', $bizPhoneRaw), ENT_QU
 $bizWa = htmlspecialchars(preg_replace('/\D+/', '', (string)($settingsMap['biz_whatsapp'] ?? $bizPhoneRaw)), ENT_QUOTES, 'UTF-8');
 $waText = rawurlencode('Hello RCS Print, I want to discuss a portfolio-style print project.');
 
-$portfolioCategories = [
-  ['label' => 'All Works', 'icon' => 'fa-border-all', 'active' => true],
-  ['label' => 'Business Cards', 'icon' => 'fa-id-card-clip'],
-  ['label' => 'Flyers', 'icon' => 'fa-file-image'],
-  ['label' => 'Brochures', 'icon' => 'fa-images'],
-  ['label' => 'Posters', 'icon' => 'fa-newspaper'],
-  ['label' => 'Stationery', 'icon' => 'fa-file-lines'],
-  ['label' => 'Packaging', 'icon' => 'fa-cube'],
-  ['label' => 'Others', 'icon' => 'fa-ellipsis'],
+$fallbackPortfolioCategories = [
+  ['label' => 'Business Cards', 'slug' => 'business-cards', 'icon' => 'fa-id-card-clip'],
+  ['label' => 'Flyers', 'slug' => 'flyers', 'icon' => 'fa-file-image'],
+  ['label' => 'Brochures', 'slug' => 'brochures', 'icon' => 'fa-images'],
+  ['label' => 'Posters', 'slug' => 'posters', 'icon' => 'fa-newspaper'],
+  ['label' => 'Stationery', 'slug' => 'stationery', 'icon' => 'fa-file-lines'],
+  ['label' => 'Packaging', 'slug' => 'packaging', 'icon' => 'fa-cube'],
+  ['label' => 'Others', 'slug' => 'others', 'icon' => 'fa-ellipsis'],
 ];
-$portfolioItems = [
-  ['title' => 'Creative Business Card Design', 'category' => 'Business Cards', 'image' => '/assets/images/sample-products/business-cards/business-cards-1.svg'],
-  ['title' => 'Corporate Flyer Design', 'category' => 'Flyers', 'image' => '/assets/images/sample-products/flyers/flyers-1.svg'],
-  ['title' => 'Company Brochure Design', 'category' => 'Brochures', 'image' => '/assets/images/sample-products/brochures/brochures-1.svg'],
-  ['title' => 'Event Poster Design', 'category' => 'Posters', 'image' => '/assets/images/sample-products/posters/posters-1.svg'],
-  ['title' => 'Premium Diary Design', 'category' => 'Stationery', 'image' => '/assets/images/sample-products/stationery/stationery-1.svg'],
-  ['title' => 'Custom Calendar Design', 'category' => 'Calendars', 'image' => '/assets/images/sample-products/stationery/stationery-2.svg'],
-  ['title' => 'Corporate Stationery', 'category' => 'Stationery', 'image' => '/assets/images/sample-products/stationery/stationery-3.svg'],
-  ['title' => 'Product Packaging Design', 'category' => 'Packaging', 'image' => '/assets/images/sample-products/business-cards/business-cards-3.svg'],
-  ['title' => 'Shopping Bag Design', 'category' => 'Packaging', 'image' => '/assets/images/sample-products/banners/banners-3.svg'],
-  ['title' => 'Restaurant Menu Design', 'category' => 'Others', 'image' => '/assets/images/sample-products/pamphlets/pamphlets-1.svg'],
-  ['title' => 'Roll-Up Banner Design', 'category' => 'Others', 'image' => '/assets/images/sample-products/banners/banners-1.svg'],
-  ['title' => 'Wedding Invitation Design', 'category' => 'Others', 'image' => '/assets/images/sample-products/brochures/brochures-4.svg'],
+$fallbackPortfolioItems = [
+  ['title' => 'Creative Business Card Design', 'category' => 'Business Cards', 'category_slug' => 'business-cards', 'image' => '/assets/images/sample-products/business-cards/business-cards-1.svg'],
+  ['title' => 'Corporate Flyer Design', 'category' => 'Flyers', 'category_slug' => 'flyers', 'image' => '/assets/images/sample-products/flyers/flyers-1.svg'],
+  ['title' => 'Company Brochure Design', 'category' => 'Brochures', 'category_slug' => 'brochures', 'image' => '/assets/images/sample-products/brochures/brochures-1.svg'],
+  ['title' => 'Event Poster Design', 'category' => 'Posters', 'category_slug' => 'posters', 'image' => '/assets/images/sample-products/posters/posters-1.svg'],
+  ['title' => 'Premium Diary Design', 'category' => 'Stationery', 'category_slug' => 'stationery', 'image' => '/assets/images/sample-products/stationery/stationery-1.svg'],
+  ['title' => 'Custom Calendar Design', 'category' => 'Stationery', 'category_slug' => 'stationery', 'image' => '/assets/images/sample-products/stationery/stationery-2.svg'],
+  ['title' => 'Corporate Stationery', 'category' => 'Stationery', 'category_slug' => 'stationery', 'image' => '/assets/images/sample-products/stationery/stationery-3.svg'],
+  ['title' => 'Product Packaging Design', 'category' => 'Packaging', 'category_slug' => 'packaging', 'image' => '/assets/images/sample-products/business-cards/business-cards-3.svg'],
+  ['title' => 'Shopping Bag Design', 'category' => 'Packaging', 'category_slug' => 'packaging', 'image' => '/assets/images/sample-products/banners/banners-3.svg'],
+  ['title' => 'Restaurant Menu Design', 'category' => 'Others', 'category_slug' => 'others', 'image' => '/assets/images/sample-products/pamphlets/pamphlets-1.svg'],
+  ['title' => 'Roll-Up Banner Design', 'category' => 'Others', 'category_slug' => 'others', 'image' => '/assets/images/sample-products/banners/banners-1.svg'],
+  ['title' => 'Wedding Invitation Design', 'category' => 'Others', 'category_slug' => 'others', 'image' => '/assets/images/sample-products/brochures/brochures-4.svg'],
 ];
-?>
+$portfolioCategories = is_array($portfolioCategories ?? null) ? $portfolioCategories : $fallbackPortfolioCategories;
+$portfolioItems = is_array($portfolioItems ?? null) ? $portfolioItems : $fallbackPortfolioItems;
+$portfolioCategory = trim((string)($portfolioCategory ?? ''));
+$portfolioPage = max(1, (int)($portfolioPage ?? 1));
+$portfolioTotalPages = max(1, (int)($portfolioTotalPages ?? 1));?>
 
 <main class="portfolio-page">
   <section class="portfolio-hero" aria-labelledby="portfolioHeroTitle">
@@ -74,27 +77,48 @@ $portfolioItems = [
       </div>
 
       <div class="portfolio-filter-row" aria-label="Portfolio categories">
+        <a href="/portfolio" class="portfolio-filter <?= $portfolioCategory === '' ? 'active' : '' ?>">
+          <i class="fa-solid fa-border-all" aria-hidden="true"></i>
+          <span>All Works</span>
+        </a>
         <?php foreach ($portfolioCategories as $cat): ?>
-          <button type="button" class="portfolio-filter <?= !empty($cat['active']) ? 'active' : '' ?>">
-            <i class="fa-solid <?= htmlspecialchars($cat['icon'], ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i>
-            <span><?= htmlspecialchars($cat['label'], ENT_QUOTES, 'UTF-8') ?></span>
-          </button>
+          <?php
+            $catLabel = (string)($cat['label'] ?? $cat['name'] ?? 'Category');
+            $catSlug = (string)($cat['slug'] ?? '');
+            $catIcon = (string)($cat['icon'] ?? 'fa-folder-open');
+          ?>
+          <a href="/portfolio?category=<?= rawurlencode($catSlug) ?>" class="portfolio-filter <?= $portfolioCategory === $catSlug ? 'active' : '' ?>">
+            <i class="fa-solid <?= htmlspecialchars($catIcon, ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i>
+            <span><?= htmlspecialchars($catLabel, ENT_QUOTES, 'UTF-8') ?></span>
+          </a>
         <?php endforeach; ?>
       </div>
 
+      <?php if ($portfolioItems): ?>
       <div class="portfolio-grid">
         <?php foreach ($portfolioItems as $item): ?>
+          <?php
+            $itemImage = (string)($item['image'] ?? $item['main_image'] ?? '/assets/images/sample-products/business-cards/business-cards-1.svg');
+            $itemTitle = (string)($item['title'] ?? 'Portfolio Work');
+            $itemAlt = (string)($item['image_alt'] ?? $itemTitle);
+            $itemCategory = (string)($item['category'] ?? $item['category_name'] ?? 'Portfolio');
+          ?>
           <article class="portfolio-card">
-            <div class="portfolio-card-img"><img src="<?= htmlspecialchars($item['image'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy"></div>
+            <div class="portfolio-card-img"><img src="<?= htmlspecialchars($itemImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($itemAlt, ENT_QUOTES, 'UTF-8') ?>" loading="lazy"></div>
             <div class="portfolio-card-body">
-              <h3><?= htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8') ?></h3>
-              <p><i class="fa-regular fa-folder-open" aria-hidden="true"></i><?= htmlspecialchars($item['category'], ENT_QUOTES, 'UTF-8') ?></p>
+              <h3><?= htmlspecialchars($itemTitle, ENT_QUOTES, 'UTF-8') ?></h3>
+              <p><i class="fa-regular fa-folder-open" aria-hidden="true"></i><?= htmlspecialchars($itemCategory, ENT_QUOTES, 'UTF-8') ?></p>
             </div>
           </article>
         <?php endforeach; ?>
       </div>
+      <?php else: ?>
+        <div class="portfolio-empty-state">No portfolio work found for this category yet. Please check all works or add new portfolio items from admin.</div>
+      <?php endif; ?>
 
-      <div class="portfolio-load-wrap"><button class="portfolio-load-btn" type="button">Load More Works <i class="fa-solid fa-rotate-right" aria-hidden="true"></i></button></div>
+      <?php if ($portfolioPage < $portfolioTotalPages): ?>
+        <div class="portfolio-load-wrap"><a class="portfolio-load-btn" href="/portfolio?<?= http_build_query(array_filter(['category' => $portfolioCategory ?: null, 'page' => $portfolioPage + 1])) ?>">Load More Works <i class="fa-solid fa-rotate-right" aria-hidden="true"></i></a></div>
+      <?php endif; ?>
     </div>
   </section>
 

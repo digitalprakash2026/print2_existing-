@@ -504,7 +504,50 @@ if (isset($sitePageRoutes[$uri]) && $method === 'GET') {
         $aboutReviews = [];
     }
     if ($sitePageRoutes[$uri] === 'portfolio') {
-        view('portfolio', compact('settingsMap'));
+        $portfolioCategories = [];
+        $portfolioItems = [];
+        $portfolioCategory = trim((string)($_GET['category'] ?? ''));
+        $portfolioPage = max(1, (int)($_GET['page'] ?? 1));
+        $portfolioPerPage = 12;
+        $portfolioTotalPages = 1;
+        try {
+            $portfolioCategories = Database::rows("SELECT id, name, slug, icon, sort_order FROM portfolio_categories WHERE is_active=1 ORDER BY sort_order ASC, name ASC");
+            $categoryRow = null;
+            if ($portfolioCategory !== '') {
+                $categoryRow = Database::row("SELECT id, slug FROM portfolio_categories WHERE slug=? AND is_active=1 LIMIT 1", [$portfolioCategory]);
+                if (!$categoryRow) {
+                    $portfolioCategory = '';
+                }
+            }
+            $where = ["pi.is_active=1"];
+            $params = [];
+            if ($categoryRow) {
+                $where[] = "pi.category_id=?";
+                $params[] = (int)$categoryRow['id'];
+            }
+            $whereSql = implode(' AND ', $where);
+            $totalRow = Database::row("SELECT COUNT(*) AS total FROM portfolio_items pi WHERE {$whereSql}", $params) ?: [];
+            $totalItems = (int)($totalRow['total'] ?? 0);
+            $portfolioTotalPages = max(1, (int)ceil($totalItems / $portfolioPerPage));
+            $portfolioPage = min($portfolioPage, $portfolioTotalPages);
+            $offset = max(0, ($portfolioPage - 1) * $portfolioPerPage);
+            $portfolioItems = Database::rows(
+                "SELECT pi.*, pc.name AS category_name, pc.slug AS category_slug, pc.icon AS category_icon
+                 FROM portfolio_items pi
+                 LEFT JOIN portfolio_categories pc ON pc.id = pi.category_id
+                 WHERE {$whereSql}
+                 ORDER BY pi.is_featured DESC, pi.sort_order ASC, pi.created_at DESC, pi.id DESC
+                 LIMIT {$portfolioPerPage} OFFSET {$offset}",
+                $params
+            );
+        } catch (\Throwable) {
+            $portfolioCategories = null;
+            $portfolioItems = null;
+            $portfolioCategory = '';
+            $portfolioPage = 1;
+            $portfolioTotalPages = 1;
+        }
+        view('portfolio', compact('settingsMap', 'portfolioCategories', 'portfolioItems', 'portfolioCategory', 'portfolioPage', 'portfolioTotalPages'));
         exit;
     }
     view('info-page', compact('page', 'settingsMap', 'aboutReviews'));
