@@ -503,6 +503,10 @@ if (isset($sitePageRoutes[$uri]) && $method === 'GET') {
         $settingsMap = [];
         $aboutReviews = [];
     }
+    if ($sitePageRoutes[$uri] === 'portfolio') {
+        view('portfolio', compact('settingsMap'));
+        exit;
+    }
     view('info-page', compact('page', 'settingsMap', 'aboutReviews'));
     exit;
 }

@@ -1,0 +1,133 @@
+<?php
+$pageTitle = 'Portfolio — RCS Print';
+$pageDesc = 'Explore RCS Print portfolio work across business cards, flyers, brochures, posters, stationery, packaging and custom print projects.';
+$pageSchema = [[
+  '@context' => 'https://schema.org',
+  '@type' => 'CollectionPage',
+  'name' => 'RCS Print Portfolio',
+  'description' => $pageDesc,
+  'url' => (defined('APP_URL') ? rtrim((string)APP_URL, '/') : '') . '/portfolio',
+]];
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
+
+$settingsMap = is_array($settingsMap ?? null) ? $settingsMap : [];
+$bizPhoneRaw = trim((string)($settingsMap['biz_phone'] ?? '+91 98765 43210'));
+$bizPhone = htmlspecialchars($bizPhoneRaw, ENT_QUOTES, 'UTF-8');
+$bizPhoneHref = htmlspecialchars(preg_replace('/\D+/', '', $bizPhoneRaw), ENT_QUOTES, 'UTF-8');
+$bizWa = htmlspecialchars(preg_replace('/\D+/', '', (string)($settingsMap['biz_whatsapp'] ?? $bizPhoneRaw)), ENT_QUOTES, 'UTF-8');
+$waText = rawurlencode('Hello RCS Print, I want to discuss a portfolio-style print project.');
+
+$portfolioCategories = [
+  ['label' => 'All Works', 'icon' => 'fa-border-all', 'active' => true],
+  ['label' => 'Business Cards', 'icon' => 'fa-id-card-clip'],
+  ['label' => 'Flyers', 'icon' => 'fa-file-image'],
+  ['label' => 'Brochures', 'icon' => 'fa-images'],
+  ['label' => 'Posters', 'icon' => 'fa-newspaper'],
+  ['label' => 'Stationery', 'icon' => 'fa-file-lines'],
+  ['label' => 'Packaging', 'icon' => 'fa-cube'],
+  ['label' => 'Others', 'icon' => 'fa-ellipsis'],
+];
+$portfolioItems = [
+  ['title' => 'Creative Business Card Design', 'category' => 'Business Cards', 'image' => '/assets/images/sample-products/business-cards/business-cards-1.svg'],
+  ['title' => 'Corporate Flyer Design', 'category' => 'Flyers', 'image' => '/assets/images/sample-products/flyers/flyers-1.svg'],
+  ['title' => 'Company Brochure Design', 'category' => 'Brochures', 'image' => '/assets/images/sample-products/brochures/brochures-1.svg'],
+  ['title' => 'Event Poster Design', 'category' => 'Posters', 'image' => '/assets/images/sample-products/posters/posters-1.svg'],
+  ['title' => 'Premium Diary Design', 'category' => 'Stationery', 'image' => '/assets/images/sample-products/stationery/stationery-1.svg'],
+  ['title' => 'Custom Calendar Design', 'category' => 'Calendars', 'image' => '/assets/images/sample-products/stationery/stationery-2.svg'],
+  ['title' => 'Corporate Stationery', 'category' => 'Stationery', 'image' => '/assets/images/sample-products/stationery/stationery-3.svg'],
+  ['title' => 'Product Packaging Design', 'category' => 'Packaging', 'image' => '/assets/images/sample-products/business-cards/business-cards-3.svg'],
+  ['title' => 'Shopping Bag Design', 'category' => 'Packaging', 'image' => '/assets/images/sample-products/banners/banners-3.svg'],
+  ['title' => 'Restaurant Menu Design', 'category' => 'Others', 'image' => '/assets/images/sample-products/pamphlets/pamphlets-1.svg'],
+  ['title' => 'Roll-Up Banner Design', 'category' => 'Others', 'image' => '/assets/images/sample-products/banners/banners-1.svg'],
+  ['title' => 'Wedding Invitation Design', 'category' => 'Others', 'image' => '/assets/images/sample-products/brochures/brochures-4.svg'],
+];
+?>
+
+<main class="portfolio-page">
+  <section class="portfolio-hero" aria-labelledby="portfolioHeroTitle">
+    <div class="portfolio-container portfolio-hero-grid">
+      <div class="portfolio-hero-copy">
+        <h1 id="portfolioHeroTitle">Our <span>Portfolio</span></h1>
+        <p>Explore our work and see how we help businesses make a lasting impression.</p>
+        <div class="portfolio-hero-points" aria-label="Portfolio highlights">
+          <div><i class="fa-solid fa-camera-retro" aria-hidden="true"></i><strong>Premium<br>Quality</strong></div>
+          <div><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><strong>Creative<br>Designs</strong></div>
+          <div><i class="fa-solid fa-pen-nib" aria-hidden="true"></i><strong>On-Time<br>Delivery</strong></div>
+          <div><i class="fa-solid fa-phone" aria-hidden="true"></i><strong>100% Customer<br>Satisfaction</strong></div>
+        </div>
+      </div>
+      <div class="portfolio-hero-art" aria-label="RCS Print portfolio product mockups">
+        <div class="portfolio-art-card portfolio-art-box"><img src="/assets/images/sample-products/business-cards/business-cards-4.svg" alt="RCS printed box and card mockup"></div>
+        <div class="portfolio-art-card portfolio-art-book"><img src="/assets/images/sample-products/brochures/brochures-2.svg" alt="Open brochure design mockup"></div>
+        <div class="portfolio-art-card portfolio-art-purple"><img src="/assets/images/sample-products/banners/banners-2.svg" alt="Purple brand brochure mockup"></div>
+        <div class="portfolio-art-plant" aria-hidden="true"><span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="portfolio-work" aria-labelledby="portfolioWorkTitle">
+    <div class="portfolio-container">
+      <div class="portfolio-section-head">
+        <h2 id="portfolioWorkTitle">Our Work Speaks for <span>Itself</span></h2>
+        <div class="portfolio-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      </div>
+
+      <div class="portfolio-filter-row" aria-label="Portfolio categories">
+        <?php foreach ($portfolioCategories as $cat): ?>
+          <button type="button" class="portfolio-filter <?= !empty($cat['active']) ? 'active' : '' ?>">
+            <i class="fa-solid <?= htmlspecialchars($cat['icon'], ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i>
+            <span><?= htmlspecialchars($cat['label'], ENT_QUOTES, 'UTF-8') ?></span>
+          </button>
+        <?php endforeach; ?>
+      </div>
+
+      <div class="portfolio-grid">
+        <?php foreach ($portfolioItems as $item): ?>
+          <article class="portfolio-card">
+            <div class="portfolio-card-img"><img src="<?= htmlspecialchars($item['image'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy"></div>
+            <div class="portfolio-card-body">
+              <h3><?= htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8') ?></h3>
+              <p><i class="fa-regular fa-folder-open" aria-hidden="true"></i><?= htmlspecialchars($item['category'], ENT_QUOTES, 'UTF-8') ?></p>
+            </div>
+          </article>
+        <?php endforeach; ?>
+      </div>
+
+      <div class="portfolio-load-wrap"><button class="portfolio-load-btn" type="button">Load More Works <i class="fa-solid fa-rotate-right" aria-hidden="true"></i></button></div>
+    </div>
+  </section>
+
+  <section class="portfolio-cta" aria-label="Portfolio project call to action">
+    <div class="portfolio-container">
+      <div class="portfolio-project-card">
+        <div><h2>Have a Project in Mind?</h2><p>Let's create something amazing together!</p></div>
+        <div class="portfolio-project-actions"><a href="/contact">Get Free Design</a><a href="/contact" class="outline">Contact Us</a></div>
+        <span class="portfolio-gift" aria-hidden="true"><i class="fa-solid fa-gift"></i></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="portfolio-usp" aria-label="RCS Print benefits">
+    <div class="portfolio-container portfolio-usp-bar">
+      <article><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><div><h3>Fast Delivery</h3><p>On-time delivery always guaranteed.</p></div></article>
+      <article><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i><div><h3>Free Design Support</h3><p>Professional design support at no extra cost.</p></div></article>
+      <article><i class="fa-solid fa-bag-shopping" aria-hidden="true"></i><div><h3>Premium Quality</h3><p>Best quality materials and printing.</p></div></article>
+      <article><i class="fa-solid fa-tags" aria-hidden="true"></i><div><h3>Affordable Pricing</h3><p>Low price with the best value.</p></div></article>
+      <article><i class="fa-solid fa-cube" aria-hidden="true"></i><div><h3>Bulk Order Specialist</h3><p>Special prices for bulk requirements.</p></div></article>
+    </div>
+  </section>
+
+  <section class="quick-help-section portfolio-quick-help" aria-label="Quick help and bulk order actions">
+    <div class="quick-help-container">
+      <div class="quick-help-bar">
+        <a class="quick-help-item quick-help-call" href="tel:<?= $bizPhoneHref ?>"><span class="quick-help-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span><span class="quick-help-copy"><span>Need Help? Call Us</span><strong><?= $bizPhone ?></strong></span></a>
+        <button class="quick-help-item quick-help-whatsapp" type="button" onclick="window.open('https://wa.me/<?= $bizWa ?>?text=<?= $waText ?>','_blank')"><span class="quick-help-icon"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span><span class="quick-help-copy"><strong>Chat with us on WhatsApp</strong><span>We are here to help!</span></span></button>
+        <a class="quick-help-item quick-help-download" href="/categories" aria-label="Download our brochure for all products"><span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span><span class="quick-help-copy"><strong>Download Brochure</strong><span>For Bulk Orders</span></span></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
+<?php include INCLUDE_PATH . '/partials/footer.php'; ?>
