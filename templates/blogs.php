@@ -212,16 +212,27 @@ include INCLUDE_PATH . '/partials/header.php';
   <section class="blog-newsletter-section">
     <div class="blog-list-container blog-newsletter-card">
       <div class="blog-newsletter-icon"><i class="fa-regular fa-envelope" aria-hidden="true"></i></div>
-      <div><h2>Stay Updated with <span><?= $bizName ?></span></h2><p>Subscribe to get the latest printing tips, offers and product updates straight to your inbox.</p></div>
+      <div><h2>Stay Updated with <span>RCS Print</span></h2><p>Subscribe to get the latest printing tips, offers and product updates straight to your inbox.</p></div>
       <form action="/contact" method="get"><input type="email" name="email" placeholder="Enter your email" aria-label="Email address"><button type="submit">Subscribe</button></form>
     </div>
   </section>
 
-  <section class="blog-quick-help">
-    <div class="blog-list-container blog-quick-help-grid">
-      <a href="tel:<?= $bizPhoneHref ?>"><i class="fa-solid fa-phone" aria-hidden="true"></i><span><strong>Need Help? Call Us</strong><b><?= $bizPhone ?></b></span></a>
-      <a class="wa" href="https://wa.me/<?= $bizWa ?>?text=<?= $waText ?>" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i><span><strong>Chat with us on WhatsApp</strong><b>We are here to help!</b></span></a>
-      <a class="download" href="/categories"><i class="fa-solid fa-download" aria-hidden="true"></i><span><strong>Download Brochure</strong><b>For Bulk Orders</b></span></a>
+  <section class="quick-help-section blog-quick-help-section" aria-label="Quick help and bulk order actions">
+    <div class="quick-help-container">
+      <div class="quick-help-bar">
+        <a class="quick-help-item quick-help-call" href="tel:<?= $bizPhoneHref ?>">
+          <span class="quick-help-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><span>Need Help? Call Us</span><strong><?= $bizPhone ?></strong></span>
+        </a>
+        <button class="quick-help-item quick-help-whatsapp" type="button" onclick="window.open('https://wa.me/<?= $bizWa ?>?text=<?= $waText ?>','_blank')">
+          <span class="quick-help-icon"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><strong>Chat with us on WhatsApp</strong><span>We are here to help!</span></span>
+        </button>
+        <a class="quick-help-item quick-help-download" href="/categories" aria-label="Download our brochure for all products">
+          <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><strong>Download Our Brochure</strong><span>For All Products</span></span>
+        </a>
+      </div>
     </div>
   </section>
 </main>

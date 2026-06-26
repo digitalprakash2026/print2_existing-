@@ -13721,3 +13721,25 @@ body:not(.admin-shell) :is(.contact-faq-section,.info-cta-section) {
   .blog-list-container { width:min(100%, calc(100vw - 28px)); }
   .blog-list-grid { grid-template-columns:1fr; }
 }
+
+/* Blog page final tweaks: non-sticky sidebar + shared quick-help strip */
+.blog-list-sidebar {
+  position:static;
+  top:auto;
+  max-height:none;
+  overflow:visible;
+  padding-right:0;
+  scrollbar-width:auto;
+}
+.blog-list-sidebar::-webkit-scrollbar { width:auto; }
+.blog-list-sidebar::-webkit-scrollbar-track,
+.blog-list-sidebar::-webkit-scrollbar-thumb { background:initial; }
+.blog-quick-help-section {
+  padding:0 0 28px;
+}
+.blog-quick-help-section .quick-help-container {
+  width:min(var(--page-max, 1680px), calc(100vw - var(--page-gutter, 40px)));
+}
+@media (max-width:760px) {
+  .blog-quick-help-section .quick-help-container { width:min(100%, calc(100vw - 24px)); }
+}
