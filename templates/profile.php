@@ -261,18 +261,6 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
         <h1 id="accountTitle">My Account</h1>
         <p>Manage your profile, track orders and access exclusive print benefits.</p>
       </div>
-      <a class="account-promo-card" href="/categories" aria-label="Order print products">
-        <div>
-          <strong>Design. Print. Grow.</strong>
-          <span>Premium quality printing for your business success.</span>
-          <em>Order Now</em>
-        </div>
-        <div class="account-promo-visual" aria-hidden="true">
-          <span class="promo-sheet promo-sheet-one"></span>
-          <span class="promo-sheet promo-sheet-two"></span>
-          <span class="promo-box"></span>
-        </div>
-      </a>
     </div>
   </section>
 
@@ -651,7 +639,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
 <script>
 const ACCOUNT_TABS = ['dashboard','orders','wishlist','designs','reviews','addresses','details','security'];
 
-function setAccountTab(tab, pushHash = true, scrollToPanel = true) {
+function setAccountTab(tab, pushHash = true) {
   const safeTab = ACCOUNT_TABS.includes(tab) ? tab : 'dashboard';
   document.querySelectorAll('[data-account-tab]').forEach(el => {
     const active = el.dataset.accountTab === safeTab;
@@ -664,7 +652,6 @@ function setAccountTab(tab, pushHash = true, scrollToPanel = true) {
     panel.toggleAttribute('hidden', !active);
   });
   if (pushHash) history.replaceState(null, '', safeTab === 'dashboard' ? '/profile' : `/profile#${safeTab}`);
-  if (scrollToPanel) document.querySelector('.account-main')?.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 document.querySelectorAll('[data-account-tab]').forEach(el => {
@@ -706,7 +693,7 @@ async function removeWishlistItem(productId, btn) {
 }
 
 window.addEventListener('hashchange', () => setAccountTab(location.hash.replace('#', ''), false));
-setAccountTab(location.hash.replace('#', ''), false, false);
+setAccountTab(location.hash.replace('#', ''), false);
 
 
 
