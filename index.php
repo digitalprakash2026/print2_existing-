@@ -260,6 +260,10 @@ if (preg_match('#^/blog/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
             [$m[1]]
         );
         $relatedBlogs = [];
+        $blogCategories = [];
+        $popularBlogs = [];
+        $previousBlog = null;
+        $nextBlog = null;
         if ($blog) {
             $relatedBlogs = Database::rows(
                 "SELECT id,title,slug,excerpt,featured_image,image_alt,category,published_at
@@ -269,6 +273,39 @@ if (preg_match('#^/blog/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
                  LIMIT 10",
                 [$m[1], (string)($blog['category'] ?? '')]
             );
+            $blogCategories = Database::rows(
+                "SELECT category, COUNT(*) AS total
+                 FROM blogs
+                 WHERE is_active = 1 AND category <> ''
+                 GROUP BY category
+                 ORDER BY total DESC, category ASC"
+            );
+            $popularBlogs = Database::rows(
+                "SELECT id,title,slug,featured_image,image_alt,category,published_at
+                 FROM blogs
+                 WHERE is_active = 1 AND slug <> ?
+                 ORDER BY is_featured DESC, published_at DESC, id DESC
+                 LIMIT 5",
+                [$m[1]]
+            );
+            $publishedForNav = (string)($blog['published_at'] ?? '1970-01-01 00:00:00');
+            $idForNav = (int)($blog['id'] ?? 0);
+            $previousBlog = Database::row(
+                "SELECT id,title,slug
+                 FROM blogs
+                 WHERE is_active = 1 AND (published_at < ? OR (published_at = ? AND id < ?))
+                 ORDER BY published_at DESC, id DESC
+                 LIMIT 1",
+                [$publishedForNav, $publishedForNav, $idForNav]
+            );
+            $nextBlog = Database::row(
+                "SELECT id,title,slug
+                 FROM blogs
+                 WHERE is_active = 1 AND (published_at > ? OR (published_at = ? AND id > ?))
+                 ORDER BY published_at ASC, id ASC
+                 LIMIT 1",
+                [$publishedForNav, $publishedForNav, $idForNav]
+            );
         }
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
@@ -276,12 +313,16 @@ if (preg_match('#^/blog/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
         error_log('Blog detail error: ' . $e->getMessage());
         $blog = null;
         $relatedBlogs = [];
+        $blogCategories = [];
+        $popularBlogs = [];
+        $previousBlog = null;
+        $nextBlog = null;
         $settingsMap = [];
     }
 
     if (!$blog) { http_response_code(404); view('404'); exit; }
 
-    view('blog-detail', compact('blog', 'relatedBlogs', 'settingsMap'));
+    view('blog-detail', compact('blog', 'relatedBlogs', 'blogCategories', 'popularBlogs', 'previousBlog', 'nextBlog', 'settingsMap'));
     exit;
 }
 
