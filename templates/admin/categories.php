@@ -45,9 +45,9 @@ include __DIR__ . '/layout.php';
       <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
         <div id="catImagePreview" style="width:118px;height:118px;border-radius:16px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text3);font-size:12px;text-align:center;padding:8px">No image</div>
         <div style="flex:1;min-width:240px">
-          <div class="fg" style="margin-bottom:8px"><label>Category Square Image</label><input id="cat-image-file" type="file" class="fi" accept="image/jpeg,image/png,image/webp"></div>
+          <div class="fg" style="margin-bottom:8px"><label>Category Square Image</label><input id="cat-image-file" type="file" class="fi" accept="image/jpeg,image/png,image/webp" onchange="uploadCategoryImage()"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <button class="btn btn-outline btn-sm" type="button" onclick="uploadCategoryImage()">Upload Image</button>
+            <span id="catUploadState" style="min-height:32px;display:inline-flex;align-items:center;font-size:11px;font-weight:700;color:var(--text3)">Choose an image — upload starts automatically.</span>
             <button class="btn btn-outline btn-sm" type="button" onclick="clearCategoryImage()">Remove</button>
           </div>
           <div style="font-size:11px;color:var(--text3);line-height:1.45">Recommended: square 600×600 or 800×800 JPG/PNG/WebP. This image is used in the home page “Shop By Category” cards.</div>
@@ -110,7 +110,9 @@ function openCatModal(id = 0) {
   const m = document.getElementById('catModal');
   const title = document.getElementById('catModalTitle');
   const err = document.getElementById('catErr');
+  const uploadState = document.getElementById('catUploadState');
   if (err) err.style.display = 'none';
+  if (uploadState) { uploadState.textContent = 'Choose an image — upload starts automatically.'; uploadState.style.color = 'var(--text3)'; }
   setVal('cat-image-file', '');
   if (editId > 0) {
     const c = allCats.find(x => Number(x.id) === editId);
@@ -180,28 +182,39 @@ async function saveCategory() {
 async function uploadCategoryImage() {
   const input = document.getElementById('cat-image-file');
   const err = document.getElementById('catErr');
+  const state = document.getElementById('catUploadState');
   if (err) err.style.display = 'none';
   if (!input || !input.files || !input.files[0]) {
     if (err) { err.textContent = 'Please choose an image first.'; err.style.display = 'block'; }
     return;
   }
+  input.disabled = true;
+  if (state) { state.textContent = 'Uploading image…'; state.style.color = 'var(--blue)'; }
   const fd = new FormData();
   fd.append('image', input.files[0]);
-  const res = await fetch('/admin/api/categories/upload', {method:'POST', headers:{'X-CSRF-TOKEN':CSRF}, body: fd}).then(r=>r.json());
-  if (!res.ok) {
-    if (err) { err.textContent = res.msg || 'Upload failed.'; err.style.display = 'block'; }
-    return;
+  try {
+    const res = await fetch('/admin/api/categories/upload', {method:'POST', headers:{'X-CSRF-TOKEN':CSRF}, body: fd}).then(r=>r.json());
+    if (!res.ok) {
+      if (err) { err.textContent = res.msg || 'Upload failed.'; err.style.display = 'block'; }
+      if (state) { state.textContent = 'Upload failed. Choose image again.'; state.style.color = 'var(--red)'; }
+      return;
+    }
+    setVal('cat-image-path', res.path || '');
+    const name = getVal('cat-name').trim();
+    if (!getVal('cat-image-alt').trim() && name) setVal('cat-image-alt', `${name} category image`);
+    updateCategoryPreview();
+    if (state) { state.textContent = 'Image uploaded automatically.'; state.style.color = 'var(--green)'; }
+    toast('Category image uploaded', 'success');
+  } finally {
+    input.disabled = false;
   }
-  setVal('cat-image-path', res.path || '');
-  const name = getVal('cat-name').trim();
-  if (!getVal('cat-image-alt').trim() && name) setVal('cat-image-alt', `${name} category image`);
-  updateCategoryPreview();
-  toast('Category image uploaded', 'success');
 }
 
 function clearCategoryImage() {
   setVal('cat-image-path', '');
   setVal('cat-image-file', '');
+  const state = document.getElementById('catUploadState');
+  if (state) { state.textContent = 'Choose an image — upload starts automatically.'; state.style.color = 'var(--text3)'; }
   updateCategoryPreview();
 }
 
