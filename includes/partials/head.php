@@ -7,16 +7,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<?php
+$seoTitle = trim((string)($pageTitle ?? 'RCS Graphic — Premium Print Ordering'));
+$seoDesc = trim((string)($pageDesc ?? 'Professional printing services — business cards, brochures, banners and more. Fast delivery, GST invoice, secure Razorpay payment.'));
+$seoKeywords = trim((string)($pageKeywords ?? ''));
+$seoRobots = trim((string)($pageRobots ?? 'index,follow')) ?: 'index,follow';
+$seoBaseUrl = defined('APP_URL') ? rtrim((string)APP_URL, '/') : '';
+if ($seoBaseUrl === '') {
+  $host = $_SERVER['HTTP_HOST'] ?? 'print.rcsgraphic.com';
+  $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+  $seoBaseUrl = $scheme . '://' . $host;
+}
+$seoPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$seoCanonical = trim((string)($pageCanonical ?? ''));
+$seoCanonical = $seoCanonical !== '' ? $seoCanonical : ($seoBaseUrl . $seoPath);
+$seoImage = trim((string)($pageImage ?? '/assets/images/rcs-graphic-logo.png'));
+$seoImageAbs = preg_match('#^https?://#i', $seoImage) ? $seoImage : ($seoBaseUrl . '/' . ltrim($seoImage, '/'));
+$seoType = trim((string)($pageOgType ?? 'website')) ?: 'website';
+$seoSettings = is_array($settingsMap ?? null) ? $settingsMap : [];
+$seoBizName = trim((string)($seoSettings['biz_name'] ?? 'RCS PRINT')) ?: 'RCS PRINT';
+$seoBizPhone = trim((string)($seoSettings['biz_phone'] ?? ''));
+$seoBizEmail = trim((string)($seoSettings['biz_email'] ?? ''));
+$seoBizAddress = trim((string)($seoSettings['biz_address'] ?? ''));
+$seoSchema = [[
+  '@context' => 'https://schema.org',
+  '@type' => 'LocalBusiness',
+  'name' => $seoBizName,
+  'url' => $seoBaseUrl,
+  'logo' => $seoBaseUrl . '/assets/images/rcs-graphic-logo.png',
+  'image' => $seoImageAbs,
+  'telephone' => $seoBizPhone,
+  'email' => $seoBizEmail,
+  'address' => [
+    '@type' => 'PostalAddress',
+    'streetAddress' => $seoBizAddress,
+    'addressLocality' => 'Rajkot',
+    'addressRegion' => 'Gujarat',
+    'addressCountry' => 'IN',
+  ],
+]];
+if (!empty($pageSchema)) {
+  $extraSchema = is_array($pageSchema) ? $pageSchema : json_decode((string)$pageSchema, true);
+  if (is_array($extraSchema)) {
+    $isList = array_keys($extraSchema) === range(0, count($extraSchema) - 1);
+    foreach ($isList ? $extraSchema : [$extraSchema] as $schemaItem) {
+      if (is_array($schemaItem)) $seoSchema[] = $schemaItem;
+    }
+  }
+}
+?>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= htmlspecialchars($pageTitle ?? 'RCS Graphic — Premium Print Ordering') ?></title>
-<meta name="description" content="<?= htmlspecialchars($pageDesc ?? 'Professional printing services — business cards, brochures, banners and more. Fast delivery, GST invoice, secure Razorpay payment.') ?>">
+<title><?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?></title>
+<meta name="description" content="<?= htmlspecialchars($seoDesc, ENT_QUOTES, 'UTF-8') ?>">
+<?php if ($seoKeywords !== ''): ?><meta name="keywords" content="<?= htmlspecialchars($seoKeywords, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
+<meta name="robots" content="<?= htmlspecialchars($seoRobots, ENT_QUOTES, 'UTF-8') ?>">
+<link rel="canonical" href="<?= htmlspecialchars($seoCanonical, ENT_QUOTES, 'UTF-8') ?>">
+<meta property="og:type" content="<?= htmlspecialchars($seoType, ENT_QUOTES, 'UTF-8') ?>">
+<meta property="og:title" content="<?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?>">
+<meta property="og:description" content="<?= htmlspecialchars($seoDesc, ENT_QUOTES, 'UTF-8') ?>">
+<meta property="og:url" content="<?= htmlspecialchars($seoCanonical, ENT_QUOTES, 'UTF-8') ?>">
+<meta property="og:image" content="<?= htmlspecialchars($seoImageAbs, ENT_QUOTES, 'UTF-8') ?>">
+<meta property="og:site_name" content="<?= htmlspecialchars($seoBizName, ENT_QUOTES, 'UTF-8') ?>">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?>">
+<meta name="twitter:description" content="<?= htmlspecialchars($seoDesc, ENT_QUOTES, 'UTF-8') ?>">
+<meta name="twitter:image" content="<?= htmlspecialchars($seoImageAbs, ENT_QUOTES, 'UTF-8') ?>">
+<?php if (!empty($pagePreloadImage)): ?>
+<link rel="preload" as="image" href="<?= htmlspecialchars((string)$pagePreloadImage, ENT_QUOTES, 'UTF-8') ?>" fetchpriority="high">
+<?php endif; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= file_exists(PUBLIC_PATH . '/assets/css/app.css') ? filemtime(PUBLIC_PATH . '/assets/css/app.css') : time() ?>">
 <?php $siteTheme = \Theme\SiteTheme::load(); ?>
 <style id="rcs-theme-vars"><?= \Theme\SiteTheme::css($siteTheme) ?></style>
+<script type="application/ld+json"><?= json_encode($seoSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
 <meta name="csrf-token" content="<?= htmlspecialchars($csrf ?? '') ?>">
 <script>
 window.RCS_THEME_DEFAULTS = <?= json_encode(\Theme\SiteTheme::defaults(), JSON_UNESCAPED_SLASHES) ?>;
