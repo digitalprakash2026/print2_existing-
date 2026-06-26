@@ -39,10 +39,10 @@ $aboutReviews = is_array($aboutReviews ?? null) ? array_slice($aboutReviews, 0, 
         <p class="about-kicker">About Us</p>
         <h1>About <span class="rcs-word"><span>R</span><span>C</span><span>S</span></span> PRINT</h1>
         <h2>Where Ideas Get <span>Printed</span> to Perfection</h2>
-        <p class="about-lead">At RCS PRINT, we transform your ideas into premium quality prints that speak for your brand. From business cards to brochures and beyond, we deliver quality you can see and feel.</p>
+        <p class="about-lead">At RCS PRINT, we transform your ideas into premium quality prints that speak for your brand. From business cards to brochures and beyond, we deliver quality you can see and feel. Our team supports every order with careful artwork review, practical material guidance and print-ready finishing suggestions. Whether you need corporate stationery, marketing flyers, packaging labels or bulk promotional prints, we focus on sharp details, consistent colors and a professional final result. We make the complete process simple for businesses by combining design support, reliable print production and value-focused pricing under one roof.</p>
         <div class="about-hero-features" aria-label="RCS PRINT strengths">
           <div><i class="fa-solid fa-gear" aria-hidden="true"></i><strong>Premium<br>Quality</strong></div>
-          <div><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><strong>Fast<br>Delivery</strong></div>
+          <div><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><strong>Custom Print<br>Solutions</strong></div>
           <div><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i><strong>Free Design<br>Support</strong></div>
           <div><i class="fa-solid fa-shield-heart" aria-hidden="true"></i><strong>Affordable<br>Pricing</strong></div>
         </div>
