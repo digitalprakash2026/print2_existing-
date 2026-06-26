@@ -33,6 +33,20 @@ $wa = htmlspecialchars((string)($settingsMap['biz_whatsapp'] ?? '919876543210'),
 $aboutReviews = is_array($aboutReviews ?? null) ? array_slice($aboutReviews, 0, 3) : [];
 ?>
 <main class="about-showcase-page">
+  <?php
+  $pageHero = [
+    'key' => 'about',
+    'title' => 'About RCS PRINT',
+    'subtitle' => 'Where ideas get printed to perfection with premium quality, design support and value-focused pricing.',
+    'eyebrow' => 'About Us',
+    'breadcrumbs' => [
+      ['label' => 'Home', 'url' => '/'],
+      ['label' => 'About', 'url' => null],
+    ],
+    'fallback_image' => '/assets/images/sample-products/brochures/brochures-2.svg',
+  ];
+  include INCLUDE_PATH . '/partials/page-hero.php';
+  ?>
   <section class="about-showcase-hero">
     <div class="about-showcase-container about-hero-grid">
       <div class="about-hero-copy">

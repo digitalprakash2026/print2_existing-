@@ -68,20 +68,20 @@ include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 ?>
 <main class="blog-list-page">
-  <section class="blog-list-hero" aria-labelledby="blogPageTitle">
-    <div class="blog-list-container blog-list-hero-grid">
-      <div class="blog-list-hero-copy">
-        <h1 id="blogPageTitle">Our Blog</h1>
-        <p>Insights, tips and inspiration about printing, branding and growing your business.</p>
-        <nav class="blog-list-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><strong>Blog</strong></nav>
-      </div>
-      <div class="blog-list-hero-art" aria-hidden="true">
-        <div class="blog-art-book"><span><?= $bizName ?></span></div>
-        <div class="blog-art-cup">RCS</div>
-        <div class="blog-art-plant"><i></i></div>
-      </div>
-    </div>
-  </section>
+  <?php
+  $pageHero = [
+    'key' => 'blogs',
+    'title' => 'Our Blog',
+    'subtitle' => 'Insights, tips and inspiration about printing, branding and growing your business.',
+    'eyebrow' => 'Printing Insights',
+    'breadcrumbs' => [
+      ['label' => 'Home', 'url' => '/'],
+      ['label' => 'Blog', 'url' => null],
+    ],
+    'fallback_image' => '/assets/images/sample-products/flyers/flyers-1.svg',
+  ];
+  include INCLUDE_PATH . '/partials/page-hero.php';
+  ?>
 
   <section class="blog-list-main-section">
     <div class="blog-list-container blog-list-layout">

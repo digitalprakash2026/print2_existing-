@@ -21,18 +21,20 @@ include INCLUDE_PATH . '/partials/header.php';
 ?>
 
 <main class="all-cat-page">
-  <section class="all-cat-hero-banner" aria-labelledby="allCatTitle">
-    <div class="all-cat-hero-copy">
-      <nav class="all-cat-crumb" aria-label="Breadcrumb">
-        <a href="/">Home</a><span>›</span><span>All Categories</span>
-      </nav>
-      <h1 id="allCatTitle">All Categories</h1>
-      <p>Premium Quality Printing for Every Need</p>
-    </div>
-    <div class="all-cat-hero-visual" aria-hidden="true">
-      <img src="/assets/img/categories/all-categories-hero.svg" alt="" loading="eager">
-    </div>
-  </section>
+  <?php
+  $pageHero = [
+    'key' => 'categories',
+    'title' => 'All Categories',
+    'subtitle' => 'Premium quality printing for every need.',
+    'eyebrow' => 'Shop by Category',
+    'breadcrumbs' => [
+      ['label' => 'Home', 'url' => '/'],
+      ['label' => 'All Categories', 'url' => null],
+    ],
+    'fallback_image' => '/assets/img/categories/all-categories-hero.svg',
+  ];
+  include INCLUDE_PATH . '/partials/page-hero.php';
+  ?>
 
   <div class="container all-cat-content">
     <?php if (empty($activeCategories)): ?>

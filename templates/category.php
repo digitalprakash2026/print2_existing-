@@ -33,18 +33,21 @@ include INCLUDE_PATH . '/partials/header.php';
 ?>
 
 <main class="all-cat-page subcat-page">
-  <section class="all-cat-hero-banner" aria-labelledby="categoryTitle">
-    <div class="all-cat-hero-copy">
-      <nav class="all-cat-crumb" aria-label="Breadcrumb">
-        <a href="/">Home</a><span>›</span><a href="/categories">All Categories</a><span>›</span><span><?= htmlspecialchars($categoryName) ?></span>
-      </nav>
-      <h1 id="categoryTitle"><?= htmlspecialchars($categoryName) ?></h1>
-      <p><?= $categoryDescription !== '' ? htmlspecialchars($categoryDescription) : 'Premium quality printing products for every business need.' ?></p>
-    </div>
-    <div class="all-cat-hero-visual" aria-hidden="true">
-      <img src="/assets/img/categories/all-categories-hero.svg" alt="" loading="eager">
-    </div>
-  </section>
+  <?php
+  $pageHero = [
+    'key' => 'category_detail',
+    'title' => $categoryName,
+    'subtitle' => $categoryDescription !== '' ? $categoryDescription : 'Premium quality printing products for every business need.',
+    'eyebrow' => 'Product Category',
+    'breadcrumbs' => [
+      ['label' => 'Home', 'url' => '/'],
+      ['label' => 'All Categories', 'url' => '/categories'],
+      ['label' => $categoryName, 'url' => null],
+    ],
+    'fallback_image' => '/assets/img/categories/all-categories-hero.svg',
+  ];
+  include INCLUDE_PATH . '/partials/page-hero.php';
+  ?>
 
   <div class="container all-cat-content">
     <?php if (empty($products) && !$hasSelectedFilters): ?>

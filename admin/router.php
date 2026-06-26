@@ -64,6 +64,43 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
 \Approvals\ContentApprovalManager::ensureSchema();
 \Faq\FaqManager::ensureSchema();
 
+$ensurePageHeroesSchema = static function (): void {
+    try {
+        Database::query("CREATE TABLE IF NOT EXISTS page_heroes (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            page_key VARCHAR(120) NOT NULL UNIQUE,
+            title VARCHAR(180) NOT NULL,
+            description VARCHAR(400) NULL,
+            background_image VARCHAR(500) NULL,
+            fallback_image VARCHAR(500) NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $defaults = [
+            ['about', 'About Page', 'About page breadcrumb/title background', '/assets/images/sample-products/brochures/brochures-2.svg', 10],
+            ['contact', 'Contact Page', 'Contact page breadcrumb/title background', '/assets/images/sample-products/stationery/stationery-1.svg', 20],
+            ['blogs', 'Blog Page', 'Blog listing breadcrumb/title background', '/assets/images/sample-products/flyers/flyers-1.svg', 30],
+            ['categories', 'All Categories Page', 'All product categories background', '/assets/img/categories/all-categories-hero.svg', 40],
+            ['category_detail', 'Category Detail Pages', 'Product category listing background', '/assets/img/categories/all-categories-hero.svg', 50],
+            ['product_detail', 'Product Detail Pages', 'Product detail breadcrumb/title background', '/assets/images/sample-products/business-cards/business-cards-1.svg', 60],
+            ['portfolio', 'Portfolio Page', 'Portfolio breadcrumb/title background', '/assets/images/sample-products/brochures/brochures-2.svg', 70],
+        ];
+        foreach ($defaults as $hero) {
+            Database::query(
+                "INSERT INTO page_heroes (page_key, title, description, fallback_image, sort_order, is_active, created_at, updated_at)
+                 SELECT ?,?,?,?,?,1,NOW(),NOW() FROM DUAL
+                 WHERE NOT EXISTS (SELECT 1 FROM page_heroes WHERE page_key=? LIMIT 1)",
+                [$hero[0], $hero[1], $hero[2], $hero[3], $hero[4], $hero[0]]
+            );
+        }
+    } catch (\Throwable $e) {
+        error_log('Page hero schema unavailable: ' . $e->getMessage());
+    }
+};
+$ensurePageHeroesSchema();
+
 $ensurePortfolioSchema = static function (): void {
     try {
         Database::query("CREATE TABLE IF NOT EXISTS portfolio_categories (
@@ -218,6 +255,44 @@ if (str_starts_with($uri, '/admin/api/')) {
             $i++;
         }
     };
+
+
+    if ($uri === '/admin/api/page-heroes' && $method === 'GET') {
+        try {
+            $rows = Database::rows("SELECT * FROM page_heroes ORDER BY sort_order ASC, title ASC");
+            json(['ok'=>true,'heroes'=>$rows]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Page heroes table unavailable','heroes'=>[]], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/page-heroes/([a-z0-9_\-]+)$#', $uri, $m) && $method === 'PUT') {
+        $key = (string)$m[1];
+        $background = trim((string)($body['background_image'] ?? ''));
+        try {
+            Database::query("UPDATE page_heroes SET background_image=?, is_active=?, updated_at=NOW() WHERE page_key=?", [$background, (int)($body['is_active'] ?? 1), $key]);
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not save page hero'], 500);
+        }
+    }
+    if ($uri === '/admin/api/page-heroes/upload' && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 8 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 8MB'], 400);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $dir = PUBLIC_PATH . '/uploads/page-heroes/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'page_hero_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        json(['ok'=>true,'path'=>'/uploads/page-heroes/' . $name]);
+    }
 
     if ($uri === '/admin/api/faqs' && $method === 'GET') {
         json(['ok' => true, 'faqs' => \Faq\FaqManager::all(), 'page_labels' => \Faq\FaqManager::PAGE_LABELS]);
@@ -2072,6 +2147,7 @@ $adminPage = match(true) {
     $uri === '/admin/categories' => 'admin/categories',
     $uri === '/admin/media'      => 'admin/media',
     $uri === '/admin/portfolio'  => 'admin/portfolio',
+    $uri === '/admin/page-heroes' => 'admin/page-heroes',
     $uri === '/admin/portfolio/new' => 'admin/portfolio-new',
     $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/banners'    => 'admin/banners',

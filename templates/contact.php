@@ -38,28 +38,20 @@ include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 ?>
 <main class="contact-showcase-page">
-  <section class="contact-showcase-hero">
-    <div class="contact-showcase-container contact-hero-grid">
-      <div class="contact-hero-copy">
-        <h1>Contact Us</h1>
-        <h2>We’d love to hear from you!</h2>
-        <p>Have a question, need a quote, or want to discuss your printing needs? Our team is here to help you every step of the way.</p>
-        <div class="contact-hero-features" aria-label="Contact support highlights">
-          <div><i class="fa-solid fa-headset" aria-hidden="true"></i><span><strong>Quick Response</strong><small>We reply within 24 hours</small></span></div>
-          <div><i class="fa-solid fa-shield-heart" aria-hidden="true"></i><span><strong>Trusted Support</strong><small>We’re here to help</small></span></div>
-          <div><i class="fa-regular fa-thumbs-up" aria-hidden="true"></i><span><strong>100% Satisfaction</strong><small>Your happiness matters</small></span></div>
-        </div>
-      </div>
-      <div class="contact-hero-visual" aria-label="RCS Print contact visual">
-        <div class="contact-hero-paper">
-          <strong><span class="rcs-word"><span>R</span><span>C</span><span>S</span></span></strong>
-          <small>PRINT</small>
-          <em>Your Brand<br>Our Passion<br>Perfect Impact</em>
-        </div>
-        <div class="contact-hero-plant" aria-hidden="true"><span></span></div>
-      </div>
-    </div>
-  </section>
+  <?php
+  $pageHero = [
+    'key' => 'contact',
+    'title' => 'Contact Us',
+    'subtitle' => 'Have a question, need a quote, or want to discuss your printing needs? Our team is here to help.',
+    'eyebrow' => 'We’d Love to Hear From You',
+    'breadcrumbs' => [
+      ['label' => 'Home', 'url' => '/'],
+      ['label' => 'Contact', 'url' => null],
+    ],
+    'fallback_image' => '/assets/images/sample-products/stationery/stationery-1.svg',
+  ];
+  include INCLUDE_PATH . '/partials/page-hero.php';
+  ?>
 
   <section class="contact-main-section">
     <div class="contact-showcase-container contact-main-grid">
