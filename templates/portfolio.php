@@ -44,19 +44,20 @@ $portfolioItems = is_array($portfolioItems ?? null) ? $portfolioItems : $fallbac
 $portfolioCategory = trim((string)($portfolioCategory ?? ''));
 $portfolioPage = max(1, (int)($portfolioPage ?? 1));
 $portfolioTotalPages = max(1, (int)($portfolioTotalPages ?? 1));
-$portfolioPrimarySlugs = ['visiting-card', 'brochure', 'flyer', 'calender', 'rough-pad', 'flex-banner'];
-$portfolioCategoryBySlug = [];
-foreach ($portfolioCategories as $cat) {
+$portfolioPrimaryCategories = [
+  ['label' => 'Visiting Card', 'name' => 'Visiting Card', 'slug' => 'visiting-card', 'icon' => 'fa-id-card-clip'],
+  ['label' => 'Brochure', 'name' => 'Brochure', 'slug' => 'brochure', 'icon' => 'fa-images'],
+  ['label' => 'Flyer', 'name' => 'Flyer', 'slug' => 'flyer', 'icon' => 'fa-file-image'],
+  ['label' => 'Calender', 'name' => 'Calender', 'slug' => 'calender', 'icon' => 'fa-calendar-days'],
+  ['label' => 'Rough Pad', 'name' => 'Rough Pad', 'slug' => 'rough-pad', 'icon' => 'fa-note-sticky'],
+  ['label' => 'Flex Banner', 'name' => 'Flex Banner', 'slug' => 'flex-banner', 'icon' => 'fa-panorama'],
+];
+$portfolioPrimarySlugs = array_map(static fn($cat) => (string)$cat['slug'], $portfolioPrimaryCategories);
+$portfolioPrimaryNameKeys = ['visiting card', 'brochure', 'flyer', 'calender', 'calendar', 'rough pad', 'flex banner'];
+$portfolioOtherCategories = array_values(array_filter($portfolioCategories, static function ($cat) use ($portfolioPrimarySlugs, $portfolioPrimaryNameKeys): bool {
   $slug = (string)($cat['slug'] ?? '');
-  if ($slug !== '') $portfolioCategoryBySlug[$slug] = $cat;
-}
-$portfolioPrimaryCategories = [];
-foreach ($portfolioPrimarySlugs as $slug) {
-  if (isset($portfolioCategoryBySlug[$slug])) $portfolioPrimaryCategories[] = $portfolioCategoryBySlug[$slug];
-}
-$portfolioOtherCategories = array_values(array_filter($portfolioCategories, static function ($cat) use ($portfolioPrimarySlugs): bool {
-  $slug = (string)($cat['slug'] ?? '');
-  return $slug !== '' && !in_array($slug, $portfolioPrimarySlugs, true);
+  $nameKey = strtolower(trim((string)($cat['name'] ?? $cat['label'] ?? '')));
+  return $slug !== '' && !in_array($slug, $portfolioPrimarySlugs, true) && !in_array($nameKey, $portfolioPrimaryNameKeys, true);
 }));
 ?>
 
@@ -137,8 +138,7 @@ $portfolioOtherCategories = array_values(array_filter($portfolioCategories, stat
               <span><i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i> View Large</span>
             </button>
             <div class="portfolio-card-body">
-              <h3><?= htmlspecialchars($itemTitle, ENT_QUOTES, 'UTF-8') ?></h3>
-              <p><i class="fa-regular fa-folder-open" aria-hidden="true"></i><?= htmlspecialchars($itemCategory, ENT_QUOTES, 'UTF-8') ?></p>
+              <h3><?= htmlspecialchars($itemCategory, ENT_QUOTES, 'UTF-8') ?></h3>
             </div>
           </article>
         <?php endforeach; ?>
