@@ -9,7 +9,11 @@ $bizPhone = htmlspecialchars($bizPhoneRaw, ENT_QUOTES, 'UTF-8');
 $bizPhoneHref = htmlspecialchars(preg_replace('/\D+/', '', $bizPhoneRaw), ENT_QUOTES, 'UTF-8');
 $bizWa = htmlspecialchars($settingsMap['biz_whatsapp'] ?? '919876543210', ENT_QUOTES, 'UTF-8');
 $bizEmail = htmlspecialchars($settingsMap['biz_email'] ?? 'info@rcsprint.in', ENT_QUOTES, 'UTF-8');
-$bizAddr = htmlspecialchars($settingsMap['biz_address'] ?? '150ft Ring Road, Rajkot - 360005, Gujarat, India', ENT_QUOTES, 'UTF-8');
+$bizAddrRaw = trim((string)($settingsMap['biz_address'] ?? '150ft Ring Road, Rajkot - 360005, Gujarat, India'));
+$bizAddr = htmlspecialchars($bizAddrRaw, ENT_QUOTES, 'UTF-8');
+$mapQuery = trim(($settingsMap['biz_name'] ?? 'RCS Graphic') . ' ' . ($bizAddrRaw ?: 'Rajkot Gujarat'));
+$mapsSearchUrl = 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($mapQuery);
+$mapsEmbedUrl = 'https://maps.google.com/maps?q=' . rawurlencode($mapQuery) . '&output=embed';
 $waText = rawurlencode('Hello RCS Print, I need help with a printing requirement.');
 $contactFaqs = [];
 try { $contactFaqs = \Faq\FaqManager::listByPage('contact'); } catch (\Throwable) { $contactFaqs = []; }
@@ -99,21 +103,25 @@ include INCLUDE_PATH . '/partials/header.php';
     <div class="contact-showcase-container">
       <div class="contact-section-title">
         <h2>Our Location</h2>
-        <a href="https://www.google.com/maps/search/?api=1&query=<?= rawurlencode($settingsMap['biz_address'] ?? 'Rajkot Gujarat') ?>" target="_blank" rel="noopener"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Get Directions</a>
+        <a href="<?= htmlspecialchars($mapsSearchUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Get Directions</a>
       </div>
       <div class="contact-map-card">
+        <iframe class="contact-map-embed"
+                src="<?= htmlspecialchars($mapsEmbedUrl, ENT_QUOTES, 'UTF-8') ?>"
+                title="<?= $bizName ?> location map"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                allowfullscreen></iframe>
         <div class="contact-map-info">
           <h3><?= $bizName ?></h3>
           <p><?= $bizAddr ?></p>
           <ul>
-            <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Landmark: Near Crystal Mall</li>
             <li><i class="fa-solid fa-phone" aria-hidden="true"></i> Phone: <?= $bizPhone ?></li>
             <li><i class="fa-solid fa-envelope" aria-hidden="true"></i> Email: <?= $bizEmail ?></li>
             <li><i class="fa-solid fa-clock" aria-hidden="true"></i> Mon - Sat: 10:00 AM - 7:00 PM</li>
           </ul>
-          <a href="https://www.google.com/maps/search/?api=1&query=<?= rawurlencode($settingsMap['biz_address'] ?? 'Rajkot Gujarat') ?>" target="_blank" rel="noopener">View on Google Maps</a>
+          <a href="<?= htmlspecialchars($mapsSearchUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">View on Google Maps</a>
         </div>
-        <div class="contact-map-pin" aria-hidden="true"><i class="fa-solid fa-location-dot"></i><span>Rajkot</span></div>
       </div>
     </div>
   </section>
