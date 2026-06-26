@@ -98,19 +98,6 @@ $ensurePortfolioSchema = static function (): void {
             INDEX idx_portfolio_items_category (category_id),
             CONSTRAINT fk_portfolio_items_category FOREIGN KEY (category_id) REFERENCES portfolio_categories(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-        Database::query("CREATE TABLE IF NOT EXISTS portfolio_item_images (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            portfolio_item_id INT NOT NULL,
-            image_path VARCHAR(500) NOT NULL,
-            image_alt VARCHAR(255) NULL,
-            caption VARCHAR(255) NULL,
-            sort_order INT NOT NULL DEFAULT 0,
-            is_active TINYINT(1) NOT NULL DEFAULT 1,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_portfolio_images_item (portfolio_item_id, sort_order),
-            CONSTRAINT fk_portfolio_images_item FOREIGN KEY (portfolio_item_id) REFERENCES portfolio_items(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
         $portfolioCategoryColumns = [
             'description' => "ALTER TABLE portfolio_categories ADD COLUMN description TEXT NULL AFTER icon",
             'hero_image' => "ALTER TABLE portfolio_categories ADD COLUMN hero_image VARCHAR(500) NULL AFTER description",
@@ -124,13 +111,15 @@ $ensurePortfolioSchema = static function (): void {
             } catch (\Throwable) {}
         }
         $defaults = [
-            ['Business Cards','business-cards','fa-id-card-clip',10],
-            ['Flyers','flyers','fa-file-image',20],
-            ['Brochures','brochures','fa-images',30],
-            ['Posters','posters','fa-newspaper',40],
-            ['Stationery','stationery','fa-file-lines',50],
-            ['Packaging','packaging','fa-cube',60],
-            ['Others','others','fa-ellipsis',70],
+            ['Visiting Card','visiting-card','fa-id-card-clip',10],
+            ['Brochure','brochure','fa-images',20],
+            ['Flyer','flyer','fa-file-image',30],
+            ['Calender','calender','fa-calendar-days',40],
+            ['Rough Pad','rough-pad','fa-note-sticky',50],
+            ['Flex Banner','flex-banner','fa-panorama',60],
+            ['Poster','poster','fa-newspaper',70],
+            ['Stationery','stationery','fa-file-lines',80],
+            ['Packaging','packaging','fa-cube',90],
         ];
         foreach ($defaults as $cat) {
             Database::query(
@@ -1485,31 +1474,6 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok'=>true,'item'=>$item]);
     }
 
-    if (preg_match('#^/admin/api/portfolio/(\d+)/images$#', $uri, $m) && $method === 'GET') {
-        $images = Database::rows("SELECT * FROM portfolio_item_images WHERE portfolio_item_id=? ORDER BY sort_order ASC, id ASC", [(int)$m[1]]);
-        json(['ok'=>true,'images'=>$images]);
-    }
-    if (preg_match('#^/admin/api/portfolio/(\d+)/images$#', $uri, $m) && $method === 'POST') {
-        $itemId = (int)$m[1];
-        $imagePath = trim((string)($body['image_path'] ?? ''));
-        if ($imagePath === '') json(['ok'=>false,'msg'=>'Gallery image path is required'], 400);
-        $id = Database::insert(
-            "INSERT INTO portfolio_item_images (portfolio_item_id, image_path, image_alt, caption, sort_order, is_active, created_at, updated_at) VALUES (?,?,?,?,?,?,NOW(),NOW())",
-            [$itemId, $imagePath, trim((string)($body['image_alt'] ?? '')), trim((string)($body['caption'] ?? '')), (int)($body['sort_order'] ?? 0), (int)($body['is_active'] ?? 1)]
-        );
-        json(['ok'=>true,'id'=>$id]);
-    }
-    if (preg_match('#^/admin/api/portfolio/images/(\d+)$#', $uri, $m) && $method === 'PUT') {
-        Database::query(
-            "UPDATE portfolio_item_images SET image_path=?, image_alt=?, caption=?, sort_order=?, is_active=?, updated_at=NOW() WHERE id=?",
-            [trim((string)($body['image_path'] ?? '')), trim((string)($body['image_alt'] ?? '')), trim((string)($body['caption'] ?? '')), (int)($body['sort_order'] ?? 0), (int)($body['is_active'] ?? 1), (int)$m[1]]
-        );
-        json(['ok'=>true]);
-    }
-    if (preg_match('#^/admin/api/portfolio/images/(\d+)$#', $uri, $m) && $method === 'DELETE') {
-        Database::query("DELETE FROM portfolio_item_images WHERE id=?", [(int)$m[1]]);
-        json(['ok'=>true]);
-    }
     if ($uri === '/admin/api/portfolio' && $method === 'POST') {
         $title = trim((string)($body['title'] ?? ''));
         if ($title === '') json(['ok'=>false,'msg'=>'Portfolio title is required'], 400);

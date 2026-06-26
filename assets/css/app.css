@@ -14008,29 +14008,23 @@ body:not(.admin-shell) .blog-view-all {
 }
 .portfolio-filter { text-decoration:none; }
 .portfolio-empty-state { margin:8px 0 24px; padding:34px; border:1px dashed var(--pf-line); border-radius:18px; background:#fff; color:#4b5563; font-weight:600; text-align:center; }
-.portfolio-linked-card { color:inherit; text-decoration:none; transition:transform .18s ease, box-shadow .18s ease; }
-.portfolio-linked-card:hover { transform:translateY(-4px); box-shadow:0 20px 42px rgba(15,23,42,.11); }
-.portfolio-detail-hero { padding:54px 0; background:radial-gradient(circle at 78% 12%, rgba(255,122,24,.14), transparent 20%), linear-gradient(135deg,#fbfbff,#fff); border-bottom:1px solid var(--pf-line); }
-.portfolio-detail-hero-grid { display:grid; grid-template-columns:minmax(0, .9fr) minmax(360px, .8fr); gap:54px; align-items:center; }
-.portfolio-breadcrumb { display:flex; flex-wrap:wrap; gap:10px; align-items:center; color:#64748b; font-size:14px; font-weight:700; margin:0 0 18px; }
-.portfolio-breadcrumb a { color:#4c1d95; text-decoration:none; }
-.portfolio-detail-hero h1 { margin:0 0 16px; color:#111322; font-size:58px; line-height:1.05; letter-spacing:-.05em; font-weight:800; }
-.portfolio-detail-hero h1 span { color:var(--pf-orange); }
-.portfolio-detail-hero p:not(.portfolio-breadcrumb) { margin:0; color:#334155; font-size:20px; line-height:1.55; font-weight:500; }
-.portfolio-detail-hero-image { min-height:360px; border-radius:28px; background:#fff; box-shadow:0 28px 70px rgba(15,23,42,.13); overflow:hidden; }
-.portfolio-detail-hero-image img { width:100%; height:100%; min-height:360px; object-fit:cover; display:block; }
-.portfolio-detail-meta { display:flex; flex-wrap:wrap; gap:10px; margin-top:26px; }
-.portfolio-detail-meta span,.portfolio-tags span { display:inline-flex; align-items:center; gap:8px; border-radius:999px; padding:9px 13px; background:#f4f1ff; color:#4c1d95; font-size:13px; font-weight:800; }
-.portfolio-detail-content,.portfolio-gallery-section { padding:42px 0; background:#fff; }
-.portfolio-detail-layout { display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:34px; align-items:start; }
-.portfolio-detail-copy,.portfolio-detail-card { border:1px solid var(--pf-line); border-radius:22px; background:#fff; box-shadow:0 16px 40px rgba(15,23,42,.055); padding:28px; }
-.portfolio-detail-copy h2,.portfolio-detail-card h3 { margin:0 0 12px; color:#111322; font-weight:800; letter-spacing:-.03em; }
-.portfolio-detail-copy p,.portfolio-detail-card p { color:#475569; font-size:16px; line-height:1.7; margin:0; }
-.portfolio-tags { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
-.portfolio-detail-card a { margin-top:20px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; padding:0 20px; border-radius:10px; background:var(--pf-orange); color:#fff; font-weight:800; text-decoration:none; }
-.portfolio-gallery-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px; }
-.portfolio-gallery-grid figure { margin:0; border-radius:24px; overflow:hidden; background:#fff; border:1px solid var(--pf-line); box-shadow:0 18px 46px rgba(15,23,42,.08); }
-.portfolio-gallery-grid img { width:100%; height:430px; object-fit:cover; display:block; }
-.portfolio-gallery-grid figcaption { padding:14px 18px; color:#334155; font-weight:700; }
-.portfolio-related-work { padding-top:16px; }
-@media(max-width:900px){.portfolio-detail-hero-grid,.portfolio-detail-layout{grid-template-columns:1fr}.portfolio-detail-hero h1{font-size:42px}.portfolio-gallery-grid{grid-template-columns:1fr}.portfolio-gallery-grid img{height:300px}}
+
+.portfolio-filter-more { position:relative; }
+.portfolio-filter-more > .portfolio-filter { width:100%; height:100%; }
+.portfolio-filter-more.active > .portfolio-filter { color:#fff; border-color:transparent; background:linear-gradient(135deg,var(--pf-purple),#35106f); box-shadow:0 18px 34px rgba(75,20,140,.24); }
+.portfolio-filter-menu { position:absolute; left:0; right:0; top:calc(100% + 10px); z-index:20; display:none; min-width:210px; padding:10px; border:1px solid var(--pf-line); border-radius:14px; background:#fff; box-shadow:0 22px 48px rgba(15,23,42,.16); }
+.portfolio-filter-more:hover .portfolio-filter-menu,.portfolio-filter-more:focus-within .portfolio-filter-menu { display:grid; gap:6px; }
+.portfolio-filter-menu a { padding:10px 12px; border-radius:10px; color:#111827; font-size:13px; font-weight:800; text-decoration:none; }
+.portfolio-filter-menu a:hover,.portfolio-filter-menu a.active { background:#f4f1ff; color:#4c1d95; }
+.portfolio-gallery-card .portfolio-card-img { position:relative; width:100%; border:0; padding:0; cursor:pointer; overflow:hidden; }
+.portfolio-gallery-card .portfolio-card-img span { position:absolute; inset:auto 14px 14px; display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:38px; border-radius:999px; background:rgba(17,19,34,.82); color:#fff; font-size:12px; font-weight:800; opacity:0; transform:translateY(8px); transition:.18s ease; }
+.portfolio-gallery-card .portfolio-card-img:hover span { opacity:1; transform:translateY(0); }
+.portfolio-lightbox { position:fixed; inset:0; z-index:5000; display:none; place-items:center; padding:28px; background:rgba(9,12,24,.82); backdrop-filter:blur(8px); }
+.portfolio-lightbox.open { display:grid; }
+body.portfolio-lightbox-open { overflow:hidden; }
+.portfolio-lightbox-dialog { width:min(1100px, 94vw); max-height:90vh; border-radius:24px; background:#fff; overflow:hidden; box-shadow:0 30px 90px rgba(0,0,0,.36); }
+.portfolio-lightbox-dialog img { width:100%; max-height:78vh; object-fit:contain; display:block; background:#f8fafc; }
+.portfolio-lightbox-caption { display:flex; justify-content:space-between; gap:16px; padding:14px 18px; color:#111827; font-weight:800; }
+.portfolio-lightbox-caption span { color:#6b7280; font-size:13px; }
+.portfolio-lightbox-close { position:fixed; top:22px; right:24px; width:48px; height:48px; border:0; border-radius:50%; display:grid; place-items:center; background:#fff; color:#111827; font-size:22px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.25); }
+@media(max-width:760px){.portfolio-filter-menu{position:static; margin-top:10px}.portfolio-lightbox{padding:14px}.portfolio-lightbox-close{top:12px;right:12px}.portfolio-lightbox-caption{display:grid}}

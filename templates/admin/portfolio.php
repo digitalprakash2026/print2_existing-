@@ -69,7 +69,7 @@ async function loadPortfolio(){
           <p>${esc(item.short_description || 'No short description added yet.')}</p>
           <div class="portfolio-admin-meta"><span><i class="fa-regular fa-folder-open"></i> ${esc(item.category_name || 'Uncategorized')}</span><span>Sort: ${esc(item.sort_order)}</span>${item.is_featured == 1 ? '<span>Featured</span>' : ''}</div>
         </div>
-        <div class="portfolio-admin-actions"><a class="btn sm" href="/portfolio/work/${esc(item.slug)}" target="_blank" rel="noopener">View</a><a class="btn sm primary" href="/admin/portfolio/edit/${item.id}">Edit</a><button class="btn sm danger" onclick="deletePortfolio(${item.id})">Delete</button></div>
+        <div class="portfolio-admin-actions"><a class="btn sm" href="/portfolio?category=${esc(item.category_slug || '')}" target="_blank" rel="noopener">View</a><a class="btn sm primary" href="/admin/portfolio/edit/${item.id}">Edit</a><button class="btn sm danger" onclick="deletePortfolio(${item.id})">Delete</button></div>
       </article>`).join('') : '<div class="adm-empty">No portfolio items yet. Add your first work.</div>';
   } catch (e) { box.innerHTML = `<div class="adm-empty">${esc(e.message)}</div>`; }
 }

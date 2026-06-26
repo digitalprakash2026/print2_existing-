@@ -19,33 +19,46 @@ $bizWa = htmlspecialchars(preg_replace('/\D+/', '', (string)($settingsMap['biz_w
 $waText = rawurlencode('Hello RCS Print, I want to discuss a portfolio-style print project.');
 
 $fallbackPortfolioCategories = [
-  ['label' => 'Business Cards', 'slug' => 'business-cards', 'icon' => 'fa-id-card-clip'],
-  ['label' => 'Flyers', 'slug' => 'flyers', 'icon' => 'fa-file-image'],
-  ['label' => 'Brochures', 'slug' => 'brochures', 'icon' => 'fa-images'],
-  ['label' => 'Posters', 'slug' => 'posters', 'icon' => 'fa-newspaper'],
-  ['label' => 'Stationery', 'slug' => 'stationery', 'icon' => 'fa-file-lines'],
-  ['label' => 'Packaging', 'slug' => 'packaging', 'icon' => 'fa-cube'],
-  ['label' => 'Others', 'slug' => 'others', 'icon' => 'fa-ellipsis'],
+  ['label' => 'Visiting Card', 'name' => 'Visiting Card', 'slug' => 'visiting-card', 'icon' => 'fa-id-card-clip'],
+  ['label' => 'Brochure', 'name' => 'Brochure', 'slug' => 'brochure', 'icon' => 'fa-images'],
+  ['label' => 'Flyer', 'name' => 'Flyer', 'slug' => 'flyer', 'icon' => 'fa-file-image'],
+  ['label' => 'Calender', 'name' => 'Calender', 'slug' => 'calender', 'icon' => 'fa-calendar-days'],
+  ['label' => 'Rough Pad', 'name' => 'Rough Pad', 'slug' => 'rough-pad', 'icon' => 'fa-note-sticky'],
+  ['label' => 'Flex Banner', 'name' => 'Flex Banner', 'slug' => 'flex-banner', 'icon' => 'fa-panorama'],
+  ['label' => 'Poster', 'name' => 'Poster', 'slug' => 'poster', 'icon' => 'fa-newspaper'],
+  ['label' => 'Stationery', 'name' => 'Stationery', 'slug' => 'stationery', 'icon' => 'fa-file-lines'],
+  ['label' => 'Packaging', 'name' => 'Packaging', 'slug' => 'packaging', 'icon' => 'fa-cube'],
 ];
 $fallbackPortfolioItems = [
-  ['title' => 'Creative Business Card Design', 'category' => 'Business Cards', 'category_slug' => 'business-cards', 'image' => '/assets/images/sample-products/business-cards/business-cards-1.svg'],
-  ['title' => 'Corporate Flyer Design', 'category' => 'Flyers', 'category_slug' => 'flyers', 'image' => '/assets/images/sample-products/flyers/flyers-1.svg'],
-  ['title' => 'Company Brochure Design', 'category' => 'Brochures', 'category_slug' => 'brochures', 'image' => '/assets/images/sample-products/brochures/brochures-1.svg'],
-  ['title' => 'Event Poster Design', 'category' => 'Posters', 'category_slug' => 'posters', 'image' => '/assets/images/sample-products/posters/posters-1.svg'],
-  ['title' => 'Premium Diary Design', 'category' => 'Stationery', 'category_slug' => 'stationery', 'image' => '/assets/images/sample-products/stationery/stationery-1.svg'],
-  ['title' => 'Custom Calendar Design', 'category' => 'Stationery', 'category_slug' => 'stationery', 'image' => '/assets/images/sample-products/stationery/stationery-2.svg'],
-  ['title' => 'Corporate Stationery', 'category' => 'Stationery', 'category_slug' => 'stationery', 'image' => '/assets/images/sample-products/stationery/stationery-3.svg'],
+  ['title' => 'Creative Visiting Card Design', 'category' => 'Visiting Card', 'category_slug' => 'visiting-card', 'image' => '/assets/images/sample-products/business-cards/business-cards-1.svg'],
+  ['title' => 'Company Brochure Design', 'category' => 'Brochure', 'category_slug' => 'brochure', 'image' => '/assets/images/sample-products/brochures/brochures-1.svg'],
+  ['title' => 'Corporate Flyer Design', 'category' => 'Flyer', 'category_slug' => 'flyer', 'image' => '/assets/images/sample-products/flyers/flyers-1.svg'],
+  ['title' => 'Custom Calendar Design', 'category' => 'Calender', 'category_slug' => 'calender', 'image' => '/assets/images/sample-products/stationery/stationery-2.svg'],
+  ['title' => 'Premium Rough Pad Design', 'category' => 'Rough Pad', 'category_slug' => 'rough-pad', 'image' => '/assets/images/sample-products/stationery/stationery-1.svg'],
+  ['title' => 'Roll-Up Flex Banner Design', 'category' => 'Flex Banner', 'category_slug' => 'flex-banner', 'image' => '/assets/images/sample-products/banners/banners-1.svg'],
+  ['title' => 'Event Poster Design', 'category' => 'Poster', 'category_slug' => 'poster', 'image' => '/assets/images/sample-products/posters/posters-1.svg'],
   ['title' => 'Product Packaging Design', 'category' => 'Packaging', 'category_slug' => 'packaging', 'image' => '/assets/images/sample-products/business-cards/business-cards-3.svg'],
-  ['title' => 'Shopping Bag Design', 'category' => 'Packaging', 'category_slug' => 'packaging', 'image' => '/assets/images/sample-products/banners/banners-3.svg'],
-  ['title' => 'Restaurant Menu Design', 'category' => 'Others', 'category_slug' => 'others', 'image' => '/assets/images/sample-products/pamphlets/pamphlets-1.svg'],
-  ['title' => 'Roll-Up Banner Design', 'category' => 'Others', 'category_slug' => 'others', 'image' => '/assets/images/sample-products/banners/banners-1.svg'],
-  ['title' => 'Wedding Invitation Design', 'category' => 'Others', 'category_slug' => 'others', 'image' => '/assets/images/sample-products/brochures/brochures-4.svg'],
 ];
 $portfolioCategories = is_array($portfolioCategories ?? null) ? $portfolioCategories : $fallbackPortfolioCategories;
 $portfolioItems = is_array($portfolioItems ?? null) ? $portfolioItems : $fallbackPortfolioItems;
 $portfolioCategory = trim((string)($portfolioCategory ?? ''));
 $portfolioPage = max(1, (int)($portfolioPage ?? 1));
-$portfolioTotalPages = max(1, (int)($portfolioTotalPages ?? 1));?>
+$portfolioTotalPages = max(1, (int)($portfolioTotalPages ?? 1));
+$portfolioPrimarySlugs = ['visiting-card', 'brochure', 'flyer', 'calender', 'rough-pad', 'flex-banner'];
+$portfolioCategoryBySlug = [];
+foreach ($portfolioCategories as $cat) {
+  $slug = (string)($cat['slug'] ?? '');
+  if ($slug !== '') $portfolioCategoryBySlug[$slug] = $cat;
+}
+$portfolioPrimaryCategories = [];
+foreach ($portfolioPrimarySlugs as $slug) {
+  if (isset($portfolioCategoryBySlug[$slug])) $portfolioPrimaryCategories[] = $portfolioCategoryBySlug[$slug];
+}
+$portfolioOtherCategories = array_values(array_filter($portfolioCategories, static function ($cat) use ($portfolioPrimarySlugs): bool {
+  $slug = (string)($cat['slug'] ?? '');
+  return $slug !== '' && !in_array($slug, $portfolioPrimarySlugs, true);
+}));
+?>
 
 <main class="portfolio-page">
   <section class="portfolio-hero" aria-labelledby="portfolioHeroTitle">
@@ -81,17 +94,32 @@ $portfolioTotalPages = max(1, (int)($portfolioTotalPages ?? 1));?>
           <i class="fa-solid fa-border-all" aria-hidden="true"></i>
           <span>All Works</span>
         </a>
-        <?php foreach ($portfolioCategories as $cat): ?>
+        <?php foreach ($portfolioPrimaryCategories as $cat): ?>
           <?php
             $catLabel = (string)($cat['label'] ?? $cat['name'] ?? 'Category');
             $catSlug = (string)($cat['slug'] ?? '');
             $catIcon = (string)($cat['icon'] ?? 'fa-folder-open');
           ?>
-          <a href="/portfolio/category/<?= rawurlencode($catSlug) ?>" class="portfolio-filter <?= $portfolioCategory === $catSlug ? 'active' : '' ?>">
+          <a href="/portfolio?category=<?= rawurlencode($catSlug) ?>" class="portfolio-filter <?= $portfolioCategory === $catSlug ? 'active' : '' ?>">
             <i class="fa-solid <?= htmlspecialchars($catIcon, ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i>
             <span><?= htmlspecialchars($catLabel, ENT_QUOTES, 'UTF-8') ?></span>
           </a>
         <?php endforeach; ?>
+        <?php if ($portfolioOtherCategories): ?>
+          <?php $otherActive = in_array($portfolioCategory, array_map(static fn($cat) => (string)($cat['slug'] ?? ''), $portfolioOtherCategories), true); ?>
+          <div class="portfolio-filter-more <?= $otherActive ? 'active' : '' ?>">
+            <button type="button" class="portfolio-filter" aria-haspopup="true" aria-expanded="false">
+              <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
+              <span>Others</span>
+            </button>
+            <div class="portfolio-filter-menu" role="menu">
+              <?php foreach ($portfolioOtherCategories as $cat): ?>
+                <?php $catLabel = (string)($cat['label'] ?? $cat['name'] ?? 'Category'); $catSlug = (string)($cat['slug'] ?? ''); ?>
+                <a role="menuitem" href="/portfolio?category=<?= rawurlencode($catSlug) ?>" class="<?= $portfolioCategory === $catSlug ? 'active' : '' ?>"><?= htmlspecialchars($catLabel, ENT_QUOTES, 'UTF-8') ?></a>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php endif; ?>
       </div>
 
       <?php if ($portfolioItems): ?>
@@ -102,15 +130,17 @@ $portfolioTotalPages = max(1, (int)($portfolioTotalPages ?? 1));?>
             $itemTitle = (string)($item['title'] ?? 'Portfolio Work');
             $itemAlt = (string)($item['image_alt'] ?? $itemTitle);
             $itemCategory = (string)($item['category'] ?? $item['category_name'] ?? 'Portfolio');
-            $itemSlug = (string)($item['slug'] ?? '');
           ?>
-          <?= $itemSlug !== '' ? '<a' : '<article' ?> class="portfolio-card <?= $itemSlug !== '' ? 'portfolio-linked-card' : '' ?>"<?= $itemSlug !== '' ? ' href="/portfolio/work/' . rawurlencode($itemSlug) . '"' : '' ?>>
-            <div class="portfolio-card-img"><img src="<?= htmlspecialchars($itemImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($itemAlt, ENT_QUOTES, 'UTF-8') ?>" loading="lazy"></div>
+          <article class="portfolio-card portfolio-gallery-card">
+            <button class="portfolio-card-img portfolio-lightbox-trigger" type="button" data-full="<?= htmlspecialchars($itemImage, ENT_QUOTES, 'UTF-8') ?>" data-title="<?= htmlspecialchars($itemTitle, ENT_QUOTES, 'UTF-8') ?>" data-category="<?= htmlspecialchars($itemCategory, ENT_QUOTES, 'UTF-8') ?>">
+              <img src="<?= htmlspecialchars($itemImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($itemAlt, ENT_QUOTES, 'UTF-8') ?>" loading="lazy">
+              <span><i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i> View Large</span>
+            </button>
             <div class="portfolio-card-body">
               <h3><?= htmlspecialchars($itemTitle, ENT_QUOTES, 'UTF-8') ?></h3>
               <p><i class="fa-regular fa-folder-open" aria-hidden="true"></i><?= htmlspecialchars($itemCategory, ENT_QUOTES, 'UTF-8') ?></p>
             </div>
-          <?= $itemSlug !== '' ? '</a>' : '</article>' ?>
+          </article>
         <?php endforeach; ?>
       </div>
       <?php else: ?>
@@ -152,6 +182,36 @@ $portfolioTotalPages = max(1, (int)($portfolioTotalPages ?? 1));?>
       </div>
     </div>
   </section>
+
+  <div class="portfolio-lightbox" id="portfolioLightbox" aria-hidden="true">
+    <button class="portfolio-lightbox-close" type="button" aria-label="Close image gallery"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    <div class="portfolio-lightbox-dialog" role="dialog" aria-modal="true" aria-label="Portfolio image preview">
+      <img id="portfolioLightboxImage" src="" alt="">
+      <div class="portfolio-lightbox-caption"><strong id="portfolioLightboxTitle"></strong><span id="portfolioLightboxCategory"></span></div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const box = document.getElementById('portfolioLightbox');
+    const img = document.getElementById('portfolioLightboxImage');
+    const title = document.getElementById('portfolioLightboxTitle');
+    const category = document.getElementById('portfolioLightboxCategory');
+    const close = () => { box?.classList.remove('open'); box?.setAttribute('aria-hidden', 'true'); document.body.classList.remove('portfolio-lightbox-open'); };
+    document.querySelectorAll('.portfolio-lightbox-trigger').forEach(btn => btn.addEventListener('click', () => {
+      if (!box || !img) return;
+      img.src = btn.dataset.full || '';
+      img.alt = btn.dataset.title || 'Portfolio image';
+      if (title) title.textContent = btn.dataset.title || '';
+      if (category) category.textContent = btn.dataset.category || '';
+      box.classList.add('open');
+      box.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('portfolio-lightbox-open');
+    }));
+    box?.addEventListener('click', e => { if (e.target === box) close(); });
+    box?.querySelector('.portfolio-lightbox-close')?.addEventListener('click', close);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  })();
+  </script>
 </main>
 
 <?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
