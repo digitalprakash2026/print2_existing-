@@ -7,7 +7,7 @@ include __DIR__ . '/layout.php';
 <div class="adm-pt"><?= $couponEditId > 0 ? 'Edit Coupon' : 'Add Coupon' ?></div>
 <div class="fsec" style="max-width:820px">
   <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px"><div style="font-size:13px;color:var(--text2)">Create or update discount coupons on a dedicated page.</div><a class="btn btn-outline btn-sm" href="/admin/coupons">← Back to Coupons</a></div>
-  <div class="fg"><label>Coupon Code *</label><input class="fi" id="ec-code" placeholder="FIRST10" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase;font-family:monospace;font-weight:700;letter-spacing:1px"></div>
+  <div class="fg"><label>Coupon Code *</label><input class="fi" id="ec-code" placeholder="FIRST10" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase;font-family:var(--fn);font-weight:700;letter-spacing:1px"></div>
   <div class="fg"><label>Description</label><input class="fi" id="ec-desc" placeholder="10% off on first order"></div>
   <div class="f2"><div class="fg"><label>Discount Type</label><select class="fi fi-sel" id="ec-type"><option value="percent">Percentage (%)</option><option value="flat">Flat Amount (₹)</option></select></div><div class="fg"><label>Discount Value *</label><input type="number" class="fi" id="ec-val" placeholder="10"></div></div>
   <div class="f2"><div class="fg"><label>Min Order (₹)</label><input type="number" class="fi" id="ec-min" placeholder="0"></div><div class="fg"><label>Max Uses (0 = unlimited)</label><input type="number" class="fi" id="ec-uses" placeholder="0"></div></div>
