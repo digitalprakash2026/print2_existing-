@@ -172,21 +172,83 @@ if ($uri === '/' && $method === 'GET') {
 
 // Blogs Listing Page — /blogs
 if ($uri === '/blogs' && $method === 'GET') {
+    $blogPage = max(1, (int)($_GET['page'] ?? 1));
+    $blogSearch = trim((string)($_GET['search'] ?? ''));
+    $blogCategory = trim((string)($_GET['category'] ?? ''));
+    $blogsPerPage = 6;
+    $blogTotal = 0;
+    $blogTotalPages = 1;
+    $blogCategories = [];
+    $popularBlogs = [];
+    $featuredBlog = null;
+
     try {
-        $blogs = Database::rows(
-            "SELECT id,title,slug,excerpt,featured_image,image_alt,category,badge_theme,published_at
-             FROM blogs
-             WHERE is_active = 1
-             ORDER BY is_featured DESC, sort_order ASC, published_at DESC, id DESC"
-        );
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
+
+        $where = ['is_active = 1'];
+        $params = [];
+        if ($blogSearch !== '') {
+            $where[] = '(title LIKE ? OR excerpt LIKE ? OR category LIKE ?)';
+            $like = '%' . $blogSearch . '%';
+            array_push($params, $like, $like, $like);
+        }
+        if ($blogCategory !== '') {
+            $where[] = 'category = ?';
+            $params[] = $blogCategory;
+        }
+        $whereSql = implode(' AND ', $where);
+
+        $countRow = Database::row("SELECT COUNT(*) AS total FROM blogs WHERE $whereSql", $params);
+        $blogTotal = (int)($countRow['total'] ?? 0);
+        $blogTotalPages = max(1, (int)ceil($blogTotal / $blogsPerPage));
+        $blogPage = min($blogPage, $blogTotalPages);
+        $offset = ($blogPage - 1) * $blogsPerPage;
+
+        $blogs = Database::rows(
+            "SELECT id,title,slug,excerpt,featured_image,image_alt,category,badge_theme,author_name,published_at,is_featured
+             FROM blogs
+             WHERE $whereSql
+             ORDER BY is_featured DESC, sort_order ASC, published_at DESC, id DESC
+             LIMIT $blogsPerPage OFFSET $offset",
+            $params
+        );
+
+        $featuredBlog = Database::row(
+            "SELECT id,title,slug,excerpt,featured_image,image_alt,category,badge_theme,author_name,published_at
+             FROM blogs
+             WHERE is_active = 1
+             ORDER BY is_featured DESC, sort_order ASC, published_at DESC, id DESC
+             LIMIT 1"
+        );
+
+        $blogCategories = Database::rows(
+            "SELECT category, COUNT(*) AS total
+             FROM blogs
+             WHERE is_active = 1 AND category <> ''
+             GROUP BY category
+             ORDER BY total DESC, category ASC"
+        );
+
+        $popularBlogs = Database::rows(
+            "SELECT id,title,slug,featured_image,image_alt,category,published_at
+             FROM blogs
+             WHERE is_active = 1
+             ORDER BY is_featured DESC, published_at DESC, id DESC
+             LIMIT 6"
+        );
     } catch (\Throwable $e) {
         error_log('Blogs listing error: ' . $e->getMessage());
         $blogs = [];
         $settingsMap = [];
+        $blogCategories = [];
+        $popularBlogs = [];
+        $featuredBlog = null;
+        $blogTotal = 0;
+        $blogTotalPages = 1;
+        $blogPage = 1;
     }
-    view('blogs', compact('blogs', 'settingsMap'));
+    view('blogs', compact('blogs', 'settingsMap', 'featuredBlog', 'blogCategories', 'popularBlogs', 'blogSearch', 'blogCategory', 'blogPage', 'blogTotalPages', 'blogTotal'));
     exit;
 }
 
