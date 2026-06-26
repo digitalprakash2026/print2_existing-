@@ -87,7 +87,7 @@ $portfolioTotalPages = max(1, (int)($portfolioTotalPages ?? 1));?>
             $catSlug = (string)($cat['slug'] ?? '');
             $catIcon = (string)($cat['icon'] ?? 'fa-folder-open');
           ?>
-          <a href="/portfolio?category=<?= rawurlencode($catSlug) ?>" class="portfolio-filter <?= $portfolioCategory === $catSlug ? 'active' : '' ?>">
+          <a href="/portfolio/category/<?= rawurlencode($catSlug) ?>" class="portfolio-filter <?= $portfolioCategory === $catSlug ? 'active' : '' ?>">
             <i class="fa-solid <?= htmlspecialchars($catIcon, ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i>
             <span><?= htmlspecialchars($catLabel, ENT_QUOTES, 'UTF-8') ?></span>
           </a>
@@ -102,14 +102,15 @@ $portfolioTotalPages = max(1, (int)($portfolioTotalPages ?? 1));?>
             $itemTitle = (string)($item['title'] ?? 'Portfolio Work');
             $itemAlt = (string)($item['image_alt'] ?? $itemTitle);
             $itemCategory = (string)($item['category'] ?? $item['category_name'] ?? 'Portfolio');
+            $itemSlug = (string)($item['slug'] ?? '');
           ?>
-          <article class="portfolio-card">
+          <?= $itemSlug !== '' ? '<a' : '<article' ?> class="portfolio-card <?= $itemSlug !== '' ? 'portfolio-linked-card' : '' ?>"<?= $itemSlug !== '' ? ' href="/portfolio/work/' . rawurlencode($itemSlug) . '"' : '' ?>>
             <div class="portfolio-card-img"><img src="<?= htmlspecialchars($itemImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($itemAlt, ENT_QUOTES, 'UTF-8') ?>" loading="lazy"></div>
             <div class="portfolio-card-body">
               <h3><?= htmlspecialchars($itemTitle, ENT_QUOTES, 'UTF-8') ?></h3>
               <p><i class="fa-regular fa-folder-open" aria-hidden="true"></i><?= htmlspecialchars($itemCategory, ENT_QUOTES, 'UTF-8') ?></p>
             </div>
-          </article>
+          <?= $itemSlug !== '' ? '</a>' : '</article>' ?>
         <?php endforeach; ?>
       </div>
       <?php else: ?>
@@ -134,7 +135,7 @@ $portfolioTotalPages = max(1, (int)($portfolioTotalPages ?? 1));?>
 
   <section class="portfolio-usp" aria-label="RCS Print benefits">
     <div class="portfolio-container portfolio-usp-bar">
-      <article><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><div><h3>Fast Delivery</h3><p>On-time delivery always guaranteed.</p></div></article>
+      <article><i class="fa-solid fa-lightbulb" aria-hidden="true"></i><div><h3>Creative Print Solutions</h3><p>Smart ideas for standout print results.</p></div></article>
       <article><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i><div><h3>Free Design Support</h3><p>Professional design support at no extra cost.</p></div></article>
       <article><i class="fa-solid fa-bag-shopping" aria-hidden="true"></i><div><h3>Premium Quality</h3><p>Best quality materials and printing.</p></div></article>
       <article><i class="fa-solid fa-tags" aria-hidden="true"></i><div><h3>Affordable Pricing</h3><p>Low price with the best value.</p></div></article>

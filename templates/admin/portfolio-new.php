@@ -10,7 +10,7 @@ include __DIR__ . '/layout.php';
     <h1><?= $portfolioEditId ? 'Edit Portfolio Item' : 'Add Portfolio Item' ?></h1>
     <p class="adm-muted">Upload a strong visual, choose a category and control how this work appears publicly.</p>
   </div>
-  <div class="adm-head-actions"><a class="btn" href="/admin/portfolio">← Back to Portfolio</a></div>
+  <div class="adm-head-actions"><a class="btn" href="/admin/portfolio">← Back to Portfolio</a><button class="btn primary" type="submit" form="portfolioForm">Save Changes</button></div>
 </section>
 
 <form id="portfolioForm" class="card portfolio-editor-card">
@@ -40,9 +40,17 @@ include __DIR__ . '/layout.php';
         <label>Status<select id="is_active"><option value="1">Published</option><option value="0">Hidden</option></select></label>
       </div>
       <label class="switch-row"><input id="is_featured" type="checkbox"> <span>Feature this item first</span></label>
-      <div class="form-actions stacked"><button class="btn primary" type="submit">Save Portfolio Item</button><a class="btn" href="/portfolio" target="_blank" rel="noopener">View Public Portfolio</a></div>
+      <div class="form-actions stacked"><button class="btn primary portfolio-save-btn" type="submit">Save Portfolio Item</button><button class="btn portfolio-save-publish" type="button" onclick="publishAndSave()">Publish & Save</button><a class="btn" href="/portfolio" target="_blank" rel="noopener">View Public Portfolio</a></div>
     </aside>
   </div>
+  <?php if ($portfolioEditId): ?>
+  <section class="portfolio-gallery-admin">
+    <div class="portfolio-gallery-admin-head"><div><h2>Detail Page Gallery</h2><p>Add unlimited large images for the portfolio detail page.</p></div><label class="btn primary gallery-upload-btn">+ Upload Gallery Images<input id="galleryFiles" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden></label></div>
+    <div id="galleryList" class="portfolio-gallery-admin-list"><div class="adm-empty">Loading gallery...</div></div>
+  </section>
+  <?php else: ?>
+  <section class="portfolio-gallery-admin portfolio-gallery-disabled"><h2>Detail Page Gallery</h2><p>Save the portfolio item first, then edit it to add unlimited gallery images.</p></section>
+  <?php endif; ?>
 </form>
 
 <script>
@@ -60,14 +68,19 @@ title.addEventListener('input', e => { if(!slug.dataset.touched) slug.value=slug
 slug.addEventListener('input', e => { e.target.dataset.touched='1'; e.target.value=slugify(e.target.value); });
 main_image.addEventListener('input', updatePreview);
 imageFile.addEventListener('change', async e => {
-  const file=e.target.files[0]; if(!file) return; const fd=new FormData(); fd.append('image',file);
-  try{ const res=await fetch('/admin/api/portfolio/upload',{method:'POST',body:fd}); const data=await res.json(); if(!res.ok || data.ok===false) throw new Error(data.msg||'Upload failed'); main_image.value=data.path; updatePreview(); toast('Image uploaded'); }catch(err){ toast(err.message,false); }
+  const file=e.target.files[0]; if(!file) return;
+  try{ main_image.value=await uploadPortfolioFile(file); updatePreview(); toast('Image uploaded'); }catch(err){ toast(err.message,false); }
 });
-portfolioForm.addEventListener('submit', async e => {
-  e.preventDefault();
-  const body={title:title.value.trim(),slug:slug.value.trim(),category_id:category_id.value||null,short_description:short_description.value.trim(),description:description.value.trim(),main_image:main_image.value.trim(),image_alt:image_alt.value.trim(),client_name:client_name.value.trim(),project_type:project_type.value.trim(),project_date:project_date.value||null,tags:tags.value.trim(),sort_order:Number(sort_order.value||0),is_featured:is_featured.checked,is_active:is_active.value==='1'};
-  try{ const data=await api('/admin/api/portfolio'+(editId?'/'+editId:''),{method:editId?'PUT':'POST',body:JSON.stringify(body)}); toast('Portfolio item saved'); if(!editId && data.id) location.href='/admin/portfolio/edit/'+data.id; }catch(err){ toast(err.message,false); }
-});
-(async()=>{ try{ await loadCategories(); await loadItem(); }catch(e){ toast(e.message,false); } })();
+function portfolioPayload(){ return {title:title.value.trim(),slug:slug.value.trim(),category_id:category_id.value||null,short_description:short_description.value.trim(),description:description.value.trim(),main_image:main_image.value.trim(),image_alt:image_alt.value.trim(),client_name:client_name.value.trim(),project_type:project_type.value.trim(),project_date:project_date.value||null,tags:tags.value.trim(),sort_order:Number(sort_order.value||0),is_featured:is_featured.checked,is_active:is_active.value==='1'}; }
+async function savePortfolio(){ const data=await api('/admin/api/portfolio'+(editId?'/'+editId:''),{method:editId?'PUT':'POST',body:JSON.stringify(portfolioPayload())}); toast('Portfolio item saved'); if(!editId && data.id) location.href='/admin/portfolio/edit/'+data.id; return data; }
+function publishAndSave(){ is_active.value='1'; savePortfolio().catch(err=>toast(err.message,false)); }
+portfolioForm.addEventListener('submit', async e => { e.preventDefault(); try{ await savePortfolio(); }catch(err){ toast(err.message,false); } });
+
+async function uploadPortfolioFile(file){ const fd=new FormData(); fd.append('image',file); const res=await fetch('/admin/api/portfolio/upload',{method:'POST',body:fd}); const data=await res.json(); if(!res.ok || data.ok===false) throw new Error(data.msg||'Upload failed'); return data.path; }
+async function loadGallery(){ if(!editId || !document.getElementById('galleryList')) return; const data=await api('/admin/api/portfolio/'+editId+'/images'); const box=document.getElementById('galleryList'); const images=data.images||[]; box.innerHTML=images.length?images.map(img=>`<article class="portfolio-gallery-admin-item"><img src="${esc(img.image_path)}" alt="${esc(img.image_alt||'Gallery image')}"><div><input value="${esc(img.image_alt||'')}" placeholder="Alt text" data-field="image_alt"><input value="${esc(img.caption||'')}" placeholder="Caption" data-field="caption"><input type="number" value="${esc(img.sort_order||0)}" data-field="sort_order"></div><div class="portfolio-gallery-actions"><button class="btn sm" type="button" onclick="saveGalleryImage(${img.id}, this)">Save</button><button class="btn sm danger" type="button" onclick="deleteGalleryImage(${img.id})">Delete</button></div><input type="hidden" data-field="image_path" value="${esc(img.image_path)}"><input type="hidden" data-field="is_active" value="${esc(img.is_active)}"></article>`).join(''):'<div class="adm-empty">No gallery images yet. Upload multiple images to build the detail page.</div>'; }
+async function saveGalleryImage(id, btn){ const row=btn.closest('.portfolio-gallery-admin-item'); const val=f=>row.querySelector(`[data-field="${f}"]`)?.value||''; await api('/admin/api/portfolio/images/'+id,{method:'PUT',body:JSON.stringify({image_path:val('image_path'),image_alt:val('image_alt'),caption:val('caption'),sort_order:Number(val('sort_order')||0),is_active:val('is_active')==='0'?0:1})}); toast('Gallery image saved'); }
+async function deleteGalleryImage(id){ if(!confirm('Delete this gallery image?')) return; await api('/admin/api/portfolio/images/'+id,{method:'DELETE'}); toast('Gallery image deleted'); loadGallery(); }
+document.getElementById('galleryFiles')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; try{ for(const file of files){ const path=await uploadPortfolioFile(file); await api('/admin/api/portfolio/'+editId+'/images',{method:'POST',body:JSON.stringify({image_path:path,image_alt:title.value,caption:title.value,sort_order:0,is_active:1})}); } toast('Gallery images uploaded'); e.target.value=''; loadGallery(); }catch(err){ toast(err.message,false); } });
+(async()=>{ try{ await loadCategories(); await loadItem(); await loadGallery(); }catch(e){ toast(e.message,false); } })();
 </script>
 <?php include __DIR__ . '/layout-end.php'; ?>

@@ -479,6 +479,68 @@ if ($uri === '/profile/security' && $method === 'GET') {
     redirect('/profile#security');
 }
 
+// Portfolio category and item detail pages
+if (preg_match('#^/portfolio/category/([a-z0-9-]+)$#', $uri, $m) && $method === 'GET') {
+    $portfolioCategory = $m[1];
+    $portfolioPage = max(1, (int)($_GET['page'] ?? 1));
+    $portfolioPerPage = 12;
+    $portfolioTotalPages = 1;
+    $settingsMap = [];
+    try {
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+        $category = Database::row("SELECT * FROM portfolio_categories WHERE slug=? AND is_active=1 LIMIT 1", [$portfolioCategory]);
+        if (!$category) { http_response_code(404); view('404'); exit; }
+        $totalRow = Database::row("SELECT COUNT(*) AS total FROM portfolio_items WHERE category_id=? AND is_active=1", [(int)$category['id']]) ?: [];
+        $totalItems = (int)($totalRow['total'] ?? 0);
+        $portfolioTotalPages = max(1, (int)ceil($totalItems / $portfolioPerPage));
+        $portfolioPage = min($portfolioPage, $portfolioTotalPages);
+        $offset = max(0, ($portfolioPage - 1) * $portfolioPerPage);
+        $portfolioItems = Database::rows(
+            "SELECT pi.*, pc.name AS category_name, pc.slug AS category_slug, pc.icon AS category_icon
+             FROM portfolio_items pi
+             LEFT JOIN portfolio_categories pc ON pc.id = pi.category_id
+             WHERE pi.category_id=? AND pi.is_active=1
+             ORDER BY pi.is_featured DESC, pi.sort_order ASC, pi.created_at DESC, pi.id DESC
+             LIMIT {$portfolioPerPage} OFFSET {$offset}",
+            [(int)$category['id']]
+        );
+    } catch (\Throwable) {
+        http_response_code(404); view('404'); exit;
+    }
+    view('portfolio-category', compact('settingsMap', 'category', 'portfolioItems', 'portfolioCategory', 'portfolioPage', 'portfolioTotalPages'));
+    exit;
+}
+
+if (preg_match('#^/portfolio/work/([a-z0-9-]+)$#', $uri, $m) && $method === 'GET') {
+    $settingsMap = [];
+    try {
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+        $portfolioItem = Database::row(
+            "SELECT pi.*, pc.name AS category_name, pc.slug AS category_slug, pc.icon AS category_icon
+             FROM portfolio_items pi
+             LEFT JOIN portfolio_categories pc ON pc.id = pi.category_id
+             WHERE pi.slug=? AND pi.is_active=1 LIMIT 1",
+            [$m[1]]
+        );
+        if (!$portfolioItem) { http_response_code(404); view('404'); exit; }
+        $portfolioImages = Database::rows("SELECT * FROM portfolio_item_images WHERE portfolio_item_id=? AND is_active=1 ORDER BY sort_order ASC, id ASC", [(int)$portfolioItem['id']]);
+        $relatedPortfolioItems = Database::rows(
+            "SELECT pi.*, pc.name AS category_name, pc.slug AS category_slug
+             FROM portfolio_items pi
+             LEFT JOIN portfolio_categories pc ON pc.id = pi.category_id
+             WHERE pi.is_active=1 AND pi.id<>? AND pi.category_id <=> ?
+             ORDER BY pi.is_featured DESC, pi.sort_order ASC, pi.created_at DESC LIMIT 4",
+            [(int)$portfolioItem['id'], $portfolioItem['category_id'] ?? null]
+        );
+    } catch (\Throwable) {
+        http_response_code(404); view('404'); exit;
+    }
+    view('portfolio-detail', compact('settingsMap', 'portfolioItem', 'portfolioImages', 'relatedPortfolioItems'));
+    exit;
+}
+
 // Static information pages
 $sitePageRoutes = [
     '/about' => 'about',
