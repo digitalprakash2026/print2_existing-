@@ -101,14 +101,38 @@ foreach ($navProducts as $p) {
                 <div class="dd-cat-lbl rcs-dd-cat-lbl">All Categories</div>
                 <div class="dd-category-list rcs-dd-category-list">
                   <?php foreach ($navCategories as $cat): ?>
+                    <?php
+                      $catId = (int)($cat['id'] ?? 0);
+                      $catProducts = $navProductsByCategory[$catId] ?? [];
+                    ?>
                     <div class="dd-cat-group rcs-dd-cat-group">
                       <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item dd-cat-link rcs-dd-item rcs-dd-cat-link" role="menuitem">
                         <span class="dd-item-ic rcs-dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
                         <span class="dd-cat-name"><?= htmlspecialchars($cat['name']) ?></span>
-                        <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
+                        <?php if (!empty($catProducts)): ?>
+                          <span class="dd-flyout-arrow rcs-dd-flyout-arrow" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
+                        <?php elseif ((int)($cat['product_count'] ?? 0) > 0): ?>
                           <span class="dd-count rcs-dd-count"><?= (int)$cat['product_count'] ?></span>
                         <?php endif; ?>
                       </a>
+                      <?php if (!empty($catProducts)): ?>
+                        <div class="dd-product-list rcs-dd-product-list" role="menu" aria-label="<?= htmlspecialchars($cat['name']) ?> products">
+                          <div class="dd-product-head">
+                            <span><?= htmlspecialchars($cat['name']) ?></span>
+                            <small><?= count($catProducts) ?> Products</small>
+                          </div>
+                          <?php foreach ($catProducts as $p): ?>
+                            <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item dd-product-link rcs-dd-item rcs-dd-product-link" role="menuitem">
+                              <span><?= htmlspecialchars($p['name']) ?></span>
+                              <span class="dd-product-arrow" aria-hidden="true">›</span>
+                            </a>
+                          <?php endforeach; ?>
+                          <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item dd-product-link rcs-dd-item rcs-dd-product-link dd-product-all" role="menuitem">
+                            <span>View all <?= htmlspecialchars($cat['name']) ?></span>
+                            <span class="dd-product-arrow" aria-hidden="true">→</span>
+                          </a>
+                        </div>
+                      <?php endif; ?>
                     </div>
                   <?php endforeach; ?>
                 </div>

@@ -248,14 +248,14 @@ body:has(#siteHeader) { --site-hh:126px; --post-header-gap:50px; }
   left:0;
   right:0;
   top:100%;
-  height:12px;
+  height:0;
 }
 .dd-panel {
   position:absolute;
-  top:calc(100% + 10px);
+  top:100%;
   left:50%;
   transform:translate(-50%,-8px);
-  width:min(330px, calc(100vw - 32px));
+  width:min(360px, calc(100vw - 32px));
   padding:10px;
   background:#fff;
   border:1px solid var(--header-border);
@@ -340,6 +340,7 @@ body:has(#siteHeader) { --site-hh:126px; --post-header-gap:50px; }
 .dd-cat-link {
   font-weight:700;
   color:var(--header-text);
+  justify-content:flex-start;
 }
 .dd-cat-group:hover > .dd-cat-link,
 .dd-cat-group:focus-within > .dd-cat-link,
@@ -355,17 +356,17 @@ body:has(#siteHeader) { --site-hh:126px; --post-header-gap:50px; }
   white-space:nowrap;
 }
 .dd-flyout-arrow {
-  margin-left:2px;
+  margin-left:auto;
   color:var(--blue);
-  font-size:18px;
+  font-size:12px;
   line-height:1;
 }
 .dd-product-list {
   position:absolute;
   top:-10px;
   left:calc(100% - 1px);
-  width:min(360px, calc(100vw - 380px));
-  min-width:280px;
+  width:min(420px, calc(100vw - 420px));
+  min-width:300px;
   max-height:min(68vh, 540px);
   overflow:auto;
   padding:10px;
@@ -426,6 +427,13 @@ body:has(#siteHeader) { --site-hh:126px; --post-header-gap:50px; }
   background:rgba(26,86,232,.06);
   transform:translateX(2px);
 }
+.dd-product-link span:first-child {
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.dd-product-all { color:var(--purple); font-weight:800; border-top:1px solid var(--header-border); margin-top:4px; padding-top:10px; }
 .dd-product-arrow {
   color:var(--blue);
   font-size:15px;
