@@ -162,17 +162,8 @@ include INCLUDE_PATH . '/partials/header.php';
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.msg || 'Could not submit enquiry.');
-      if (msg) { msg.textContent = json.msg || 'Thank you! Our team will contact you soon.'; msg.classList.add('ok'); }
-      const lines = [
-        'Hello <?= $bizName ?>, I want to discuss a print requirement.',
-        'Name: ' + (data.get('name') || '-'),
-        'Email: ' + (data.get('email') || '-'),
-        'Phone: ' + (data.get('phone') || '-'),
-        'Subject: ' + (data.get('subject') || '-'),
-        'Message: ' + (data.get('message') || '-')
-      ];
+      if (msg) { msg.textContent = json.msg || 'Thank you! Your enquiry has been saved. Our team will contact you soon.'; msg.classList.add('ok'); }
       form.reset();
-      window.setTimeout(() => window.open('https://wa.me/<?= $bizWa ?>?text=' + encodeURIComponent(lines.join('\n')), '_blank', 'noopener'), 350);
     } catch (err) {
       if (msg) { msg.textContent = err.message || 'Could not submit enquiry.'; msg.classList.add('bad'); }
     } finally {
