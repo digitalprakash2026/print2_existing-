@@ -54,8 +54,16 @@ $portfolioPrimaryCategories = [
 ];
 $portfolioPrimarySlugs = array_map(static fn($cat) => (string)$cat['slug'], $portfolioPrimaryCategories);
 $portfolioPrimaryNameKeys = ['visiting card', 'brochure', 'flyer', 'calender', 'calendar', 'rough pad', 'flex banner'];
-$portfolioOtherCategories = array_values(array_filter($portfolioCategories, static function ($cat) use ($portfolioPrimarySlugs, $portfolioPrimaryNameKeys): bool {
-  $slug = (string)($cat['slug'] ?? '');
+$portfolioCategoryMap = [];
+foreach ($portfolioCategories as $cat) {
+  $slug = trim((string)($cat['slug'] ?? ''));
+  if ($slug === '' || isset($portfolioCategoryMap[$slug])) {
+    continue;
+  }
+  $portfolioCategoryMap[$slug] = $cat;
+}
+$portfolioOtherCategories = array_values(array_filter(array_values($portfolioCategoryMap), static function ($cat) use ($portfolioPrimarySlugs, $portfolioPrimaryNameKeys): bool {
+  $slug = trim((string)($cat['slug'] ?? ''));
   $nameKey = strtolower(trim((string)($cat['name'] ?? $cat['label'] ?? '')));
   return $slug !== '' && !in_array($slug, $portfolioPrimarySlugs, true) && !in_array($nameKey, $portfolioPrimaryNameKeys, true);
 }));
@@ -131,9 +139,10 @@ $portfolioOtherCategories = array_values(array_filter($portfolioCategories, stat
             $itemTitle = (string)($item['title'] ?? 'Portfolio Work');
             $itemAlt = (string)($item['image_alt'] ?? $itemTitle);
             $itemCategory = (string)($item['category'] ?? $item['category_name'] ?? 'Portfolio');
+            $itemCategorySlug = (string)($item['category_slug'] ?? 'portfolio');
           ?>
           <article class="portfolio-card portfolio-gallery-card">
-            <button class="portfolio-card-img portfolio-lightbox-trigger" type="button" data-full="<?= htmlspecialchars($itemImage, ENT_QUOTES, 'UTF-8') ?>" data-title="<?= htmlspecialchars($itemTitle, ENT_QUOTES, 'UTF-8') ?>" data-category="<?= htmlspecialchars($itemCategory, ENT_QUOTES, 'UTF-8') ?>">
+            <button class="portfolio-card-img portfolio-lightbox-trigger" type="button" data-full="<?= htmlspecialchars($itemImage, ENT_QUOTES, 'UTF-8') ?>" data-title="<?= htmlspecialchars($itemTitle, ENT_QUOTES, 'UTF-8') ?>" data-category="<?= htmlspecialchars($itemCategory, ENT_QUOTES, 'UTF-8') ?>" data-category-slug="<?= htmlspecialchars($itemCategorySlug, ENT_QUOTES, 'UTF-8') ?>">
               <img src="<?= htmlspecialchars($itemImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($itemAlt, ENT_QUOTES, 'UTF-8') ?>" loading="lazy">
               <span><i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i> View Large</span>
             </button>
@@ -156,8 +165,8 @@ $portfolioOtherCategories = array_values(array_filter($portfolioCategories, stat
   <section class="portfolio-cta" aria-label="Portfolio project call to action">
     <div class="portfolio-container">
       <div class="portfolio-project-card">
-        <div><h2>Have a Project in Mind?</h2><p>Let's create something amazing together!</p></div>
-        <div class="portfolio-project-actions"><a href="/contact">Get Free Design</a><a href="/contact" class="outline">Contact Us</a></div>
+        <div><h2>Need Bulk Printing for Your Business?</h2><p>Get visiting cards, brochures, flyers, banners and business stationery printed with consistent quality and reliable support.</p></div>
+        <div class="portfolio-project-actions"><a href="/categories">View Products</a><a href="/contact" class="outline">Get Bulk Quote</a></div>
         <span class="portfolio-gift" aria-hidden="true"><i class="fa-solid fa-gift"></i></span>
       </div>
     </div>
@@ -185,31 +194,45 @@ $portfolioOtherCategories = array_values(array_filter($portfolioCategories, stat
 
   <div class="portfolio-lightbox" id="portfolioLightbox" aria-hidden="true">
     <button class="portfolio-lightbox-close" type="button" aria-label="Close image gallery"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-    <div class="portfolio-lightbox-dialog" role="dialog" aria-modal="true" aria-label="Portfolio image preview">
-      <img id="portfolioLightboxImage" src="" alt="">
-      <div class="portfolio-lightbox-caption"><strong id="portfolioLightboxTitle"></strong><span id="portfolioLightboxCategory"></span></div>
-    </div>
+    <button class="portfolio-lightbox-nav portfolio-lightbox-prev" type="button" aria-label="Show previous portfolio image"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+    <img id="portfolioLightboxImage" src="" alt="" role="dialog" aria-modal="true" aria-label="Portfolio image preview">
+    <button class="portfolio-lightbox-nav portfolio-lightbox-next" type="button" aria-label="Show next portfolio image"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
   </div>
   <script>
   (function(){
     const box = document.getElementById('portfolioLightbox');
     const img = document.getElementById('portfolioLightboxImage');
-    const title = document.getElementById('portfolioLightboxTitle');
-    const category = document.getElementById('portfolioLightboxCategory');
+    const triggers = Array.from(document.querySelectorAll('.portfolio-lightbox-trigger'));
+    let gallery = [];
+    let currentIndex = 0;
     const close = () => { box?.classList.remove('open'); box?.setAttribute('aria-hidden', 'true'); document.body.classList.remove('portfolio-lightbox-open'); };
-    document.querySelectorAll('.portfolio-lightbox-trigger').forEach(btn => btn.addEventListener('click', () => {
-      if (!box || !img) return;
-      img.src = btn.dataset.full || '';
-      img.alt = btn.dataset.title || 'Portfolio image';
-      if (title) title.textContent = btn.dataset.title || '';
-      if (category) category.textContent = btn.dataset.category || '';
+    const show = (index) => {
+      if (!box || !img || !gallery.length) return;
+      currentIndex = (index + gallery.length) % gallery.length;
+      const active = gallery[currentIndex];
+      img.src = active.dataset.full || '';
+      img.alt = active.dataset.title || 'Portfolio image';
       box.classList.add('open');
       box.setAttribute('aria-hidden', 'false');
       document.body.classList.add('portfolio-lightbox-open');
+    };
+    const move = (step) => show(currentIndex + step);
+    triggers.forEach(btn => btn.addEventListener('click', () => {
+      const categorySlug = btn.dataset.categorySlug || '';
+      gallery = triggers.filter(item => (item.dataset.categorySlug || '') === categorySlug);
+      if (!gallery.length) gallery = triggers;
+      show(gallery.indexOf(btn));
     }));
     box?.addEventListener('click', e => { if (e.target === box) close(); });
     box?.querySelector('.portfolio-lightbox-close')?.addEventListener('click', close);
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    box?.querySelector('.portfolio-lightbox-prev')?.addEventListener('click', () => move(-1));
+    box?.querySelector('.portfolio-lightbox-next')?.addEventListener('click', () => move(1));
+    document.addEventListener('keydown', e => {
+      if (!box?.classList.contains('open')) return;
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowLeft') move(-1);
+      if (e.key === 'ArrowRight') move(1);
+    });
   })();
   </script>
 </main>

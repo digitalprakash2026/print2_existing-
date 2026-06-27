@@ -512,10 +512,31 @@ if (isset($sitePageRoutes[$uri]) && $method === 'GET') {
         $portfolioTotalPages = 1;
         try {
             $portfolioCategories = Database::rows("SELECT id, name, slug, icon, sort_order FROM portfolio_categories WHERE is_active=1 ORDER BY sort_order ASC, name ASC");
+            $portfolioCategorySlugs = [];
+            foreach ($portfolioCategories as $portfolioCategoryRow) {
+                $portfolioCategorySlugs[(string)($portfolioCategoryRow['slug'] ?? '')] = true;
+            }
+            foreach (\Catalog\ProductCatalog::categories() as $productCategory) {
+                $productCategorySlug = trim((string)($productCategory['slug'] ?? ''));
+                if ($productCategorySlug === '' || isset($portfolioCategorySlugs[$productCategorySlug])) {
+                    continue;
+                }
+                $portfolioCategories[] = [
+                    'id' => null,
+                    'name' => (string)($productCategory['name'] ?? $productCategory['title'] ?? 'Category'),
+                    'slug' => $productCategorySlug,
+                    'icon' => (string)($productCategory['icon'] ?? 'fa-folder-open'),
+                    'sort_order' => (int)($productCategory['sort_order'] ?? 999),
+                ];
+                $portfolioCategorySlugs[$productCategorySlug] = true;
+            }
+            usort($portfolioCategories, static function (array $a, array $b): int {
+                return [(int)($a['sort_order'] ?? 999), (string)($a['name'] ?? '')] <=> [(int)($b['sort_order'] ?? 999), (string)($b['name'] ?? '')];
+            });
             $categoryRow = null;
             if ($portfolioCategory !== '') {
                 $categoryRow = Database::row("SELECT id, slug FROM portfolio_categories WHERE slug=? AND is_active=1 LIMIT 1", [$portfolioCategory]);
-                if (!$categoryRow) {
+                if (!$categoryRow && !isset($portfolioCategorySlugs[$portfolioCategory])) {
                     $portfolioCategory = '';
                 }
             }
@@ -524,6 +545,8 @@ if (isset($sitePageRoutes[$uri]) && $method === 'GET') {
             if ($categoryRow) {
                 $where[] = "pi.category_id=?";
                 $params[] = (int)$categoryRow['id'];
+            } elseif ($portfolioCategory !== '') {
+                $where[] = "1=0";
             }
             $whereSql = implode(' AND ', $where);
             $totalRow = Database::row("SELECT COUNT(*) AS total FROM portfolio_items pi WHERE {$whereSql}", $params) ?: [];
