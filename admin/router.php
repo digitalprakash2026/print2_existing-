@@ -259,6 +259,24 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/page-heroes' && $method === 'GET') {
         try {
+            try {
+                foreach (\Catalog\ProductCatalog::categories() as $category) {
+                    $slug = strtolower(trim((string)($category['slug'] ?? '')));
+                    if ($slug === '') continue;
+                    $slug = preg_replace('/[^a-z0-9_-]+/', '-', $slug) ?? $slug;
+                    $key = 'category_' . trim($slug, '-');
+                    $name = trim((string)($category['name'] ?? 'Category')) ?: 'Category';
+                    $fallback = trim((string)($category['image_path'] ?? '')) ?: '/assets/img/categories/all-categories-hero.svg';
+                    Database::query(
+                        "INSERT INTO page_heroes (page_key, title, description, fallback_image, sort_order, is_active, created_at, updated_at)
+                         SELECT ?,?,?,?,?,1,NOW(),NOW() FROM DUAL
+                         WHERE NOT EXISTS (SELECT 1 FROM page_heroes WHERE page_key=? LIMIT 1)",
+                        [$key, $name . ' Category Page', 'Hero background for ' . $name . ' category page', $fallback, 1000 + (int)($category['sort_order'] ?? 0), $key]
+                    );
+                }
+            } catch (\Throwable $e) {
+                error_log('Category page hero sync failed: ' . $e->getMessage());
+            }
             $rows = Database::rows("SELECT * FROM page_heroes ORDER BY sort_order ASC, title ASC");
             json(['ok'=>true,'heroes'=>$rows]);
         } catch (\Throwable) {
@@ -269,7 +287,12 @@ if (str_starts_with($uri, '/admin/api/')) {
         $key = (string)$m[1];
         $background = trim((string)($body['background_image'] ?? ''));
         try {
-            Database::query("UPDATE page_heroes SET background_image=?, is_active=?, updated_at=NOW() WHERE page_key=?", [$background, (int)($body['is_active'] ?? 1), $key]);
+            Database::query(
+                "INSERT INTO page_heroes (page_key, title, description, background_image, fallback_image, sort_order, is_active, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, '', 9999, ?, NOW(), NOW())
+                 ON DUPLICATE KEY UPDATE background_image=VALUES(background_image), is_active=VALUES(is_active), updated_at=NOW()",
+                [$key, ucwords(str_replace(['_', '-'], ' ', $key)), 'Admin managed page hero', $background, (int)($body['is_active'] ?? 1)]
+            );
             json(['ok'=>true]);
         } catch (\Throwable) {
             json(['ok'=>false,'msg'=>'Could not save page hero'], 500);

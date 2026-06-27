@@ -4320,10 +4320,10 @@ body:has(#siteHeader) .banner-slider {
 
 /* All Categories hero banner */
 .all-cat-page {
-  margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));
+  margin-top:var(--site-hh, var(--hh));
   padding:0 0 34px;
   background:#fff;
-  min-height:calc(100vh - var(--site-hh, var(--hh)) - var(--post-header-gap,50px));
+  min-height:calc(100vh - var(--site-hh, var(--hh)));
 }
 .all-cat-hero-banner {
   min-height:300px;
@@ -10522,7 +10522,7 @@ body:has(#siteHeader) .banner-slider {
   --contact-green:#2ca343;
   --contact-ink:#111322;
   --contact-muted:#4b5563;
-  margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));
+  margin-top:var(--site-hh, var(--hh));
   background:#fff;
   color:var(--contact-ink);
   font-family:var(--fn);
@@ -10959,7 +10959,7 @@ body:has(#siteHeader) .banner-slider {
   .contact-benefits-bar div:nth-child(2)::after { display:none; }
 }
 @media (max-width:760px) {
-  .contact-showcase-page { margin-top:calc(var(--site-hh, var(--hh)) + 28px); }
+  .contact-showcase-page { margin-top:var(--site-hh, var(--hh)); }
   .contact-showcase-hero { padding:36px 0 30px; }
   .contact-hero-copy h1 { font-size:46px; }
   .contact-hero-features,
@@ -10989,7 +10989,7 @@ body:has(#siteHeader) .banner-slider {
   --about-green:#2ca343;
   --about-ink:#111322;
   --about-muted:#4b5563;
-  margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));
+  margin-top:var(--site-hh, var(--hh));
   background:
     radial-gradient(520px 260px at 88% 8%, rgba(75,20,140,.08), transparent 68%),
     radial-gradient(520px 260px at 5% 42%, rgba(255,91,8,.07), transparent 68%),
@@ -11530,7 +11530,7 @@ body:has(#siteHeader) .banner-slider {
   .about-process-row article::after { display:none; }
 }
 @media (max-width:760px) {
-  .about-showcase-page { margin-top:calc(var(--site-hh, var(--hh)) + 28px); }
+  .about-showcase-page { margin-top:var(--site-hh, var(--hh)); }
   .about-showcase-hero { padding:34px 0 22px; }
   .about-hero-copy h1 { font-size:42px; }
   .about-hero-features { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px; }
@@ -13536,7 +13536,7 @@ body:not(.admin-shell) :is(.contact-faq-section,.info-cta-section) {
   --blog-muted:#5d6472;
   --blog-line:#e7e8ef;
   --blog-soft:#f7f7fb;
-  margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap, 50px));
+  margin-top:var(--site-hh, var(--hh));
   background:#fff;
   color:var(--blog-ink);
 }
@@ -13665,7 +13665,7 @@ body:not(.admin-shell) :is(.contact-faq-section,.info-cta-section) {
   .blog-list-hero-art { display:none; }
 }
 @media (max-width:760px) {
-  .blog-list-page { margin-top:calc(var(--site-hh, var(--hh)) + 24px); }
+  .blog-list-page { margin-top:var(--site-hh, var(--hh)); }
   .blog-list-container { width:min(100%, calc(100vw - 28px)); }
   .blog-list-hero { min-height:250px; }
   .blog-list-hero-copy h1 { font-size:46px; }
@@ -13855,14 +13855,14 @@ body:not(.admin-shell) :is(.contact-faq-section,.info-cta-section) {
 
 /* Final home-page rhythm: keep every homepage block visually consistent. */
 body:not(.admin-shell) .banner-slider ~ :is(.shop-cat-section,.why-print-section,.best-deals-section,.how-works-section,.customer-say-section,.blog-section,.quick-help-section) {
-  padding-top:20px;
+  padding-top:30px;
   padding-bottom:0;
 }
 body:not(.admin-shell) .banner-slider ~ .quick-help-section {
-  padding-bottom:20px;
+  padding-bottom:30px;
 }
 body:not(.admin-shell) .banner-slider ~ .footer {
-  padding-top:20px;
+  padding-top:30px;
 }
 body:not(.admin-shell) .shop-cat-head,
 body:not(.admin-shell) .blog-head {
@@ -13888,11 +13888,11 @@ body:not(.admin-shell) .blog-view-all {
 }
 @media (max-width:760px) {
   body:not(.admin-shell) .banner-slider ~ :is(.shop-cat-section,.why-print-section,.best-deals-section,.how-works-section,.customer-say-section,.blog-section,.quick-help-section) {
-    padding-top:18px;
+    padding-top:30px;
     padding-bottom:0;
   }
   body:not(.admin-shell) .banner-slider ~ .quick-help-section {
-    padding-bottom:18px;
+    padding-bottom:30px;
   }
   body:not(.admin-shell) .shop-cat-head,
   body:not(.admin-shell) .blog-head {

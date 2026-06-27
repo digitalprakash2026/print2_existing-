@@ -23,6 +23,7 @@ $productCount = count($products ?? []);
 $categoryName = (string)($category['name'] ?? 'Category');
 $categorySlug = (string)($category['slug'] ?? '');
 $categoryDescription = trim((string)($category['description'] ?? ''));
+$categoryHeroKey = $categorySlug !== '' ? 'category_' . preg_replace('/[^a-z0-9_-]+/', '-', strtolower($categorySlug)) : 'category_detail';
 $filterOptions = is_array($filterOptions ?? null) ? $filterOptions : [];
 $selectedFilters = is_array($selectedFilters ?? null) ? $selectedFilters : [];
 $hasSelectedFilters = !empty($selectedFilters);
@@ -35,7 +36,7 @@ include INCLUDE_PATH . '/partials/header.php';
 <main class="all-cat-page subcat-page">
   <?php
   $pageHero = [
-    'key' => 'category_detail',
+    'key' => $categoryHeroKey,
     'title' => $categoryName,
     'subtitle' => $categoryDescription !== '' ? $categoryDescription : 'Premium quality printing products for every business need.',
     'eyebrow' => 'Product Category',
