@@ -299,6 +299,13 @@ include INCLUDE_PATH . '/partials/header.php';
                 <div class="design-opt-title">Upload File</div>
                 <div class="design-opt-copy">PDF, AI, PSD, PNG, JPG (Max 50MB)</div>
               </div>
+              <label class="design-later-check" onclick="event.stopPropagation()">
+                <input type="checkbox" id="uploadLaterCheck" onchange="toggleUploadLater(this.checked)">
+                <span>I will Upload Design Later</span>
+              </label>
+              <div class="design-later-note" id="uploadLaterNote" hidden>
+                No problem. Your order will be saved as <strong>Customer Upload</strong>, and you can upload the design later from <strong>My Account &gt; My Orders</strong>.
+              </div>
               <div id="uploadPreview"></div>
             </div>
           </div>
@@ -510,6 +517,7 @@ let selectedQty        = null;
 let artworkId          = null;
 let uploadedFileName   = null;
 let designChoice       = 'upload';
+let uploadDesignLater  = false;
 let currentBasePrice   = 0;
 
 function refreshOrderReadiness() {
@@ -646,6 +654,7 @@ function calcPrice() {
 // Design Option
 function selDesignOpt(choice) {
   designChoice = choice === 'rcs' ? 'rcs' : 'upload';
+  if (designChoice === 'rcs' && uploadDesignLater) toggleUploadLater(false);
   const uploadOpt = document.getElementById('dopt-upload');
   const rcsOpt = document.getElementById('dopt-rcs');
   const uploadPanel = document.getElementById('panel-upload');
@@ -678,6 +687,8 @@ async function processFile(file) {
     toast('File too large. Max 50MB', 'error');
     return;
   }
+
+  if (uploadDesignLater) toggleUploadLater(false);
 
   const fd = new FormData();
   fd.append('artwork', file);
@@ -721,6 +732,24 @@ function removeFile() {
   document.getElementById('artworkFile').value = '';
 }
 
+function toggleUploadLater(checked) {
+  uploadDesignLater = !!checked;
+  const checkbox = document.getElementById('uploadLaterCheck');
+  const note = document.getElementById('uploadLaterNote');
+  const zone = document.getElementById('uploadZone');
+  if (checkbox) checkbox.checked = uploadDesignLater;
+  if (note) note.hidden = !uploadDesignLater;
+  if (zone) zone.classList.toggle('is-muted', uploadDesignLater);
+  if (uploadDesignLater) {
+    selDesignOpt('upload');
+    artworkId = null;
+    uploadedFileName = null;
+    document.getElementById('uploadPreview').innerHTML = '';
+    document.getElementById('artworkFile').value = '';
+    toast('You can upload your design later from My Account after placing the order.', 'info');
+  }
+}
+
 // Add to Cart
 async function addToCart(opts = {}) {
   const v = validateOrder();
@@ -747,9 +776,9 @@ async function addToCart(opts = {}) {
         quantity: selectedQty,
         attribute_selections: {},
         design_choice: designChoice,
-        design_brief: '',
-        notes: '',
-        artwork_id: artworkId
+        design_brief: uploadDesignLater ? 'Customer selected: I will upload design later.' : '',
+        notes: uploadDesignLater ? 'User will upload design later from My Account order detail.' : '',
+        artwork_id: uploadDesignLater ? null : artworkId
       })
     });
 

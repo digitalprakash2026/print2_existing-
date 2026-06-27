@@ -113,7 +113,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
         $isCancelled = $status === 'cancelled';
         $isWhatsappPending = $status === 'whatsapp_pending';
       ?>
-        <details class="account-order-detail">
+        <details class="account-order-detail" data-order-detail="<?= $h($orderPublicId) ?>">
           <summary class="account-order-row" role="row">
             <strong>#<?= $h($order['order_id'] ?? $order['id'] ?? '') ?></strong>
             <span><?= !empty($order['created_at']) ? date('d M, Y', strtotime((string)$order['created_at'])) : '—' ?></span>
@@ -143,6 +143,8 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                     $proofIsImage = str_starts_with($proofMime, 'image/') || in_array($proofExt, ['jpg','jpeg','png','gif','webp','svg'], true);
                     $approvalId = (int)($item['design_approval_id'] ?? 0);
                     $canReviewProof = $approvalId > 0 && !empty($item['design_proof_file_id']) && in_array($designStatus, ['proof_uploaded'], true);
+                    $canInitialArtworkUpload = $approvalId > 0 && (string)($item['design_choice'] ?? '') === 'upload' && empty($item['artwork_file_id']) && empty($item['artwork_filename']) && $designStatus === 'pending_review';
+                    $canUploadArtwork = $approvalId > 0 && ($designStatus === 'issue_found' || $canInitialArtworkUpload);
                   ?>
                     <article class="account-order-item-card <?= in_array($designStatus, ['issue_found','revision_requested'], true) ? 'account-design-issue' : '' ?>" data-design-approval-item="<?= $approvalId ?>">
                       <div class="account-order-item-thumb">
@@ -154,7 +156,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                           <span><?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
                         </div>
                         <p><?= number_format((float)($item['quantity'] ?? 0)) ?> qty × <?= $h($item['quality_name'] ?? 'Standard') ?></p>
-                        <?php if (!empty($item['design_admin_note'])): ?><small><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
+                        <?php if (!empty($item['design_admin_note'])): ?><small class="<?= $designStatus === 'issue_found' ? 'account-design-alert-note' : '' ?>"><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
                         <?php if (!empty($item['design_customer_note'])): ?><small class="account-design-customer-note">Your message: <?= $h($item['design_customer_note']) ?></small><?php endif; ?>
                       </div>
                       <div class="account-order-file-grid">
@@ -169,10 +171,10 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                             <small>No artwork uploaded</small>
                           <?php endif; ?>
                           <?php if ($approvalId > 0): ?>
-                            <div class="account-artwork-reupload-form">
-                              <input id="artwork-reupload-<?= $approvalId ?>" type="file" name="artwork" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" onchange="uploadAccountArtworkRevision(this, <?= $approvalId ?>)" <?= $designStatus === 'issue_found' ? '' : 'disabled' ?>>
-                              <button type="button" onclick="chooseAccountArtworkRevision(<?= $approvalId ?>)" <?= $designStatus === 'issue_found' ? '' : 'disabled' ?>>Reupload Design</button>
-                              <small><?= $designStatus === 'issue_found' ? 'One click: choose file and upload starts automatically.' : 'Available only after admin marks an issue.' ?></small>
+                            <div class="account-artwork-reupload-form <?= $canUploadArtwork ? 'is-enabled' : '' ?>">
+                              <input id="artwork-reupload-<?= $approvalId ?>" type="file" name="artwork" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" onchange="uploadAccountArtworkRevision(this, <?= $approvalId ?>)" <?= $canUploadArtwork ? '' : 'disabled' ?>>
+                              <button type="button" onclick="chooseAccountArtworkRevision(<?= $approvalId ?>)" <?= $canUploadArtwork ? '' : 'disabled' ?>><?= $canInitialArtworkUpload ? 'Upload Design' : 'Reupload Design' ?></button>
+                              <small><?= $canInitialArtworkUpload ? 'You selected upload later. Choose your design file here when ready.' : ($designStatus === 'issue_found' ? 'One click: choose file and upload starts automatically.' : 'Upload is available when a design file is required.') ?></small>
                             </div>
                           <?php endif; ?>
                         </div>
@@ -531,6 +533,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
             <?php if (!empty($profile['migration_required'])): ?>
             <div class="account-warning">Billing fields are not available yet. Please run the SQL migration shared in the implementation notes.</div>
             <?php endif; ?>
+            <label class="account-same-address"><input type="checkbox" id="pb-same-shipping" onchange="copyShippingToBilling(this.checked)"> <span>Billing address same as delivery address</span></label>
             <div class="fg"><label>Legal Business Name</label><input id="pb-legal" class="fi" value="<?= $h($billing['legal_name'] ?? '') ?>" placeholder="ABC Pvt Ltd"></div>
             <div class="fg"><label>GSTIN</label><input id="pb-gst" class="fi" value="<?= $h($billing['gst_no'] ?? '') ?>" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
             <div class="fg"><label>Billing Address Line 1</label><input id="pb-add1" class="fi" value="<?= $h($billing['address_line1'] ?? '') ?>"></div>
@@ -694,6 +697,13 @@ async function removeWishlistItem(productId, btn) {
 
 window.addEventListener('hashchange', () => setAccountTab(location.hash.replace('#', ''), false));
 setAccountTab(location.hash.replace('#', ''), false);
+restoreOpenAccountOrder();
+document.querySelectorAll('.account-order-detail').forEach(detail => {
+  detail.addEventListener('toggle', () => {
+    if (detail.open) { rememberOpenAccountOrder(detail); return; }
+    if (localStorage.getItem('accountOpenOrder') === detail.dataset.orderDetail) localStorage.removeItem('accountOpenOrder');
+  });
+});
 
 
 
@@ -710,6 +720,7 @@ async function approveAccountDesign(id, btn) {
     });
     const data = await resp.json();
     if (!data.ok) { alert(data.msg || 'Could not approve design.'); if (btn) btn.disabled = false; return; }
+    rememberOpenAccountOrder(btn);
     window.location.reload();
   } catch (e) {
     alert('Could not approve design right now.');
@@ -740,6 +751,7 @@ async function sendDesignRevision(event, id) {
     });
     const data = await resp.json();
     if (!data.ok) { alert(data.msg || 'Could not send revision request.'); if (btn) btn.disabled = false; return; }
+    rememberOpenAccountOrder(form);
     window.location.reload();
   } catch (e) {
     alert('Could not send revision request right now.');
@@ -749,14 +761,14 @@ async function sendDesignRevision(event, id) {
 
 function chooseAccountArtworkRevision(id) {
   const input = document.getElementById(`artwork-reupload-${id}`);
-  if (!input || input.disabled) { alert('Reupload is available only after admin marks an issue.'); return; }
+  if (!input || input.disabled) { alert('Upload is available when a design file is required.'); return; }
   input.click();
 }
 
 async function uploadAccountArtworkRevision(input, id) {
   const form = input?.closest('.account-artwork-reupload-form');
   const btn = form?.querySelector('button[type="button"]');
-  if (!input || input.disabled) { alert('Reupload is available only after admin marks an issue.'); return; }
+  if (!input || input.disabled) { alert('Upload is available when a design file is required.'); return; }
   if (!input.files.length) { alert('Please choose a design file to reupload.'); return; }
   const fd = new FormData();
   fd.append('artwork', input.files[0]);
@@ -776,6 +788,7 @@ async function uploadAccountArtworkRevision(input, id) {
       input.value = '';
       return;
     }
+    rememberOpenAccountOrder(input);
     window.location.reload();
   } catch (e) {
     alert('Could not reupload design right now.');
@@ -784,6 +797,22 @@ async function uploadAccountArtworkRevision(input, id) {
   }
 }
 
+function rememberOpenAccountOrder(el) {
+  const detail = el?.closest?.('.account-order-detail') || el;
+  const key = detail?.dataset?.orderDetail || '';
+  if (key) localStorage.setItem('accountOpenOrder', key);
+}
+function restoreOpenAccountOrder() {
+  const key = localStorage.getItem('accountOpenOrder') || '';
+  if (!key) return;
+  const detail = Array.from(document.querySelectorAll('.account-order-detail')).find(item => item.dataset.orderDetail === key);
+  if (detail) detail.open = true;
+}
+function copyShippingToBilling(checked) {
+  if (!checked) return;
+  const map = [['ps-add1','pb-add1'],['ps-add2','pb-add2'],['ps-city','pb-city'],['ps-state','pb-state'],['ps-pin','pb-pin']];
+  map.forEach(([from, to]) => { const src = document.getElementById(from); const dst = document.getElementById(to); if (src && dst) dst.value = src.value; });
+}
 function openAccountOrder(trigger) {
   const detail = trigger?.closest('.account-order-detail');
   if (!detail) return;

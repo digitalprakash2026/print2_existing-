@@ -104,8 +104,13 @@ if (preg_match('#^/api/design-approvals/(\d+)/artwork$#', $uri, $m) && $method =
         [$approvalId, $userId]
     );
     if (!$approval) json(['ok' => false, 'msg' => 'Design approval not found.'], 404);
-    if ((string)($approval['status'] ?? '') !== 'issue_found') {
-        json(['ok' => false, 'msg' => 'Reupload is available only after admin marks an issue.'], 422);
+    $approvalStatus = (string)($approval['status'] ?? '');
+    $canInitialUpload = $approvalStatus === 'pending_review'
+        && (string)($approval['design_choice'] ?? '') === 'upload'
+        && empty($approval['customer_artwork_file_id']);
+    $canIssueReupload = $approvalStatus === 'issue_found';
+    if (!$canInitialUpload && !$canIssueReupload) {
+        json(['ok' => false, 'msg' => 'Upload is available only when a design file is required for this order.'], 422);
     }
     if (empty($_FILES['artwork'])) json(['ok' => false, 'msg' => 'No file uploaded'], 400);
 
@@ -146,14 +151,14 @@ if (preg_match('#^/api/design-approvals/(\d+)/artwork$#', $uri, $m) && $method =
             SET status = 'pending_review',
                 customer_artwork_file_id = ?,
                 proof_file_id = NULL,
-                customer_note = 'Customer reuploaded artwork.',
+                customer_note = ?,
                 approved_at = NULL,
                 updated_at = NOW()
           WHERE id = ?",
-        [(int)$fileId, $approvalId]
+        [(int)$fileId, $canInitialUpload ? 'Customer uploaded artwork after selecting upload later.' : 'Customer reuploaded artwork.', $approvalId]
     );
     \Orders\OrderManager::syncOrderDesignApproved((int)$approval['order_id']);
-    json(['ok' => true, 'msg' => 'Artwork reuploaded for admin review.', 'artwork_id' => (int)$fileId]);
+    json(['ok' => true, 'msg' => $canInitialUpload ? 'Artwork uploaded for admin review.' : 'Artwork reuploaded for admin review.', 'artwork_id' => (int)$fileId]);
 }
 
 if ($uri === '/api/contact-leads' && $method === 'POST') {
