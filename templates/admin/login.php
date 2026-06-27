@@ -14,7 +14,7 @@ $csrf = $_SESSION['csrf_token'];
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin Login — RCS Graphic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/app.css">
 <style>
   body { background:linear-gradient(135deg,#EEF3FD,#F9FAFB,#FFF4ED); min-height:100vh; margin:0; }

@@ -12,7 +12,7 @@ try {
     $bizSettings   = [];
     $settingRows   = Database::rows(
         "SELECT `key`, value FROM settings
-         WHERE `key` IN ('biz_name','biz_tagline','biz_whatsapp','biz_phone','razorpay_key_id','gst_percent','design_fee')"
+         WHERE `key` IN ('biz_name','biz_tagline','biz_whatsapp','biz_phone','biz_email','razorpay_key_id','gst_percent','design_fee')"
     );
     foreach ($settingRows as $r) $bizSettings[$r['key']] = $r['value'];
 } catch (\Throwable) {
@@ -20,12 +20,17 @@ try {
 }
 
 $navBizName  = htmlspecialchars($bizSettings['biz_name']         ?? 'RCS Graphic');
+$navPhoneRaw = (string)($bizSettings['biz_phone']                ?? '+91 98765 43210');
+$navPhone    = htmlspecialchars($navPhoneRaw);
+$navPhoneHref= htmlspecialchars(preg_replace('/\D+/', '', $navPhoneRaw));
+$navEmail    = htmlspecialchars($bizSettings['biz_email']        ?? 'hello@rcsgraphic.in');
 $navWa       = htmlspecialchars($bizSettings['biz_whatsapp']     ?? '919876543210');
 $navRazKey   = htmlspecialchars($bizSettings['razorpay_key_id']  ?? '');
 $navGst      = (int)($bizSettings['gst_percent'] ?? 18);
 $navDesignFee= (float)($bizSettings['design_fee'] ?? 0);
 $catIcons    = ['Cards'=>'💳','Brochures'=>'📋','Flyers'=>'📄','Pamphlets'=>'📰','Stationery'=>'📝','Banners'=>'🏳️','Posters'=>'🖼️'];
 $currentUri  = $uri ?? '/';
+$productsActive = $currentUri === '/products' || $currentUri === '/categories' || str_starts_with($currentUri, '/category/') || str_starts_with($currentUri, '/product/');
 
 $navProductsByCategory = [];
 foreach ($navCategories as $cat) {
@@ -63,16 +68,9 @@ foreach ($navProducts as $p) {
       </div>
 
       <div class="topbar-right rcs-topbar-right">
-        <div class="topbar-links rcs-topbar-links">
-          <a href="/my-orders" aria-label="Track Order">Track Order</a>
-          <span class="topbar-divider rcs-topbar-divider" aria-hidden="true"></span>
-          <a href="/#quick-help-sec" aria-label="Help Center">Help Center</a>
-        </div>
-
-        <div class="social-links rcs-social-links" aria-label="Social links">
-          <a href="/#quick-help-sec" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-          <a href="/#quick-help-sec" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="https://wa.me/<?= $navWa ?>" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
+        <div class="topbar-links rcs-topbar-links rcs-topbar-contact-links">
+          <a href="tel:<?= $navPhoneHref ?>" aria-label="Call <?= $navPhone ?>"><i class="fa-solid fa-phone" aria-hidden="true"></i><?= $navPhone ?></a>
+          <a href="mailto:<?= $navEmail ?>" aria-label="Email <?= $navEmail ?>"><i class="fa-regular fa-envelope" aria-hidden="true"></i><?= $navEmail ?></a>
         </div>
       </div>
     </div>
@@ -91,45 +89,26 @@ foreach ($navProducts as $p) {
       <div class="nav-center rcs-nav-center">
         <ul class="nav-menu rcs-nav-menu">
           <li><a href="/" class="nav-link rcs-nav-link <?= $currentUri === '/' ? 'active' : '' ?>" data-design-target="header.nav_links">Home</a></li>
+          <li><a href="/about" class="nav-link rcs-nav-link <?= $currentUri === '/about' ? 'active' : '' ?>" data-design-target="header.nav_links">About</a></li>
           <li class="nav-dropdown rcs-nav-dropdown" id="ddWrap">
-            <button class="nav-link nav-link-button rcs-nav-link rcs-nav-link-button" data-design-target="header.nav_links" id="ddBtn" type="button" aria-expanded="false" aria-haspopup="true">
+            <button class="nav-link nav-link-button rcs-nav-link rcs-nav-link-button <?= $productsActive ? 'active' : '' ?>" data-design-target="header.nav_links" id="ddBtn" type="button" aria-expanded="false" aria-haspopup="true">
               Products
               <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
             </button>
             <div class="dd-bridge rcs-dd-bridge"></div>
             <div class="dd-panel rcs-dd-panel" id="ddPanel" role="menu">
               <?php if (!empty($navCategories)): ?>
-                <div class="dd-cat-lbl rcs-dd-cat-lbl">Categories → Products</div>
+                <div class="dd-cat-lbl rcs-dd-cat-lbl">All Categories</div>
                 <div class="dd-category-list rcs-dd-category-list">
-                  <?php foreach ($navCategories as $cat):
-                    $catId = (int)($cat['id'] ?? 0);
-                    $catProducts = $navProductsByCategory[$catId] ?? [];
-                  ?>
+                  <?php foreach ($navCategories as $cat): ?>
                     <div class="dd-cat-group rcs-dd-cat-group">
-                      <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item dd-cat-link rcs-dd-item rcs-dd-cat-link" role="menuitem" aria-haspopup="<?= !empty($catProducts) ? 'true' : 'false' ?>">
+                      <a href="/category/<?= htmlspecialchars($cat['slug']) ?>" class="dd-item dd-cat-link rcs-dd-item rcs-dd-cat-link" role="menuitem">
                         <span class="dd-item-ic rcs-dd-item-ic"><?= htmlspecialchars($cat['icon'] ?? '🖨️') ?></span>
                         <span class="dd-cat-name"><?= htmlspecialchars($cat['name']) ?></span>
                         <?php if ((int)($cat['product_count'] ?? 0) > 0): ?>
                           <span class="dd-count rcs-dd-count"><?= (int)$cat['product_count'] ?></span>
                         <?php endif; ?>
-                        <?php if (!empty($catProducts)): ?>
-                          <span class="dd-flyout-arrow" aria-hidden="true">›</span>
-                        <?php endif; ?>
                       </a>
-                      <?php if (!empty($catProducts)): ?>
-                        <div class="dd-product-list rcs-dd-product-list" aria-label="<?= htmlspecialchars($cat['name']) ?> products">
-                          <div class="dd-product-head">
-                            <span><?= htmlspecialchars($cat['name']) ?></span>
-                            <small><?= count($catProducts) ?> product<?= count($catProducts) === 1 ? '' : 's' ?></small>
-                          </div>
-                          <?php foreach ($catProducts as $p): ?>
-                            <a href="/product/<?= htmlspecialchars($p['slug']) ?>" class="dd-item dd-product-link rcs-dd-item rcs-dd-product-link" role="menuitem">
-                              <span class="dd-product-arrow" aria-hidden="true">›</span>
-                              <span><?= htmlspecialchars($p['name']) ?></span>
-                            </a>
-                          <?php endforeach; ?>
-                        </div>
-                      <?php endif; ?>
                     </div>
                   <?php endforeach; ?>
                 </div>
@@ -141,17 +120,14 @@ foreach ($navProducts as $p) {
               </a>
             </div>
           </li>
-          <li><a href="/about" class="nav-link rcs-nav-link" data-design-target="header.nav_links">About Us</a></li>
-          <li><a href="/contact" class="nav-link rcs-nav-link" data-design-target="header.nav_links">Contact Us</a></li>
-          <li><a href="/blogs" class="nav-link rcs-nav-link" data-design-target="header.nav_links">Blog</a></li>
-          <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link rcs-nav-link" data-design-target="header.nav_links">My Account</a></li>
+          <li><a href="/portfolio" class="nav-link rcs-nav-link <?= $currentUri === '/portfolio' ? 'active' : '' ?>" data-design-target="header.nav_links">Portfolio</a></li>
+          <li><a href="/blogs" class="nav-link rcs-nav-link <?= $currentUri === '/blogs' ? 'active' : '' ?>" data-design-target="header.nav_links">Blog</a></li>
+          <li><a href="/contact" class="nav-link rcs-nav-link <?= $currentUri === '/contact' ? 'active' : '' ?>" data-design-target="header.nav_links">Contact</a></li>
+          <li><a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="nav-link rcs-nav-link <?= in_array($currentUri, ['/profile','/login'], true) ? 'active' : '' ?>" data-design-target="header.nav_links">My Account</a></li>
         </ul>
       </div>
 
       <div class="navbar-actions rcs-navbar-actions">
-        <a href="/categories" class="action-btn rcs-action-btn" aria-label="Search">
-          <i class="fa-solid fa-magnifying-glass"></i>
-        </a>
         <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="action-btn rcs-action-btn" aria-label="My Account">
           <i class="fa-regular fa-user"></i>
         </a>
@@ -172,7 +148,8 @@ foreach ($navProducts as $p) {
 ══════════════════════════════════════════════════ -->
 <div class="mob-drawer" id="mobDrawer">
   <div class="mob-drawer-inner">
-    <a href="/"            class="md-item md-home">🏠 Home</a>
+    <a href="/" class="md-item md-home">🏠 Home</a>
+    <a href="/about" class="md-item" onclick="closeDrawer()">⭐ About</a>
 
     <!-- Products accordion -->
     <div class="md-item md-acc" onclick="toggleMobProds()" id="mobProdToggle">
@@ -213,10 +190,10 @@ foreach ($navProducts as $p) {
       </a>
     </div>
 
-    <a href="/about"     class="md-item" onclick="closeDrawer()">⭐ About Us</a>
-    <a href="/contact" class="md-item" onclick="closeDrawer()">📞 Contact Us</a>
-    <a href="/blogs"    class="md-item" onclick="closeDrawer()">📝 Blog</a>
-    <a href="/categories"      class="md-item" onclick="closeDrawer()">🔎 Search Products</a>
+    <a href="/portfolio" class="md-item" onclick="closeDrawer()">🖼️ Portfolio</a>
+    <a href="/blogs" class="md-item" onclick="closeDrawer()">📝 Blog</a>
+    <a href="/contact" class="md-item" onclick="closeDrawer()">📞 Contact</a>
+    <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="md-item" onclick="closeDrawer()">👤 My Account</a>
     <a href="/cart" class="md-item md-action" onclick="closeDrawer()">
       🛒 Cart <span class="md-cart-badge">0</span>
     </a>

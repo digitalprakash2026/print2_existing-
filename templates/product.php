@@ -6,7 +6,7 @@
  * FIX: design fee from admin settings
  * IMPROVEMENT: larger title, better spacing, related products with CTA
  */
-$pageTitle = htmlspecialchars($product['name']) . ' — RCS Graphic';
+$pageTitle = trim((string)($product['meta_title'] ?? '')) ?: ((string)($product['name'] ?? 'Product') . ' Printing — RCS Graphic');
 $settingsMap = [];
 try {
     $settings    = Database::rows("SELECT `key`, value FROM settings");
@@ -15,10 +15,6 @@ try {
 
 // Design fee from admin settings (Admin → Settings → design_fee)
 $designFee = (float)($product['design_fee'] ?? ($settingsMap['design_fee'] ?? 0));
-
-include INCLUDE_PATH . '/partials/head.php';
-include INCLUDE_PATH . '/partials/header.php';
-// Note: cart-drawer is already included by header.php — do NOT include again
 
 // Gallery
 $imgs       = $product['images'] ?? [];
@@ -81,6 +77,59 @@ if ($reviewCount === 0 && !empty($productReviews)) {
 }
 $reviewStarCount = $reviewCount > 0 ? max(1, min(5, (int)round($reviewAverage))) : 0;
 $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $reviewStarCount);
+$productFaqs = [];
+try { $productFaqs = \Faq\FaqManager::listByPage('product_detail'); } catch (\Throwable) { $productFaqs = []; }
+if (!$productFaqs) {
+    $productFaqs = [
+        ['question' => 'Can I upload my own design?', 'answer' => 'Yes, you can upload PDF, AI, PSD, PNG, JPG and other supported artwork files up to 50MB.'],
+        ['question' => 'Can RCS Graphic create the design for me?', 'answer' => 'Yes, select the free design option and our team will connect with you for the design brief and confirmation.'],
+        ['question' => 'How long does delivery take?', 'answer' => 'Standard delivery usually takes 3 - 5 working days after artwork and order confirmation.'],
+    ];
+}
+$productDescription = trim(strip_tags((string)($product['description'] ?? '')));
+$pageDesc = trim((string)($product['meta_description'] ?? '')) ?: ($productDescription !== '' ? (function_exists('mb_substr') ? mb_substr($productDescription, 0, 155) : substr($productDescription, 0, 155)) : ('Order ' . (string)($product['name'] ?? 'printing products') . ' online from RCS Graphic with premium quality printing and support.'));
+$pageImage = $primaryImg;
+$pageOgType = 'product';
+$productSchema = [
+    '@context' => 'https://schema.org',
+    '@type' => 'Product',
+    'name' => (string)($product['name'] ?? 'Product'),
+    'description' => $pageDesc,
+    'image' => preg_match('#^https?://#i', $primaryImg) ? $primaryImg : ((defined('APP_URL') ? rtrim((string)APP_URL, '/') : '') . '/' . ltrim($primaryImg, '/')),
+    'brand' => ['@type' => 'Brand', 'name' => 'RCS Graphic'],
+    'sku' => $productCode !== '' ? $productCode : (string)($product['id'] ?? ''),
+];
+if ($startingPrice > 0) {
+    $productSchema['offers'] = [
+        '@type' => 'Offer',
+        'url' => (defined('APP_URL') ? rtrim((string)APP_URL, '/') : '') . '/product/' . rawurlencode((string)($product['slug'] ?? '')),
+        'priceCurrency' => 'INR',
+        'price' => number_format($startingPrice, 2, '.', ''),
+        'availability' => 'https://schema.org/InStock',
+    ];
+}
+if ($reviewCount > 0 && $reviewAverage > 0) {
+    $productSchema['aggregateRating'] = [
+        '@type' => 'AggregateRating',
+        'ratingValue' => number_format($reviewAverage, 1, '.', ''),
+        'reviewCount' => $reviewCount,
+    ];
+}
+$pageSchema = [$productSchema];
+if (!empty($productFaqs)) {
+    $pageSchema[] = [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => array_map(static fn($faq) => [
+            '@type' => 'Question',
+            'name' => (string)($faq['question'] ?? ''),
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => strip_tags((string)($faq['answer'] ?? ''))],
+        ], $productFaqs),
+    ];
+}
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
+// Note: cart-drawer is already included by header.php — do NOT include again
 ?>
 
 <div class="pd-page-wrap">
@@ -349,18 +398,12 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
           <div class="pd-tab-panel" id="pd-panel-faqs" role="tabpanel" aria-labelledby="pd-tab-faqs" data-tab-panel="faqs" hidden>
             <h2>FAQs</h2>
             <div class="pd-faq-list">
-              <details open>
-                <summary>Can I upload my own design?</summary>
-                <p>Yes, you can upload PDF, AI, PSD, PNG, JPG and other supported artwork files up to 50MB.</p>
+              <?php foreach ($productFaqs as $idx => $faq): ?>
+              <details <?= $idx === 0 ? 'open' : '' ?>>
+                <summary><?= htmlspecialchars((string)($faq['question'] ?? ''), ENT_QUOTES, 'UTF-8') ?></summary>
+                <p><?= nl2br(htmlspecialchars((string)($faq['answer'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></p>
               </details>
-              <details>
-                <summary>Can RCS Graphic create the design for me?</summary>
-                <p>Yes, select the free design option and our team will connect with you for the design brief and confirmation.</p>
-              </details>
-              <details>
-                <summary>How long does delivery take?</summary>
-                <p>Standard delivery usually takes 3 - 5 working days after artwork and order confirmation.</p>
-              </details>
+              <?php endforeach; ?>
             </div>
           </div>
         </div>
