@@ -67,10 +67,19 @@ $portfolioOtherCategories = array_values(array_filter(array_values($portfolioCat
   $nameKey = strtolower(trim((string)($cat['name'] ?? $cat['label'] ?? '')));
   return $slug !== '' && !in_array($slug, $portfolioPrimarySlugs, true) && !in_array($nameKey, $portfolioPrimaryNameKeys, true);
 }));
+
+$portfolioHeroBg = '';
+try {
+  $portfolioHeroRow = Database::row("SELECT background_image, fallback_image FROM page_heroes WHERE page_key=? AND is_active=1 LIMIT 1", ['portfolio']);
+  $portfolioHeroBg = trim((string)($portfolioHeroRow['background_image'] ?? $portfolioHeroRow['fallback_image'] ?? ''));
+} catch (\Throwable) {
+  $portfolioHeroBg = '';
+}
+$portfolioHeroStyle = $portfolioHeroBg !== '' ? ' style="--portfolio-hero-bg-image:url(\'' . htmlspecialchars($portfolioHeroBg, ENT_QUOTES, 'UTF-8') . '\')"' : '';
 ?>
 
 <main class="portfolio-page">
-  <section class="portfolio-hero" aria-labelledby="portfolioHeroTitle">
+  <section class="portfolio-hero" aria-labelledby="portfolioHeroTitle"<?= $portfolioHeroStyle ?>>
     <div class="portfolio-container portfolio-hero-grid">
       <div class="portfolio-hero-copy">
         <h1 id="portfolioHeroTitle">Our <span>Portfolio</span></h1>

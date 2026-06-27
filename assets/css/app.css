@@ -13929,7 +13929,7 @@ body:not(.admin-shell) .blog-view-all {
   font-family:var(--fn);
 }
 .portfolio-container { width:min(var(--page-max, 1680px), calc(100vw - var(--page-gutter, 40px))); margin:0 auto; }
-.portfolio-hero { min-height:415px; display:flex; align-items:center; overflow:hidden; border-bottom:1px solid #e5e7eb; background:radial-gradient(circle at 52% 20%, rgba(75,20,140,.06), transparent 25%), linear-gradient(135deg,#fff 0%,#f9fafc 48%,#f5f3f8 100%); }
+.portfolio-hero { --portfolio-hero-bg-image:radial-gradient(circle at 52% 20%, rgba(75,20,140,.06), transparent 25%), linear-gradient(135deg,#fff 0%,#f9fafc 48%,#f5f3f8 100%); min-height:415px; display:flex; align-items:center; overflow:hidden; border-bottom:1px solid #e5e7eb; background-image:linear-gradient(90deg, rgba(255,255,255,.92) 0%, rgba(255,255,255,.68) 45%, rgba(255,255,255,.2) 100%), var(--portfolio-hero-bg-image); background-size:cover, cover; background-position:center, center; background-repeat:no-repeat; }
 .portfolio-hero-grid { display:grid; grid-template-columns:minmax(430px,.86fr) minmax(0,1.14fr); gap:42px; align-items:center; }
 .portfolio-hero-copy h1 { margin:0 0 18px; color:#101424; font-size:clamp(56px,6vw,86px); line-height:.96; font-weight:700; letter-spacing:-.065em; }
 .portfolio-hero-copy h1 span { color:var(--pf-orange); }
