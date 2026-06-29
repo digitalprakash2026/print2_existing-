@@ -334,6 +334,7 @@ if (str_starts_with($uri, '/admin/api/')) {
         $eventType = trim((string)($_GET['event_type'] ?? ''));
         $dateFrom = trim((string)($_GET['date_from'] ?? ''));
         $dateTo = trim((string)($_GET['date_to'] ?? ''));
+        $actionFilter = trim((string)($_GET['action'] ?? 'all'));
         $where = [];
         $params = [];
         if ($q !== '') {
@@ -344,6 +345,9 @@ if (str_starts_with($uri, '/admin/api/')) {
         if ($eventType !== '' && $eventType !== 'all') { $where[] = 'e.event_type = ?'; $params[] = $eventType; }
         if ($dateFrom !== '') { $where[] = 'DATE(e.created_at) >= ?'; $params[] = $dateFrom; }
         if ($dateTo !== '') { $where[] = 'DATE(e.created_at) <= ?'; $params[] = $dateTo; }
+        if ($actionFilter === 'needs_action') {
+            $where[] = "oda.status IN ('pending_review','issue_found','proof_uploaded','revision_requested')";
+        }
         $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
         $events = Database::rows(
             "SELECT e.*, o.order_id AS public_order_id, o.customer_name, o.customer_email, o.customer_phone,

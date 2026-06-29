@@ -9,6 +9,7 @@ $q = trim((string)($_GET['q'] ?? ''));
 $eventType = trim((string)($_GET['event_type'] ?? 'all'));
 $dateFrom = trim((string)($_GET['date_from'] ?? ''));
 $dateTo = trim((string)($_GET['date_to'] ?? ''));
+$actionFilter = trim((string)($_GET['action'] ?? 'all'));
 $where = [];
 $params = [];
 if ($q !== '') {
@@ -22,6 +23,9 @@ if ($eventType !== '' && $eventType !== 'all') {
 }
 if ($dateFrom !== '') { $where[] = 'DATE(e.created_at) >= ?'; $params[] = $dateFrom; }
 if ($dateTo !== '') { $where[] = 'DATE(e.created_at) <= ?'; $params[] = $dateTo; }
+if ($actionFilter === 'needs_action') {
+    $where[] = "oda.status IN ('pending_review','issue_found','proof_uploaded','revision_requested')";
+}
 $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 $events = [];
 $eventTypes = [];
@@ -61,8 +65,18 @@ $eventLabels = [
     'design_status_changed' => 'Status Changed',
 ];
 $actorIcon = static fn(string $type): string => match ($type) { 'customer' => '👤', 'admin' => '🛡️', default => '⚙️' };
-$buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom, $dateTo): string {
-    $params = array_filter(['q' => $q, 'event_type' => $eventType !== 'all' ? $eventType : '', 'date_from' => $dateFrom, 'date_to' => $dateTo] + $extra, static fn($v) => $v !== '' && $v !== null);
+$eventTone = static function (string $type, string $status): string {
+    if (str_contains($type, 'issue') || str_contains($type, 'revision') || in_array($status, ['issue_found','revision_requested'], true)) return 'danger';
+    if (str_contains($type, 'approved') || $status === 'approved') return 'success';
+    if (str_contains($type, 'proof') || str_contains($type, 'uploaded')) return 'info';
+    return 'neutral';
+};
+$needsActionCount = count(array_filter($events, static fn($event): bool => in_array((string)($event['current_design_status'] ?? ''), ['pending_review','issue_found','proof_uploaded','revision_requested'], true)));
+$approvedCount = count(array_filter($events, static fn($event): bool => (string)($event['current_design_status'] ?? '') === 'approved'));
+$issueCount = count(array_filter($events, static fn($event): bool => in_array((string)($event['current_design_status'] ?? ''), ['issue_found','revision_requested'], true)));
+$buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom, $dateTo, $actionFilter): string {
+    $base = ['q' => $q, 'event_type' => $eventType !== 'all' ? $eventType : '', 'date_from' => $dateFrom, 'date_to' => $dateTo, 'action' => $actionFilter !== 'all' ? $actionFilter : ''];
+    $params = array_filter(array_merge($base, $extra), static fn($v) => $v !== '' && $v !== null);
     return $params ? ('?' . http_build_query($params)) : '';
 };
 ?>
@@ -77,6 +91,13 @@ $buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom
     <strong><?= number_format(count($events)) ?> events</strong>
   </section>
 
+  <section class="design-history-stats" aria-label="Design history summary">
+    <a class="design-history-stat <?= $actionFilter === 'needs_action' ? 'act' : '' ?>" href="/admin/design-history<?= $h($buildQuery(['action' => 'needs_action'])) ?>"><span>Needs Action</span><strong><?= number_format($needsActionCount) ?></strong></a>
+    <div class="design-history-stat"><span>Approved</span><strong><?= number_format($approvedCount) ?></strong></div>
+    <div class="design-history-stat"><span>Issues / Revisions</span><strong><?= number_format($issueCount) ?></strong></div>
+    <a class="design-history-stat" href="/admin/design-history"><span>Reset View</span><strong>All</strong></a>
+  </section>
+
   <form class="design-history-filters" method="GET">
     <input type="search" name="q" value="<?= $h($q) ?>" placeholder="Search order, customer, product…">
     <select name="event_type">
@@ -87,8 +108,12 @@ $buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom
     </select>
     <input type="date" name="date_from" value="<?= $h($dateFrom) ?>">
     <input type="date" name="date_to" value="<?= $h($dateTo) ?>">
+    <select name="action">
+      <option value="all" <?= $actionFilter === 'all' ? 'selected' : '' ?>>All action states</option>
+      <option value="needs_action" <?= $actionFilter === 'needs_action' ? 'selected' : '' ?>>Needs action only</option>
+    </select>
     <button type="submit">Filter</button>
-    <?php if ($q !== '' || $eventType !== 'all' || $dateFrom !== '' || $dateTo !== ''): ?><a href="/admin/design-history">Clear</a><?php endif; ?>
+    <?php if ($q !== '' || $eventType !== 'all' || $dateFrom !== '' || $dateTo !== '' || $actionFilter !== 'all'): ?><a href="/admin/design-history">Clear</a><?php endif; ?>
   </form>
 
   <?php if (!$events): ?>
@@ -108,8 +133,11 @@ $buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom
                 ? trim((string)(($event['current_proof_name'] ?? '') ?: ($event['current_proof_filename'] ?? '')))
                 : trim((string)(($event['current_artwork_name'] ?? '') ?: ($event['current_artwork_filename'] ?? '')));
         }
+        $tone = $eventTone((string)$event['event_type'], (string)($event['status_after'] ?? ''));
+        $statusBefore = trim((string)($event['status_before'] ?? ''));
+        $statusAfter = trim((string)($event['status_after'] ?? ''));
       ?>
-        <article class="design-event-card">
+        <article class="design-event-card design-event-card--<?= $h($tone) ?>">
           <div class="design-event-time">
             <strong><?= $h(date('d M Y', strtotime((string)$event['created_at']))) ?></strong><br>
             <span><?= $h(date('h:i A', strtotime((string)$event['created_at']))) ?></span>
@@ -117,15 +145,20 @@ $buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom
           <div class="design-event-main">
             <div class="design-event-title">
               <strong><?= $h($label) ?></strong>
-              <em><?= $h($actorIcon((string)$event['actor_type']) . ' ' . ucfirst((string)$event['actor_type'])) ?></em>
-              <?php if (!empty($event['status_after'])): ?><em><?= $h((string)$event['status_after']) ?></em><?php endif; ?>
+              <em class="design-event-chip"><?= $h($actorIcon((string)$event['actor_type']) . ' ' . ucfirst((string)$event['actor_type'])) ?></em>
+              <?php if ($statusAfter !== ''): ?><em class="design-event-chip design-event-chip--<?= $h($tone) ?>"><?= $h($statusAfter) ?></em><?php endif; ?>
             </div>
             <div class="design-event-meta">
               <span>Order: <b><?= $h($event['public_order_id'] ?? ('#' . $event['order_id'])) ?></b></span>
               <?php if (!empty($event['customer_name'])): ?><span>Customer: <?= $h($event['customer_name']) ?></span><?php endif; ?>
               <?php if (!empty($event['product_name'])): ?><span>Product: <?= $h($event['product_name']) ?></span><?php endif; ?>
               <?php if (!empty($event['actor_name'])): ?><span>By: <?= $h($event['actor_name']) ?></span><?php endif; ?>
+              <?php if (!empty($event['design_choice'])): ?><span>Design: <?= $h(ucfirst((string)$event['design_choice'])) ?></span><?php endif; ?>
+              <?php if (!empty($event['current_design_status'])): ?><span>Current: <b><?= $h((string)$event['current_design_status']) ?></b></span><?php endif; ?>
             </div>
+            <?php if ($statusBefore !== '' || $statusAfter !== ''): ?>
+              <div class="design-event-status-flow"><span><?= $h($statusBefore !== '' ? $statusBefore : 'new') ?></span><i>→</i><strong><?= $h($statusAfter !== '' ? $statusAfter : 'updated') ?></strong></div>
+            <?php endif; ?>
             <?php if (!empty($event['note'])): ?><p class="design-event-note"><?= $h($event['note']) ?></p><?php endif; ?>
             <?php if ($filePath !== ''): ?>
               <div class="design-event-file-row">

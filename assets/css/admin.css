@@ -663,3 +663,22 @@ body.admin-page-design-history .design-history-empty { padding:44px; text-align:
 body.admin-page-design-history .design-event-file-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
 body.admin-page-design-history .design-event-file-action { min-height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 10px; border:1px solid #dbe4f0; border-radius:10px; background:#fff; color:#1d4ed8; text-decoration:none; font-size:12px; font-weight:950; }
 body.admin-page-design-history .design-event-file-action:last-child { border-color:#bbf7d0; background:#ecfdf5; color:#047857; }
+body.admin-page-design-history .design-history-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+body.admin-page-design-history .design-history-stat { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:74px; padding:14px 16px; border:1px solid #e2e8f0; border-radius:18px; background:#fff; color:#0f172a; text-decoration:none; box-shadow:0 12px 30px rgba(15,23,42,.055); }
+body.admin-page-design-history .design-history-stat.act { border-color:#fb923c; background:#fff7ed; }
+body.admin-page-design-history .design-history-stat span { color:#64748b; font-size:12px; font-weight:950; text-transform:uppercase; letter-spacing:.05em; }
+body.admin-page-design-history .design-history-stat strong { color:#111827; font-size:24px; font-weight:950; }
+body.admin-page-design-history .design-event-card { position:relative; }
+body.admin-page-design-history .design-event-card::before { content:''; position:absolute; inset:14px auto 14px 0; width:4px; border-radius:999px; background:#cbd5e1; }
+body.admin-page-design-history .design-event-card--danger::before { background:#ef4444; }
+body.admin-page-design-history .design-event-card--success::before { background:#22c55e; }
+body.admin-page-design-history .design-event-card--info::before { background:#2563eb; }
+body.admin-page-design-history .design-event-chip--danger { background:#fee2e2 !important; color:#b91c1c !important; }
+body.admin-page-design-history .design-event-chip--success { background:#dcfce7 !important; color:#166534 !important; }
+body.admin-page-design-history .design-event-chip--info { background:#dbeafe !important; color:#1d4ed8 !important; }
+body.admin-page-design-history .design-event-status-flow { display:flex; align-items:center; flex-wrap:wrap; gap:8px; color:#64748b; font-size:12px; font-weight:950; }
+body.admin-page-design-history .design-event-status-flow span,
+body.admin-page-design-history .design-event-status-flow strong { padding:5px 8px; border-radius:999px; background:#f8fafc; color:#334155; }
+body.admin-page-design-history .design-event-status-flow strong { background:#ecfdf5; color:#047857; }
+@media (max-width:980px){ body.admin-page-design-history .design-history-stats{grid-template-columns:1fr 1fr} }
+@media (max-width:560px){ body.admin-page-design-history .design-history-stats{grid-template-columns:1fr} }
