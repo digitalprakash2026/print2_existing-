@@ -437,14 +437,22 @@ async function prefillCheckoutFromProfile() {
 
     checkoutProfile.shipping = data.profile.shipping || null;
     checkoutProfile.billing = data.profile.billing || null;
+    const profileName = data.profile.name || '';
+    const profileCompany = data.profile.company || '';
+
+    setField('g-name', profileName);
+    setField('g-email', data.profile.email || '');
+    setField('g-phone', data.profile.phone || '');
 
     if (checkoutProfile.shipping) {
-      setField('s-business', checkoutProfile.shipping.business_name);
+      setField('s-business', checkoutProfile.shipping.business_name || profileCompany || profileName);
       setField('s-add1', checkoutProfile.shipping.address_line1);
       setField('s-add2', checkoutProfile.shipping.address_line2);
       setField('s-city', checkoutProfile.shipping.city);
       setField('s-state', checkoutProfile.shipping.state);
       setField('s-pin', checkoutProfile.shipping.pincode);
+    } else {
+      setField('s-business', profileCompany || profileName);
     }
 
     if (checkoutProfile.billing) {
