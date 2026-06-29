@@ -14210,3 +14210,33 @@ body.portfolio-lightbox-open { overflow:hidden; }
   .blog-detail-share-block { align-items:flex-start; flex-direction:column; }
   .blog-detail-share-block .blog-detail-share { padding-bottom:0; }
 }
+
+/* Account order readability polish: slightly larger text and tap targets for order details. */
+.account-order-row { font-size:14px; line-height:1.35; }
+.account-order-row strong { font-size:15px; line-height:1.25; }
+.account-order-row b { font-size:15.5px; line-height:1.2; }
+.account-status,
+.account-mini-btn { min-height:30px; padding:7px 11px; font-size:12.5px; line-height:1.1; }
+.account-order-expanded { font-size:14px; line-height:1.48; }
+.account-order-expanded p,
+.account-order-expanded ul { font-size:13.5px; line-height:1.5; }
+.account-order-block-title strong { font-size:15.5px; line-height:1.3; }
+.account-order-block-title span { font-size:13px; line-height:1.35; }
+.account-order-item-title strong { font-size:15.5px; line-height:1.32; }
+.account-order-item-title span,
+.account-order-item-actions > span { min-height:30px; font-size:12px; line-height:1.1; }
+.account-order-item-main p { font-size:13px; line-height:1.45; }
+.account-order-file b { font-size:12px; line-height:1.2; }
+.account-order-file em { font-size:13px; line-height:1.25; }
+.account-order-file small { font-size:12.5px; line-height:1.35; }
+.account-order-actions-list a,
+.account-order-actions-list button,
+.account-order-action-disabled,
+.account-order-item-actions .account-design-review-actions button { min-height:42px; padding:9px 13px; font-size:13px; line-height:1.2; }
+.account-order-expanded li.account-design-issue { font-size:13.5px; line-height:1.5; font-weight:850; }
+@media (max-width:720px){
+  .account-order-row { font-size:13.5px; }
+  .account-order-row strong,
+  .account-order-item-title strong { font-size:15px; }
+  .account-order-expanded { font-size:13.5px; }
+}
