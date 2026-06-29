@@ -14210,3 +14210,17 @@ body.portfolio-lightbox-open { overflow:hidden; }
   .blog-detail-share-block { align-items:flex-start; flex-direction:column; }
   .blog-detail-share-block .blog-detail-share { padding-bottom:0; }
 }
+
+/* Keep the blog detail sidebar banner sticky for the full article scroll. */
+@media (min-width:1181px) {
+  .blog-detail-pro-layout {
+    overflow:visible;
+  }
+  .blog-detail-pro-sidebar {
+    align-self:stretch;
+    overflow:visible;
+  }
+  .blog-detail-pro-sidebar .blog-free-design-banner {
+    top:calc(var(--site-hh, var(--hh, 92px)) + 8px);
+  }
+}
