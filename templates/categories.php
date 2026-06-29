@@ -21,24 +21,26 @@ include INCLUDE_PATH . '/partials/header.php';
 ?>
 
 <main class="all-cat-page">
-  <section class="all-cat-hero-banner" aria-labelledby="allCatTitle">
-    <div class="all-cat-hero-copy">
-      <nav class="all-cat-crumb" aria-label="Breadcrumb">
-        <a href="/">Home</a><span>›</span><span>All Categories</span>
-      </nav>
-      <h1 id="allCatTitle">All Categories</h1>
-      <p>Premium Quality Printing for Every Need</p>
-    </div>
-    <div class="all-cat-hero-visual" aria-hidden="true">
-      <img src="/assets/img/categories/all-categories-hero.svg" alt="" loading="eager">
-    </div>
-  </section>
+  <?php
+  $pageHero = [
+    'key' => 'categories',
+    'title' => 'All Categories',
+    'subtitle' => 'Premium quality printing for every need.',
+    'eyebrow' => 'Shop by Category',
+    'breadcrumbs' => [
+      ['label' => 'Home', 'url' => '/'],
+      ['label' => 'All Categories', 'url' => null],
+    ],
+    'fallback_image' => '/assets/img/categories/all-categories-hero.svg',
+  ];
+  include INCLUDE_PATH . '/partials/page-hero.php';
+  ?>
 
   <div class="container all-cat-content">
     <?php if (empty($activeCategories)): ?>
       <div style="text-align:center;padding:80px 20px;background:#fff;border:1px solid var(--border);border-radius:18px">
         <div style="font-size:48px;margin-bottom:12px">🗂️</div>
-        <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:6px">No categories yet</div>
+        <div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:6px">No categories yet</div>
         <p style="font-size:13px;color:var(--text2);margin-bottom:20px">Please check back soon or contact us on WhatsApp.</p>
         <a href="https://wa.me/<?= htmlspecialchars($bizWa) ?>" target="_blank" rel="noopener" class="btn btn-green">💬 WhatsApp Us</a>
       </div>
@@ -103,45 +105,11 @@ include INCLUDE_PATH . '/partials/header.php';
 
       <section class="all-cat-usp" aria-label="RCS Print benefits">
         <div class="why-print-panel">
-          <article class="why-print-item">
-            <div class="why-print-icon why-print-purple"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></div>
-            <div class="why-print-copy">
-              <h3>Fast Delivery</h3>
-              <p>On-time delivery always guaranteed.</p>
-            </div>
-          </article>
-
-          <article class="why-print-item">
-            <div class="why-print-icon why-print-orange"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div>
-            <div class="why-print-copy">
-              <h3>Free Design Support</h3>
-              <p>Professional design support at no extra cost.</p>
-            </div>
-          </article>
-
-          <article class="why-print-item">
-            <div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div>
-            <div class="why-print-copy">
-              <h3>Premium Quality</h3>
-              <p>Best quality materials and printing.</p>
-            </div>
-          </article>
-
-          <article class="why-print-item">
-            <div class="why-print-icon why-print-purple"><i class="fa-solid fa-tags" aria-hidden="true"></i></div>
-            <div class="why-print-copy">
-              <h3>Affordable Pricing</h3>
-              <p>Low price with the best value.</p>
-            </div>
-          </article>
-
-          <article class="why-print-item">
-            <div class="why-print-icon why-print-orange"><i class="fa-solid fa-cube" aria-hidden="true"></i></div>
-            <div class="why-print-copy">
-              <h3>Bulk Order Specialist</h3>
-              <p>Special prices for bulk requirements.</p>
-            </div>
-          </article>
+          <article class="why-print-item"><div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Premium Quality</h3><p>Best quality materials and printing.</p></div></article>
+          <article class="why-print-item"><div class="why-print-icon why-print-orange"><i class="fa-regular fa-thumbs-up" aria-hidden="true"></i></div><div class="why-print-copy"><h3>100% Satisfaction</h3><p>Your happiness matters.</p></div></article>
+          <article class="why-print-item"><div class="why-print-icon why-print-purple"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Free Design Support</h3><p>Professional design support at no extra cost.</p></div></article>
+          <article class="why-print-item"><div class="why-print-icon why-print-purple"><i class="fa-solid fa-tags" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Affordable Pricing</h3><p>Low price with the best value.</p></div></article>
+          <article class="why-print-item"><div class="why-print-icon why-print-orange"><i class="fa-solid fa-cube" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Bulk Order Specialist</h3><p>Special prices for bulk requirements.</p></div></article>
         </div>
       </section>
     <?php endif; ?>
