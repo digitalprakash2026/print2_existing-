@@ -696,12 +696,17 @@ async function removeWishlistItem(productId, btn) {
 }
 
 window.addEventListener('hashchange', () => setAccountTab(location.hash.replace('#', ''), false));
-setAccountTab(location.hash.replace('#', ''), false);
+const rememberedOrder = sessionStorage.getItem('accountOpenOrder') || '';
+const initialAccountTab = location.hash.replace('#', '') || (rememberedOrder ? (sessionStorage.getItem('accountOpenTab') || 'orders') : 'dashboard');
+setAccountTab(initialAccountTab, false);
 restoreOpenAccountOrder();
 document.querySelectorAll('.account-order-detail').forEach(detail => {
   detail.addEventListener('toggle', () => {
     if (detail.open) { rememberOpenAccountOrder(detail); return; }
-    if (localStorage.getItem('accountOpenOrder') === detail.dataset.orderDetail) localStorage.removeItem('accountOpenOrder');
+    if (sessionStorage.getItem('accountOpenOrder') === detail.dataset.orderDetail) {
+      sessionStorage.removeItem('accountOpenOrder');
+      sessionStorage.removeItem('accountOpenTab');
+    }
   });
 });
 
@@ -800,11 +805,14 @@ async function uploadAccountArtworkRevision(input, id) {
 function rememberOpenAccountOrder(el) {
   const detail = el?.closest?.('.account-order-detail') || el;
   const key = detail?.dataset?.orderDetail || '';
-  if (key) localStorage.setItem('accountOpenOrder', key);
+  if (!key) return;
+  sessionStorage.setItem('accountOpenOrder', key);
+  sessionStorage.setItem('accountOpenTab', 'orders');
 }
 function restoreOpenAccountOrder() {
-  const key = localStorage.getItem('accountOpenOrder') || '';
+  const key = sessionStorage.getItem('accountOpenOrder') || '';
   if (!key) return;
+  setAccountTab(sessionStorage.getItem('accountOpenTab') || 'orders', false);
   const detail = Array.from(document.querySelectorAll('.account-order-detail')).find(item => item.dataset.orderDetail === key);
   if (detail) detail.open = true;
 }

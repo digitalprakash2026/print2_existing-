@@ -108,7 +108,7 @@ $portfolioHeroStyle = $portfolioHeroBg !== '' ? ' style="--portfolio-hero-bg-ima
       </div>
 
       <div class="portfolio-filter-row" aria-label="Portfolio categories">
-        <a href="/portfolio" class="portfolio-filter <?= $portfolioCategory === '' ? 'active' : '' ?>">
+        <a href="/portfolio" class="portfolio-filter <?= $portfolioCategory === '' ? 'active' : '' ?>" data-portfolio-filter="">
           <i class="fa-solid fa-border-all" aria-hidden="true"></i>
           <span>All Works</span>
         </a>
@@ -118,7 +118,7 @@ $portfolioHeroStyle = $portfolioHeroBg !== '' ? ' style="--portfolio-hero-bg-ima
             $catSlug = (string)($cat['slug'] ?? '');
             $catIcon = (string)($cat['icon'] ?? 'fa-folder-open');
           ?>
-          <a href="/portfolio?category=<?= rawurlencode($catSlug) ?>" class="portfolio-filter <?= $portfolioCategory === $catSlug ? 'active' : '' ?>">
+          <a href="/portfolio?category=<?= rawurlencode($catSlug) ?>" class="portfolio-filter <?= $portfolioCategory === $catSlug ? 'active' : '' ?>" data-portfolio-filter="<?= htmlspecialchars($catSlug, ENT_QUOTES, 'UTF-8') ?>">
             <i class="fa-solid <?= htmlspecialchars($catIcon, ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i>
             <span><?= htmlspecialchars($catLabel, ENT_QUOTES, 'UTF-8') ?></span>
           </a>
@@ -133,7 +133,7 @@ $portfolioHeroStyle = $portfolioHeroBg !== '' ? ' style="--portfolio-hero-bg-ima
             <div class="portfolio-filter-menu" role="menu">
               <?php foreach ($portfolioOtherCategories as $cat): ?>
                 <?php $catLabel = (string)($cat['label'] ?? $cat['name'] ?? 'Category'); $catSlug = (string)($cat['slug'] ?? ''); ?>
-                <a role="menuitem" href="/portfolio?category=<?= rawurlencode($catSlug) ?>" class="<?= $portfolioCategory === $catSlug ? 'active' : '' ?>"><?= htmlspecialchars($catLabel, ENT_QUOTES, 'UTF-8') ?></a>
+                <a role="menuitem" href="/portfolio?category=<?= rawurlencode($catSlug) ?>" class="<?= $portfolioCategory === $catSlug ? 'active' : '' ?>" data-portfolio-filter="<?= htmlspecialchars($catSlug, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($catLabel, ENT_QUOTES, 'UTF-8') ?></a>
               <?php endforeach; ?>
             </div>
           </div>
@@ -141,7 +141,7 @@ $portfolioHeroStyle = $portfolioHeroBg !== '' ? ' style="--portfolio-hero-bg-ima
       </div>
 
       <?php if ($portfolioItems): ?>
-      <div class="portfolio-grid">
+      <div class="portfolio-grid" data-portfolio-results>
         <?php foreach ($portfolioItems as $item): ?>
           <?php
             $itemImage = (string)($item['image'] ?? $item['main_image'] ?? '/assets/images/sample-products/business-cards/business-cards-1.svg');
@@ -150,7 +150,7 @@ $portfolioHeroStyle = $portfolioHeroBg !== '' ? ' style="--portfolio-hero-bg-ima
             $itemCategory = (string)($item['category'] ?? $item['category_name'] ?? 'Portfolio');
             $itemCategorySlug = (string)($item['category_slug'] ?? 'portfolio');
           ?>
-          <article class="portfolio-card portfolio-gallery-card">
+          <article class="portfolio-card portfolio-gallery-card" data-portfolio-card="<?= htmlspecialchars($itemCategorySlug, ENT_QUOTES, 'UTF-8') ?>">
             <button class="portfolio-card-img portfolio-lightbox-trigger" type="button" data-full="<?= htmlspecialchars($itemImage, ENT_QUOTES, 'UTF-8') ?>" data-title="<?= htmlspecialchars($itemTitle, ENT_QUOTES, 'UTF-8') ?>" data-category="<?= htmlspecialchars($itemCategory, ENT_QUOTES, 'UTF-8') ?>" data-category-slug="<?= htmlspecialchars($itemCategorySlug, ENT_QUOTES, 'UTF-8') ?>">
               <img src="<?= htmlspecialchars($itemImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($itemAlt, ENT_QUOTES, 'UTF-8') ?>" loading="lazy">
               <span><i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i> View Large</span>
@@ -162,7 +162,7 @@ $portfolioHeroStyle = $portfolioHeroBg !== '' ? ' style="--portfolio-hero-bg-ima
         <?php endforeach; ?>
       </div>
       <?php else: ?>
-        <div class="portfolio-empty-state">No portfolio work found for this category yet. Please check all works or add new portfolio items from admin.</div>
+        <div class="portfolio-empty-state" data-portfolio-empty>No portfolio work found for this category yet. Please check all works or add new portfolio items from admin.</div>
       <?php endif; ?>
 
       <?php if ($portfolioPage < $portfolioTotalPages): ?>
@@ -209,39 +209,115 @@ $portfolioHeroStyle = $portfolioHeroBg !== '' ? ' style="--portfolio-hero-bg-ima
   </div>
   <script>
   (function(){
-    const box = document.getElementById('portfolioLightbox');
-    const img = document.getElementById('portfolioLightboxImage');
-    const triggers = Array.from(document.querySelectorAll('.portfolio-lightbox-trigger'));
-    let gallery = [];
-    let currentIndex = 0;
-    const close = () => { box?.classList.remove('open'); box?.setAttribute('aria-hidden', 'true'); document.body.classList.remove('portfolio-lightbox-open'); };
-    const show = (index) => {
-      if (!box || !img || !gallery.length) return;
-      currentIndex = (index + gallery.length) % gallery.length;
-      const active = gallery[currentIndex];
-      img.src = active.dataset.full || '';
-      img.alt = active.dataset.title || 'Portfolio image';
-      box.classList.add('open');
-      box.setAttribute('aria-hidden', 'false');
-      document.body.classList.add('portfolio-lightbox-open');
+    const bindPortfolioLightbox = () => {
+      const box = document.getElementById('portfolioLightbox');
+      const img = document.getElementById('portfolioLightboxImage');
+      const triggers = Array.from(document.querySelectorAll('.portfolio-lightbox-trigger'));
+      let gallery = [];
+      let currentIndex = 0;
+      const close = () => { box?.classList.remove('open'); box?.setAttribute('aria-hidden', 'true'); document.body.classList.remove('portfolio-lightbox-open'); };
+      const show = (index) => {
+        if (!box || !img || !gallery.length) return;
+        currentIndex = (index + gallery.length) % gallery.length;
+        const active = gallery[currentIndex];
+        img.src = active.dataset.full || '';
+        img.alt = active.dataset.title || 'Portfolio image';
+        box.classList.add('open');
+        box.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('portfolio-lightbox-open');
+      };
+      const move = (step) => show(currentIndex + step);
+      triggers.forEach(btn => {
+        if (btn.dataset.lightboxBound === '1') return;
+        btn.dataset.lightboxBound = '1';
+        btn.addEventListener('click', () => {
+          const categorySlug = btn.dataset.categorySlug || '';
+          gallery = Array.from(document.querySelectorAll('.portfolio-lightbox-trigger')).filter(item => (item.dataset.categorySlug || '') === categorySlug);
+          if (!gallery.length) gallery = Array.from(document.querySelectorAll('.portfolio-lightbox-trigger'));
+          show(gallery.indexOf(btn));
+        });
+      });
+      if (box && box.dataset.lightboxShellBound !== '1') {
+        box.dataset.lightboxShellBound = '1';
+        box.addEventListener('click', e => { if (e.target === box) close(); });
+        box.querySelector('.portfolio-lightbox-close')?.addEventListener('click', close);
+        box.querySelector('.portfolio-lightbox-prev')?.addEventListener('click', () => move(-1));
+        box.querySelector('.portfolio-lightbox-next')?.addEventListener('click', () => move(1));
+        document.addEventListener('keydown', e => {
+          if (!box.classList.contains('open')) return;
+          if (e.key === 'Escape') close();
+          if (e.key === 'ArrowLeft') move(-1);
+          if (e.key === 'ArrowRight') move(1);
+        });
+      }
     };
-    const move = (step) => show(currentIndex + step);
-    triggers.forEach(btn => btn.addEventListener('click', () => {
-      const categorySlug = btn.dataset.categorySlug || '';
-      gallery = triggers.filter(item => (item.dataset.categorySlug || '') === categorySlug);
-      if (!gallery.length) gallery = triggers;
-      show(gallery.indexOf(btn));
-    }));
-    box?.addEventListener('click', e => { if (e.target === box) close(); });
-    box?.querySelector('.portfolio-lightbox-close')?.addEventListener('click', close);
-    box?.querySelector('.portfolio-lightbox-prev')?.addEventListener('click', () => move(-1));
-    box?.querySelector('.portfolio-lightbox-next')?.addEventListener('click', () => move(1));
-    document.addEventListener('keydown', e => {
-      if (!box?.classList.contains('open')) return;
-      if (e.key === 'Escape') close();
-      if (e.key === 'ArrowLeft') move(-1);
-      if (e.key === 'ArrowRight') move(1);
+
+    const syncActiveFilters = (category) => {
+      document.querySelectorAll('[data-portfolio-filter]').forEach(link => {
+        const active = (link.dataset.portfolioFilter || '') === category;
+        link.classList.toggle('active', active);
+      });
+      const more = document.querySelector('.portfolio-filter-more');
+      if (more) {
+        more.classList.toggle('active', !!more.querySelector('.portfolio-filter-menu a.active'));
+      }
+    };
+
+    const replacePortfolioResults = (doc) => {
+      const nextGrid = doc.querySelector('[data-portfolio-results]');
+      const currentGrid = document.querySelector('[data-portfolio-results]');
+      const nextEmpty = doc.querySelector('[data-portfolio-empty]');
+      const currentEmpty = document.querySelector('[data-portfolio-empty]');
+      const nextLoad = doc.querySelector('.portfolio-load-wrap');
+      const currentLoad = document.querySelector('.portfolio-load-wrap');
+
+      if (nextGrid && currentGrid) {
+        currentGrid.replaceWith(nextGrid);
+      } else if (nextGrid && currentEmpty) {
+        currentEmpty.replaceWith(nextGrid);
+      } else if (nextEmpty && currentGrid) {
+        currentGrid.replaceWith(nextEmpty);
+      } else if (nextEmpty && currentEmpty) {
+        currentEmpty.replaceWith(nextEmpty);
+      }
+
+      if (currentLoad && nextLoad) currentLoad.replaceWith(nextLoad);
+      else if (currentLoad && !nextLoad) currentLoad.remove();
+      else if (!currentLoad && nextLoad) (document.querySelector('[data-portfolio-results], [data-portfolio-empty]')?.after(nextLoad));
+
+      bindPortfolioLightbox();
+    };
+
+    const loadPortfolioCategory = async (url, category, push = true) => {
+      try {
+        const response = await fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!response.ok) throw new Error('Portfolio request failed');
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        replacePortfolioResults(doc);
+        syncActiveFilters(category);
+        if (push) history.pushState({ portfolioCategory: category }, '', url);
+      } catch (error) {
+        window.location.href = url;
+      }
+    };
+
+    document.querySelectorAll('[data-portfolio-filter]').forEach(link => {
+      link.addEventListener('click', event => {
+        event.preventDefault();
+        const url = link.getAttribute('href') || '/portfolio';
+        const category = link.dataset.portfolioFilter || '';
+        loadPortfolioCategory(url, category, true);
+      });
     });
+
+    window.addEventListener('popstate', () => {
+      const params = new URLSearchParams(window.location.search);
+      const category = params.get('category') || '';
+      loadPortfolioCategory(window.location.pathname + window.location.search, category, false);
+    });
+
+    bindPortfolioLightbox();
   })();
   </script>
 </main>
