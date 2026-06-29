@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= htmlspecialchars($pageTitle ?? 'Admin — RCS Graphic') ?></title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <?php
 $adminAppCssVersion = @filemtime(PUBLIC_PATH . '/assets/css/app.css') ?: time();
 $adminCssVersion = @filemtime(PUBLIC_PATH . '/assets/css/admin.css') ?: time();
@@ -22,29 +22,14 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
 <!-- Admin Header -->
 <header class="header adm-header adm-header-pro" style="z-index:950">
   <div class="adm-hdr-left">
-    <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-controls="admSidebar" aria-expanded="false" onclick="document.body.classList.toggle('adm-sb-open');this.setAttribute('aria-expanded',document.body.classList.contains('adm-sb-open')?'true':'false');">
-      <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    <button class="adm-mob-toggle" id="admMobToggle" type="button" aria-label="Open admin menu" aria-expanded="false" onclick="document.body.classList.toggle('adm-sb-open');this.setAttribute('aria-expanded', document.body.classList.contains('adm-sb-open') ? 'true' : 'false');">
+      <span></span><span></span><span></span>
     </button>
   </div>
-  <div class="adm-hdr-center">
-    <form class="adm-global-search" action="/admin/orders" method="GET" role="search">
-      <input name="search" type="search" placeholder="Search orders, customers, products..." aria-label="Search admin records">
-      <button type="submit" aria-label="Search">⌕</button>
-    </form>
-  </div>
+  <div class="adm-hdr-center"></div>
   <div class="adm-hdr-right">
     <div class="adm-hdr-actions">
       <button class="adm-icon-btn" type="button" aria-label="Fullscreen" onclick="document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();">⛶</button>
-      <div class="adm-notify" id="admNotify">
-        <button class="adm-notify-btn" type="button" id="admNotifyBtn" aria-expanded="false" aria-label="New order notifications">
-          🔔 <span class="adm-notify-count" id="admNotifyCount" style="display:none">0</span>
-        </button>
-        <div class="adm-notify-panel" id="admNotifyPanel">
-          <div class="adm-notify-head"><strong>New Orders</strong><a href="/admin/orders?status=new_order">View all</a></div>
-          <div id="admNotifyList" class="adm-notify-list"><div class="adm-notify-empty">Loading…</div></div>
-        </div>
-      </div>
-      <a class="adm-new-orders-link" href="/admin/orders?status=new_order">New Orders</a>
       <span class="adm-hdr-divider"></span>
     </div>
     <div class="adm-user-menu" id="admUserMenu">
@@ -64,27 +49,34 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
     <!-- Sidebar -->
     <div class="adm-sb" id="admSidebar">
       <div class="adm-sb-logo adm-sb-logo-img">
-        <img src="/assets/images/rcs-graphic-logo.png" alt="RCS Print Logo" loading="eager" decoding="async">
+        <img src="/assets/images/RCS%20PRINT%20LOGO-white.png" alt="RCS Print Logo" loading="eager" decoding="async">
         <div class="adm-sb-s">Admin Panel</div>
       </div>
       <div class="adm-nl">Main</div>
       <?php $cur = $currentAdmPage ?? ''; ?>
       <a href="/admin/dashboard" class="adm-ni <?= $cur === 'dashboard' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</a>
       <a href="/admin/orders"   class="adm-ni <?= $cur === 'orders' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Orders</a>
+      <a href="/admin/design-history" class="adm-ni <?= $cur === 'design-history' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 1 0 8.95 10h-2.02A7 7 0 1 1 13 5v4l5-5-5-5v4zm-1 4h2v6l5 3-.95 1.6L12 14V7z"/></svg>Design History</a>
       <div class="adm-nl">Catalog</div>
       <a href="/admin/products" class="adm-ni <?= $cur === 'products' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>Products</a>
       <a href="/admin/categories" class="adm-ni <?= $cur === 'categories' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M10 4H4v6h6V4zm10 0h-8v6h8V4zM10 14H4v6h6v-6zm10 0h-8v6h8v-6z"/></svg>Categories</a>
+      <a href="/admin/media" class="adm-ni <?= $cur === 'media' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM8.5 9.5c-.83 0-1.5-.67-1.5-1.5S7.67 6.5 8.5 6.5 10 7.17 10 8s-.67 1.5-1.5 1.5zM19 18H5l3.5-4.5 2.5 3.01L14.5 12 19 18z"/></svg>Media</a>
+      <a href="/admin/portfolio" class="adm-ni <?= $cur === 'portfolio' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M4 5h16c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2zm0 2v10h16V7H4zm2 8 3.2-4.2 2.3 2.8 2.1-2.6L18 15H6zm10-5.5c-.83 0-1.5-.67-1.5-1.5S15.17 6.5 16 6.5s1.5.67 1.5 1.5S16.83 9.5 16 9.5z"/></svg>Portfolio</a>
+      <a href="/admin/page-heroes" class="adm-ni <?= $cur === 'page-heroes' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M21 5H3c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 12H3V7h18v10zM5 15l3-3.86 2.14 2.58L13 10l4 5H5z"/></svg>Page Heroes</a>
       <a href="/admin/banners" class="adm-ni <?= $cur === 'banners' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M3 5h18v14H3V5zm2 2v10h14V7H5zm2 2h10v2H7V9zm0 4h7v2H7v-2z"/></svg>Banner Slider</a>
       <a href="/admin/deals" class="adm-ni <?= $cur === 'deals' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.12 0-2.1.61-2.62 1.52L12 4.17l-.38-.65C11.1 2.61 10.12 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1S9.55 6 9 6 8 5.55 8 5s.45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 12 7.4l3.38 4.6L17 10.83 14.92 8H20v6z"/></svg>Best Deals</a>
       <a href="/admin/blogs" class="adm-ni <?= $cur === 'blogs' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6v-2h12v2zm0-4H6v-2h12v2zm0-4H6V5h12v6z"/></svg>Blogs</a>
       <div class="adm-nl">Tools</div>
       <a href="/admin/coupons"  class="adm-ni <?= $cur === 'coupons' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>Coupons</a>
       <a href="/admin/reviews" class="adm-ni <?= $cur === 'reviews' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27z"/></svg>Reviews</a>
+      <a href="/admin/faqs" class="adm-ni <?= $cur === 'faqs' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.03 2 11c0 2.39 1.05 4.57 2.76 6.2L4 22l4.78-1.44c1 .29 2.08.44 3.22.44 5.52 0 10-4.03 10-9S17.52 2 12 2zm0 17c-.98 0-1.9-.14-2.76-.42l-.42-.13-2.12.64.34-2.08-.36-.34C5.01 15.31 4 13.23 4 11c0-3.86 3.58-7 8-7s8 3.14 8 7-3.58 8-8 8zm0-13c-2.21 0-4 1.46-4 3.25h2c0-.69.9-1.25 2-1.25s2 .56 2 1.25c0 .71-.46 1.04-1.42 1.58-1.02.58-1.58 1.31-1.58 2.67V14h2v-.5c0-.61.24-.85 1.1-1.34.94-.53 1.9-1.3 1.9-2.91C16 7.46 14.21 6 12 6z"/></svg>Add FAQ</a>
       <a href="/admin/customers" class="adm-ni <?= $cur === 'customers' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Customers</a>
       <a href="/admin/leads" class="adm-ni <?= $cur === 'leads' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>Leads</a>
       <?php if ($isSuperAdmin): ?>
+      <div class="adm-nl">Management</div>
       <a href="/admin/approvals" class="adm-ni <?= $cur === 'approvals' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Approvals</a>
       <a href="/admin/admins" class="adm-ni <?= $cur === 'admins' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5 1.34 3.5 3 3.5zm-8 0c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm8 0c-.34 0-.71.02-1.1.06C16.22 13.98 17 15.33 17 17v2h7v-2c0-2.66-5.33-4-8-4z"/></svg>Admins</a>
+      <a href="/admin/backup" class="adm-ni <?= $cur === 'backup' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.58 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm0 2c3.31 0 6 .9 6 2s-2.69 2-6 2-6-.9-6-2 2.69-2 6-2zm0 14c-3.31 0-6-.9-6-2v-2.08C7.45 15.57 9.59 16 12 16s4.55-.43 6-1.08V17c0 1.1-2.69 2-6 2zm0-5c-3.31 0-6-.9-6-2V9.92C7.45 10.57 9.59 11 12 11s4.55-.43 6-1.08V12c0 1.1-2.69 2-6 2z"/></svg>Backup</a>
       <?php endif; ?>
       <div class="adm-nl">Config</div>
       <a href="/admin/design" class="adm-ni <?= $cur === 'design' ? 'act' : '' ?>"><svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 3.58-9 8 0 3.31 2.69 6 6 6h1.5c.83 0 1.5.67 1.5 1.5S12.67 20 13.5 20H15c3.31 0 6-2.69 6-6.5C21 7.7 16.97 3 12 3zM6.5 11C5.67 11 5 10.33 5 9.5S5.67 8 6.5 8 8 8.67 8 9.5 7.33 11 6.5 11zm3-3C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5 11 5.67 11 6.5 10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5 16 5.67 16 6.5 15.33 8 14.5 8zm3 3c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8 19 8.67 19 9.5 18.33 11 17.5 11z"/></svg>Design Studio</a>
@@ -103,54 +95,36 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
     (function(){
       const sb = document.getElementById('admSidebar');
       const t = document.getElementById('admMobToggle');
-      if (!sb || !t) return;
-      sb.addEventListener('click', function (e) {
-        if (window.innerWidth <= 900 && e.target.closest('.adm-ni')) {
-          document.body.classList.remove('adm-sb-open');
-          t.setAttribute('aria-expanded', 'false');
-        }
-      });
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-          document.body.classList.remove('adm-sb-open');
-          t.setAttribute('aria-expanded', 'false');
-        }
-      });
-      window.addEventListener('resize', function () {
-        if (window.innerWidth > 900) {
-          document.body.classList.remove('adm-sb-open');
-          t.setAttribute('aria-expanded', 'false');
-        }
-      });
-
-      const notify = document.getElementById('admNotify');
-      const notifyBtn = document.getElementById('admNotifyBtn');
-      const notifyPanel = document.getElementById('admNotifyPanel');
-      const notifyCount = document.getElementById('admNotifyCount');
-      const notifyList = document.getElementById('admNotifyList');
-      function escAdm(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-      async function loadAdminNotifications(){
-        if (!notifyCount || !notifyList) return;
-        try {
-          const res = await fetch('/admin/api/order-notifications').then(r=>r.json());
-          if (!res.ok) return;
-          const count = Number(res.count || 0);
-          notifyCount.textContent = count > 99 ? '99+' : String(count);
-          notifyCount.style.display = count > 0 ? '' : 'none';
-          notifyList.innerHTML = (res.orders || []).length
-            ? res.orders.map(o => `<a class="adm-notify-item" href="/admin/orders?status=new_order"><span>#${escAdm(o.order_id)}</span><small>${escAdm(o.customer_name)} · ₹${Number(o.total_amount||0).toLocaleString('en-IN')}</small></a>`).join('')
-            : '<div class="adm-notify-empty">No new orders pending review.</div>';
-        } catch (e) {}
-      }
-      if (notifyBtn && notify) {
-        notifyBtn.addEventListener('click', function(e){
-          e.stopPropagation();
-          const open = notify.classList.toggle('open');
-          notifyBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-          if (open) loadAdminNotifications();
+      if (sb && t) {
+        sb.addEventListener('click', function (e) {
+          if (window.innerWidth <= 900 && e.target.closest('.adm-ni')) {
+            document.body.classList.remove('adm-sb-open');
+            t.setAttribute('aria-expanded', 'false');
+          }
         });
-        loadAdminNotifications();
-        setInterval(loadAdminNotifications, 60000);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') {
+            document.body.classList.remove('adm-sb-open');
+            t.setAttribute('aria-expanded', 'false');
+          }
+        });
+        window.addEventListener('resize', function () {
+          if (window.innerWidth > 900) {
+            document.body.classList.remove('adm-sb-open');
+            t.setAttribute('aria-expanded', 'false');
+          }
+        });
+      } else {
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') {
+            document.body.classList.remove('adm-sb-open');
+          }
+        });
+        window.addEventListener('resize', function () {
+          if (window.innerWidth > 900) {
+            document.body.classList.remove('adm-sb-open');
+          }
+        });
       }
 
       const userBtn = document.getElementById('admUserBtn');
@@ -165,10 +139,6 @@ $adminRoleLabel = $isSuperAdmin ? 'Super Admin' : 'Admin';
           if (!userMenu.contains(e.target)) {
             userMenu.classList.remove('open');
             userBtn.setAttribute('aria-expanded', 'false');
-          }
-          if (notify && !notify.contains(e.target)) {
-            notify.classList.remove('open');
-            notifyBtn?.setAttribute('aria-expanded', 'false');
           }
         });
       }

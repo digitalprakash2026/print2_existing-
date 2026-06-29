@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /cart
+Disallow: /checkout
+Disallow: /my-orders
+Disallow: /profile
+
+Sitemap: https://print.rcsgraphic.com/sitemap.xml
