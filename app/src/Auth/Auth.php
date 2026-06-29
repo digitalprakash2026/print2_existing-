@@ -429,8 +429,9 @@ class Auth
     public static function admin(): ?array  { return $_SESSION['admin'] ?? null; }
     public static function isSuperAdmin(): bool
     {
-        $role = strtolower((string)($_SESSION['admin']['role'] ?? ''));
-        return in_array($role, ['super','super_admin','super-admin','owner'], true);
+        $role = strtolower(trim((string)($_SESSION['admin']['role'] ?? '')));
+        $normalizedRole = trim((string)preg_replace('/[^a-z0-9]+/', '_', $role), '_');
+        return in_array($normalizedRole, ['super','superadmin','super_admin','owner'], true);
     }
 
     public static function requireSuperAdmin(): void
