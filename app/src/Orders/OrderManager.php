@@ -207,6 +207,9 @@ class OrderManager
     {
         self::ensureWorkflowSchema();
         self::ensureDesignApprovalSchema();
+        // Ensure the additive audit table before checkout starts its DB transaction.
+        // MySQL DDL can implicitly commit active transactions, so never create this table mid-order.
+        self::ensureDesignEventSchema();
 
         $user = \Auth\Auth::user();
         if (!$user) return ['ok' => false, 'msg' => 'Not authenticated'];
