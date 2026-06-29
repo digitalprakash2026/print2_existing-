@@ -660,3 +660,6 @@ body.admin-page-design-history .design-event-side { display:flex; align-items:fl
 body.admin-page-design-history .design-event-side a { min-height:34px; display:inline-flex; align-items:center; justify-content:center; padding:0 10px; border-radius:10px; background:#eff6ff; color:#1d4ed8; text-decoration:none; font-size:12px; font-weight:950; }
 body.admin-page-design-history .design-history-empty { padding:44px; text-align:center; border:1px dashed #cbd5e1; border-radius:22px; background:#fff; color:#64748b; font-weight:800; }
 @media (max-width:980px){ body.admin-page-media .adm-media-actions{grid-template-columns:1fr 1fr} body.admin-page-design-history .design-history-filters{grid-template-columns:1fr} body.admin-page-design-history .design-event-card{grid-template-columns:1fr} }
+body.admin-page-design-history .design-event-file-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+body.admin-page-design-history .design-event-file-action { min-height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 10px; border:1px solid #dbe4f0; border-radius:10px; background:#fff; color:#1d4ed8; text-decoration:none; font-size:12px; font-weight:950; }
+body.admin-page-design-history .design-event-file-action:last-child { border-color:#bbf7d0; background:#ecfdf5; color:#047857; }

@@ -466,6 +466,12 @@ class OrderManager
             'revision_requested' => 'revision_requested',
             default => 'design_status_changed',
         };
+        $eventFileId = $proofFileId;
+        $eventFileRole = $proofFileId ? 'admin_proof' : null;
+        if ($status === 'approved' && !$eventFileId) {
+            $eventFileId = !empty($approval['proof_file_id']) ? (int)$approval['proof_file_id'] : (!empty($approval['customer_artwork_file_id']) ? (int)$approval['customer_artwork_file_id'] : null);
+            $eventFileRole = !empty($approval['proof_file_id']) ? 'admin_proof' : (!empty($approval['customer_artwork_file_id']) ? 'customer_artwork' : null);
+        }
         self::recordDesignEvent([
             'order_id' => (int)$approval['order_id'],
             'order_item_id' => (int)$approval['order_item_id'],
@@ -476,8 +482,8 @@ class OrderManager
             'actor_name' => $admin['name'] ?? null,
             'status_before' => (string)($approval['status'] ?? ''),
             'status_after' => $status,
-            'file_id' => $proofFileId,
-            'file_role' => $proofFileId ? 'admin_proof' : null,
+            'file_id' => $eventFileId,
+            'file_role' => $eventFileRole,
             'note' => $adminNote,
         ]);
 

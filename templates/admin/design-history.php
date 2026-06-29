@@ -29,11 +29,15 @@ try {
     $events = Database::rows(
         "SELECT e.*, o.order_id AS public_order_id, o.customer_name, o.customer_email, o.customer_phone,
                 o.status AS order_status, oi.product_name, oi.quantity, oi.design_choice,
-                oda.status AS current_design_status
+                oda.status AS current_design_status,
+                caf.file_path AS current_artwork_path, caf.original_name AS current_artwork_name, caf.filename AS current_artwork_filename,
+                pf.file_path AS current_proof_path, pf.original_name AS current_proof_name, pf.filename AS current_proof_filename
            FROM order_design_events e
            LEFT JOIN orders o ON o.id = e.order_id
            LEFT JOIN order_items oi ON oi.id = e.order_item_id
            LEFT JOIN order_design_approvals oda ON oda.id = e.design_approval_id
+           LEFT JOIN artwork_files caf ON caf.id = oda.customer_artwork_file_id
+           LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
            $whereSql
           ORDER BY e.created_at DESC
           LIMIT 250",
@@ -95,6 +99,15 @@ $buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom
         $label = $eventLabels[(string)$event['event_type']] ?? ucwords(str_replace('_', ' ', (string)$event['event_type']));
         $orderLink = !empty($event['order_id']) ? '/admin/orders?q=' . urlencode((string)($event['public_order_id'] ?? $event['order_id'])) : '/admin/orders';
         $filePath = trim((string)($event['file_path'] ?? ''));
+        $fileName = trim((string)($event['file_name'] ?? ''));
+        $fallbackProofPath = trim((string)($event['current_proof_path'] ?? ''));
+        $fallbackArtworkPath = trim((string)($event['current_artwork_path'] ?? ''));
+        if ($filePath === '' && in_array((string)$event['event_type'], ['admin_design_approved','customer_design_approved'], true)) {
+            $filePath = $fallbackProofPath !== '' ? $fallbackProofPath : $fallbackArtworkPath;
+            $fileName = $fallbackProofPath !== ''
+                ? trim((string)(($event['current_proof_name'] ?? '') ?: ($event['current_proof_filename'] ?? '')))
+                : trim((string)(($event['current_artwork_name'] ?? '') ?: ($event['current_artwork_filename'] ?? '')));
+        }
       ?>
         <article class="design-event-card">
           <div class="design-event-time">
@@ -114,7 +127,13 @@ $buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom
               <?php if (!empty($event['actor_name'])): ?><span>By: <?= $h($event['actor_name']) ?></span><?php endif; ?>
             </div>
             <?php if (!empty($event['note'])): ?><p class="design-event-note"><?= $h($event['note']) ?></p><?php endif; ?>
-            <?php if ($filePath !== ''): ?><a class="design-event-file" href="<?= $h($filePath) ?>" target="_blank" rel="noopener">📎 <?= $h($event['file_name'] ?: basename($filePath)) ?></a><?php endif; ?>
+            <?php if ($filePath !== ''): ?>
+              <div class="design-event-file-row">
+                <a class="design-event-file" href="<?= $h($filePath) ?>" target="_blank" rel="noopener">📎 <?= $h($fileName !== '' ? $fileName : basename($filePath)) ?></a>
+                <a class="design-event-file-action" href="<?= $h($filePath) ?>" target="_blank" rel="noopener">View</a>
+                <a class="design-event-file-action" href="<?= $h($filePath) ?>" download>Download</a>
+              </div>
+            <?php endif; ?>
           </div>
           <div class="design-event-side"><a href="<?= $h($orderLink) ?>">View Order</a></div>
         </article>
