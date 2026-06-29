@@ -52,6 +52,20 @@ $publishedAt = strtotime((string)($blog['published_at'] ?? '')) ?: time();
 $published = date('M j, Y', $publishedAt);
 $currentUrl = '/blog/' . rawurlencode((string)($blog['slug'] ?? ''));
 $absoluteCurrentUrl = $blogBaseUrl ? ($blogBaseUrl . $currentUrl) : $currentUrl;
+$shareSummaryRaw = trim(strip_tags((string)($blog['excerpt'] ?? $pageDesc ?? '')));
+if ($shareSummaryRaw === '') {
+  $shareSummaryRaw = 'Helpful printing tips and ideas from RCS Print.';
+}
+$shareSummaryRaw = preg_replace('/\s+/', ' ', $shareSummaryRaw) ?? $shareSummaryRaw;
+if (function_exists('mb_substr')) {
+  $shareSummaryRaw = mb_substr($shareSummaryRaw, 0, 160);
+} else {
+  $shareSummaryRaw = substr($shareSummaryRaw, 0, 160);
+}
+$shareTextRaw = trim($titleRaw . ' — ' . $shareSummaryRaw);
+$shareText = htmlspecialchars($shareTextRaw, ENT_QUOTES, 'UTF-8');
+$shareUrlEncoded = rawurlencode($absoluteCurrentUrl);
+$shareTextEncoded = rawurlencode($shareTextRaw);
 
 $sidebarBannerImageRaw = trim((string)($settingsMap['blog_sidebar_banner_image'] ?? ''));
 $sidebarBannerUrlRaw = trim((string)($settingsMap['blog_sidebar_banner_url'] ?? ''));
@@ -94,7 +108,6 @@ $initials = static function (string $name): string {
   }
   return strtoupper($letters ?: 'RC');
 };
-$tags = array_values(array_unique(array_filter([$categoryRaw, 'Printing Tips', 'Business', 'Design'])));
 $suggestedBlogs = array_slice($relatedBlogs, 0, 4);
 ?>
 
@@ -120,12 +133,14 @@ $suggestedBlogs = array_slice($relatedBlogs, 0, 4);
               <span><strong><?= $author ?></strong><small>Business Owner</small></span>
             </div>
           </div>
-          <div class="blog-detail-share" aria-label="Share this blog">
+          <div class="blog-detail-share" aria-label="Share this blog" data-share-title="<?= $title ?>" data-share-text="<?= $shareText ?>" data-share-url="<?= htmlspecialchars($absoluteCurrentUrl, ENT_QUOTES, 'UTF-8') ?>">
             <span>Share:</span>
-            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= rawurlencode($absoluteCurrentUrl) ?>" target="_blank" rel="noopener" aria-label="Share on Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-            <a href="https://twitter.com/intent/tweet?url=<?= rawurlencode($absoluteCurrentUrl) ?>&text=<?= rawurlencode($titleRaw) ?>" target="_blank" rel="noopener" aria-label="Share on X"><i class="fa-brands fa-twitter"></i></a>
-            <a href="https://www.linkedin.com/shareArticle?mini=true&url=<?= rawurlencode($absoluteCurrentUrl) ?>" target="_blank" rel="noopener" aria-label="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
-            <a href="https://wa.me/?text=<?= rawurlencode($titleRaw . ' ' . $absoluteCurrentUrl) ?>" target="_blank" rel="noopener" aria-label="Share on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+            <a class="share-facebook" href="https://www.facebook.com/sharer/sharer.php?u=<?= $shareUrlEncoded ?>" target="_blank" rel="noopener" aria-label="Share on Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+            <a class="share-x" href="https://twitter.com/intent/tweet?url=<?= $shareUrlEncoded ?>&text=<?= $shareTextEncoded ?>" target="_blank" rel="noopener" aria-label="Share on X"><i class="fa-brands fa-x-twitter"></i></a>
+            <a class="share-whatsapp" href="https://wa.me/?text=<?= rawurlencode($shareTextRaw . ' ' . $absoluteCurrentUrl) ?>" target="_blank" rel="noopener" aria-label="Share on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+            <a class="share-linkedin" href="https://www.linkedin.com/shareArticle?mini=true&url=<?= $shareUrlEncoded ?>&title=<?= rawurlencode($titleRaw) ?>&summary=<?= rawurlencode($shareSummaryRaw) ?>" target="_blank" rel="noopener" aria-label="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+            <button class="share-instagram" type="button" onclick="copyBlogShareText(this)" aria-label="Copy caption for Instagram"><i class="fa-brands fa-instagram"></i></button>
+            <button class="share-native" type="button" onclick="shareBlogPost(this)" aria-label="More share options"><i class="fa-solid fa-share-nodes"></i></button>
           </div>
         </div>
         <?php if ($image !== ''): ?>
@@ -134,7 +149,17 @@ $suggestedBlogs = array_slice($relatedBlogs, 0, 4);
         <?php if ($excerpt !== ''): ?><p class="blog-detail-pro-intro"><?= $excerpt ?></p><?php endif; ?>
         <div class="blog-detail-pro-content"><?= $content ?></div>
 
-        <div class="blog-detail-tags"><strong>Tags:</strong><?php foreach ($tags as $tag): ?><a href="/blogs?category=<?= rawurlencode($tag) ?>"><?= htmlspecialchars($tag, ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?></div>
+        <div class="blog-detail-share-block" aria-label="Share this article">
+          <div><strong>Share this article</strong><p><?= $shareText ?></p></div>
+          <div class="blog-detail-share" data-share-title="<?= $title ?>" data-share-text="<?= $shareText ?>" data-share-url="<?= htmlspecialchars($absoluteCurrentUrl, ENT_QUOTES, 'UTF-8') ?>">
+            <a class="share-facebook" href="https://www.facebook.com/sharer/sharer.php?u=<?= $shareUrlEncoded ?>" target="_blank" rel="noopener" aria-label="Share on Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+            <a class="share-x" href="https://twitter.com/intent/tweet?url=<?= $shareUrlEncoded ?>&text=<?= $shareTextEncoded ?>" target="_blank" rel="noopener" aria-label="Share on X"><i class="fa-brands fa-x-twitter"></i></a>
+            <a class="share-whatsapp" href="https://wa.me/?text=<?= rawurlencode($shareTextRaw . ' ' . $absoluteCurrentUrl) ?>" target="_blank" rel="noopener" aria-label="Share on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+            <a class="share-linkedin" href="https://www.linkedin.com/shareArticle?mini=true&url=<?= $shareUrlEncoded ?>&title=<?= rawurlencode($titleRaw) ?>&summary=<?= rawurlencode($shareSummaryRaw) ?>" target="_blank" rel="noopener" aria-label="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+            <button class="share-instagram" type="button" onclick="copyBlogShareText(this)" aria-label="Copy caption for Instagram"><i class="fa-brands fa-instagram"></i></button>
+            <button class="share-native" type="button" onclick="shareBlogPost(this)" aria-label="More share options"><i class="fa-solid fa-share-nodes"></i></button>
+          </div>
+        </div>
 
         <?php if ($previousBlog || $nextBlog): ?>
           <nav class="blog-post-nav" aria-label="Blog post navigation">
@@ -186,9 +211,8 @@ $suggestedBlogs = array_slice($relatedBlogs, 0, 4);
             $sbTitle = (string)($sb['title'] ?? 'Blog article');
             $sbDate = !empty($sb['published_at']) ? date('M j, Y', strtotime((string)$sb['published_at'])) : '';
           ?>
-            <article class="blog-list-card">
-              <a class="blog-list-card-img" href="<?= htmlspecialchars($blogUrl($sb), ENT_QUOTES, 'UTF-8') ?>"><img src="<?= htmlspecialchars($blogThumb($sb), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string)(($sb['image_alt'] ?? '') ?: $sbTitle), ENT_QUOTES, 'UTF-8') ?>" loading="lazy"></a>
-              <div class="blog-list-card-body"><div class="blog-card-meta"><?= htmlspecialchars($sbDate, ENT_QUOTES, 'UTF-8') ?> <span>•</span> <?= htmlspecialchars((string)($sb['category'] ?? 'Print Tips'), ENT_QUOTES, 'UTF-8') ?></div><h3><a href="<?= htmlspecialchars($blogUrl($sb), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($sbTitle, ENT_QUOTES, 'UTF-8') ?></a></h3><?php if (!empty($sb['excerpt'])): ?><p><?= htmlspecialchars((string)$sb['excerpt'], ENT_QUOTES, 'UTF-8') ?></p><?php endif; ?></div>
+            <article class="blog-list-card blog-related-image-only">
+              <a class="blog-list-card-img" href="<?= htmlspecialchars($blogUrl($sb), ENT_QUOTES, 'UTF-8') ?>" aria-label="<?= htmlspecialchars($sbTitle, ENT_QUOTES, 'UTF-8') ?>"><img src="<?= htmlspecialchars($blogThumb($sb), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string)(($sb['image_alt'] ?? '') ?: $sbTitle), ENT_QUOTES, 'UTF-8') ?>" loading="lazy"></a>
             </article>
           <?php endforeach; ?>
         </div>
@@ -214,6 +238,32 @@ $suggestedBlogs = array_slice($relatedBlogs, 0, 4);
     </div>
   </section>
 </main>
+
+
+<script>
+async function copyBlogShareText(button) {
+  const box = button?.closest('[data-share-url]');
+  const text = `${box?.dataset.shareText || document.title} ${box?.dataset.shareUrl || location.href}`.trim();
+  try {
+    await navigator.clipboard.writeText(text);
+    button.classList.add('copied');
+    button.setAttribute('aria-label', 'Share text copied');
+    setTimeout(() => button.classList.remove('copied'), 1400);
+  } catch (e) {
+    window.prompt('Copy this share text:', text);
+  }
+}
+async function shareBlogPost(button) {
+  const box = button?.closest('[data-share-url]');
+  const title = box?.dataset.shareTitle || document.title;
+  const text = box?.dataset.shareText || title;
+  const url = box?.dataset.shareUrl || location.href;
+  if (navigator.share) {
+    try { await navigator.share({ title, text, url }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  await copyBlogShareText(button);
+}
+</script>
 
 <?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
