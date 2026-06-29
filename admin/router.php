@@ -2258,6 +2258,38 @@ if ($uri === '/admin/orders') {
     exit;
 }
 
+
+if ($uri === '/admin/backup/download' && $method === 'POST') {
+    \Auth\Auth::requireSuperAdmin();
+    $token = (string)($_POST['_token'] ?? '');
+    if (!hash_equals((string)($_SESSION['csrf_token'] ?? ''), $token)) {
+        http_response_code(419);
+        echo 'Security token expired. Please refresh and try again.';
+        exit;
+    }
+    $type = trim((string)($_POST['backup_type'] ?? 'full'));
+    $includeConfig = !empty($_POST['include_config']);
+    try {
+        \Backup\BackupManager::cleanupOld();
+        $backup = \Backup\BackupManager::create($type, $includeConfig);
+        if (!empty($backup['path']) && is_file((string)$backup['path'])) {
+            \Orders\AdminAudit::log('backup_created', 'Backup generated: ' . (string)($backup['name'] ?? $type));
+            while (ob_get_level() > 0) ob_end_clean();
+            header('Content-Type: ' . (string)($backup['mime'] ?? 'application/octet-stream'));
+            header('Content-Disposition: attachment; filename="' . basename((string)$backup['name']) . '"');
+            header('Content-Length: ' . filesize((string)$backup['path']));
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            readfile((string)$backup['path']);
+            @unlink((string)$backup['path']);
+            exit;
+        }
+        throw new RuntimeException('Backup file was not created.');
+    } catch (Throwable $e) {
+        error_log('Backup generation failed: ' . $e->getMessage());
+        redirect('/admin/backup?error=' . urlencode($e->getMessage()));
+    }
+}
+
 if (preg_match('#^/admin/blogs/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     view('admin/blogs-new', ['blogEditId' => (int)$m[1]]);
     exit;
@@ -2278,7 +2310,7 @@ if (preg_match('#^/admin/coupons/edit/(\d+)$#', $uri, $m) && $method === 'GET') 
     exit;
 }
 
-if (in_array($uri, ['/admin/admins', '/admin/approvals'], true)) {
+if (in_array($uri, ['/admin/admins', '/admin/approvals', '/admin/backup'], true)) {
     \Auth\Auth::requireSuperAdmin();
 }
 
@@ -2307,6 +2339,7 @@ $adminPage = match(true) {
     $uri === '/admin/leads'      => 'admin/leads',
     $uri === '/admin/approvals'  => 'admin/approvals',
     $uri === '/admin/admins'     => 'admin/admins',
+    $uri === '/admin/backup'     => 'admin/backup',
     $uri === '/admin/settings'   => 'admin/settings',
     $uri === '/admin/design'     => 'admin/design',
     $uri === '/admin/integrations' => 'admin/integrations',
