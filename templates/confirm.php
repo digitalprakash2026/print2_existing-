@@ -2,16 +2,14 @@
 $pageTitle = 'Order Confirmed — RCS Graphic';
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
-$bizWa = Database::setting('biz_whatsapp', env('BIZ_WHATSAPP', ''));
-$bizName = Database::setting('biz_name', 'RCS Graphic');
 ?>
 <div style="margin-top:calc(var(--site-hh, var(--hh)) + var(--post-header-gap,50px));min-height:calc(100vh - var(--site-hh, var(--hh)) - var(--post-header-gap,50px));display:flex;align-items:center;justify-content:center;padding:36px 18px;background:var(--bg)">
   <div class="confirm-card">
     <div class="confirm-ic">
       <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
     </div>
-    <div style="font-family:var(--fd);font-size:25px;font-weight:700;text-align:center;margin-bottom:5px">Order Confirmed! 🎉</div>
-    <div style="font-size:14px;color:var(--text2);text-align:center;margin-bottom:16px">We'll start your print job shortly.</div>
+    <div style="font-family:var(--fd);font-size:27px;font-weight:800;text-align:center;margin-bottom:7px">Thank you for your order! 🎉</div>
+    <div style="font-size:15px;color:var(--text2);text-align:center;margin-bottom:16px;line-height:1.55">Your order has been received successfully. Our team will review the details and keep you updated from your account.</div>
     <div class="confirm-oid">#<?= htmlspecialchars($order['order_id']) ?></div>
     <div class="confirm-rows">
       <?php foreach ($order['items'] as $item): ?>
@@ -34,23 +32,11 @@ $bizName = Database::setting('biz_name', 'RCS Graphic');
       <?php endif; ?>
     </div>
     <div style="display:flex;flex-direction:column;gap:9px">
-      <button class="btn btn-blue btn-full" onclick="shareConfirm()">📲 Share Confirmation</button>
-      <a href="/my-orders" class="btn btn-outline btn-full">📋 Track My Order</a>
-      <?php if ($order['payment_status'] === 'paid'): ?>
-      <a href="/invoice/<?= htmlspecialchars($order['order_id']) ?>" class="btn btn-outline btn-full" target="_blank">🧾 Download Invoice</a>
-      <?php endif; ?>
+      <a href="/my-orders" class="btn btn-blue btn-full">📋 Go to My Orders</a>
       <a href="/" class="btn btn-ghost btn-full">← Continue Shopping</a>
     </div>
   </div>
 </div>
-<script>
-const CSRF = '<?= $csrf ?>';
-const BIZ_WA = '<?= htmlspecialchars($bizWa) ?>';
-function shareConfirm() {
-  const msg = `✅ Order Confirmed at <?= htmlspecialchars(addslashes($bizName)) ?>!\nOrder: #<?= htmlspecialchars($order['order_id']) ?>\nTotal: ₹<?= number_format($order['total_amount']) ?>\nThank you!`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-}
-</script>
 <script src="/assets/js/app.js"></script>
 <?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
 <?php include INCLUDE_PATH . '/partials/footer.php'; ?>
