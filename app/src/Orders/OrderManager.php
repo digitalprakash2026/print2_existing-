@@ -11,6 +11,7 @@ class OrderManager
 {
     private static ?bool $workflowSchemaReady = null;
     private static ?bool $designApprovalSchemaReady = null;
+    private static ?bool $designEventSchemaReady = null;
 
     public static function ensureWorkflowSchema(): bool
     {
@@ -101,6 +102,106 @@ class OrderManager
 
         return self::$designApprovalSchemaReady;
     }
+
+    public static function ensureDesignEventSchema(): bool
+    {
+        if (self::$designEventSchemaReady !== null) return self::$designEventSchemaReady;
+
+        try {
+            \Database::query(
+                "CREATE TABLE IF NOT EXISTS order_design_events (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    order_id INT NOT NULL,
+                    order_item_id INT NULL,
+                    design_approval_id INT NULL,
+                    event_type VARCHAR(80) NOT NULL,
+                    actor_type ENUM('customer','admin','system') NOT NULL DEFAULT 'system',
+                    actor_id INT NULL,
+                    actor_name VARCHAR(180) NULL,
+                    status_before VARCHAR(80) NULL,
+                    status_after VARCHAR(80) NULL,
+                    file_id INT NULL,
+                    file_role ENUM('customer_artwork','admin_proof','revision','media','other') NULL,
+                    file_name VARCHAR(255) NULL,
+                    file_path VARCHAR(500) NULL,
+                    file_mime VARCHAR(140) NULL,
+                    file_size INT NULL,
+                    note TEXT NULL,
+                    meta_json LONGTEXT NULL,
+                    ip_address VARCHAR(64) NULL,
+                    user_agent VARCHAR(255) NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    KEY idx_ode_order (order_id, created_at),
+                    KEY idx_ode_item (order_item_id, created_at),
+                    KEY idx_ode_approval (design_approval_id, created_at),
+                    KEY idx_ode_type (event_type, created_at)
+                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+            self::$designEventSchemaReady = true;
+        } catch (\Throwable $e) {
+            error_log('Order design event schema unavailable: ' . $e->getMessage());
+            self::$designEventSchemaReady = false;
+        }
+
+        return self::$designEventSchemaReady;
+    }
+
+    public static function recordDesignEvent(array $event): bool
+    {
+        if (!self::ensureDesignEventSchema()) return false;
+
+        $orderId = (int)($event['order_id'] ?? 0);
+        if ($orderId <= 0) return false;
+
+        $actorType = (string)($event['actor_type'] ?? 'system');
+        if (!in_array($actorType, ['customer', 'admin', 'system'], true)) $actorType = 'system';
+
+        $fileId = isset($event['file_id']) ? (int)$event['file_id'] : null;
+        $file = null;
+        if ($fileId) {
+            try { $file = \Database::row("SELECT * FROM artwork_files WHERE id = ?", [$fileId]); } catch (\Throwable) { $file = null; }
+        }
+
+        $meta = $event['meta'] ?? null;
+        $metaJson = $meta === null ? null : json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
+
+        try {
+            \Database::insert(
+                "INSERT INTO order_design_events
+                    (order_id, order_item_id, design_approval_id, event_type, actor_type, actor_id, actor_name,
+                     status_before, status_after, file_id, file_role, file_name, file_path, file_mime, file_size,
+                     note, meta_json, ip_address, user_agent, created_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())",
+                [
+                    $orderId,
+                    isset($event['order_item_id']) ? (int)$event['order_item_id'] : null,
+                    isset($event['design_approval_id']) ? (int)$event['design_approval_id'] : null,
+                    substr((string)($event['event_type'] ?? 'event'), 0, 80),
+                    $actorType,
+                    isset($event['actor_id']) ? (int)$event['actor_id'] : null,
+                    isset($event['actor_name']) ? substr((string)$event['actor_name'], 0, 180) : null,
+                    isset($event['status_before']) ? substr((string)$event['status_before'], 0, 80) : null,
+                    isset($event['status_after']) ? substr((string)$event['status_after'], 0, 80) : null,
+                    $fileId,
+                    isset($event['file_role']) ? (string)$event['file_role'] : null,
+                    (string)($event['file_name'] ?? ($file['original_name'] ?? $file['filename'] ?? '')) ?: null,
+                    (string)($event['file_path'] ?? ($file['file_path'] ?? '')) ?: null,
+                    (string)($event['file_mime'] ?? ($file['mime_type'] ?? '')) ?: null,
+                    isset($event['file_size']) ? (int)$event['file_size'] : (isset($file['file_size']) ? (int)$file['file_size'] : null),
+                    isset($event['note']) ? trim((string)$event['note']) : null,
+                    $metaJson,
+                    substr((string)($_SERVER['REMOTE_ADDR'] ?? ''), 0, 64) ?: null,
+                    $userAgent !== '' ? $userAgent : null,
+                ]
+            );
+            return true;
+        } catch (\Throwable $e) {
+            error_log('Order design event insert failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
 
     public static function place(array $params): array
     {
@@ -301,6 +402,7 @@ class OrderManager
     {
         if (!self::ensureDesignApprovalSchema()) return;
         $designChoice = $designChoice === 'rcs' ? 'rcs' : 'upload';
+        $existingApproval = \Database::row("SELECT id, status, customer_artwork_file_id FROM order_design_approvals WHERE order_item_id = ?", [$orderItemId]);
         \Database::query(
             "INSERT INTO order_design_approvals
                 (order_id, order_item_id, design_choice, status, customer_artwork_file_id, created_at)
@@ -311,6 +413,20 @@ class OrderManager
                 updated_at = NOW()",
             [$orderId, $orderItemId, $designChoice, $customerArtworkFileId]
         );
+        $approval = \Database::row("SELECT id, status, customer_artwork_file_id FROM order_design_approvals WHERE order_item_id = ?", [$orderItemId]);
+        self::recordDesignEvent([
+            'order_id' => $orderId,
+            'order_item_id' => $orderItemId,
+            'design_approval_id' => (int)($approval['id'] ?? 0),
+            'event_type' => $existingApproval ? 'design_approval_synced' : 'design_approval_created',
+            'actor_type' => 'system',
+            'status_before' => $existingApproval['status'] ?? null,
+            'status_after' => $approval['status'] ?? 'pending_review',
+            'file_id' => $customerArtworkFileId,
+            'file_role' => $customerArtworkFileId ? 'customer_artwork' : null,
+            'note' => $customerArtworkFileId ? 'Customer artwork linked to order item.' : 'Design approval workflow started.',
+            'meta' => ['design_choice' => $designChoice],
+        ]);
     }
 
     public static function updateDesignApproval(int $approvalId, string $status, string $adminNote = '', ?int $proofFileId = null): bool
@@ -339,6 +455,29 @@ class OrderManager
         $params[] = $approvalId;
         \Database::query("UPDATE order_design_approvals SET " . implode(', ', $sets) . " WHERE id = ?", $params);
 
+        $admin = \Auth\Auth::admin();
+        $eventType = match ($status) {
+            'issue_found' => 'admin_issue_marked',
+            'proof_uploaded' => 'admin_proof_uploaded',
+            'approved' => 'admin_design_approved',
+            'revision_requested' => 'revision_requested',
+            default => 'design_status_changed',
+        };
+        self::recordDesignEvent([
+            'order_id' => (int)$approval['order_id'],
+            'order_item_id' => (int)$approval['order_item_id'],
+            'design_approval_id' => $approvalId,
+            'event_type' => $eventType,
+            'actor_type' => $admin ? 'admin' : 'system',
+            'actor_id' => $admin ? (int)$admin['id'] : null,
+            'actor_name' => $admin['name'] ?? null,
+            'status_before' => (string)($approval['status'] ?? ''),
+            'status_after' => $status,
+            'file_id' => $proofFileId,
+            'file_role' => $proofFileId ? 'admin_proof' : null,
+            'note' => $adminNote,
+        ]);
+
         self::syncOrderDesignApproved((int)$approval['order_id']);
         return true;
     }
@@ -363,12 +502,28 @@ class OrderManager
         }
 
         if ($decision === 'approve') {
+            $note = trim($customerNote) !== '' ? trim($customerNote) : 'Approved by customer.';
             \Database::query(
                 "UPDATE order_design_approvals
                     SET status = 'approved', customer_note = ?, approved_at = NOW(), updated_at = NOW()
                   WHERE id = ?",
-                [trim($customerNote) !== '' ? trim($customerNote) : 'Approved by customer.', $approvalId]
+                [$note, $approvalId]
             );
+            $user = \Auth\Auth::user();
+            self::recordDesignEvent([
+                'order_id' => (int)$approval['order_id'],
+                'order_item_id' => (int)$approval['order_item_id'],
+                'design_approval_id' => $approvalId,
+                'event_type' => 'customer_design_approved',
+                'actor_type' => 'customer',
+                'actor_id' => $userId,
+                'actor_name' => $user['name'] ?? null,
+                'status_before' => (string)($approval['status'] ?? ''),
+                'status_after' => 'approved',
+                'file_id' => isset($approval['proof_file_id']) ? (int)$approval['proof_file_id'] : null,
+                'file_role' => 'admin_proof',
+                'note' => $note,
+            ]);
             self::syncOrderDesignApproved((int)$approval['order_id']);
             return ['ok' => true, 'msg' => 'Design approved successfully.'];
         }
@@ -382,6 +537,21 @@ class OrderManager
                   WHERE id = ?",
                 [$note, $approvalId]
             );
+            $user = \Auth\Auth::user();
+            self::recordDesignEvent([
+                'order_id' => (int)$approval['order_id'],
+                'order_item_id' => (int)$approval['order_item_id'],
+                'design_approval_id' => $approvalId,
+                'event_type' => 'customer_revision_requested',
+                'actor_type' => 'customer',
+                'actor_id' => $userId,
+                'actor_name' => $user['name'] ?? null,
+                'status_before' => (string)($approval['status'] ?? ''),
+                'status_after' => 'revision_requested',
+                'file_id' => isset($approval['proof_file_id']) ? (int)$approval['proof_file_id'] : null,
+                'file_role' => 'admin_proof',
+                'note' => $note,
+            ]);
             return ['ok' => true, 'msg' => 'Revision request sent to admin.'];
         }
 
@@ -403,6 +573,11 @@ class OrderManager
             if ($order && in_array((string)$order['status'], ['new_order', 'received'], true)) {
                 self::updateStatus($orderId, 'design_approved', 'All designs approved', 'system');
             }
+        } else {
+            $order = \Database::row("SELECT status FROM orders WHERE id = ?", [$orderId]);
+            if ($order && (string)($order['status'] ?? '') === 'design_approved') {
+                self::updateStatus($orderId, 'received', 'Design approval pending for one or more items', 'system');
+            }
         }
     }
 
@@ -414,7 +589,13 @@ class OrderManager
         if (!$order) return null;
 
         $order['items'] = \Database::rows(
-            "SELECT oi.*, af.filename, af.original_name, af.file_path, af.mime_type,
+            "SELECT oi.*,
+                    COALESCE(pi.image_path, pi.url) AS product_image,
+                    af.id AS artwork_file_id,
+                    af.filename AS artwork_filename,
+                    af.original_name AS artwork_original_name,
+                    af.file_path AS artwork_file_path,
+                    af.mime_type AS artwork_mime_type,
                     oda.id AS design_approval_id,
                     oda.status AS design_approval_status,
                     oda.admin_note AS design_admin_note,
@@ -426,6 +607,7 @@ class OrderManager
                     pf.file_path AS design_proof_file_path,
                     pf.mime_type AS design_proof_mime_type
              FROM order_items oi
+             LEFT JOIN product_images pi ON pi.product_id = oi.product_id AND pi.is_primary = 1
              LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
              LEFT JOIN artwork_files af ON af.id = oda.customer_artwork_file_id
              LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
@@ -462,6 +644,12 @@ class OrderManager
         foreach ($orders as &$order) {
             $order['items'] = \Database::rows(
                 "SELECT oi.*,
+                        COALESCE(pi.image_path, pi.url) AS product_image,
+                        af.id AS artwork_file_id,
+                        af.original_name AS artwork_original_name,
+                        af.filename AS artwork_filename,
+                        af.file_path AS artwork_file_path,
+                        af.mime_type AS artwork_mime_type,
                         oda.id AS design_approval_id,
                         oda.status AS design_approval_status,
                         oda.admin_note AS design_admin_note,
@@ -473,7 +661,9 @@ class OrderManager
                         pf.file_path AS design_proof_file_path,
                         pf.mime_type AS design_proof_mime_type
                  FROM order_items oi
+                 LEFT JOIN product_images pi ON pi.product_id = oi.product_id AND pi.is_primary = 1
                  LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
+                 LEFT JOIN artwork_files af ON af.id = oda.customer_artwork_file_id
                  LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
                  WHERE oi.order_id = ?",
                 [$order['id']]

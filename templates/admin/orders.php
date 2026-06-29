@@ -7,6 +7,13 @@ $statusColors = ['new_order'=>'b-blue','received'=>'b-blue','design_approved'=>'
 $statusLabels = ['new_order'=>'New Order','received'=>'Received','design_approved'=>'Design Approved','printing'=>'Printing','other_process'=>'Other Process','processing'=>'Other Process','ready'=>'Dispatched','delivered'=>'Delivered','cancelled'=>'Cancelled','whatsapp_pending'=>'WA Pending'];
 $designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issue Found','proof_uploaded'=>'Proof Sent','revision_requested'=>'Revision Requested','approved'=>'Approved'];
 $designApprovalColors = ['pending_review'=>'b-amber','issue_found'=>'b-red','proof_uploaded'=>'b-blue','revision_requested'=>'b-red','approved'=>'b-green'];
+$designCustomerNoteMeta = static function (string $status): array {
+    return match ($status) {
+        'approved' => ['label' => '✅ Design Approved', 'title' => 'Design Approved By Customer', 'tone' => 'approved', 'hint' => 'Customer confirmation for this item'],
+        'revision_requested' => ['label' => '💬 Revision Request', 'title' => 'Revision Request', 'tone' => 'revision', 'hint' => 'Customer message for this item'],
+        default => ['label' => '💬 Customer Note', 'title' => 'Customer Note', 'tone' => 'note', 'hint' => 'Customer message for this item'],
+    };
+};
 $orders = $orders ?? [];
 $summaryCounts = $summaryCounts ?? [];
 $statusCounts = $statusCounts ?? ['all' => 0];
@@ -24,6 +31,26 @@ $hasSeen = !empty($hasSeen);
 $orderUrl = static function (array $params = []): string {
     $params = array_filter($params, static fn($v) => $v !== '' && $v !== null);
     return '/admin/orders' . ($params ? ('?' . http_build_query($params)) : '');
+};
+$shortFileName = static function (?string $name, string $fallback = 'File'): string {
+    $name = trim((string)$name);
+    if ($name === '') return $fallback;
+    if (strlen($name) <= 24) return $name;
+    $ext = pathinfo($name, PATHINFO_EXTENSION);
+    $base = pathinfo($name, PATHINFO_FILENAME);
+    $short = substr($base !== '' ? $base : $name, 0, 16);
+    return $short . '…' . ($ext !== '' ? '.' . $ext : '');
+};
+$normalizeAssetPath = static function (?string $path): string {
+    $path = trim((string)$path);
+    if ($path === '') return '';
+    return $path[0] === '/' ? $path : '/' . $path;
+};
+$isImageFile = static function (?string $mime, ?string $name, ?string $path = null): bool {
+    $mime = strtolower(trim((string)$mime));
+    $source = trim((string)($name ?: $path));
+    $ext = strtolower(pathinfo($source, PATHINFO_EXTENSION));
+    return str_starts_with($mime, 'image/') || in_array($ext, ['jpg','jpeg','png','gif','webp','svg'], true);
 };
 
 $baseCardParams = [];
@@ -148,16 +175,33 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
               $designChoice = (string)($item['design_choice'] ?? 'upload');
               $isRcsDesign = $designChoice === 'rcs';
             ?>
+            <?php
+              $productImg = $normalizeAssetPath($item['product_image'] ?? '');
+              $artworkName = (string)($item['artwork_original_name'] ?: $item['artwork_filename'] ?: '');
+              $artworkPath = $normalizeAssetPath($item['artwork_file_path'] ?? '');
+              $artworkIsImage = $isImageFile($item['artwork_mime_type'] ?? '', $artworkName, $artworkPath);
+              $proofName = (string)($item['design_proof_original_name'] ?: $item['design_proof_filename'] ?: '');
+              $proofPath = $normalizeAssetPath($item['design_proof_file_path'] ?? '');
+              $proofIsImage = $isImageFile($item['design_proof_mime_type'] ?? '', $proofName, $proofPath);
+            ?>
             <div class="ord-item-row ord-design-workflow ord-design-workflow--<?= htmlspecialchars($approvalStatus) ?> <?= !$isRcsDesign ? 'ord-design-workflow--customer-upload' : 'ord-design-workflow--rcs' ?>">
               <div class="ord-design-head">
-                <div><div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?> <span class="ord-design-inline-choice"><?= $isRcsDesign ? 'RCS Design' : 'Customer Upload' ?></span></div><div class="ord-meta"><?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?> · <?= $isRcsDesign ? 'RCS will prepare proof' : 'Customer artwork approval required' ?></div></div>
+                <div class="ord-item-product">
+                  <span class="ord-item-thumb">
+                    <?php if ($productImg !== ''): ?><img src="<?= htmlspecialchars($productImg) ?>" alt="<?= htmlspecialchars($item['product_name'] ?? 'Product') ?>" loading="lazy"><?php else: ?>📦<?php endif; ?>
+                  </span>
+                  <div><div class="ord-item-name"><?= htmlspecialchars($item['product_name']) ?> <span class="ord-design-inline-choice"><?= $isRcsDesign ? 'RCS Design' : 'Customer Upload' ?></span></div><div class="ord-meta"><?= number_format((float)$item['quantity']) ?> qty, <?= htmlspecialchars($item['quality_name']) ?> · <?= $isRcsDesign ? 'RCS will prepare proof' : 'Customer artwork approval required' ?></div></div>
+                </div>
                 <div class="ord-design-badges"><span class="badge <?= $isRcsDesign ? 'b-purple' : 'b-blue' ?>"><?= $isRcsDesign ? '🎨 RCS Design' : '📁 Customer Upload' ?></span><span class="badge <?= $designApprovalColors[$approvalStatus] ?? 'b-amber' ?>"><?= htmlspecialchars($designApprovalLabels[$approvalStatus] ?? $approvalStatus) ?></span></div>
               </div>
               <div class="ord-design-strip">
                 <div class="ord-design-filebox">
                   <strong><?= $isRcsDesign ? 'Customer Brief / Assets' : 'Customer Artwork' ?></strong>
                   <?php if (!empty($item['artwork_file_id'])): ?>
-                    <span><?= htmlspecialchars($item['artwork_original_name'] ?: $item['artwork_filename'] ?: 'Artwork File') ?></span>
+                    <a class="ord-file-preview" href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= htmlspecialchars($artworkName ?: 'Artwork File') ?>">
+                      <span class="ord-file-thumb"><?= ($artworkIsImage && $artworkPath !== '') ? '<img src="' . htmlspecialchars($artworkPath) . '" alt="">' : '📄' ?></span>
+                      <span class="ord-file-name"><?= htmlspecialchars($shortFileName($artworkName, 'Artwork File')) ?></span>
+                    </a>
                     <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/download" class="ord-artwork-link ord-artwork-link--primary">Download</a></span>
                   <?php else: ?>
                     <span class="ord-artwork-empty"><?= $isRcsDesign ? 'Use WhatsApp/customer communication for brief and assets.' : 'No artwork uploaded' ?></span>
@@ -166,7 +210,10 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                 <div class="ord-design-filebox ord-design-filebox--proof">
                   <strong>Corrected File</strong>
                   <?php if (!empty($item['design_proof_file_id'])): ?>
-                    <span><?= htmlspecialchars($item['design_proof_original_name'] ?: $item['design_proof_filename'] ?: 'Proof File') ?></span>
+                    <a class="ord-file-preview" href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= htmlspecialchars($proofName ?: 'Proof File') ?>">
+                      <span class="ord-file-thumb"><?= ($proofIsImage && $proofPath !== '') ? '<img src="' . htmlspecialchars($proofPath) . '" alt="">' : '📄' ?></span>
+                      <span class="ord-file-name"><?= htmlspecialchars($shortFileName($proofName, 'Proof File')) ?></span>
+                    </a>
                     <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" class="ord-artwork-link">Download</a></span>
                   <?php else: ?>
                     <span class="ord-artwork-empty">No proof uploaded yet</span>
@@ -182,7 +229,12 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                 <?php endif; ?>
               </div>
               <?php if (!empty($item['design_admin_note'])): ?><div class="ord-design-note <?= $approvalStatus === 'issue_found' ? 'ord-design-note--issue' : '' ?>"><?= $approvalStatus === 'issue_found' ? '⚠ Issue for customer: ' : 'Note: ' ?><?= htmlspecialchars($item['design_admin_note']) ?></div><?php endif; ?>
-              <?php if (!empty($item['design_customer_note'])): ?><div class="ord-design-note ord-design-note--customer <?= $approvalStatus === 'revision_requested' ? 'ord-design-note--issue' : '' ?>">💬 Customer revision: <?= htmlspecialchars($item['design_customer_note']) ?></div><?php endif; ?>
+              <?php if (!empty($item['design_customer_note'])): ?>
+                <?php $noteMeta = $designCustomerNoteMeta($approvalStatus); ?>
+                <div class="ord-design-note ord-design-note--customer">
+                  <button class="ord-customer-note-chip ord-customer-note-chip--<?= htmlspecialchars($noteMeta['tone']) ?>" type="button" onclick='openCustomerDesignNote(<?= json_encode($item['product_name'] ?? 'Product', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($item['design_customer_note'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($noteMeta['title'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($noteMeta['hint'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($noteMeta['tone'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'><?= htmlspecialchars($noteMeta['label']) ?></button>
+                </div>
+              <?php endif; ?>
             </div>
           <?php endforeach; ?>
         </section>
@@ -193,6 +245,13 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
   <?php endforeach; ?>
 </div>
 <?php endif; ?>
+
+<div id="revisionModal" class="ord-revision-modal" style="display:none">
+  <div class="ord-revision-dialog">
+    <div class="ord-revision-head"><div><strong id="revisionModalTitle">Revision Request</strong><small id="revisionModalHint">Customer message for this item</small></div><button type="button" onclick="closeRevisionNote()">×</button></div>
+    <p id="revisionModalText"></p>
+  </div>
+</div>
 
 <div id="addrModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:1200;align-items:center;justify-content:center;padding:18px">
   <div style="width:min(620px,100%);max-height:86vh;overflow:auto;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--sh-lg);padding:18px">
@@ -232,21 +291,66 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
 <?php endif; ?>
 
 <script>
-function toggleOrderCard(btn) {
-  const card = btn.closest('[data-order-card]');
+const ADM_OPEN_ORDER_KEY = 'adm_open_order_cards';
+function getOpenOrderCards() {
+  try { return JSON.parse(sessionStorage.getItem(ADM_OPEN_ORDER_KEY) || '[]'); }
+  catch (e) { return []; }
+}
+function saveOpenOrderCard(card, open) {
+  if (!card?.id) return;
+  const ids = new Set(getOpenOrderCards());
+  if (open) ids.add(card.id);
+  else ids.delete(card.id);
+  sessionStorage.setItem(ADM_OPEN_ORDER_KEY, JSON.stringify([...ids]));
+}
+function setOrderCardOpen(card, open, persist = true) {
   const body = card?.querySelector('.adm-order-card-body');
   if (!card || !body) return;
-  const open = card.classList.toggle('open');
+  card.classList.toggle('open', open);
   body.hidden = !open;
   card.querySelectorAll('[data-order-toggle]').forEach((toggle) => {
     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
+  if (persist) saveOpenOrderCard(card, open);
+}
+function rememberCardForControl(control) {
+  const card = control?.closest?.('[data-order-card]');
+  if (card) saveOpenOrderCard(card, true);
+}
+function rememberCardForApproval(id) {
+  const input = document.getElementById(`proof_${id}`);
+  rememberCardForControl(input);
+}
+function restoreOpenOrderCards() {
+  getOpenOrderCards().forEach((id) => {
+    const card = document.getElementById(id);
+    if (card) setOrderCardOpen(card, true, false);
+  });
+}
+function toggleOrderCard(btn) {
+  const card = btn.closest('[data-order-card]');
+  if (!card) return;
+  setOrderCardOpen(card, !card.classList.contains('open'));
 }
 function toast(msg, type='info') {
   const w = document.getElementById('tw');
   const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg; w.appendChild(t);
   requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+function openCustomerDesignNote(product, note, title='Customer Note', hint='Customer message for this item', tone='note') {
+  const modal = document.getElementById('revisionModal');
+  const dialog = modal?.querySelector('.ord-revision-dialog');
+  if (dialog) dialog.dataset.tone = tone || 'note';
+  document.getElementById('revisionModalTitle').textContent = `${title || 'Customer Note'} — ${product || 'Item'}`;
+  document.getElementById('revisionModalHint').textContent = hint || 'Customer message for this item';
+  document.getElementById('revisionModalText').textContent = note || 'No message provided.';
+  if (modal) modal.style.display = 'flex';
+}
+function closeRevisionNote() {
+  const modal = document.getElementById('revisionModal');
+  if (modal) modal.style.display = 'none';
 }
 
 function updOrdFromSel(id) {
@@ -256,6 +360,8 @@ function updOrdFromSel(id) {
 }
 
 async function updOrd(id, status) {
+  const statusSelect = document.getElementById(`ord_status_${id}`);
+  rememberCardForControl(statusSelect);
   const resp = await fetch(`/admin/api/orders/${id}/status`, {
     method: 'POST', headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'},
     body: JSON.stringify({ status })
@@ -273,6 +379,7 @@ async function setDesignApproval(id, status) {
     toast('Please add an issue note for the customer', 'error');
     return;
   }
+  rememberCardForApproval(id);
   const resp = await fetch(`/admin/api/design-approvals/${id}`, {
     method: 'POST',
     headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'<?= htmlspecialchars($csrf ?? '') ?>'},
@@ -291,6 +398,7 @@ function chooseDesignProof(id) {
 async function uploadDesignProof(id) {
   const input = document.getElementById(`proof_${id}`);
   if (!input || !input.files.length) { toast('Please choose a proof file first', 'error'); return; }
+  rememberCardForControl(input);
   const note = window.prompt('Optional proof note for customer/admin', 'Proof uploaded for review.') ?? '';
   const fd = new FormData();
   fd.append('proof', input.files[0]);
@@ -304,6 +412,7 @@ async function uploadDesignProof(id) {
   if (data.ok) { toast('Proof uploaded', 'success'); setTimeout(() => location.reload(), 500); }
   else toast(data.msg || 'Proof upload failed', 'error');
 }
+document.addEventListener('DOMContentLoaded', restoreOpenOrderCards);
 
 async function saveShipping(id) {
   const payload = {
