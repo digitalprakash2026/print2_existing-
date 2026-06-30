@@ -168,6 +168,10 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                               <span><?php if ($artworkIsImage && $artworkPath !== ''): ?><img src="<?= $h($artworkPath) ?>" alt="" loading="lazy"><?php else: ?><i class="fa-regular fa-file-lines"></i><?php endif; ?></span>
                               <em><?= $h($accountShortFileName($artworkName, 'Artwork File')) ?></em>
                             </a>
+                            <span class="account-artwork-file-actions">
+                              <a href="/account/artwork/<?= (int)$item['artwork_file_id'] ?>/view" target="_blank" rel="noopener">View</a>
+                              <a href="/account/artwork/<?= (int)$item['artwork_file_id'] ?>/download" target="_blank" rel="noopener">Download</a>
+                            </span>
                           <?php else: ?>
                             <small>No artwork uploaded</small>
                           <?php endif; ?>
@@ -743,9 +747,14 @@ window.addEventListener('load', () => restoreOpenAccountOrders(Boolean(getOrderK
 requestAnimationFrame(() => restoreOpenAccountOrders(Boolean(getOrderKeyFromHash())));
 window.setTimeout(() => restoreOpenAccountOrders(Boolean(getOrderKeyFromHash())), 250);
 document.querySelectorAll('.account-order-detail').forEach(detail => {
+  detail.querySelector('summary')?.addEventListener('click', () => {
+    detail.dataset.manualToggle = '1';
+  });
   detail.addEventListener('toggle', () => {
     if (restoringAccountOrder) return;
-    saveAccountOrderState(detail, detail.open);
+    const manualClose = !detail.open && detail.dataset.manualToggle === '1';
+    delete detail.dataset.manualToggle;
+    saveAccountOrderState(detail, detail.open, manualClose);
   });
 });
 
@@ -880,11 +889,12 @@ function updateDesignArtworkPreview(card, file) {
   const name = escapeAccountHtml(shortAccountFileName(file.name || 'Artwork File'));
   const title = escapeAccountHtml(file.name || 'Artwork File');
   const viewUrl = escapeAccountHtml(file.view_url || `/account/artwork/${file.id}/view`);
+  const downloadUrl = escapeAccountHtml(file.download_url || `/account/artwork/${file.id}/download`);
   const isImage = String(file.mime || '').toLowerCase().startsWith('image/');
   const thumb = isImage && file.path
     ? `<img src="${escapeAccountHtml(file.path)}" alt="" loading="lazy">`
     : '<i class="fa-regular fa-file-lines"></i>';
-  preview.innerHTML = `<a href="${viewUrl}" target="_blank" rel="noopener" title="${title}"><span>${thumb}</span><em>${name}</em></a>`;
+  preview.innerHTML = `<a href="${viewUrl}" target="_blank" rel="noopener" title="${title}"><span>${thumb}</span><em>${name}</em></a><span class="account-artwork-file-actions"><a href="${viewUrl}" target="_blank" rel="noopener">View</a><a href="${downloadUrl}" target="_blank" rel="noopener">Download</a></span>`;
 }
 
 function updateDesignItemState(source, status, message, file = null) {
@@ -915,7 +925,7 @@ function updateDesignItemState(source, status, message, file = null) {
   rememberOpenAccountOrder(card);
 }
 
-function saveAccountOrderState(detail, open) {
+function saveAccountOrderState(detail, open, manualClose = false) {
   const key = detail?.dataset?.orderDetail || '';
   if (!key) return;
   if (open) {
@@ -923,12 +933,12 @@ function saveAccountOrderState(detail, open) {
     return;
   }
   const pendingKey = sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '';
-  if (pendingKey === key) {
+  if (pendingKey === key && !manualClose) {
     storeAccountOrderOpen(key, true);
     setAccountOrderOpen(detail, true, false);
     return;
   }
-  removeStoredAccountOrder(key);
+  removeStoredAccountOrder(key, true);
   if (sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) === key) {
     sessionStorage.removeItem(ACCOUNT_OPEN_ORDER_KEY);
   }
@@ -964,11 +974,14 @@ function storeAccountOrderOpen(key, keepPending = false) {
   if (keepPending) sessionStorage.setItem(ACCOUNT_PENDING_OPEN_ORDER_KEY, key);
   sessionStorage.setItem(ACCOUNT_OPEN_TAB_KEY, 'orders');
 }
-function removeStoredAccountOrder(key) {
+function removeStoredAccountOrder(key, clearPending = false) {
   if (!key) return;
   const ids = getStoredAccountOrders().filter(item => item !== key);
   sessionStorage.setItem(ACCOUNT_OPEN_ORDERS_KEY, JSON.stringify(ids));
-  if ((sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '') === key) return;
+  if ((sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '') === key) {
+    if (clearPending) sessionStorage.removeItem(ACCOUNT_PENDING_OPEN_ORDER_KEY);
+    else return;
+  }
   if ((sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) || '') === key) sessionStorage.removeItem(ACCOUNT_OPEN_ORDER_KEY);
 }
 function rememberOpenAccountOrder(el) {
