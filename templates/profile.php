@@ -191,7 +191,10 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                               <span><?php if ($proofIsImage && $proofPath !== ''): ?><img src="<?= $h($proofPath) ?>" alt="" loading="lazy"><?php else: ?><i class="fa-regular fa-file-lines"></i><?php endif; ?></span>
                               <em><?= $h($accountShortFileName($proofName, 'Proof File')) ?></em>
                             </a>
-                            <span class="account-design-file-actions"><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener">Download</a></span>
+                            <span class="account-artwork-file-actions">
+                              <a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener">View</a>
+                              <a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener">Download</a>
+                            </span>
                           <?php else: ?>
                             <small>No proof uploaded yet</small>
                           <?php endif; ?>
