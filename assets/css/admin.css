@@ -354,13 +354,22 @@ body.admin-page-orders .ord-proof-input { position:absolute; opacity:0; pointer-
 body.admin-page-orders .adm-orders-flash { margin-top:12px; padding:12px 14px; border-radius:13px; font-size:13px; font-weight:850; }
 body.admin-page-orders .adm-orders-flash--success { border:1px solid #bbf7d0; background:#ecfdf5; color:#047857; }
 body.admin-page-orders .adm-orders-flash--error { border:1px solid #fecaca; background:#fff1f2; color:#be123c; }
-body.admin-page-orders .adm-order-action-strip { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; background:linear-gradient(135deg,#f8fafc 0%,#eef6ff 100%); }
+body.admin-page-orders .adm-order-action-strip { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:14px; background:linear-gradient(135deg,#f8fafc 0%,#eef6ff 100%); border:1px solid #dbeafe; border-radius:16px; }
+body.admin-page-orders .ord-action-strip-copy { display:grid; gap:4px; min-width:190px; }
 body.admin-page-orders .ord-action-strip-label { color:var(--adm-muted); font-size:11px; font-weight:950; text-transform:uppercase; letter-spacing:.06em; }
-body.admin-page-orders .ord-actions--compact { justify-content:flex-end; flex-wrap:wrap; gap:9px; }
-body.admin-page-orders .ord-actions--compact .aoc-btn { min-height:36px; padding:0 12px; border-radius:11px; font-weight:950; box-shadow:0 8px 18px rgba(15,23,42,.07); }
+body.admin-page-orders .ord-action-strip-copy small { color:#475569; font-size:12px; font-weight:800; }
+body.admin-page-orders .ord-actions--compact { display:flex; justify-content:flex-end; align-items:center; flex-wrap:wrap; gap:10px; }
+body.admin-page-orders .ord-invoice-quick-form { display:inline-flex; margin:0; }
+body.admin-page-orders .ord-invoice-quick-form input[type="file"] { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
+body.admin-page-orders .ord-actions--compact .aoc-btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:42px; padding:0 14px; border-radius:14px; font-size:13px; font-weight:950; line-height:1; box-shadow:0 10px 22px rgba(15,23,42,.09); transition:transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+body.admin-page-orders .ord-actions--compact .aoc-btn:hover { transform:translateY(-1px); box-shadow:0 14px 26px rgba(15,23,42,.13); filter:saturate(1.05); }
+body.admin-page-orders .ord-actions--compact .aoc-btn:disabled { opacity:.68; cursor:wait; transform:none; }
+body.admin-page-orders .aoc-ico { display:inline-grid; place-items:center; width:24px; height:24px; border-radius:999px; background:rgba(255,255,255,.72); font-size:14px; line-height:1; }
 body.admin-page-orders .aoc-btn--call { background:#eff6ff !important; border-color:#bfdbfe !important; color:#1d4ed8 !important; }
 body.admin-page-orders .aoc-btn--wa { background:#ecfdf5 !important; border-color:#bbf7d0 !important; color:#047857 !important; }
 body.admin-page-orders .aoc-btn--invoice { background:#f8fafc !important; border-color:#cbd5e1 !important; color:#334155 !important; }
+body.admin-page-orders .aoc-btn--invoice-upload { background:linear-gradient(135deg,#2563eb,#7c3aed) !important; border-color:#bfdbfe !important; color:#fff !important; }
+body.admin-page-orders .aoc-btn--invoice-upload .aoc-ico { background:rgba(255,255,255,.22); }
 body.admin-page-orders .aoc-btn--muted { background:#f1f5f9 !important; border-color:#e2e8f0 !important; color:#64748b !important; cursor:default; }
 body.admin-page-orders .aoc-btn--address { background:#fff7ed !important; border-color:#fed7aa !important; color:#c2410c !important; }
 body.admin-page-orders .ord-invoice-panel { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:12px; border:1px solid #e2e8f0; border-radius:14px; background:#fff; }

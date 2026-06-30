@@ -263,21 +263,22 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
             </div>
           <?php endforeach; ?>
         </section>
-        <section class="adm-order-card-section adm-order-card-section--full adm-order-action-strip"><span class="ord-action-strip-label">Quick actions</span><div class="ord-actions ord-actions--compact"><a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn aoc-btn--call">📞 Call Customer</a><button class="aoc-btn aoc-btn--wa" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($orderStatus) ?>')">💬 WhatsApp</button><?php if (!empty($o['invoice_file_path'])): ?><a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn aoc-btn--invoice" target="_blank">🧾 View Invoice</a><?php else: ?><span class="aoc-btn aoc-btn--muted">🧾 No Invoice</span><?php endif; ?><button class="aoc-btn aoc-btn--address" onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'>📍 Address</button></div></section>
-        <section class="adm-order-card-section adm-order-card-section--full ord-invoice-panel">
-          <div class="ord-invoice-copy">
-            <strong>Invoice PDF</strong>
-            <?php if (!empty($o['invoice_file_path'])): ?>
-              <span><?= htmlspecialchars($shortFileName($o['invoice_original_name'] ?? 'Invoice PDF', 'Invoice PDF')) ?><?= !empty($o['invoice_uploaded_at']) ? ' · Uploaded ' . htmlspecialchars(app_datetime((string)$o['invoice_uploaded_at'], 'd M Y, H:i')) : '' ?></span>
-            <?php else: ?>
-              <span>No invoice uploaded yet. Customer invoice download will appear only after upload.</span>
-            <?php endif; ?>
+        <section class="adm-order-card-section adm-order-card-section--full adm-order-action-strip">
+          <div class="ord-action-strip-copy">
+            <span class="ord-action-strip-label">Quick actions</span>
+            <small><?= !empty($o['invoice_file_path']) ? 'Invoice: ' . htmlspecialchars($shortFileName($o['invoice_original_name'] ?? 'Invoice PDF', 'Invoice PDF')) : 'Invoice not uploaded yet' ?></small>
           </div>
-          <form class="ord-invoice-form" method="post" action="/admin/orders/<?= (int)$o['id'] ?>/invoice" enctype="multipart/form-data" onsubmit="rememberCardForControl(this)">
-            <input type="hidden" name="_token" value="<?= htmlspecialchars($csrf ?? '') ?>">
-            <input type="file" name="invoice_pdf" accept="application/pdf,.pdf" required>
-            <button class="aoc-btn aoc-btn--invoice" type="submit"><?= !empty($o['invoice_file_path']) ? 'Replace Invoice PDF' : 'Upload Invoice PDF' ?></button>
-          </form>
+          <div class="ord-actions ord-actions--compact">
+            <a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn aoc-btn--call"><span class="aoc-ico">📞</span><span>Call</span></a>
+            <button class="aoc-btn aoc-btn--wa" type="button" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($orderStatus) ?>')"><span class="aoc-ico">💬</span><span>WhatsApp</span></button>
+            <?php if (!empty($o['invoice_file_path'])): ?><a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn aoc-btn--invoice" target="_blank"><span class="aoc-ico">🧾</span><span>View Invoice</span></a><?php endif; ?>
+            <form class="ord-invoice-quick-form" method="post" action="/admin/orders/<?= (int)$o['id'] ?>/invoice" enctype="multipart/form-data" onsubmit="rememberCardForControl(this)">
+              <input type="hidden" name="_token" value="<?= htmlspecialchars($csrf ?? '') ?>">
+              <input type="file" id="invoice_pdf_<?= (int)$o['id'] ?>" name="invoice_pdf" accept="application/pdf,.pdf" required onchange="autoUploadInvoice(this)">
+              <button class="aoc-btn aoc-btn--invoice-upload" type="button" onclick="chooseInvoicePdf(<?= (int)$o['id'] ?>)"><span class="aoc-ico">⬆️</span><span><?= !empty($o['invoice_file_path']) ? 'Replace Invoice' : 'Upload Invoice' ?></span></button>
+            </form>
+            <button class="aoc-btn aoc-btn--address" type="button" onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'><span class="aoc-ico">📍</span><span>Address</span></button>
+          </div>
         </section>
       </div>
     </div>
@@ -444,6 +445,23 @@ async function setDesignApproval(id, status) {
 function chooseDesignProof(id) {
   const input = document.getElementById(`proof_${id}`);
   if (input) input.click();
+}
+
+function chooseInvoicePdf(id) {
+  const input = document.getElementById(`invoice_pdf_${id}`);
+  if (input) input.click();
+}
+
+function autoUploadInvoice(input) {
+  if (!input || !input.files.length) return;
+  const form = input.closest('form');
+  rememberCardForControl(input);
+  const btn = form?.querySelector('.aoc-btn--invoice-upload');
+  if (btn) {
+    btn.disabled = true;
+    btn.querySelector('span:last-child').textContent = 'Uploading...';
+  }
+  form?.submit();
 }
 
 async function uploadDesignProof(id) {
