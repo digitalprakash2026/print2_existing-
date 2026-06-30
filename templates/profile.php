@@ -824,8 +824,12 @@ async function uploadAccountArtworkRevision(input, id) {
   if (!input || input.disabled) { alert('Upload is available when a design file is required.'); return; }
   if (!input.files.length) { alert('Please choose a design file to reupload.'); return; }
   rememberOpenAccountOrder(input);
+  const selectedFile = input.files[0];
+  const card = getAccountOrderDetailFromElement(input)?.querySelector(`[data-design-approval-item="${id}"]`) || input.closest('[data-design-approval-item]');
+  const tempPreviewUrl = selectedFile && String(selectedFile.type || '').toLowerCase().startsWith('image/') ? URL.createObjectURL(selectedFile) : '';
+  setDesignArtworkUploadProgress(input, selectedFile, tempPreviewUrl);
   const fd = new FormData();
-  fd.append('artwork', input.files[0]);
+  fd.append('artwork', selectedFile);
   const oldText = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
   try {
@@ -837,16 +841,28 @@ async function uploadAccountArtworkRevision(input, id) {
     });
     const data = await resp.json();
     if (!data.ok) {
-      alert(data.msg || 'Could not reupload design.');
+      const errorMsg = data.msg || 'Could not reupload design.';
+      showDesignUploadError(input, errorMsg);
+      alert(errorMsg);
       if (btn) { btn.disabled = false; btn.textContent = oldText || 'Reupload Design'; }
+      if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
       input.value = '';
       return;
     }
-    updateDesignItemState(input, data.status || 'pending_review', data.msg || 'Design uploaded successfully.', data.file || null);
+    if (data.file) {
+      updateDesignItemState(input, data.status || 'pending_review', data.msg || 'Design uploaded successfully.', data.file || null);
+    } else {
+      updateDesignArtworkPreview(card, { name: selectedFile.name, mime: selectedFile.type, path: tempPreviewUrl }, 'uploaded');
+      updateDesignItemState(input, data.status || 'pending_review', data.msg || 'Design uploaded successfully.', null);
+    }
+    if (tempPreviewUrl && data.file) URL.revokeObjectURL(tempPreviewUrl);
     input.value = '';
   } catch (e) {
-    alert('Could not reupload design right now.');
+    const errorMsg = 'Could not reupload design right now.';
+    showDesignUploadError(input, errorMsg);
+    alert(errorMsg);
     if (btn) { btn.disabled = false; btn.textContent = oldText || 'Reupload Design'; }
+    if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
     input.value = '';
   }
 }
@@ -882,19 +898,40 @@ function showDesignLiveMessage(card, message, type = 'success') {
   box.textContent = message || (type === 'success' ? 'Updated successfully.' : 'Could not update.');
 }
 
-function updateDesignArtworkPreview(card, file) {
-  if (!card || !file?.id) return;
+function updateDesignArtworkPreview(card, file, state = 'ready') {
+  if (!card || !file) return;
   const preview = card.querySelector('[data-artwork-preview]');
   if (!preview) return;
   const name = escapeAccountHtml(shortAccountFileName(file.name || 'Artwork File'));
   const title = escapeAccountHtml(file.name || 'Artwork File');
-  const viewUrl = escapeAccountHtml(file.view_url || `/account/artwork/${file.id}/view`);
-  const downloadUrl = escapeAccountHtml(file.download_url || `/account/artwork/${file.id}/download`);
+  const viewRaw = file.view_url || (file.id ? `/account/artwork/${file.id}/view` : '');
+  const downloadRaw = file.download_url || (file.id ? `/account/artwork/${file.id}/download` : '');
+  const viewUrl = escapeAccountHtml(viewRaw);
+  const downloadUrl = escapeAccountHtml(downloadRaw);
   const isImage = String(file.mime || '').toLowerCase().startsWith('image/');
-  const thumb = isImage && file.path
-    ? `<img src="${escapeAccountHtml(file.path)}" alt="" loading="lazy">`
+  const imagePath = file.path || file.preview_url || '';
+  const thumb = isImage && imagePath
+    ? `<img src="${escapeAccountHtml(imagePath)}" alt="" loading="lazy">`
     : '<i class="fa-regular fa-file-lines"></i>';
-  preview.innerHTML = `<a href="${viewUrl}" target="_blank" rel="noopener" title="${title}"><span>${thumb}</span><em>${name}</em></a><span class="account-artwork-file-actions"><a href="${viewUrl}" target="_blank" rel="noopener">View</a><a href="${downloadUrl}" target="_blank" rel="noopener">Download</a></span>`;
+  const fileMarkup = viewRaw
+    ? `<a href="${viewUrl}" target="_blank" rel="noopener" title="${title}"><span>${thumb}</span><em>${name}</em></a>`
+    : `<span class="account-artwork-file-preview" title="${title}"><span>${thumb}</span><em>${name}</em></span>`;
+  const statusMarkup = state === 'uploading' ? '<small class="account-artwork-upload-state"><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Uploading design…</small>' : '';
+  const actionsMarkup = viewRaw && downloadRaw ? `<span class="account-artwork-file-actions"><a href="${viewUrl}" target="_blank" rel="noopener">View</a><a href="${downloadUrl}" target="_blank" rel="noopener">Download</a></span>` : '';
+  preview.innerHTML = `${fileMarkup}${statusMarkup}${actionsMarkup}`;
+}
+
+function setDesignArtworkUploadProgress(source, file, previewUrl = '') {
+  const card = source?.closest?.('[data-design-approval-item]');
+  if (!card || !file) return;
+  updateDesignArtworkPreview(card, { name: file.name, mime: file.type, path: previewUrl }, 'uploading');
+  showDesignLiveMessage(card, 'Uploading design… please wait. This can take a moment for large files.', 'info');
+}
+
+function showDesignUploadError(source, message) {
+  const card = source?.closest?.('[data-design-approval-item]');
+  if (!card) return;
+  showDesignLiveMessage(card, message || 'Upload failed. Please try again.', 'error');
 }
 
 function updateDesignItemState(source, status, message, file = null) {

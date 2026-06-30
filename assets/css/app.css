@@ -13281,24 +13281,30 @@ body:has(.dash-ref-page) .adm-admin-chip em::after { content:''; position:absolu
 .account-order-file { min-width:0; display:grid; gap:6px; padding:9px; border:1px dashed #dbe4f0; border-radius:13px; background:#fff; }
 .account-order-file b { margin:0; color:#0f172a; font-size:11px; font-weight:950; text-transform:uppercase; letter-spacing:.04em; }
 .account-order-file > a,
-.account-order-file [data-artwork-preview] > a { min-width:0; display:flex; align-items:center; gap:8px; color:#334155; text-decoration:none; }
+.account-order-file [data-artwork-preview] > a,
+.account-artwork-file-preview { min-width:0; display:flex; align-items:center; gap:8px; color:#334155; text-decoration:none; }
 .account-order-file > a:hover em,
 .account-order-file [data-artwork-preview] > a:hover em { color:#1d4ed8; text-decoration:underline; }
 .account-order-file > a span,
-.account-order-file [data-artwork-preview] > a span { width:44px; height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc; color:#64748b; }
+.account-order-file [data-artwork-preview] > a span,
+.account-artwork-file-preview > span { width:44px; height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc; color:#64748b; }
 .account-order-file > a span img,
-.account-order-file [data-artwork-preview] > a span img { width:100%; height:100%; object-fit:cover; display:block; }
+.account-order-file [data-artwork-preview] > a span img,
+.account-artwork-file-preview > span img { width:100%; height:100%; object-fit:cover; display:block; }
 .account-order-file [data-artwork-preview] { display:grid; gap:7px; min-width:0; }
-.account-order-file [data-artwork-preview] > a span { width:58px; height:58px; flex-basis:58px; border-radius:12px; }
+.account-order-file [data-artwork-preview] > a span,
+.account-artwork-file-preview > span { width:58px; height:58px; flex-basis:58px; border-radius:12px; }
 .account-order-file em { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#334155; font-size:12px; font-style:normal; font-weight:700; }
 .account-order-file small { color:#94a3b8; font-size:12px; font-weight:700; }
 .account-artwork-file-actions { display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
 .account-artwork-file-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:28px; padding:6px 10px; border:1px solid #bfdbfe; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-size:11px; font-weight:950; line-height:1; text-decoration:none; }
 .account-artwork-file-actions a:hover { background:#dbeafe; color:#1e40af; }
+.account-artwork-upload-state { display:inline-flex; align-items:center; gap:7px; width:max-content; max-width:100%; padding:6px 9px; border:1px solid #bfdbfe; border-radius:999px; background:#eff6ff; color:#1d4ed8; }
 .account-order-item-actions { min-width:0; display:grid; justify-items:start; gap:8px; }
 .account-order-item-actions > span { display:inline-flex; align-items:center; min-height:30px; padding:6px 10px; border-radius:999px; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; font-size:11px; font-weight:950; }
 .account-order-live-msg { grid-column:1/-1; padding:9px 11px; border-radius:12px; font-size:12px; font-weight:850; line-height:1.4; }
 .account-order-live-msg.is-success { border:1px solid #bbf7d0; background:#ecfdf5; color:#047857; }
+.account-order-live-msg.is-info { border:1px solid #bfdbfe; background:#eff6ff; color:#1d4ed8; }
 .account-order-live-msg.is-error { border:1px solid #fecaca; background:#fff1f2; color:#be123c; }
 .account-order-item-actions .account-design-review-actions { margin:0; flex-direction:column; align-items:stretch; width:100%; }
 .account-order-item-actions .account-design-review-actions button { width:100%; justify-content:center; }
