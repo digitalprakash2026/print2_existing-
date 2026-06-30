@@ -113,7 +113,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
         $isCancelled = $status === 'cancelled';
         $isWhatsappPending = $status === 'whatsapp_pending';
       ?>
-        <details class="account-order-detail" data-order-detail="<?= $h($orderPublicId) ?>">
+        <details id="account-order-<?= $h(preg_replace('/[^A-Za-z0-9_-]+/', '-', $orderPublicId)) ?>" class="account-order-detail" data-order-detail="<?= $h($orderPublicId) ?>">
           <summary class="account-order-row" role="row">
             <strong>#<?= $h($order['order_id'] ?? $order['id'] ?? '') ?></strong>
             <span><?= !empty($order['created_at']) ? date('d M, Y', strtotime((string)$order['created_at'])) : '—' ?></span>
@@ -698,6 +698,8 @@ async function removeWishlistItem(productId, btn) {
 }
 
 const ACCOUNT_OPEN_ORDER_KEY = 'accountOpenOrder';
+const ACCOUNT_OPEN_ORDERS_KEY = 'accountOpenOrders';
+const ACCOUNT_PENDING_OPEN_ORDER_KEY = 'accountPendingOpenOrder';
 const ACCOUNT_OPEN_TAB_KEY = 'accountOpenTab';
 let restoringAccountOrder = false;
 
@@ -719,24 +721,24 @@ function getAccountTabFromHash() {
 window.addEventListener('hashchange', () => {
   const hashOrder = getOrderKeyFromHash();
   if (hashOrder) {
-    sessionStorage.setItem(ACCOUNT_OPEN_ORDER_KEY, hashOrder);
-    sessionStorage.setItem(ACCOUNT_OPEN_TAB_KEY, 'orders');
+    storeAccountOrderOpen(hashOrder, true);
   }
   const tab = getAccountTabFromHash() || (hashOrder ? 'orders' : 'dashboard');
   setAccountTab(tab, false);
-  restoreOpenAccountOrder(Boolean(hashOrder));
+  restoreOpenAccountOrders(Boolean(hashOrder));
 });
 
 const rememberedOrder = sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) || '';
 const linkedOrder = getOrderKeyFromHash();
 if (linkedOrder) {
-  sessionStorage.setItem(ACCOUNT_OPEN_ORDER_KEY, linkedOrder);
-  sessionStorage.setItem(ACCOUNT_OPEN_TAB_KEY, 'orders');
+  storeAccountOrderOpen(linkedOrder, true);
 }
 const initialAccountTab = getAccountTabFromHash() || ((linkedOrder || rememberedOrder) ? (sessionStorage.getItem(ACCOUNT_OPEN_TAB_KEY) || 'orders') : 'dashboard');
 setAccountTab(initialAccountTab, false);
-restoreOpenAccountOrder(Boolean(linkedOrder));
-window.addEventListener('load', () => restoreOpenAccountOrder(Boolean(getOrderKeyFromHash())));
+restoreOpenAccountOrders(Boolean(linkedOrder));
+window.addEventListener('load', () => restoreOpenAccountOrders(Boolean(getOrderKeyFromHash())));
+requestAnimationFrame(() => restoreOpenAccountOrders(Boolean(getOrderKeyFromHash())));
+window.setTimeout(() => restoreOpenAccountOrders(Boolean(getOrderKeyFromHash())), 250);
 document.querySelectorAll('.account-order-detail').forEach(detail => {
   detail.addEventListener('toggle', () => {
     if (restoringAccountOrder) return;
@@ -840,13 +842,18 @@ function saveAccountOrderState(detail, open) {
   const key = detail?.dataset?.orderDetail || '';
   if (!key) return;
   if (open) {
-    sessionStorage.setItem(ACCOUNT_OPEN_ORDER_KEY, key);
-    sessionStorage.setItem(ACCOUNT_OPEN_TAB_KEY, 'orders');
+    storeAccountOrderOpen(key);
     return;
   }
+  const pendingKey = sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '';
+  if (pendingKey === key) {
+    storeAccountOrderOpen(key, true);
+    setAccountOrderOpen(detail, true, false);
+    return;
+  }
+  removeStoredAccountOrder(key);
   if (sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) === key) {
     sessionStorage.removeItem(ACCOUNT_OPEN_ORDER_KEY);
-    sessionStorage.removeItem(ACCOUNT_OPEN_TAB_KEY);
   }
   const detailHash = `#orders-${encodeURIComponent(key)}`;
   if (location.hash === detailHash) history.replaceState(null, '', '/profile#orders');
@@ -856,12 +863,42 @@ function setAccountOrderOpen(detail, open, persist = true) {
   restoringAccountOrder = true;
   detail.open = open;
   if (persist) saveAccountOrderState(detail, open);
-  window.setTimeout(() => { restoringAccountOrder = false; }, 80);
+  window.setTimeout(() => { restoringAccountOrder = false; }, 350);
+}
+function getAccountOrderDetailFromElement(el) {
+  const detail = el?.closest?.('.account-order-detail') || el;
+  return detail?.classList?.contains('account-order-detail') ? detail : null;
+}
+function getStoredAccountOrders() {
+  const legacy = sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) || '';
+  let list = [];
+  try { list = JSON.parse(sessionStorage.getItem(ACCOUNT_OPEN_ORDERS_KEY) || '[]'); }
+  catch (e) { list = []; }
+  if (!Array.isArray(list)) list = [];
+  if (legacy && !list.includes(legacy)) list.push(legacy);
+  return list.filter(Boolean);
+}
+function storeAccountOrderOpen(key, keepPending = false) {
+  if (!key) return;
+  const ids = new Set(getStoredAccountOrders());
+  ids.add(key);
+  sessionStorage.setItem(ACCOUNT_OPEN_ORDERS_KEY, JSON.stringify([...ids]));
+  sessionStorage.setItem(ACCOUNT_OPEN_ORDER_KEY, key);
+  if (keepPending) sessionStorage.setItem(ACCOUNT_PENDING_OPEN_ORDER_KEY, key);
+  sessionStorage.setItem(ACCOUNT_OPEN_TAB_KEY, 'orders');
+}
+function removeStoredAccountOrder(key) {
+  if (!key) return;
+  const ids = getStoredAccountOrders().filter(item => item !== key);
+  sessionStorage.setItem(ACCOUNT_OPEN_ORDERS_KEY, JSON.stringify(ids));
+  if ((sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '') === key) return;
+  if ((sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) || '') === key) sessionStorage.removeItem(ACCOUNT_OPEN_ORDER_KEY);
 }
 function rememberOpenAccountOrder(el) {
-  const detail = el?.closest?.('.account-order-detail') || el;
+  const detail = getAccountOrderDetailFromElement(el);
   const key = detail?.dataset?.orderDetail || '';
   if (!key) return '';
+  storeAccountOrderOpen(key, true);
   setAccountOrderOpen(detail, true);
   const targetHash = `#orders-${encodeURIComponent(key)}`;
   if (location.hash !== targetHash) history.replaceState(null, '', `/profile${targetHash}`);
@@ -870,8 +907,7 @@ function rememberOpenAccountOrder(el) {
 function reloadKeepingAccountOrderOpen(el) {
   const key = rememberOpenAccountOrder(el);
   if (key) {
-    sessionStorage.setItem(ACCOUNT_OPEN_ORDER_KEY, key);
-    sessionStorage.setItem(ACCOUNT_OPEN_TAB_KEY, 'orders');
+    storeAccountOrderOpen(key, true);
     const targetUrl = `/profile#orders-${encodeURIComponent(key)}`;
     if (window.location.pathname === '/profile' && window.location.hash === `#orders-${encodeURIComponent(key)}`) {
       window.location.reload();
@@ -882,14 +918,28 @@ function reloadKeepingAccountOrderOpen(el) {
   }
   window.location.reload();
 }
-function restoreOpenAccountOrder(shouldScroll = false) {
-  const key = sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) || '';
-  if (!key) return;
+function restoreOpenAccountOrders(shouldScroll = false) {
+  const hashKey = getOrderKeyFromHash();
+  const pendingKey = sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '';
+  const keys = [...new Set([hashKey, pendingKey, ...getStoredAccountOrders()].filter(Boolean))];
+  if (!keys.length) return;
   setAccountTab(sessionStorage.getItem(ACCOUNT_OPEN_TAB_KEY) || 'orders', false);
-  const detail = Array.from(document.querySelectorAll('.account-order-detail')).find(item => item.dataset.orderDetail === key);
-  if (detail) {
-    setAccountOrderOpen(detail, true, false);
-    if (shouldScroll) window.setTimeout(() => detail.scrollIntoView({behavior:'smooth', block:'start'}), 120);
+  let scrollTarget = null;
+  keys.forEach((key) => {
+    const detail = Array.from(document.querySelectorAll('.account-order-detail')).find(item => item.dataset.orderDetail === key);
+    if (detail) {
+      setAccountOrderOpen(detail, true, false);
+      if (!scrollTarget && (key === hashKey || key === pendingKey)) scrollTarget = detail;
+    }
+  });
+  if (scrollTarget) {
+    storeAccountOrderOpen(scrollTarget.dataset.orderDetail || '');
+    window.setTimeout(() => {
+      if ((sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '') === (scrollTarget.dataset.orderDetail || '')) {
+        sessionStorage.removeItem(ACCOUNT_PENDING_OPEN_ORDER_KEY);
+      }
+    }, 1200);
+    if (shouldScroll) window.setTimeout(() => scrollTarget.scrollIntoView({behavior:'smooth', block:'start'}), 160);
   }
 }
 function copyShippingToBilling(checked) {
