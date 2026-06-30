@@ -79,6 +79,7 @@ if (preg_match('#^/api/design-approvals/(\d+)/approve$#', $uri, $m) && $method =
     \Auth\Auth::require();
     $user = \Auth\Auth::user();
     $result = \Orders\OrderManager::customerDesignDecision((int)$m[1], (int)$user['id'], 'approve', trim((string)($body['note'] ?? '')));
+    if (($result['ok'] ?? false)) $result['status'] = 'approved';
     json($result, ($result['ok'] ?? false) ? 200 : 422);
 }
 
@@ -86,6 +87,7 @@ if (preg_match('#^/api/design-approvals/(\d+)/revision$#', $uri, $m) && $method 
     \Auth\Auth::require();
     $user = \Auth\Auth::user();
     $result = \Orders\OrderManager::customerDesignDecision((int)$m[1], (int)$user['id'], 'revision', trim((string)($body['message'] ?? '')));
+    if (($result['ok'] ?? false)) $result['status'] = 'revision_requested';
     json($result, ($result['ok'] ?? false) ? 200 : 422);
 }
 
@@ -173,7 +175,20 @@ if (preg_match('#^/api/design-approvals/(\d+)/artwork$#', $uri, $m) && $method =
     ]);
     \Orders\OrderManager::markCustomerUpdate((int)$approval['order_id'], $canInitialUpload ? 'customer_artwork_uploaded' : 'customer_artwork_reuploaded');
     \Orders\OrderManager::syncOrderDesignApproved((int)$approval['order_id']);
-    json(['ok' => true, 'msg' => $canInitialUpload ? 'Artwork uploaded for admin review.' : 'Artwork reuploaded for admin review.', 'artwork_id' => (int)$fileId]);
+    json([
+        'ok' => true,
+        'msg' => $canInitialUpload ? 'Artwork uploaded for admin review.' : 'Artwork reuploaded for admin review.',
+        'status' => 'pending_review',
+        'artwork_id' => (int)$fileId,
+        'file' => [
+            'id' => (int)$fileId,
+            'name' => (string)$file['name'],
+            'path' => $publicPath,
+            'mime' => $mime,
+            'view_url' => '/account/artwork/' . (int)$fileId . '/view',
+            'download_url' => '/account/artwork/' . (int)$fileId . '/download',
+        ],
+    ]);
 }
 
 if ($uri === '/api/contact-leads' && $method === 'POST') {

@@ -13288,6 +13288,9 @@ body:has(.dash-ref-page) .adm-admin-chip em::after { content:''; position:absolu
 .account-order-file small { color:#94a3b8; font-size:12px; font-weight:700; }
 .account-order-item-actions { min-width:0; display:grid; justify-items:start; gap:8px; }
 .account-order-item-actions > span { display:inline-flex; align-items:center; min-height:30px; padding:6px 10px; border-radius:999px; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; font-size:11px; font-weight:950; }
+.account-order-live-msg { grid-column:1/-1; padding:9px 11px; border-radius:12px; font-size:12px; font-weight:850; line-height:1.4; }
+.account-order-live-msg.is-success { border:1px solid #bbf7d0; background:#ecfdf5; color:#047857; }
+.account-order-live-msg.is-error { border:1px solid #fecaca; background:#fff1f2; color:#be123c; }
 .account-order-item-actions .account-design-review-actions { margin:0; flex-direction:column; align-items:stretch; width:100%; }
 .account-order-item-actions .account-design-review-actions button { width:100%; justify-content:center; }
 .account-order-item-actions .account-design-revision-form { max-width:100%; width:100%; }

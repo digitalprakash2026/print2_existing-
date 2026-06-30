@@ -146,22 +146,23 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                     $canInitialArtworkUpload = $approvalId > 0 && (string)($item['design_choice'] ?? '') === 'upload' && empty($item['artwork_file_id']) && empty($item['artwork_filename']) && $designStatus === 'pending_review';
                     $canUploadArtwork = $approvalId > 0 && ($designStatus === 'issue_found' || $canInitialArtworkUpload);
                   ?>
-                    <article class="account-order-item-card <?= in_array($designStatus, ['issue_found','revision_requested'], true) ? 'account-design-issue' : '' ?>" data-design-approval-item="<?= $approvalId ?>">
+                    <article class="account-order-item-card <?= in_array($designStatus, ['issue_found','revision_requested'], true) ? 'account-design-issue' : '' ?>" data-design-approval-item="<?= $approvalId ?>" data-design-status="<?= $h($designStatus) ?>">
                       <div class="account-order-item-thumb">
                         <?php if ($productImg !== ''): ?><img src="<?= $h($productImg) ?>" alt="<?= $h($item['product_name'] ?? 'Product') ?>" loading="lazy"><?php else: ?><i class="fa-solid fa-box-open"></i><?php endif; ?>
                       </div>
                       <div class="account-order-item-main">
                         <div class="account-order-item-title">
                           <strong><?= $h($item['product_name'] ?? 'Product') ?></strong>
-                          <span><?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
+                          <span data-design-status-label><?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
                         </div>
                         <p><?= number_format((float)($item['quantity'] ?? 0)) ?> qty × <?= $h($item['quality_name'] ?? 'Standard') ?></p>
                         <?php if (!empty($item['design_admin_note'])): ?><small class="<?= $designStatus === 'issue_found' ? 'account-design-alert-note' : '' ?>"><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
                         <?php if (!empty($item['design_customer_note'])): ?><small class="account-design-customer-note">Your message: <?= $h($item['design_customer_note']) ?></small><?php endif; ?>
                       </div>
                       <div class="account-order-file-grid">
-                        <div class="account-order-file">
+                        <div class="account-order-file" data-artwork-box>
                           <b>Your artwork</b>
+                          <div data-artwork-preview>
                           <?php if (!empty($item['artwork_file_id'])): ?>
                             <a href="/account/artwork/<?= (int)$item['artwork_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= $h($artworkName ?: 'Artwork File') ?>">
                               <span><?php if ($artworkIsImage && $artworkPath !== ''): ?><img src="<?= $h($artworkPath) ?>" alt="" loading="lazy"><?php else: ?><i class="fa-regular fa-file-lines"></i><?php endif; ?></span>
@@ -170,6 +171,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                           <?php else: ?>
                             <small>No artwork uploaded</small>
                           <?php endif; ?>
+                          </div>
                           <?php if ($approvalId > 0): ?>
                             <div class="account-artwork-reupload-form <?= $canUploadArtwork ? 'is-enabled' : '' ?>">
                               <input id="artwork-reupload-<?= $approvalId ?>" type="file" name="artwork" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" onchange="uploadAccountArtworkRevision(this, <?= $approvalId ?>)" <?= $canUploadArtwork ? '' : 'disabled' ?>>
@@ -201,9 +203,10 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                             <button type="button" class="account-design-approve-btn" onclick="approveAccountDesign(<?= $approvalId ?>, this)">Approve Design</button>
                           </div>
                         <?php else: ?>
-                          <span><?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
+                          <span data-design-action-status><?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
                         <?php endif; ?>
                       </div>
+                      <div class="account-order-live-msg" data-design-live-msg hidden></div>
                     </article>
                   <?php endforeach; ?>
                 </div>
@@ -762,7 +765,7 @@ async function approveAccountDesign(id, btn) {
     });
     const data = await resp.json();
     if (!data.ok) { alert(data.msg || 'Could not approve design.'); if (btn) btn.disabled = false; return; }
-    reloadKeepingAccountOrderOpen(btn);
+    updateDesignItemState(btn, 'approved', data.msg || 'Design approved successfully.');
   } catch (e) {
     alert('Could not approve design right now.');
     if (btn) btn.disabled = false;
@@ -793,7 +796,7 @@ async function sendDesignRevision(event, id) {
     });
     const data = await resp.json();
     if (!data.ok) { alert(data.msg || 'Could not send revision request.'); if (btn) btn.disabled = false; return; }
-    reloadKeepingAccountOrderOpen(form);
+    updateDesignItemState(form, 'revision_requested', data.msg || 'Revision request sent successfully.');
   } catch (e) {
     alert('Could not send revision request right now.');
     if (btn) btn.disabled = false;
@@ -830,12 +833,86 @@ async function uploadAccountArtworkRevision(input, id) {
       input.value = '';
       return;
     }
-    reloadKeepingAccountOrderOpen(input);
+    updateDesignItemState(input, data.status || 'pending_review', data.msg || 'Design uploaded successfully.', data.file || null);
+    input.value = '';
   } catch (e) {
     alert('Could not reupload design right now.');
     if (btn) { btn.disabled = false; btn.textContent = oldText || 'Reupload Design'; }
     input.value = '';
   }
+}
+
+const ACCOUNT_DESIGN_LABELS = {
+  pending_review: 'Pending Review',
+  issue_found: 'Issue Found',
+  proof_uploaded: 'Waiting for Your Approval',
+  revision_requested: 'Revision Requested',
+  approved: 'Approved',
+};
+
+function escapeAccountHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  }[ch]));
+}
+
+function shortAccountFileName(name) {
+  const value = String(name || 'Artwork File').trim() || 'Artwork File';
+  if (value.length <= 24) return value;
+  const dot = value.lastIndexOf('.');
+  const ext = dot > 0 ? value.slice(dot) : '';
+  const base = dot > 0 ? value.slice(0, dot) : value;
+  return `${base.slice(0, 16)}…${ext}`;
+}
+
+function showDesignLiveMessage(card, message, type = 'success') {
+  const box = card?.querySelector?.('[data-design-live-msg]');
+  if (!box) return;
+  box.hidden = false;
+  box.className = `account-order-live-msg is-${type}`;
+  box.textContent = message || (type === 'success' ? 'Updated successfully.' : 'Could not update.');
+}
+
+function updateDesignArtworkPreview(card, file) {
+  if (!card || !file?.id) return;
+  const preview = card.querySelector('[data-artwork-preview]');
+  if (!preview) return;
+  const name = escapeAccountHtml(shortAccountFileName(file.name || 'Artwork File'));
+  const title = escapeAccountHtml(file.name || 'Artwork File');
+  const viewUrl = escapeAccountHtml(file.view_url || `/account/artwork/${file.id}/view`);
+  const isImage = String(file.mime || '').toLowerCase().startsWith('image/');
+  const thumb = isImage && file.path
+    ? `<img src="${escapeAccountHtml(file.path)}" alt="" loading="lazy">`
+    : '<i class="fa-regular fa-file-lines"></i>';
+  preview.innerHTML = `<a href="${viewUrl}" target="_blank" rel="noopener" title="${title}"><span>${thumb}</span><em>${name}</em></a>`;
+}
+
+function updateDesignItemState(source, status, message, file = null) {
+  const card = source?.closest?.('[data-design-approval-item]');
+  if (!card) return;
+  const normalized = status || 'pending_review';
+  card.dataset.designStatus = normalized;
+  card.classList.toggle('account-design-issue', ['issue_found', 'revision_requested'].includes(normalized));
+  const label = ACCOUNT_DESIGN_LABELS[normalized] || normalized.replace(/_/g, ' ');
+  card.querySelectorAll('[data-design-status-label], [data-design-action-status]').forEach((el) => { el.textContent = label; });
+  if (file) updateDesignArtworkPreview(card, file);
+
+  const uploadForm = card.querySelector('.account-artwork-reupload-form');
+  if (uploadForm) {
+    uploadForm.classList.remove('is-enabled');
+    uploadForm.querySelectorAll('input, button').forEach((el) => { el.disabled = true; });
+    const hint = uploadForm.querySelector('small');
+    if (hint) hint.textContent = 'Design uploaded successfully. Our team will review it.';
+  }
+  if (normalized === 'approved' || normalized === 'revision_requested') {
+    card.querySelectorAll('.account-design-revision-form, .account-design-review-actions').forEach((el) => { el.hidden = true; });
+    if (!card.querySelector('[data-design-action-status]')) {
+      const actions = card.querySelector('.account-order-item-actions');
+      if (actions) actions.innerHTML = `<span data-design-action-status>${escapeAccountHtml(label)}</span>`;
+    }
+  }
+  showDesignLiveMessage(card, message || 'Updated successfully.', 'success');
+  rememberOpenAccountOrder(card);
 }
 
 function saveAccountOrderState(detail, open) {
