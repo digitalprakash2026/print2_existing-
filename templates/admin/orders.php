@@ -28,6 +28,8 @@ $sort = $sort ?? 'newest';
 $dateFrom = $dateFrom ?? '';
 $dateTo = $dateTo ?? '';
 $hasSeen = !empty($hasSeen);
+$flashSuccess = trim((string)($_GET['success'] ?? ''));
+$flashError = trim((string)($_GET['error'] ?? ''));
 $orderUrl = static function (array $params = []): string {
     $params = array_filter($params, static fn($v) => $v !== '' && $v !== null);
     return '/admin/orders' . ($params ? ('?' . http_build_query($params)) : '');
@@ -131,6 +133,9 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
   <button class="btn btn-blue btn-sm" type="submit">Apply</button>
   <?php if ($search || $status !== 'all' || $paymentStatus !== 'all' || $seen !== 'all' || $sort !== 'newest' || $dateFrom || $dateTo): ?><a href="/admin/orders" class="btn btn-outline btn-sm">Clear</a><?php endif; ?>
 </form>
+<?php if ($flashSuccess !== '' || $flashError !== ''): ?>
+  <div class="adm-orders-flash <?= $flashError !== '' ? 'adm-orders-flash--error' : 'adm-orders-flash--success' ?>"><?= htmlspecialchars($flashError !== '' ? $flashError : $flashSuccess) ?></div>
+<?php endif; ?>
 </div>
 
 <?php if (!$orders): ?>
@@ -258,7 +263,22 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
             </div>
           <?php endforeach; ?>
         </section>
-        <section class="adm-order-card-section adm-order-card-section--full adm-order-action-strip"><span class="ord-action-strip-label">Quick actions</span><div class="ord-actions ord-actions--compact"><a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn aoc-btn--call">📞 Call Customer</a><button class="aoc-btn aoc-btn--wa" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($orderStatus) ?>')">💬 WhatsApp</button><a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn aoc-btn--invoice" target="_blank">🧾 Invoice</a><button class="aoc-btn aoc-btn--address" onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'>📍 Address</button></div></section>
+        <section class="adm-order-card-section adm-order-card-section--full adm-order-action-strip"><span class="ord-action-strip-label">Quick actions</span><div class="ord-actions ord-actions--compact"><a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn aoc-btn--call">📞 Call Customer</a><button class="aoc-btn aoc-btn--wa" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($orderStatus) ?>')">💬 WhatsApp</button><?php if (!empty($o['invoice_file_path'])): ?><a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn aoc-btn--invoice" target="_blank">🧾 View Invoice</a><?php else: ?><span class="aoc-btn aoc-btn--muted">🧾 No Invoice</span><?php endif; ?><button class="aoc-btn aoc-btn--address" onclick='openAddrModal("<?= htmlspecialchars($o['order_id']) ?>", <?= json_encode($orderShipping, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, <?= json_encode($orderBilling, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>)'>📍 Address</button></div></section>
+        <section class="adm-order-card-section adm-order-card-section--full ord-invoice-panel">
+          <div class="ord-invoice-copy">
+            <strong>Invoice PDF</strong>
+            <?php if (!empty($o['invoice_file_path'])): ?>
+              <span><?= htmlspecialchars($shortFileName($o['invoice_original_name'] ?? 'Invoice PDF', 'Invoice PDF')) ?><?= !empty($o['invoice_uploaded_at']) ? ' · Uploaded ' . htmlspecialchars(app_datetime((string)$o['invoice_uploaded_at'], 'd M Y, H:i')) : '' ?></span>
+            <?php else: ?>
+              <span>No invoice uploaded yet. Customer invoice download will appear only after upload.</span>
+            <?php endif; ?>
+          </div>
+          <form class="ord-invoice-form" method="post" action="/admin/orders/<?= (int)$o['id'] ?>/invoice" enctype="multipart/form-data" onsubmit="rememberCardForControl(this)">
+            <input type="hidden" name="_token" value="<?= htmlspecialchars($csrf ?? '') ?>">
+            <input type="file" name="invoice_pdf" accept="application/pdf,.pdf" required>
+            <button class="aoc-btn aoc-btn--invoice" type="submit"><?= !empty($o['invoice_file_path']) ? 'Replace Invoice PDF' : 'Upload Invoice PDF' ?></button>
+          </form>
+        </section>
       </div>
     </div>
   </article>

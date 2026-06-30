@@ -632,12 +632,24 @@ if (preg_match('#^/order/confirm/([A-Z0-9]+)$#', $uri, $m) && $method === 'GET')
 // Invoice Download
 if (preg_match('#^/invoice/([A-Z0-9]+)$#', $uri, $m) && $method === 'GET') {
     \Auth\Auth::require();
+    \Orders\OrderManager::ensureInvoiceSchema();
     try { $order = \Orders\OrderManager::getOrderByOrderId($m[1]); }
     catch (\Throwable) { $order = null; }
     if (!$order || (int)$order['user_id'] !== (int)\Auth\Auth::user()['id']) {
         http_response_code(403); exit;
     }
-    \Invoice\InvoiceGenerator::download($order);
+    $path = trim((string)($order['invoice_file_path'] ?? ''));
+    $full = $path !== '' && !str_contains($path, '..') ? PUBLIC_PATH . $path : '';
+    if ($full === '' || !is_file($full)) {
+        http_response_code(404);
+        echo 'Invoice PDF is not available yet.';
+        exit;
+    }
+    $downloadName = str_replace(['"', "\r", "\n"], '', basename((string)($order['invoice_original_name'] ?: ('Invoice-' . $order['order_id'] . '.pdf'))));
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+    header('Content-Length: ' . filesize($full));
+    readfile($full);
     exit;
 }
 

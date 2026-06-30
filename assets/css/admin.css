@@ -351,6 +351,9 @@ body.admin-page-orders .ord-artwork-link--primary { justify-self:start; border-r
 body.admin-page-orders .aoc-btn--danger { border-color:#fecaca !important; background:#fff1f2 !important; color:#be123c !important; }
 body.admin-page-orders .aoc-btn--approve { border-color:#bbf7d0 !important; background:#ecfdf5 !important; color:#047857 !important; }
 body.admin-page-orders .ord-proof-input { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
+body.admin-page-orders .adm-orders-flash { margin-top:12px; padding:12px 14px; border-radius:13px; font-size:13px; font-weight:850; }
+body.admin-page-orders .adm-orders-flash--success { border:1px solid #bbf7d0; background:#ecfdf5; color:#047857; }
+body.admin-page-orders .adm-orders-flash--error { border:1px solid #fecaca; background:#fff1f2; color:#be123c; }
 body.admin-page-orders .adm-order-action-strip { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; background:linear-gradient(135deg,#f8fafc 0%,#eef6ff 100%); }
 body.admin-page-orders .ord-action-strip-label { color:var(--adm-muted); font-size:11px; font-weight:950; text-transform:uppercase; letter-spacing:.06em; }
 body.admin-page-orders .ord-actions--compact { justify-content:flex-end; flex-wrap:wrap; gap:9px; }
@@ -358,7 +361,14 @@ body.admin-page-orders .ord-actions--compact .aoc-btn { min-height:36px; padding
 body.admin-page-orders .aoc-btn--call { background:#eff6ff !important; border-color:#bfdbfe !important; color:#1d4ed8 !important; }
 body.admin-page-orders .aoc-btn--wa { background:#ecfdf5 !important; border-color:#bbf7d0 !important; color:#047857 !important; }
 body.admin-page-orders .aoc-btn--invoice { background:#f8fafc !important; border-color:#cbd5e1 !important; color:#334155 !important; }
+body.admin-page-orders .aoc-btn--muted { background:#f1f5f9 !important; border-color:#e2e8f0 !important; color:#64748b !important; cursor:default; }
 body.admin-page-orders .aoc-btn--address { background:#fff7ed !important; border-color:#fed7aa !important; color:#c2410c !important; }
+body.admin-page-orders .ord-invoice-panel { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:12px; border:1px solid #e2e8f0; border-radius:14px; background:#fff; }
+body.admin-page-orders .ord-invoice-copy { display:grid; gap:4px; min-width:220px; }
+body.admin-page-orders .ord-invoice-copy strong { color:#0f172a; font-size:13px; font-weight:950; }
+body.admin-page-orders .ord-invoice-copy span { color:#64748b; font-size:12px; font-weight:750; }
+body.admin-page-orders .ord-invoice-form { display:flex; align-items:center; justify-content:flex-end; gap:9px; flex-wrap:wrap; }
+body.admin-page-orders .ord-invoice-form input[type="file"] { max-width:260px; padding:8px; border:1px dashed #cbd5e1; border-radius:10px; background:#f8fafc; color:#334155; font-size:12px; font-weight:750; }
 body.admin-page-orders .adm-order-card--new { border-color:#bfdbfe; }
 body.admin-page-orders .adm-order-card--delayed { border-color:#fed7aa; }
 body.admin-page-orders .adm-order-card--customer-update,

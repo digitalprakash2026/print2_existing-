@@ -2135,15 +2135,75 @@ if ($uri === '/admin/export/orders') {
     exit;
 }
 
+if (preg_match('#^/admin/orders/(\d+)/invoice$#', $uri, $m) && $method === 'POST') {
+    $token = (string)($_POST['_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
+    if (!hash_equals((string)($_SESSION['csrf_token'] ?? ''), $token)) {
+        redirect('/admin/orders?error=' . urlencode('Security token expired. Please refresh and try again.'));
+    }
+
+    \Orders\OrderManager::ensureInvoiceSchema();
+    $order = \Orders\OrderManager::getOrder((int)$m[1]);
+    if (!$order) {
+        http_response_code(404);
+        exit('Order not found');
+    }
+    if (empty($_FILES['invoice_pdf']) || !is_uploaded_file($_FILES['invoice_pdf']['tmp_name'])) {
+        redirect('/admin/orders?error=' . urlencode('Please choose an invoice PDF to upload.'));
+    }
+
+    $file = $_FILES['invoice_pdf'];
+    $maxSize = 10 * 1024 * 1024;
+    $originalName = (string)($file['name'] ?? 'invoice.pdf');
+    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $mime = (string)(mime_content_type($file['tmp_name']) ?: '');
+    if (($file['size'] ?? 0) <= 0 || ($file['size'] ?? 0) > $maxSize || $ext !== 'pdf' || !in_array($mime, ['application/pdf', 'application/x-pdf', 'application/octet-stream'], true)) {
+        redirect('/admin/orders?error=' . urlencode('Only PDF invoices up to 10MB are allowed.'));
+    }
+
+    $dir = UPLOAD_PATH . '/invoices/order-' . (int)$order['id'] . '/';
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $safeBase = preg_replace('/[^A-Za-z0-9._-]+/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+    $filename = 'invoice-' . date('Ymd-His') . '-' . ($safeBase ?: 'order-' . (int)$order['id']) . '.pdf';
+    $target = $dir . $filename;
+    if (!move_uploaded_file($file['tmp_name'], $target)) {
+        redirect('/admin/orders?error=' . urlencode('Invoice upload failed. Please try again.'));
+    }
+    $relativePath = '/uploads/invoices/order-' . (int)$order['id'] . '/' . $filename;
+
+    $oldPath = trim((string)($order['invoice_file_path'] ?? ''));
+    if ($oldPath !== '' && str_starts_with($oldPath, '/uploads/invoices/') && is_file(PUBLIC_PATH . $oldPath)) {
+        $trashDir = UPLOAD_PATH . '/.trash/invoices/' . date('Ymd-His') . '/';
+        if (!is_dir($trashDir)) @mkdir($trashDir, 0755, true);
+        @rename(PUBLIC_PATH . $oldPath, $trashDir . basename($oldPath));
+    }
+
+    $admin = \Auth\Auth::admin();
+    \Orders\OrderManager::saveUploadedInvoice((int)$order['id'], $relativePath, $originalName, !empty($admin['id']) ? (int)$admin['id'] : null);
+    \Orders\AdminAudit::log('invoice_uploaded', 'Invoice uploaded for order ' . (string)$order['order_id']);
+    redirect('/admin/orders?success=' . urlencode('Invoice PDF uploaded for order #' . (string)$order['order_id']) . '#ord-' . (int)$order['id']);
+}
+
 if (preg_match('#^/admin/invoice/(.+)$#', $uri, $m)) {
     try {
+        \Orders\OrderManager::ensureInvoiceSchema();
         $order = \Orders\OrderManager::getOrderByOrderId($m[1]);
         if (!$order) { http_response_code(404); exit; }
-        \Invoice\InvoiceGenerator::download($order);
+        $path = trim((string)($order['invoice_file_path'] ?? ''));
+        $full = $path !== '' && !str_contains($path, '..') ? PUBLIC_PATH . $path : '';
+        if ($full === '' || !is_file($full)) {
+            http_response_code(404);
+            echo 'Invoice PDF has not been uploaded for this order yet.';
+            exit;
+        }
+        $downloadName = str_replace(['"', "\r", "\n"], '', basename((string)($order['invoice_original_name'] ?: ('Invoice-' . $order['order_id'] . '.pdf'))));
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="' . $downloadName . '"');
+        header('Content-Length: ' . filesize($full));
+        readfile($full);
     } catch (\Throwable $e) {
-        error_log('Admin invoice failed for ' . $m[1] . ': ' . $e->getMessage());
+        error_log('Admin invoice download failed for ' . $m[1] . ': ' . $e->getMessage());
         http_response_code(500);
-        echo 'Invoice generation failed. Please check logs.';
+        echo 'Invoice download failed. Please check logs.';
     }
     exit;
 }
@@ -2169,6 +2229,7 @@ if (str_contains($uri, '/admin/settings') || str_contains($uri, '/admin/integrat
 }
 
 if ($uri === '/admin/orders') {
+    \Orders\OrderManager::ensureInvoiceSchema();
     $search = trim((string)($_GET['search'] ?? ''));
     $status = trim((string)($_GET['status'] ?? 'all'));
     $paymentStatus = trim((string)($_GET['payment_status'] ?? 'all'));

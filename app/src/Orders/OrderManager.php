@@ -12,6 +12,7 @@ class OrderManager
     private static ?bool $workflowSchemaReady = null;
     private static ?bool $designApprovalSchemaReady = null;
     private static ?bool $designEventSchemaReady = null;
+    private static ?bool $invoiceSchemaReady = null;
 
     public static function ensureWorkflowSchema(): bool
     {
@@ -188,6 +189,54 @@ class OrderManager
             error_log('Order customer update schema unavailable: ' . $e->getMessage());
             return false;
         }
+    }
+
+    public static function ensureInvoiceSchema(): bool
+    {
+        if (self::$invoiceSchemaReady !== null) return self::$invoiceSchemaReady;
+
+        try {
+            $columns = [
+                'invoice_file_path' => "ALTER TABLE orders ADD COLUMN invoice_file_path VARCHAR(500) NULL AFTER payment_id",
+                'invoice_original_name' => "ALTER TABLE orders ADD COLUMN invoice_original_name VARCHAR(255) NULL AFTER invoice_file_path",
+                'invoice_uploaded_at' => "ALTER TABLE orders ADD COLUMN invoice_uploaded_at DATETIME NULL AFTER invoice_original_name",
+                'invoice_uploaded_by' => "ALTER TABLE orders ADD COLUMN invoice_uploaded_by INT NULL AFTER invoice_uploaded_at",
+            ];
+            foreach ($columns as $column => $sql) {
+                $exists = \Database::row(
+                    "SELECT 1 AS ok
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'orders'
+                        AND COLUMN_NAME = ?
+                      LIMIT 1",
+                    [$column]
+                );
+                if (!$exists) \Database::query($sql);
+            }
+            self::$invoiceSchemaReady = true;
+        } catch (\Throwable $e) {
+            error_log('Order invoice schema unavailable: ' . $e->getMessage());
+            self::$invoiceSchemaReady = false;
+        }
+
+        return self::$invoiceSchemaReady;
+    }
+
+    public static function saveUploadedInvoice(int $orderId, string $path, string $originalName, ?int $adminId = null): bool
+    {
+        if ($orderId <= 0 || trim($path) === '' || !self::ensureInvoiceSchema()) return false;
+        \Database::query(
+            "UPDATE orders
+                SET invoice_file_path = ?,
+                    invoice_original_name = ?,
+                    invoice_uploaded_at = NOW(),
+                    invoice_uploaded_by = ?,
+                    updated_at = NOW()
+              WHERE id = ?",
+            [$path, substr($originalName, 0, 255), $adminId, $orderId]
+        );
+        return true;
     }
 
     public static function markCustomerUpdate(int $orderId, string $type): void
@@ -673,6 +722,7 @@ class OrderManager
     public static function getOrder(int $id): ?array
     {
         self::ensureDesignApprovalSchema();
+        self::ensureInvoiceSchema();
 
         $order = \Database::row("SELECT * FROM orders WHERE id = ?", [$id]);
         if (!$order) return null;
@@ -725,6 +775,7 @@ class OrderManager
     public static function getUserOrders(int $userId): array
     {
         self::ensureDesignApprovalSchema();
+        self::ensureInvoiceSchema();
 
         $orders = \Database::rows(
             "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC",

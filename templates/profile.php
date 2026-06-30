@@ -217,8 +217,10 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
             <div class="account-order-actions-list" aria-label="Order actions">
               <strong>Actions</strong>
               <button type="button" onclick="openAccountOrder(this)"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Track Order</button>
-              <?php if ($isPaid && $orderPublicId !== ''): ?>
+              <?php if ($isPaid && $orderPublicId !== '' && !empty($order['invoice_file_path'])): ?>
                 <a href="/invoice/<?= rawurlencode($orderPublicId) ?>" target="_blank" rel="noopener"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Download Invoice</a>
+              <?php elseif ($isPaid): ?>
+                <span class="account-order-action-disabled"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Invoice will be available soon</span>
               <?php else: ?>
                 <span class="account-order-action-disabled"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Invoice after payment</span>
               <?php endif; ?>
