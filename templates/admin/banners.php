@@ -16,7 +16,7 @@ include __DIR__ . '/layout.php';
   <div id="bnList"></div>
   <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
 
-  <div style="font-weight:800;margin-bottom:10px" id="bnFormTitle">Add Banner</div>
+  <div style="font-weight:700;margin-bottom:10px" id="bnFormTitle">Add Banner</div>
   <div class="f2">
     <div class="fg">
       <label>Banner Image *</label>
@@ -62,7 +62,7 @@ function renderBanners() {
     <div style="display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:12px;margin-bottom:9px;background:#fff">
       <img src="${esc(b.image_path)}" style="width:120px;height:68px;object-fit:cover;border-radius:10px;border:1px solid var(--border)">
       <div>
-        <div style="font-weight:800;font-size:13px">Image Banner</div>
+        <div style="font-weight:700;font-size:13px">Image Banner</div>
         <div style="font-size:11px;color:var(--text2)">Order: ${Number(b.sort_order||0)} · ${b.is_active ? 'Active' : 'Inactive'} · Link: ${b.image_click_url ? esc(b.image_click_url) : 'Not clickable'}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">

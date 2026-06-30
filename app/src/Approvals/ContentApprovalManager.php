@@ -38,8 +38,9 @@ final class ContentApprovalManager
 
     public static function isSuperAdmin(?array $admin = null): bool
     {
-        $role = strtolower((string)(($admin ?? \Auth\Auth::admin())['role'] ?? ''));
-        return in_array($role, ['super','super_admin','super-admin','owner'], true);
+        $role = strtolower(trim((string)(($admin ?? \Auth\Auth::admin())['role'] ?? '')));
+        $normalizedRole = trim((string)preg_replace('/[^a-z0-9]+/', '_', $role), '_');
+        return in_array($normalizedRole, ['super','superadmin','super_admin','owner'], true);
     }
 
     public static function requireSuperAdmin(): void
