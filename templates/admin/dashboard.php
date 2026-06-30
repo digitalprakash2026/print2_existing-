@@ -56,7 +56,6 @@ include __DIR__ . '/layout.php';
         <a href="/admin/coupons"><span class="c-purple">◆</span><b>Create Coupon</b></a>
         <a href="/admin/export/orders" target="_blank"><span class="c-orange">⇩</span><b>Export Orders</b></a>
         <a href="/admin/customers"><span class="c-pink">●</span><b>Manage Users</b></a>
-        <a href="/admin/design"><span class="c-cyan">✎</span><b>Design Studio</b></a>
         <a href="/admin/analytics"><span class="c-indigo">▮</span><b>Reports</b></a>
         <a href="/admin/settings"><span class="c-slate">⚙</span><b>Settings</b></a>
       </div>

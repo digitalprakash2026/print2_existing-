@@ -66,6 +66,39 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
 \Approvals\ContentApprovalManager::ensureSchema();
 \Faq\FaqManager::ensureSchema();
 
+$adminTableExists = static function (string $table): bool {
+    try {
+        $row = Database::row(
+            "SELECT 1 AS ok
+               FROM information_schema.TABLES
+              WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = ?
+              LIMIT 1",
+            [$table]
+        );
+        return (bool)$row;
+    } catch (\Throwable) {
+        return false;
+    }
+};
+$orderCleanupCounts = static function () use ($adminTableExists): array {
+    $count = static function (string $sql) {
+        try { return (int)(Database::row($sql)['c'] ?? 0); }
+        catch (\Throwable) { return 0; }
+    };
+    return [
+        'orders' => $adminTableExists('orders') ? $count('SELECT COUNT(*) AS c FROM orders') : 0,
+        'order_items' => $adminTableExists('order_items') ? $count('SELECT COUNT(*) AS c FROM order_items') : 0,
+        'status_history' => $adminTableExists('order_status_history') ? $count('SELECT COUNT(*) AS c FROM order_status_history WHERE order_id IN (SELECT id FROM orders)') : 0,
+        'payments' => $adminTableExists('payments') ? $count('SELECT COUNT(*) AS c FROM payments WHERE order_id IN (SELECT id FROM orders)') : 0,
+        'coupon_uses' => $adminTableExists('coupon_uses') ? $count('SELECT COUNT(*) AS c FROM coupon_uses WHERE order_id IN (SELECT id FROM orders)') : 0,
+        'product_reviews' => $adminTableExists('product_reviews') ? $count('SELECT COUNT(*) AS c FROM product_reviews WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)') : 0,
+        'design_approvals' => $adminTableExists('order_design_approvals') ? $count('SELECT COUNT(*) AS c FROM order_design_approvals WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)') : 0,
+        'design_events' => $adminTableExists('order_design_events') ? $count('SELECT COUNT(*) AS c FROM order_design_events WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)') : 0,
+        'artwork_files' => $adminTableExists('artwork_files') ? $count('SELECT COUNT(*) AS c FROM artwork_files WHERE order_item_id IN (SELECT id FROM order_items)') : 0,
+    ];
+};
+
 $ensurePageHeroesSchema = static function (): void {
     try {
         Database::query("CREATE TABLE IF NOT EXISTS page_heroes (
@@ -2265,6 +2298,98 @@ if ($uri === '/admin/orders') {
 }
 
 
+if ($uri === '/admin/order-cleanup/delete-all' && $method === 'POST') {
+    \Auth\Auth::requireSuperAdmin();
+    $token = (string)($_POST['_token'] ?? '');
+    if (!hash_equals((string)($_SESSION['csrf_token'] ?? ''), $token)) {
+        redirect('/admin/order-cleanup?error=' . urlencode('Security token expired. Please refresh and try again.'));
+    }
+    $confirm = trim((string)($_POST['confirm_text'] ?? ''));
+    if ($confirm !== 'DELETE ALL ORDERS') {
+        redirect('/admin/order-cleanup?error=' . urlencode('Please type DELETE ALL ORDERS exactly to confirm cleanup.'));
+    }
+
+    $archiveFiles = !empty($_POST['archive_files']);
+    $countsBefore = $orderCleanupCounts();
+    if (($countsBefore['orders'] ?? 0) <= 0) {
+        redirect('/admin/order-cleanup?success=' . urlencode('No orders found to delete.'));
+    }
+
+    $fileRows = [];
+    if ($archiveFiles && $adminTableExists('artwork_files')) {
+        try {
+            $fileRows = Database::rows(
+                "SELECT id, file_path, original_name, filename
+                   FROM artwork_files
+                  WHERE order_item_id IN (SELECT id FROM order_items)"
+            );
+        } catch (\Throwable) { $fileRows = []; }
+    }
+
+    $db = Database::get();
+    $deleted = [];
+    try {
+        $db->beginTransaction();
+        $delete = static function (string $key, string $sql) use (&$deleted): void {
+            $stmt = Database::query($sql);
+            $deleted[$key] = ($deleted[$key] ?? 0) + $stmt->rowCount();
+        };
+        if ($adminTableExists('product_reviews')) {
+            $delete('product_reviews', 'DELETE FROM product_reviews WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)');
+        }
+        if ($adminTableExists('order_design_events')) {
+            $delete('order_design_events', 'DELETE FROM order_design_events WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)');
+        }
+        if ($adminTableExists('order_design_approvals')) {
+            $delete('order_design_approvals', 'DELETE FROM order_design_approvals WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)');
+        }
+        if ($adminTableExists('artwork_files')) {
+            $delete('artwork_files', 'DELETE FROM artwork_files WHERE order_item_id IN (SELECT id FROM order_items)');
+        }
+        if ($adminTableExists('payments')) {
+            $delete('payments', 'DELETE FROM payments WHERE order_id IN (SELECT id FROM orders)');
+        }
+        if ($adminTableExists('coupon_uses')) {
+            $delete('coupon_uses', 'DELETE FROM coupon_uses WHERE order_id IN (SELECT id FROM orders)');
+        }
+        if ($adminTableExists('order_status_history')) {
+            $delete('order_status_history', 'DELETE FROM order_status_history WHERE order_id IN (SELECT id FROM orders)');
+        }
+        if ($adminTableExists('order_items')) {
+            $delete('order_items', 'DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders)');
+        }
+        if ($adminTableExists('orders')) {
+            $delete('orders', 'DELETE FROM orders');
+        }
+        $db->commit();
+    } catch (\Throwable $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        error_log('Order cleanup failed: ' . $e->getMessage());
+        redirect('/admin/order-cleanup?error=' . urlencode('Cleanup failed: ' . $e->getMessage()));
+    }
+
+    $archived = 0;
+    $archiveFailed = 0;
+    if ($archiveFiles && $fileRows) {
+        $trashDir = UPLOAD_PATH . '/.trash/order-cleanup/' . date('Ymd-His') . '/';
+        if (!is_dir($trashDir)) @mkdir($trashDir, 0755, true);
+        foreach ($fileRows as $file) {
+            $path = trim((string)($file['file_path'] ?? ''));
+            if ($path === '' || str_contains($path, '..')) continue;
+            $full = PUBLIC_PATH . $path;
+            if (!is_file($full)) continue;
+            $safeName = preg_replace('/[^A-Za-z0-9._-]+/', '_', basename((string)($file['original_name'] ?: $file['filename'] ?: basename($path))));
+            $target = $trashDir . ((int)($file['id'] ?? 0)) . '-' . ($safeName ?: basename($path));
+            if (@rename($full, $target)) $archived++;
+            else $archiveFailed++;
+        }
+    }
+
+    \Orders\AdminAudit::log('orders_cleanup', 'Deleted all testing orders: ' . json_encode($deleted));
+    $msg = 'Order cleanup completed. Deleted orders: ' . (int)($deleted['orders'] ?? 0) . '. Archived files: ' . $archived . ($archiveFailed ? ('. File archive failed: ' . $archiveFailed) : '');
+    redirect('/admin/order-cleanup?success=' . urlencode($msg));
+}
+
 if ($uri === '/admin/backup/download' && $method === 'POST') {
     \Auth\Auth::requireSuperAdmin();
     $token = (string)($_POST['_token'] ?? '');
@@ -2316,7 +2441,7 @@ if (preg_match('#^/admin/coupons/edit/(\d+)$#', $uri, $m) && $method === 'GET') 
     exit;
 }
 
-if (in_array($uri, ['/admin/admins', '/admin/approvals', '/admin/backup'], true)) {
+if (in_array($uri, ['/admin/admins', '/admin/approvals', '/admin/backup', '/admin/order-cleanup'], true)) {
     \Auth\Auth::requireSuperAdmin();
 }
 
@@ -2346,8 +2471,8 @@ $adminPage = match(true) {
     $uri === '/admin/approvals'  => 'admin/approvals',
     $uri === '/admin/admins'     => 'admin/admins',
     $uri === '/admin/backup'     => 'admin/backup',
+    $uri === '/admin/order-cleanup' => 'admin/order-cleanup',
     $uri === '/admin/settings'   => 'admin/settings',
-    $uri === '/admin/design'     => 'admin/design',
     $uri === '/admin/integrations' => 'admin/integrations',
     $uri === '/admin/audit-logs' => 'admin/audit-logs',
     default                      => null,
