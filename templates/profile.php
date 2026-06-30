@@ -178,8 +178,8 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
                           </div>
                           <?php if ($approvalId > 0): ?>
                             <div class="account-artwork-reupload-form <?= $canUploadArtwork ? 'is-enabled' : '' ?>">
-                              <input id="artwork-reupload-<?= $approvalId ?>" type="file" name="artwork" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" onchange="uploadAccountArtworkRevision(this, <?= $approvalId ?>)" <?= $canUploadArtwork ? '' : 'disabled' ?>>
-                              <button type="button" onclick="chooseAccountArtworkRevision(<?= $approvalId ?>)" <?= $canUploadArtwork ? '' : 'disabled' ?>><?= $canInitialArtworkUpload ? 'Upload Design' : 'Reupload Design' ?></button>
+                              <input type="file" name="artwork" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" onchange="uploadAccountArtworkRevision(this, <?= $approvalId ?>)" <?= $canUploadArtwork ? '' : 'disabled' ?>>
+                              <button type="button" onclick="chooseAccountArtworkRevision(this)" <?= $canUploadArtwork ? '' : 'disabled' ?>><?= $canInitialArtworkUpload ? 'Upload Design' : 'Reupload Design' ?></button>
                               <small><?= $canInitialArtworkUpload ? 'You selected upload later. Choose your design file here when ready.' : ($designStatus === 'issue_found' ? 'One click: choose file and upload starts automatically.' : 'Upload is available when a design file is required.') ?></small>
                             </div>
                           <?php endif; ?>
@@ -812,8 +812,9 @@ async function sendDesignRevision(event, id) {
   }
 }
 
-function chooseAccountArtworkRevision(id) {
-  const input = document.getElementById(`artwork-reupload-${id}`);
+function chooseAccountArtworkRevision(trigger) {
+  const form = trigger?.closest?.('.account-artwork-reupload-form');
+  const input = form?.querySelector?.('input[type="file"]');
   if (!input || input.disabled) { alert('Upload is available when a design file is required.'); return; }
   input.click();
 }
