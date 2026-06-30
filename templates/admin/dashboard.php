@@ -9,9 +9,6 @@ include __DIR__ . '/layout.php';
       <h1>Dashboard</h1>
       <p>Welcome back! Here’s what’s happening with your business today.</p>
     </div>
-    <div class="dash-ref-title-actions">
-      <button class="dash-ref-date" type="button"><span class="dash-ref-mini-icon">▣</span><span><?= date('d M Y') ?> - <?= date('d M Y') ?></span>⌄</button>
-    </div>
   </div>
 
   <section class="dash-ref-kpis dash-ref-kpis-top" aria-label="Primary dashboard metrics">

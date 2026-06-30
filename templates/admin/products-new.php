@@ -86,11 +86,11 @@ function renderPreview(images = currentImages, newImages = pendingImages) {
     const deleteButton = (!img.isNew && img.id > 0)
       ? `<button type="button" class="btn btn-red btn-xs" onclick="deleteProductImage(${img.id})" style="width:100%;justify-content:center">🗑️ Delete image</button>`
       : (img.isNew
-        ? '<div style="font-size:11px;color:var(--green);font-weight:800">Will upload on save</div>'
+        ? '<div style="font-size:11px;color:var(--green);font-weight:700">Will upload on save</div>'
         : '<button type="button" class="btn btn-red btn-xs" onclick="deleteLegacyProductImage()" style="width:100%;justify-content:center">🗑️ Clear main image</button>');
     div.innerHTML = `
       <img src="${escAttr(img.path)}" style="width:100%;height:88px;object-fit:cover;border-radius:8px;border:1px solid var(--border)" onerror="this.style.display='none'">
-      <div style="font-size:11px;color:${img.isPrimary ? 'var(--blue)' : 'var(--text2)'};font-weight:800">${badge}</div>
+      <div style="font-size:11px;color:${img.isPrimary ? 'var(--blue)' : 'var(--text2)'};font-weight:700">${badge}</div>
       ${deleteButton}
     `;
     box.appendChild(div);
@@ -128,7 +128,7 @@ function renderProductFilters(selected = {}) {
   box.innerHTML = groups.map(group => {
     const opts = group.options || [];
     return `<div style="border:1px solid var(--border);border-radius:12px;background:#fff;padding:12px">
-      <div style="font-size:13px;font-weight:900;color:var(--text);margin-bottom:9px">${escH(group.label || group.slug)}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:9px">${escH(group.label || group.slug)}</div>
       <div style="display:grid;gap:8px">
         ${opts.map(opt => {
           const checked = (selected[group.slug] || []).includes(opt.slug) ? 'checked' : '';
