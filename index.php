@@ -404,7 +404,11 @@ if ($uri === '/products' && $method === 'GET') {
 // Login
 if ($uri === '/login') {
     if ($method === 'GET') {
-        if (\Auth\Auth::check()) redirect('/my-orders');
+        $loginNext = trim((string)($_GET['next'] ?? $_GET['redirect'] ?? '/profile'));
+        if ($loginNext === '' || $loginNext[0] !== '/' || str_starts_with($loginNext, '//')) {
+            $loginNext = '/profile';
+        }
+        if (\Auth\Auth::check()) redirect($loginNext);
         view('auth/login');
         exit;
     }

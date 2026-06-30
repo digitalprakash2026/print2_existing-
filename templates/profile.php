@@ -736,6 +736,7 @@ if (linkedOrder) {
 const initialAccountTab = getAccountTabFromHash() || ((linkedOrder || rememberedOrder) ? (sessionStorage.getItem(ACCOUNT_OPEN_TAB_KEY) || 'orders') : 'dashboard');
 setAccountTab(initialAccountTab, false);
 restoreOpenAccountOrder(Boolean(linkedOrder));
+window.addEventListener('load', () => restoreOpenAccountOrder(Boolean(getOrderKeyFromHash())));
 document.querySelectorAll('.account-order-detail').forEach(detail => {
   detail.addEventListener('toggle', () => {
     if (restoringAccountOrder) return;
@@ -759,8 +760,7 @@ async function approveAccountDesign(id, btn) {
     });
     const data = await resp.json();
     if (!data.ok) { alert(data.msg || 'Could not approve design.'); if (btn) btn.disabled = false; return; }
-    rememberOpenAccountOrder(btn);
-    window.location.reload();
+    reloadKeepingAccountOrderOpen(btn);
   } catch (e) {
     alert('Could not approve design right now.');
     if (btn) btn.disabled = false;
@@ -791,8 +791,7 @@ async function sendDesignRevision(event, id) {
     });
     const data = await resp.json();
     if (!data.ok) { alert(data.msg || 'Could not send revision request.'); if (btn) btn.disabled = false; return; }
-    rememberOpenAccountOrder(form);
-    window.location.reload();
+    reloadKeepingAccountOrderOpen(form);
   } catch (e) {
     alert('Could not send revision request right now.');
     if (btn) btn.disabled = false;
@@ -829,8 +828,7 @@ async function uploadAccountArtworkRevision(input, id) {
       input.value = '';
       return;
     }
-    rememberOpenAccountOrder(input);
-    window.location.reload();
+    reloadKeepingAccountOrderOpen(input);
   } catch (e) {
     alert('Could not reupload design right now.');
     if (btn) { btn.disabled = false; btn.textContent = oldText || 'Reupload Design'; }
@@ -863,10 +861,26 @@ function setAccountOrderOpen(detail, open, persist = true) {
 function rememberOpenAccountOrder(el) {
   const detail = el?.closest?.('.account-order-detail') || el;
   const key = detail?.dataset?.orderDetail || '';
-  if (!key) return;
+  if (!key) return '';
   setAccountOrderOpen(detail, true);
   const targetHash = `#orders-${encodeURIComponent(key)}`;
   if (location.hash !== targetHash) history.replaceState(null, '', `/profile${targetHash}`);
+  return key;
+}
+function reloadKeepingAccountOrderOpen(el) {
+  const key = rememberOpenAccountOrder(el);
+  if (key) {
+    sessionStorage.setItem(ACCOUNT_OPEN_ORDER_KEY, key);
+    sessionStorage.setItem(ACCOUNT_OPEN_TAB_KEY, 'orders');
+    const targetUrl = `/profile#orders-${encodeURIComponent(key)}`;
+    if (window.location.pathname === '/profile' && window.location.hash === `#orders-${encodeURIComponent(key)}`) {
+      window.location.reload();
+    } else {
+      window.location.href = targetUrl;
+    }
+    return;
+  }
+  window.location.reload();
 }
 function restoreOpenAccountOrder(shouldScroll = false) {
   const key = sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) || '';
@@ -886,7 +900,7 @@ function copyShippingToBilling(checked) {
 function openAccountOrder(trigger) {
   const detail = trigger?.closest('.account-order-detail');
   if (!detail) return;
-  detail.open = true;
+  setAccountOrderOpen(detail, true);
   const tracking = detail.querySelector('.account-order-tracking');
   const target = tracking || detail;
   tracking?.classList.remove('is-highlighted');

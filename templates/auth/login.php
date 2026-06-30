@@ -111,7 +111,9 @@ if ($supportPhoneDisplay === '') {
 </main>
 <script>
 const CSRF = '<?= $csrf ?>';
-const LOGIN_NEXT = new URLSearchParams(window.location.search).get('next') || '/';
+const loginParams = new URLSearchParams(window.location.search);
+const requestedNext = loginParams.get('next') || loginParams.get('redirect') || '/profile';
+const LOGIN_NEXT = (requestedNext.startsWith('/') && !requestedNext.startsWith('//')) ? requestedNext : '/profile';
 async function doLogin() {
   const id = document.getElementById('l-id').value.trim();
   const pw = document.getElementById('l-pw').value;
