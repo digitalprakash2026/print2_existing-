@@ -15,8 +15,6 @@ $pageHero = [
         ['label' => 'My Account', 'url' => null],
     ],
 ];
-include INCLUDE_PATH . '/partials/page-hero.php';
-
 $profile = $profile ?? [];
 $billing = $profile['billing'] ?? [];
 $shipping = $profile['shipping'] ?? [];
@@ -279,17 +277,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
 };
 ?>
 <main class="account-page" data-design-target="account.page">
-  <section class="account-hero" aria-labelledby="accountTitle">
-    <div class="container account-hero-grid">
-      <div class="account-title-block">
-        <nav class="account-breadcrumb" aria-label="Breadcrumb">
-          <a href="/">Home</a><span>›</span><span>My Account</span>
-        </nav>
-        <h1 id="accountTitle">My Account</h1>
-        <p>Manage your profile, track orders and access exclusive print benefits.</p>
-      </div>
-    </div>
-  </section>
+  <?php include INCLUDE_PATH . '/partials/page-hero.php'; ?>
 
   <section class="account-dashboard container" aria-label="Account dashboard">
     <aside class="account-sidebar" aria-label="My account menu">
