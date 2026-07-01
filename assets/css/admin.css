@@ -422,8 +422,8 @@ body.admin-page-orders .ord-design-actions .aoc-btn--approve { min-width:132px; 
 body.admin-page-orders .ord-design-note--customer { border-color:#fed7aa; background:#fff7ed; color:#9a3412; }
 body.admin-page-orders .ord-artwork-actions { display:inline-flex; align-items:center; gap:7px; justify-content:flex-start; flex-wrap:wrap; }
 body.admin-page-orders .ord-artwork-link--view { border-radius:9px; padding:7px 10px; background:#eef6ff; border:1px solid #bfdbfe; color:#1d4ed8 !important; text-decoration:none; font-weight:700; }
-body.admin-page-orders .ord-artwork-link--wa { width:34px; height:34px; display:inline-grid; place-items:center; border-radius:999px; padding:0; border:1px solid #bbf7d0; background:#ecfdf5; color:#047857 !important; text-decoration:none; font-weight:900; cursor:pointer; font-family:inherit; line-height:1; }
-body.admin-page-orders .wa-svg { width:18px; height:18px; display:block; fill:currentColor; color:inherit; }
+body.admin-page-orders .ord-artwork-link--wa { width:40px; height:40px; display:inline-grid; place-items:center; border-radius:999px; padding:0; border:1px solid #bbf7d0; background:#ecfdf5; color:#047857 !important; text-decoration:none; font-weight:900; cursor:pointer; font-family:inherit; line-height:1; }
+body.admin-page-orders .wa-svg { width:21px; height:21px; display:block; fill:currentColor; color:inherit; }
 body.admin-page-orders .aoc-ico .wa-svg { width:16px; height:16px; }
 body.admin-page-orders .ord-artwork-link--wa:hover { background:#d1fae5; border-color:#86efac; }
 body.admin-page-customers { background:#f6f8fc; }
