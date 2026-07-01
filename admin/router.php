@@ -124,6 +124,7 @@ $ensurePageHeroesSchema = static function (): void {
             ['category_detail', 'Premium Printing Products', 'Choose the right print product with quality materials and fast support.', '/assets/img/categories/all-categories-hero.svg', 50],
             ['product_detail', 'Product Details', 'Customize your order, upload artwork and get premium printing delivered.', '/assets/images/sample-products/business-cards/business-cards-1.svg', 60],
             ['portfolio', 'Our Portfolio', 'Explore real printing work created for businesses and brands.', '/assets/images/sample-products/brochures/brochures-2.svg', 70],
+            ['profile', 'My Account', 'Manage your profile, orders, design approvals and invoices from your customer dashboard.', '/assets/images/sample-products/stationery/stationery-1.svg', 80],
         ];
         foreach ($defaults as $hero) {
             Database::query(

@@ -4,6 +4,19 @@ $currentPage = 'profile';
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 
+$pageHero = [
+    'key' => 'profile',
+    'title' => 'My Account',
+    'subtitle' => 'Manage your profile, track orders, review design approvals and download invoices in one place.',
+    'eyebrow' => 'Customer Portal',
+    'fallback_image' => '/assets/images/sample-products/stationery/stationery-1.svg',
+    'breadcrumbs' => [
+        ['label' => 'Home', 'url' => '/'],
+        ['label' => 'My Account', 'url' => null],
+    ],
+];
+include INCLUDE_PATH . '/partials/page-hero.php';
+
 $profile = $profile ?? [];
 $billing = $profile['billing'] ?? [];
 $shipping = $profile['shipping'] ?? [];

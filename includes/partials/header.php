@@ -231,7 +231,6 @@ foreach ($navProducts as $p) {
       <a href="/login"     class="md-item">👤 Login / Register</a>
     <?php endif; ?>
 
-    <a href="/admin" class="md-item">🔐 Admin Panel</a>
 
     <!-- WhatsApp quick action in drawer -->
     <div style="padding:14px 18px;border-top:1px solid var(--border);margin-top:4px">
