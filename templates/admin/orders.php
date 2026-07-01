@@ -221,7 +221,6 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                   <?php if (!empty($item['artwork_file_id'])): ?>
                     <a class="ord-file-preview" href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= htmlspecialchars($artworkName ?: 'Artwork File') ?>">
                       <span class="ord-file-thumb"><?= ($artworkIsImage && $artworkPath !== '') ? '<img src="' . htmlspecialchars($artworkPath) . '" alt="">' : '📄' ?></span>
-                      <span class="ord-file-name"><?= htmlspecialchars($shortFileName($artworkName, 'Artwork File')) ?></span>
                     </a>
                     <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['artwork_file_id'] ?>/download" class="ord-artwork-link ord-artwork-link--primary">Download</a></span>
                   <?php else: ?>
@@ -233,13 +232,12 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
                   <?php if (!empty($item['design_proof_file_id'])): ?>
                     <a class="ord-file-preview" href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= htmlspecialchars($proofName ?: 'Proof File') ?>">
                       <span class="ord-file-thumb"><?= ($proofIsImage && $proofPath !== '') ? '<img src="' . htmlspecialchars($proofPath) . '" alt="">' : '📄' ?></span>
-                      <span class="ord-file-name"><?= htmlspecialchars($shortFileName($proofName, 'Proof File')) ?></span>
                     </a>
                     <?php
                       $proofOrderId = (string)($o['order_id'] ?? $o['id'] ?? '');
                       $proofProfileUrl = rtrim((defined('APP_URL') ? (string)APP_URL : ''), '/') . '/profile#orders-' . rawurlencode($proofOrderId);
                     ?>
-                    <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" class="ord-artwork-link">Download</a><button class="ord-artwork-link ord-artwork-link--wa" type="button" onclick='waProofReady(<?= json_encode((string)($o['customer_name'] ?? 'Customer'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode((string)($o['customer_phone'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($proofOrderId, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($proofProfileUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>💬 WhatsApp</button></span>
+                    <span class="ord-artwork-actions"><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" class="ord-artwork-link ord-artwork-link--view" target="_blank" rel="noopener">View</a><a href="/admin/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" class="ord-artwork-link">Download</a><button class="ord-artwork-link ord-artwork-link--wa" type="button" onclick='waProofReady(<?= json_encode((string)($o['customer_name'] ?? 'Customer'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode((string)($o['customer_phone'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($proofOrderId, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($proofProfileUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)' aria-label="Send proof-ready WhatsApp" title="Send proof-ready WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></button></span>
                   <?php else: ?>
                     <span class="ord-artwork-empty">No proof uploaded yet</span>
                   <?php endif; ?>
@@ -269,6 +267,14 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
             <small><?= !empty($o['invoice_file_path']) ? 'Invoice: ' . htmlspecialchars($shortFileName($o['invoice_original_name'] ?? 'Invoice PDF', 'Invoice PDF')) : 'Invoice not uploaded yet' ?></small>
           </div>
           <div class="ord-actions ord-actions--compact">
+            <?php
+              $orderConfirmId = (string)($o['order_id'] ?? $o['id'] ?? '');
+              $orderConfirmDate = app_datetime((string)($o['created_at'] ?? ''), 'd M Y, h:i A');
+              $orderConfirmProfileUrl = rtrim((defined('APP_URL') ? (string)APP_URL : ''), '/') . '/profile#orders-' . rawurlencode($orderConfirmId);
+              $orderConfirmTotal = '₹' . number_format((float)($o['total_amount'] ?? 0));
+              $orderConfirmItems = (string)count($o['items'] ?? []);
+            ?>
+            <button class="aoc-btn aoc-btn--confirm" type="button" onclick='waOrderConfirmation(<?= json_encode((string)($o['customer_name'] ?? 'Customer'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode((string)($o['customer_phone'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($orderConfirmId, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($orderConfirmDate, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($orderConfirmTotal, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($orderConfirmItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= json_encode($orderConfirmProfileUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'><span class="aoc-ico"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span><span>Order Confirmation</span></button>
             <a href="tel:<?= htmlspecialchars(preg_replace('/\D+/', '', $o['customer_phone'] ?? '')) ?>" class="aoc-btn aoc-btn--call"><span class="aoc-ico">📞</span><span>Call</span></a>
             <button class="aoc-btn aoc-btn--wa" type="button" onclick="waCustomer('<?= htmlspecialchars(addslashes($o['customer_name'])) ?>','<?= htmlspecialchars($o['customer_phone']) ?>','<?= htmlspecialchars($o['order_id']) ?>','<?= htmlspecialchars($orderStatus) ?>')"><span class="aoc-ico">💬</span><span>WhatsApp</span></button>
             <?php if (!empty($o['invoice_file_path'])): ?><a href="/admin/invoice/<?= htmlspecialchars($o['order_id']) ?>" class="aoc-btn aoc-btn--invoice" target="_blank"><span class="aoc-ico">🧾</span><span>View Invoice</span></a><?php endif; ?>
@@ -512,6 +518,13 @@ function openWhatsAppMessage(phone, msg) {
 
 function waCustomer(name, phone, ordId, status) {
   const msg = `Hi ${name}! 👋\nOrder ID: #${ordId}\nCurrent status: ${status.toUpperCase()}\nIf you need help, reply to this message.`;
+  openWhatsAppMessage(phone, msg);
+}
+
+function waOrderConfirmation(name, phone, ordId, orderDate, orderTotal, itemCount, accountUrl) {
+  const profileUrl = accountUrl || `${location.origin}/profile#orders-${encodeURIComponent(ordId || '')}`;
+  const itemText = Number(itemCount || 0) === 1 ? '1 item' : `${itemCount || 'multiple'} items`;
+  const msg = `Hello ${name || 'Customer'}, 👋\n\nThank you for your order. We have received Order #${ordId}.\n\nOrder date/time: ${orderDate || '-'}\nOrder value: ${orderTotal || '-'}\nItems: ${itemText}\n\nOur team will review the details and start processing your order shortly.\n\nYou can login to your account to check order details, current status, design approval status and future updates here:\n${profileUrl}\n\nPath: My Account > Orders\n\nThank you,\nRCS Print\nFor any query, call or WhatsApp: +91 8980000024`;
   openWhatsAppMessage(phone, msg);
 }
 

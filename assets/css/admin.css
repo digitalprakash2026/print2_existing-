@@ -328,8 +328,8 @@ body.admin-page-orders .ord-design-filebox span,
 body.admin-page-orders .ord-design-note { color:var(--adm-muted); font-size:12px; font-weight:700; }
 body.admin-page-orders .ord-file-preview { min-width:0; display:flex; align-items:center; gap:8px; color:#334155; text-decoration:none; font-size:12px; font-weight:850; }
 body.admin-page-orders .ord-file-preview:hover .ord-file-name { color:#1d4ed8; text-decoration:underline; }
-body.admin-page-orders .ord-file-thumb { width:42px; height:42px; flex:0 0 42px; border-radius:10px; font-size:18px; }
-body.admin-page-orders .ord-file-name { min-width:0; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.admin-page-orders .ord-file-thumb { width:58px; height:58px; flex:0 0 58px; border-radius:12px; font-size:20px; }
+body.admin-page-orders .ord-file-name { display:none; }
 body.admin-page-orders .ord-design-note--issue { color:#b91c1c; border:1px solid #fecaca; background:#fee2e2; border-radius:10px; padding:10px; }
 body.admin-page-orders .ord-revision-chip,
 body.admin-page-orders .ord-customer-note-chip { min-height:30px; padding:6px 10px; border:1px solid #cbd5e1; border-radius:999px; background:#f8fafc; color:#334155; font-size:12px; font-weight:950; cursor:pointer; }
@@ -367,6 +367,8 @@ body.admin-page-orders .ord-actions--compact .aoc-btn:disabled { opacity:.68; cu
 body.admin-page-orders .aoc-ico { display:inline-grid; place-items:center; width:24px; height:24px; border-radius:999px; background:rgba(255,255,255,.72); font-size:14px; line-height:1; }
 body.admin-page-orders .aoc-btn--call { background:#eff6ff !important; border-color:#bfdbfe !important; color:#1d4ed8 !important; }
 body.admin-page-orders .aoc-btn--wa { background:#ecfdf5 !important; border-color:#bbf7d0 !important; color:#047857 !important; }
+body.admin-page-orders .aoc-btn--confirm { background:linear-gradient(135deg,#16a34a,#22c55e) !important; border-color:#86efac !important; color:#fff !important; }
+body.admin-page-orders .aoc-btn--confirm .aoc-ico { background:rgba(255,255,255,.24); }
 body.admin-page-orders .aoc-btn--invoice { background:#f8fafc !important; border-color:#cbd5e1 !important; color:#334155 !important; }
 body.admin-page-orders .aoc-btn--invoice-upload { background:linear-gradient(135deg,#2563eb,#7c3aed) !important; border-color:#bfdbfe !important; color:#fff !important; }
 body.admin-page-orders .aoc-btn--invoice-upload .aoc-ico { background:rgba(255,255,255,.22); }
@@ -418,7 +420,7 @@ body.admin-page-orders .ord-design-actions .aoc-btn--approve { min-width:132px; 
 body.admin-page-orders .ord-design-note--customer { border-color:#fed7aa; background:#fff7ed; color:#9a3412; }
 body.admin-page-orders .ord-artwork-actions { display:inline-flex; align-items:center; gap:7px; justify-content:flex-end; flex-wrap:wrap; }
 body.admin-page-orders .ord-artwork-link--view { border-radius:9px; padding:7px 10px; background:#eef6ff; border:1px solid #bfdbfe; color:#1d4ed8 !important; text-decoration:none; font-weight:700; }
-body.admin-page-orders .ord-artwork-link--wa { border-radius:9px; padding:7px 10px; border:1px solid #bbf7d0; background:#ecfdf5; color:#047857 !important; text-decoration:none; font-weight:800; cursor:pointer; font-family:inherit; line-height:1; }
+body.admin-page-orders .ord-artwork-link--wa { width:34px; height:34px; display:inline-grid; place-items:center; border-radius:999px; padding:0; border:1px solid #bbf7d0; background:#ecfdf5; color:#047857 !important; text-decoration:none; font-weight:900; cursor:pointer; font-family:inherit; line-height:1; font-size:17px; }
 body.admin-page-orders .ord-artwork-link--wa:hover { background:#d1fae5; border-color:#86efac; }
 body.admin-page-customers { background:#f6f8fc; }
 body.admin-page-customers .crm-page { display:grid; gap:18px; }
