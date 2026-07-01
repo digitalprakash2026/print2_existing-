@@ -676,47 +676,77 @@ body.admin-page-design-history .design-history-hero { display:flex; align-items:
 body.admin-page-design-history .design-history-hero span { display:inline-flex; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.16); font-size:11px; font-weight:950; text-transform:uppercase; letter-spacing:.08em; }
 body.admin-page-design-history .design-history-hero h1 { margin:10px 0 6px; font-size:34px; letter-spacing:-.04em; }
 body.admin-page-design-history .design-history-hero p { margin:0; color:rgba(255,255,255,.78); font-weight:750; }
-body.admin-page-design-history .design-history-filters { display:grid; grid-template-columns:minmax(220px,1fr) minmax(180px,.55fr) repeat(2,minmax(145px,.4fr)) auto; gap:10px; padding:12px; border:1px solid #e2e8f0; border-radius:18px; background:#fff; box-shadow:0 14px 32px rgba(15,23,42,.06); }
+body.admin-page-design-history .design-history-filters { display:grid; grid-template-columns:minmax(220px,1fr) minmax(180px,.55fr) repeat(2,minmax(145px,.4fr)) minmax(160px,.45fr) auto; gap:10px; padding:12px; border:1px solid #e2e8f0; border-radius:18px; background:#fff; box-shadow:0 14px 32px rgba(15,23,42,.06); }
 body.admin-page-design-history .design-history-filters input,
 body.admin-page-design-history .design-history-filters select { min-height:42px; border:1px solid #dbe4f0; border-radius:13px; padding:0 12px; background:#f8fafc; color:#0f172a; font-weight:800; }
 body.admin-page-design-history .design-history-filters button,
 body.admin-page-design-history .design-history-filters a { min-height:42px; display:inline-flex; align-items:center; justify-content:center; border:1px solid #2563eb; border-radius:13px; padding:0 14px; background:#2563eb; color:#fff; text-decoration:none; font-weight:950; }
 body.admin-page-design-history .design-history-filters a { background:#fff; color:#2563eb; }
-body.admin-page-design-history .design-history-list { display:grid; gap:12px; }
-body.admin-page-design-history .design-event-card { display:grid; grid-template-columns:170px 1fr auto; gap:14px; padding:16px; border:1px solid #e2e8f0; border-radius:18px; background:#fff; box-shadow:0 14px 34px rgba(15,23,42,.06); }
-body.admin-page-design-history .design-event-time { color:#64748b; font-size:12px; font-weight:900; }
-body.admin-page-design-history .design-event-main { display:grid; gap:8px; }
-body.admin-page-design-history .design-event-title { display:flex; align-items:center; gap:8px; flex-wrap:wrap; color:#0f172a; font-size:15px; font-weight:950; }
-body.admin-page-design-history .design-event-title em { padding:4px 8px; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-size:11px; font-style:normal; }
-body.admin-page-design-history .design-event-meta { display:flex; flex-wrap:wrap; gap:8px; color:#64748b; font-size:12px; font-weight:800; }
-body.admin-page-design-history .design-event-note { margin:0; padding:10px 12px; border-radius:12px; background:#fff7ed; color:#7c2d12; font-size:13px; font-weight:750; white-space:pre-wrap; }
-body.admin-page-design-history .design-event-file { display:inline-flex; align-items:center; gap:8px; width:max-content; max-width:100%; padding:8px 10px; border-radius:11px; background:#f8fafc; color:#334155; text-decoration:none; font-size:12px; font-weight:950; }
-body.admin-page-design-history .design-event-side { display:flex; align-items:flex-start; gap:8px; }
-body.admin-page-design-history .design-event-side a { min-height:34px; display:inline-flex; align-items:center; justify-content:center; padding:0 10px; border-radius:10px; background:#eff6ff; color:#1d4ed8; text-decoration:none; font-size:12px; font-weight:950; }
 body.admin-page-design-history .design-history-empty { padding:44px; text-align:center; border:1px dashed #cbd5e1; border-radius:22px; background:#fff; color:#64748b; font-weight:800; }
-@media (max-width:980px){ body.admin-page-media .adm-media-actions{grid-template-columns:1fr 1fr} body.admin-page-design-history .design-history-filters{grid-template-columns:1fr} body.admin-page-design-history .design-event-card{grid-template-columns:1fr} }
-body.admin-page-design-history .design-event-file-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
-body.admin-page-design-history .design-event-file-action { min-height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 10px; border:1px solid #dbe4f0; border-radius:10px; background:#fff; color:#1d4ed8; text-decoration:none; font-size:12px; font-weight:950; }
-body.admin-page-design-history .design-event-file-action:last-child { border-color:#bbf7d0; background:#ecfdf5; color:#047857; }
 body.admin-page-design-history .design-history-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
 body.admin-page-design-history .design-history-stat { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:74px; padding:14px 16px; border:1px solid #e2e8f0; border-radius:18px; background:#fff; color:#0f172a; text-decoration:none; box-shadow:0 12px 30px rgba(15,23,42,.055); }
 body.admin-page-design-history .design-history-stat.act { border-color:#fb923c; background:#fff7ed; }
 body.admin-page-design-history .design-history-stat span { color:#64748b; font-size:12px; font-weight:950; text-transform:uppercase; letter-spacing:.05em; }
 body.admin-page-design-history .design-history-stat strong { color:#111827; font-size:24px; font-weight:950; }
-body.admin-page-design-history .design-event-card { position:relative; }
-body.admin-page-design-history .design-event-card::before { content:''; position:absolute; inset:14px auto 14px 0; width:4px; border-radius:999px; background:#cbd5e1; }
-body.admin-page-design-history .design-event-card--danger::before { background:#ef4444; }
-body.admin-page-design-history .design-event-card--success::before { background:#22c55e; }
-body.admin-page-design-history .design-event-card--info::before { background:#2563eb; }
-body.admin-page-design-history .design-event-chip--danger { background:#fee2e2 !important; color:#b91c1c !important; }
-body.admin-page-design-history .design-event-chip--success { background:#dcfce7 !important; color:#166534 !important; }
-body.admin-page-design-history .design-event-chip--info { background:#dbeafe !important; color:#1d4ed8 !important; }
-body.admin-page-design-history .design-event-status-flow { display:flex; align-items:center; flex-wrap:wrap; gap:8px; color:#64748b; font-size:12px; font-weight:950; }
-body.admin-page-design-history .design-event-status-flow span,
-body.admin-page-design-history .design-event-status-flow strong { padding:5px 8px; border-radius:999px; background:#f8fafc; color:#334155; }
-body.admin-page-design-history .design-event-status-flow strong { background:#ecfdf5; color:#047857; }
-@media (max-width:980px){ body.admin-page-design-history .design-history-stats{grid-template-columns:1fr 1fr} }
-@media (max-width:560px){ body.admin-page-design-history .design-history-stats{grid-template-columns:1fr} }
+body.admin-page-design-history .design-order-list { display:grid; gap:12px; }
+body.admin-page-design-history .design-order-card { position:relative; overflow:hidden; border:1px solid #e2e8f0; border-radius:18px; background:#fff; box-shadow:0 14px 34px rgba(15,23,42,.06); }
+body.admin-page-design-history .design-order-card::before { content:''; position:absolute; inset:0 auto 0 0; width:5px; background:#cbd5e1; }
+body.admin-page-design-history .design-order-card--danger::before { background:#ef4444; }
+body.admin-page-design-history .design-order-card--success::before { background:#22c55e; }
+body.admin-page-design-history .design-order-card--info::before { background:#2563eb; }
+body.admin-page-design-history .design-order-summary { display:grid; grid-template-columns:28px minmax(112px,.62fr) minmax(150px,.85fr) minmax(180px,1.25fr) minmax(122px,.65fr) minmax(160px,.9fr) minmax(112px,.55fr); align-items:center; gap:10px; min-height:82px; padding:14px 16px 14px 20px; cursor:pointer; list-style:none; }
+body.admin-page-design-history .design-order-summary::-webkit-details-marker { display:none; }
+body.admin-page-design-history .design-order-caret { display:grid; place-items:center; width:26px; height:26px; border-radius:999px; background:#f1f5f9; color:#475569; font-weight:950; transition:transform .18s ease; }
+body.admin-page-design-history .design-order-card[open] .design-order-caret { transform:rotate(180deg); }
+body.admin-page-design-history .design-order-id { color:#4b148c; font-size:15px; font-weight:950; }
+body.admin-page-design-history .design-order-customer,
+body.admin-page-design-history .design-order-latest { display:grid; gap:3px; min-width:0; }
+body.admin-page-design-history .design-order-customer b,
+body.admin-page-design-history .design-order-latest b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#0f172a; font-size:13px; font-weight:950; }
+body.admin-page-design-history .design-order-customer small,
+body.admin-page-design-history .design-order-latest small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#64748b; font-size:11px; font-weight:800; }
+body.admin-page-design-history .design-order-product { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#334155; font-size:12px; font-weight:850; }
+body.admin-page-design-history .design-order-status,
+body.admin-page-design-history .design-order-count { justify-self:start; display:inline-flex; align-items:center; min-height:30px; padding:0 10px; border-radius:999px; background:#f8fafc; color:#334155; font-size:11px; font-weight:950; }
+body.admin-page-design-history .design-order-status--danger { background:#fee2e2; color:#b91c1c; }
+body.admin-page-design-history .design-order-status--success { background:#dcfce7; color:#166534; }
+body.admin-page-design-history .design-order-status--info { background:#dbeafe; color:#1d4ed8; }
+body.admin-page-design-history .design-order-body { display:grid; gap:12px; padding:0 16px 16px 20px; border-top:1px solid #eef2f7; background:linear-gradient(180deg,#fff,#f8fafc); }
+body.admin-page-design-history .design-order-body-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:14px; }
+body.admin-page-design-history .design-order-body-head div { display:grid; gap:3px; }
+body.admin-page-design-history .design-order-body-head strong { color:#0f172a; font-size:14px; font-weight:950; }
+body.admin-page-design-history .design-order-body-head span { color:#64748b; font-size:12px; font-weight:750; }
+body.admin-page-design-history .design-order-body-head a { min-height:34px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; border-radius:10px; background:#eff6ff; color:#1d4ed8; text-decoration:none; font-size:12px; font-weight:950; }
+body.admin-page-design-history .design-order-timeline { display:grid; gap:8px; }
+body.admin-page-design-history .design-history-row { position:relative; display:grid; grid-template-columns:92px minmax(0,1fr) minmax(170px,.52fr); align-items:center; gap:10px; padding:10px 12px; border:1px solid #e2e8f0; border-left-width:4px; border-radius:14px; background:#fff; }
+body.admin-page-design-history .design-history-row--danger { border-left-color:#ef4444; }
+body.admin-page-design-history .design-history-row--success { border-left-color:#22c55e; }
+body.admin-page-design-history .design-history-row--info { border-left-color:#2563eb; }
+body.admin-page-design-history .design-history-row--neutral { border-left-color:#94a3b8; }
+body.admin-page-design-history .design-history-row.is-context { opacity:.72; }
+body.admin-page-design-history .design-history-row time { display:grid; gap:2px; color:#64748b; font-size:11px; font-weight:900; }
+body.admin-page-design-history .design-history-row time strong { color:#0f172a; font-size:12px; }
+body.admin-page-design-history .design-history-row-main { display:grid; gap:5px; min-width:0; }
+body.admin-page-design-history .design-history-row-title { display:flex; align-items:center; gap:7px; flex-wrap:wrap; min-width:0; }
+body.admin-page-design-history .design-history-row-title strong { color:#0f172a; font-size:13px; font-weight:950; }
+body.admin-page-design-history .design-history-row-title em { display:inline-flex; align-items:center; min-height:22px; padding:0 7px; border-radius:999px; background:#f1f5f9; color:#475569; font-size:10px; font-style:normal; font-weight:900; }
+body.admin-page-design-history .design-history-tag { display:inline-flex; align-items:center; min-height:24px; padding:0 8px; border-radius:999px; background:#f8fafc; color:#334155; font-size:10px; font-weight:950; text-transform:uppercase; letter-spacing:.04em; }
+body.admin-page-design-history .design-history-tag--danger { background:#fee2e2; color:#b91c1c; }
+body.admin-page-design-history .design-history-tag--success { background:#dcfce7; color:#166534; }
+body.admin-page-design-history .design-history-tag--info { background:#dbeafe; color:#1d4ed8; }
+body.admin-page-design-history .design-history-row-meta { display:flex; align-items:center; flex-wrap:wrap; gap:7px; color:#64748b; font-size:11px; font-weight:800; }
+body.admin-page-design-history .design-history-row p { margin:0; padding:7px 9px; border-radius:10px; background:#fff7ed; color:#7c2d12; font-size:12px; font-weight:750; line-height:1.45; white-space:pre-wrap; }
+body.admin-page-design-history .design-history-row-side { display:grid; justify-items:end; gap:7px; }
+body.admin-page-design-history .design-history-flow { display:flex; align-items:center; justify-content:flex-end; gap:6px; color:#64748b; font-size:11px; font-weight:950; }
+body.admin-page-design-history .design-history-flow small,
+body.admin-page-design-history .design-history-flow b { padding:5px 8px; border-radius:999px; background:#f8fafc; color:#334155; white-space:nowrap; }
+body.admin-page-design-history .design-history-flow b { background:#ecfdf5; color:#047857; }
+body.admin-page-design-history .design-history-file-actions { display:inline-flex; align-items:center; gap:6px; }
+body.admin-page-design-history .design-history-file-actions a { min-height:30px; display:inline-flex; align-items:center; justify-content:center; padding:0 9px; border:1px solid #dbe4f0; border-radius:9px; background:#fff; color:#1d4ed8; text-decoration:none; font-size:11px; font-weight:950; }
+body.admin-page-design-history .design-history-file-actions a:last-child { border-color:#bbf7d0; background:#ecfdf5; color:#047857; }
+@media (max-width:1180px){ body.admin-page-design-history .design-order-summary{grid-template-columns:28px minmax(100px,.5fr) minmax(140px,.7fr) minmax(180px,1fr); } body.admin-page-design-history .design-order-status, body.admin-page-design-history .design-order-latest, body.admin-page-design-history .design-order-count{grid-column:auto;} body.admin-page-design-history .design-history-row{grid-template-columns:82px 1fr;} body.admin-page-design-history .design-history-row-side{grid-column:2; justify-items:start;} }
+@media (max-width:980px){ body.admin-page-media .adm-media-actions{grid-template-columns:1fr 1fr} body.admin-page-design-history .design-history-filters{grid-template-columns:1fr} body.admin-page-design-history .design-history-stats{grid-template-columns:1fr 1fr} body.admin-page-design-history .design-order-summary{grid-template-columns:28px 1fr; align-items:start;} body.admin-page-design-history .design-order-product, body.admin-page-design-history .design-order-status, body.admin-page-design-history .design-order-latest, body.admin-page-design-history .design-order-count{grid-column:2;} }
+@media (max-width:640px){ body.admin-page-design-history .design-history-hero{align-items:flex-start; flex-direction:column;} body.admin-page-design-history .design-history-stats{grid-template-columns:1fr} body.admin-page-design-history .design-history-row{grid-template-columns:1fr;} body.admin-page-design-history .design-history-row-side{grid-column:auto; justify-items:start;} }
 
 /* Order readability polish: scoped to admin orders so dense order data stays easier to scan. */
 body.admin-page-orders .adm-order-card-head { padding:16px 18px; }
