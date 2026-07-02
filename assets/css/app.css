@@ -14258,3 +14258,86 @@ body.portfolio-lightbox-open { overflow:hidden; }
   .account-order-item-title strong { font-size:15px; }
   .account-order-expanded { font-size:13.5px; }
 }
+
+/* Mobile filter responsiveness: All Categories */
+@media (max-width:820px) {
+  .all-cat-content { padding-top:22px; }
+  .all-cat-shop { gap:16px; }
+  .all-cat-filter-panel {
+    position:relative;
+    border-radius:18px;
+    background:#fff;
+  }
+  .all-cat-filter-panel > summary {
+    min-height:56px;
+    padding:0 18px;
+    touch-action:manipulation;
+  }
+  .all-cat-filter-panel > summary span {
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .all-cat-filter-panel > summary span::before {
+    content:'\f0b0';
+    font-family:'Font Awesome 6 Free';
+    font-weight:900;
+    width:30px;
+    height:30px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:10px;
+    background:#f4efff;
+    color:var(--purple);
+    font-size:13px;
+  }
+  .all-cat-filter-panel .all-cat-sidebar {
+    gap:10px;
+    padding:0 12px 14px;
+  }
+  .all-cat-side-box { border-radius:14px; }
+  .all-cat-side-box h2 { padding:14px 14px 8px; font-size:15px; }
+  .all-cat-side-list {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    padding:0 12px 12px;
+  }
+  .all-cat-side-list a {
+    min-height:44px;
+    padding:8px 12px;
+    border:1px solid #eef2f7;
+    border-radius:12px;
+    background:#f8fafc;
+    font-size:12px;
+    line-height:1.25;
+  }
+  .all-cat-side-list a.is-active { margin:0; }
+  .all-cat-toolbar {
+    align-items:stretch;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .all-cat-toolbar p {
+    font-size:14px;
+    line-height:1.35;
+  }
+  .all-cat-toolbar label {
+    width:100%;
+    min-width:0;
+    justify-content:space-between;
+    padding:0 12px;
+  }
+  .all-cat-toolbar select {
+    min-height:44px;
+    flex:1;
+    text-align:right;
+  }
+}
+@media (max-width:520px) {
+  .all-cat-side-list { grid-template-columns:1fr; }
+  .all-cat-filter-panel > summary { min-height:54px; padding:0 14px; }
+  .all-cat-toolbar label { min-height:46px; }
+}

@@ -127,7 +127,8 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
 </div>
 </section>
 
-<div class="adm-orders-control-panel">
+<details class="adm-orders-control-panel adm-filter-panel" open>
+  <summary class="adm-filter-summary"><span><i class="fa-solid fa-filter" aria-hidden="true"></i> Filter Orders</span><em>Search, status, payment & dates</em><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
 <form method="GET" class="adm-orders-filters">
   <input name="search" class="fi" placeholder="Search order ID, name, phone…" value="<?= htmlspecialchars($search) ?>">
   <select name="status" class="fi fi-sel" onchange="this.form.submit()">
@@ -154,10 +155,10 @@ $isCardActive = static function (array $card) use ($status, $seen): bool {
   <button class="btn btn-blue btn-sm" type="submit">Apply</button>
   <?php if ($search || $status !== 'all' || $paymentStatus !== 'all' || $seen !== 'all' || $sort !== 'newest' || $dateFrom || $dateTo): ?><a href="/admin/orders" class="btn btn-outline btn-sm">Clear</a><?php endif; ?>
 </form>
+</details>
 <?php if ($flashSuccess !== '' || $flashError !== ''): ?>
   <div class="adm-orders-flash <?= $flashError !== '' ? 'adm-orders-flash--error' : 'adm-orders-flash--success' ?>"><?= htmlspecialchars($flashError !== '' ? $flashError : $flashSuccess) ?></div>
 <?php endif; ?>
-</div>
 
 <?php if (!$orders): ?>
 <div style="text-align:center;padding:44px;color:var(--text2)"><div style="font-size:40px;margin-bottom:9px">📋</div><div>No orders found</div></div>
@@ -656,4 +657,27 @@ function closeAddrModal() {
 </script>
 </div>
     </div></div></div>
+
+<script>
+(() => {
+  const panels = document.querySelectorAll('.adm-filter-panel');
+  if (!panels.length) return;
+  const mobileQuery = window.matchMedia('(max-width: 760px)');
+  const syncPanels = (event) => {
+    panels.forEach((panel) => {
+      if (mobileQuery.matches) {
+        if (!event) panel.open = false;
+      } else {
+        panel.open = true;
+      }
+    });
+  };
+  syncPanels();
+  if (typeof mobileQuery.addEventListener === 'function') {
+    mobileQuery.addEventListener('change', syncPanels);
+  } else if (typeof mobileQuery.addListener === 'function') {
+    mobileQuery.addListener(syncPanels);
+  }
+})();
+</script>
 </body></html>

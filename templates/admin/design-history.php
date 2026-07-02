@@ -220,6 +220,8 @@ $buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom
     <a class="design-history-stat" href="/admin/design-history"><span>Reset View</span><strong>All</strong></a>
   </section>
 
+  <details class="design-history-filter-panel adm-filter-panel" open>
+    <summary class="adm-filter-summary"><span><i class="fa-solid fa-filter" aria-hidden="true"></i> Filter History</span><em>Order, event, date & action</em><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
   <form class="design-history-filters" method="GET">
     <input type="search" name="q" value="<?= $h($q) ?>" placeholder="Search order, customer, product…">
     <select name="event_type">
@@ -237,6 +239,7 @@ $buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom
     <button type="submit">Filter</button>
     <?php if ($filtersActive): ?><a href="/admin/design-history">Clear</a><?php endif; ?>
   </form>
+  </details>
 
   <?php if (!$orderGroups): ?>
     <div class="design-history-empty">No design history events found yet. New uploads, proofs, issues and approvals will appear here automatically.</div>
@@ -326,4 +329,27 @@ $buildQuery = static function (array $extra = []) use ($q, $eventType, $dateFrom
 </div>
 
     </div></div></div>
+
+<script>
+(() => {
+  const panels = document.querySelectorAll('.adm-filter-panel');
+  if (!panels.length) return;
+  const mobileQuery = window.matchMedia('(max-width: 760px)');
+  const syncPanels = (event) => {
+    panels.forEach((panel) => {
+      if (mobileQuery.matches) {
+        if (!event) panel.open = false;
+      } else {
+        panel.open = true;
+      }
+    });
+  };
+  syncPanels();
+  if (typeof mobileQuery.addEventListener === 'function') {
+    mobileQuery.addEventListener('change', syncPanels);
+  } else if (typeof mobileQuery.addListener === 'function') {
+    mobileQuery.addListener(syncPanels);
+  }
+})();
+</script>
 </body></html>
