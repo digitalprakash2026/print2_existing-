@@ -61,7 +61,155 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
 };
 \Orders\OrderManager::ensureWorkflowSchema();
 \Orders\OrderManager::ensureDesignApprovalSchema();
+\Orders\OrderManager::ensureDesignEventSchema();
+\Orders\OrderManager::ensureCustomerUpdateSchema();
 \Approvals\ContentApprovalManager::ensureSchema();
+\Faq\FaqManager::ensureSchema();
+
+$adminTableExists = static function (string $table): bool {
+    try {
+        $row = Database::row(
+            "SELECT 1 AS ok
+               FROM information_schema.TABLES
+              WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = ?
+              LIMIT 1",
+            [$table]
+        );
+        return (bool)$row;
+    } catch (\Throwable) {
+        return false;
+    }
+};
+$orderCleanupCounts = static function () use ($adminTableExists): array {
+    $count = static function (string $sql) {
+        try { return (int)(Database::row($sql)['c'] ?? 0); }
+        catch (\Throwable) { return 0; }
+    };
+    return [
+        'orders' => $adminTableExists('orders') ? $count('SELECT COUNT(*) AS c FROM orders') : 0,
+        'order_items' => $adminTableExists('order_items') ? $count('SELECT COUNT(*) AS c FROM order_items') : 0,
+        'status_history' => $adminTableExists('order_status_history') ? $count('SELECT COUNT(*) AS c FROM order_status_history WHERE order_id IN (SELECT id FROM orders)') : 0,
+        'payments' => $adminTableExists('payments') ? $count('SELECT COUNT(*) AS c FROM payments WHERE order_id IN (SELECT id FROM orders)') : 0,
+        'coupon_uses' => $adminTableExists('coupon_uses') ? $count('SELECT COUNT(*) AS c FROM coupon_uses WHERE order_id IN (SELECT id FROM orders)') : 0,
+        'product_reviews' => $adminTableExists('product_reviews') ? $count('SELECT COUNT(*) AS c FROM product_reviews WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)') : 0,
+        'design_approvals' => $adminTableExists('order_design_approvals') ? $count('SELECT COUNT(*) AS c FROM order_design_approvals WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)') : 0,
+        'design_events' => $adminTableExists('order_design_events') ? $count('SELECT COUNT(*) AS c FROM order_design_events WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)') : 0,
+        'artwork_files' => $adminTableExists('artwork_files') ? $count('SELECT COUNT(*) AS c FROM artwork_files WHERE order_item_id IN (SELECT id FROM order_items)') : 0,
+    ];
+};
+
+$ensurePageHeroesSchema = static function (): void {
+    try {
+        Database::query("CREATE TABLE IF NOT EXISTS page_heroes (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            page_key VARCHAR(120) NOT NULL UNIQUE,
+            title VARCHAR(180) NOT NULL,
+            description VARCHAR(400) NULL,
+            background_image VARCHAR(500) NULL,
+            fallback_image VARCHAR(500) NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        try { Database::query("ALTER TABLE page_heroes ADD COLUMN title VARCHAR(180) NOT NULL DEFAULT '' AFTER page_key"); } catch (\Throwable) {}
+        try { Database::query("ALTER TABLE page_heroes ADD COLUMN description VARCHAR(400) NULL AFTER title"); } catch (\Throwable) {}
+
+        $defaults = [
+            ['about', 'About Us', 'Your trusted partner for premium printing services.', '/assets/images/sample-products/brochures/brochures-2.svg', 10],
+            ['contact', 'Contact Us', 'Reach our print experts for quotes, support and custom requirements.', '/assets/images/sample-products/stationery/stationery-1.svg', 20],
+            ['blogs', 'Printing Ideas & Guides', 'Explore helpful print tips, business branding ideas and product updates.', '/assets/images/sample-products/flyers/flyers-1.svg', 30],
+            ['categories', 'All Product Categories', 'Browse every printing category and find the right product for your business.', '/assets/img/categories/all-categories-hero.svg', 40],
+            ['category_detail', 'Premium Printing Products', 'Choose the right print product with quality materials and fast support.', '/assets/img/categories/all-categories-hero.svg', 50],
+            ['product_detail', 'Product Details', 'Customize your order, upload artwork and get premium printing delivered.', '/assets/images/sample-products/business-cards/business-cards-1.svg', 60],
+            ['portfolio', 'Our Portfolio', 'Explore real printing work created for businesses and brands.', '/assets/images/sample-products/brochures/brochures-2.svg', 70],
+            ['profile', 'My Account', 'Manage your profile, orders, design approvals and invoices from your customer dashboard.', '/assets/images/sample-products/stationery/stationery-1.svg', 80],
+        ];
+        foreach ($defaults as $hero) {
+            Database::query(
+                "INSERT INTO page_heroes (page_key, title, description, fallback_image, sort_order, is_active, created_at, updated_at)
+                 SELECT ?,?,?,?,?,1,NOW(),NOW() FROM DUAL
+                 WHERE NOT EXISTS (SELECT 1 FROM page_heroes WHERE page_key=? LIMIT 1)",
+                [$hero[0], $hero[1], $hero[2], $hero[3], $hero[4], $hero[0]]
+            );
+        }
+    } catch (\Throwable $e) {
+        error_log('Page hero schema unavailable: ' . $e->getMessage());
+    }
+};
+$ensurePageHeroesSchema();
+
+$ensurePortfolioSchema = static function (): void {
+    try {
+        Database::query("CREATE TABLE IF NOT EXISTS portfolio_categories (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(160) NOT NULL,
+            slug VARCHAR(180) NOT NULL UNIQUE,
+            icon VARCHAR(80) NOT NULL DEFAULT 'fa-border-all',
+            sort_order INT NOT NULL DEFAULT 0,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        Database::query("CREATE TABLE IF NOT EXISTS portfolio_items (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            category_id INT NULL,
+            title VARCHAR(220) NOT NULL,
+            slug VARCHAR(240) NOT NULL UNIQUE,
+            short_description VARCHAR(500) NULL,
+            description MEDIUMTEXT NULL,
+            main_image VARCHAR(500) NOT NULL DEFAULT '',
+            image_alt VARCHAR(255) NULL,
+            client_name VARCHAR(180) NULL,
+            project_type VARCHAR(180) NULL,
+            project_date DATE NULL,
+            tags VARCHAR(500) NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            is_featured TINYINT(1) NOT NULL DEFAULT 0,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_portfolio_items_active (is_active, sort_order, created_at),
+            INDEX idx_portfolio_items_category (category_id),
+            CONSTRAINT fk_portfolio_items_category FOREIGN KEY (category_id) REFERENCES portfolio_categories(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $portfolioCategoryColumns = [
+            'description' => "ALTER TABLE portfolio_categories ADD COLUMN description TEXT NULL AFTER icon",
+            'hero_image' => "ALTER TABLE portfolio_categories ADD COLUMN hero_image VARCHAR(500) NULL AFTER description",
+            'meta_title' => "ALTER TABLE portfolio_categories ADD COLUMN meta_title VARCHAR(255) NULL AFTER hero_image",
+            'meta_description' => "ALTER TABLE portfolio_categories ADD COLUMN meta_description VARCHAR(500) NULL AFTER meta_title",
+        ];
+        foreach ($portfolioCategoryColumns as $column => $sql) {
+            try {
+                $exists = Database::row("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='portfolio_categories' AND COLUMN_NAME=? LIMIT 1", [$column]);
+                if (!$exists) Database::query($sql);
+            } catch (\Throwable) {}
+        }
+        $defaults = [
+            ['Visiting Card','visiting-card','fa-id-card-clip',10],
+            ['Brochure','brochure','fa-images',20],
+            ['Flyer','flyer','fa-file-image',30],
+            ['Calender','calender','fa-calendar-days',40],
+            ['Rough Pad','rough-pad','fa-note-sticky',50],
+            ['Flex Banner','flex-banner','fa-panorama',60],
+            ['Poster','poster','fa-newspaper',70],
+            ['Stationery','stationery','fa-file-lines',80],
+            ['Packaging','packaging','fa-cube',90],
+        ];
+        foreach ($defaults as $cat) {
+            Database::query(
+                "INSERT INTO portfolio_categories (name, slug, icon, sort_order, is_active)
+                 SELECT ?,?,?,?,1 FROM DUAL
+                 WHERE NOT EXISTS (SELECT 1 FROM portfolio_categories WHERE slug = ? LIMIT 1)",
+                [$cat[0], $cat[1], $cat[2], $cat[3], $cat[1]]
+            );
+        }
+    } catch (\Throwable $e) {
+        error_log('Portfolio schema unavailable: ' . $e->getMessage());
+    }
+};
+$ensurePortfolioSchema();
 
 $adminUsersHasMobile = null;
 $hasAdminUsersMobile = static function () use (&$adminUsersHasMobile): bool {
@@ -128,6 +276,220 @@ if (str_starts_with($uri, '/admin/api/')) {
             $i++;
         }
     };
+    $uniquePortfolioSlug = static function (string $base, int $ignoreId = 0) use ($slugify): string {
+        $slug = $slugify($base);
+        $candidate = $slug;
+        $i = 2;
+        while (true) {
+            $params = [$candidate];
+            $sql = "SELECT id FROM portfolio_items WHERE slug = ?";
+            if ($ignoreId > 0) {
+                $sql .= " AND id <> ?";
+                $params[] = $ignoreId;
+            }
+            $sql .= " LIMIT 1";
+            $row = Database::row($sql, $params);
+            if (!$row) return $candidate;
+            $candidate = $slug . '-' . $i;
+            $i++;
+        }
+    };
+
+    if ($uri === '/admin/api/media/delete' && in_array($method, ['POST', 'DELETE'], true)) {
+        $relative = trim((string)($body['path'] ?? $_POST['path'] ?? ''));
+        $relative = ltrim(str_replace('\\', '/', $relative), '/');
+        if ($relative === '' || str_contains($relative, '..') || str_starts_with($relative, '.trash/')) {
+            json(['ok' => false, 'msg' => 'Invalid media path.'], 422);
+        }
+        $uploadsRoot = realpath(PUBLIC_PATH . '/uploads');
+        if (!$uploadsRoot) json(['ok' => false, 'msg' => 'Uploads folder not found.'], 500);
+        $target = realpath(PUBLIC_PATH . '/uploads/' . $relative);
+        if (!$target || !is_file($target) || !str_starts_with($target, $uploadsRoot . DIRECTORY_SEPARATOR)) {
+            json(['ok' => false, 'msg' => 'Media file not found.'], 404);
+        }
+        $publicPath = '/uploads/' . $relative;
+        $linkedApproval = null;
+        try {
+            $linkedApproval = Database::row(
+                "SELECT oda.id, o.order_id
+                   FROM order_design_approvals oda
+                   INNER JOIN artwork_files af ON af.id IN (oda.customer_artwork_file_id, oda.proof_file_id)
+                   INNER JOIN orders o ON o.id = oda.order_id
+                  WHERE af.file_path = ?
+                  LIMIT 1",
+                [$publicPath]
+            );
+        } catch (\Throwable) {}
+        if ($linkedApproval) {
+            json(['ok' => false, 'msg' => 'This file is linked to order ' . ($linkedApproval['order_id'] ?? '') . '. Please keep order proof/artwork files for audit history.'], 409);
+        }
+
+        $trashDir = PUBLIC_PATH . '/uploads/.trash/' . date('Y/m/d') . '/' . trim(dirname($relative), './');
+        if (!is_dir($trashDir)) mkdir($trashDir, 0755, true);
+        $trashName = pathinfo($relative, PATHINFO_FILENAME) . '-' . date('His') . '-' . bin2hex(random_bytes(3)) . '.' . pathinfo($relative, PATHINFO_EXTENSION);
+        $trashPath = rtrim($trashDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $trashName;
+        if (!rename($target, $trashPath)) {
+            json(['ok' => false, 'msg' => 'Could not archive media file.'], 500);
+        }
+        $admin = \Auth\Auth::admin();
+        try {
+            $eventOrder = Database::row(
+                "SELECT o.id AS order_id, oi.id AS order_item_id, oda.id AS approval_id
+                   FROM artwork_files af
+                   LEFT JOIN order_items oi ON oi.id = af.order_item_id
+                   LEFT JOIN orders o ON o.id = oi.order_id
+                   LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
+                  WHERE af.file_path = ?
+                  LIMIT 1",
+                [$publicPath]
+            );
+            if (!empty($eventOrder['order_id'])) {
+                \Orders\OrderManager::recordDesignEvent([
+                    'order_id' => (int)$eventOrder['order_id'],
+                    'order_item_id' => (int)($eventOrder['order_item_id'] ?? 0),
+                    'design_approval_id' => (int)($eventOrder['approval_id'] ?? 0),
+                    'event_type' => 'media_archived',
+                    'actor_type' => 'admin',
+                    'actor_id' => (int)($admin['id'] ?? 0),
+                    'actor_name' => $admin['name'] ?? null,
+                    'file_role' => 'media',
+                    'file_name' => basename($relative),
+                    'file_path' => $publicPath,
+                    'note' => 'Media archived from admin media library.',
+                    'meta' => ['trash_path' => str_replace(PUBLIC_PATH, '', $trashPath)],
+                ]);
+            }
+        } catch (\Throwable) {}
+        json(['ok' => true, 'msg' => 'Media file moved to trash. You can restore it from /uploads/.trash if needed.', 'archived' => true]);
+    }
+
+    if ($uri === '/admin/api/design-history' && $method === 'GET') {
+        \Orders\OrderManager::ensureDesignEventSchema();
+        $q = trim((string)($_GET['q'] ?? ''));
+        $eventType = trim((string)($_GET['event_type'] ?? ''));
+        $dateFrom = trim((string)($_GET['date_from'] ?? ''));
+        $dateTo = trim((string)($_GET['date_to'] ?? ''));
+        $actionFilter = trim((string)($_GET['action'] ?? 'all'));
+        $where = [];
+        $params = [];
+        if ($q !== '') {
+            $where[] = '(o.order_id LIKE ? OR o.customer_name LIKE ? OR o.customer_email LIKE ? OR o.customer_phone LIKE ? OR oi.product_name LIKE ?)';
+            $like = '%' . $q . '%';
+            array_push($params, $like, $like, $like, $like, $like);
+        }
+        if ($eventType !== '' && $eventType !== 'all') { $where[] = 'e.event_type = ?'; $params[] = $eventType; }
+        if ($dateFrom !== '') { $where[] = 'DATE(e.created_at) >= ?'; $params[] = $dateFrom; }
+        if ($dateTo !== '') { $where[] = 'DATE(e.created_at) <= ?'; $params[] = $dateTo; }
+        if ($actionFilter === 'needs_action') {
+            $where[] = "oda.status IN ('pending_review','issue_found','proof_uploaded','revision_requested')";
+        }
+        $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $events = Database::rows(
+            "SELECT e.*, o.order_id AS public_order_id, o.customer_name, o.customer_email, o.customer_phone,
+                    o.status AS order_status, oi.product_name, oi.quantity, oi.design_choice,
+                    oda.status AS current_design_status,
+                    caf.file_path AS current_artwork_path, caf.original_name AS current_artwork_name, caf.filename AS current_artwork_filename,
+                    pf.file_path AS current_proof_path, pf.original_name AS current_proof_name, pf.filename AS current_proof_filename
+               FROM order_design_events e
+               LEFT JOIN orders o ON o.id = e.order_id
+               LEFT JOIN order_items oi ON oi.id = e.order_item_id
+               LEFT JOIN order_design_approvals oda ON oda.id = e.design_approval_id
+               LEFT JOIN artwork_files caf ON caf.id = oda.customer_artwork_file_id
+               LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
+               $whereSql
+              ORDER BY e.created_at DESC
+              LIMIT 250",
+            $params
+        );
+        $eventTypes = Database::rows("SELECT event_type, COUNT(*) AS count FROM order_design_events GROUP BY event_type ORDER BY event_type ASC");
+        json(['ok' => true, 'events' => $events, 'event_types' => $eventTypes]);
+    }
+
+
+    if ($uri === '/admin/api/page-heroes' && $method === 'GET') {
+        try {
+            try {
+                foreach (\Catalog\ProductCatalog::categories() as $category) {
+                    $slug = strtolower(trim((string)($category['slug'] ?? '')));
+                    if ($slug === '') continue;
+                    $slug = preg_replace('/[^a-z0-9_-]+/', '-', $slug) ?? $slug;
+                    $key = 'category_' . trim($slug, '-');
+                    $name = trim((string)($category['name'] ?? 'Category')) ?: 'Category';
+                    $fallback = trim((string)($category['image_path'] ?? '')) ?: '/assets/img/categories/all-categories-hero.svg';
+                    Database::query(
+                        "INSERT INTO page_heroes (page_key, title, description, fallback_image, sort_order, is_active, created_at, updated_at)
+                         SELECT ?,?,?,?,?,1,NOW(),NOW() FROM DUAL
+                         WHERE NOT EXISTS (SELECT 1 FROM page_heroes WHERE page_key=? LIMIT 1)",
+                        [$key, $name, 'Explore premium ' . $name . ' printing options and related products.', $fallback, 1000 + (int)($category['sort_order'] ?? 0), $key]
+                    );
+                }
+            } catch (\Throwable $e) {
+                error_log('Category page hero sync failed: ' . $e->getMessage());
+            }
+            $rows = Database::rows("SELECT * FROM page_heroes ORDER BY sort_order ASC, title ASC");
+            json(['ok'=>true,'heroes'=>$rows]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Page heroes table unavailable','heroes'=>[]], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/page-heroes/([a-z0-9_\-]+)$#', $uri, $m) && $method === 'PUT') {
+        $key = (string)$m[1];
+        $background = trim((string)($body['background_image'] ?? ''));
+        $title = trim((string)($body['title'] ?? ''));
+        $description = trim((string)($body['description'] ?? ''));
+        if ($title === '') {
+            $title = ucwords(str_replace(['_', '-'], ' ', $key));
+        }
+        try {
+            Database::query(
+                "INSERT INTO page_heroes (page_key, title, description, background_image, fallback_image, sort_order, is_active, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, '', 9999, ?, NOW(), NOW())
+                 ON DUPLICATE KEY UPDATE title=VALUES(title), description=VALUES(description), background_image=VALUES(background_image), is_active=VALUES(is_active), updated_at=NOW()",
+                [$key, $title, $description, $background, (int)($body['is_active'] ?? 1)]
+            );
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not save page hero'], 500);
+        }
+    }
+    if ($uri === '/admin/api/page-heroes/upload' && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 8 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 8MB'], 400);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $dir = PUBLIC_PATH . '/uploads/page-heroes/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'page_hero_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        json(['ok'=>true,'path'=>'/uploads/page-heroes/' . $name]);
+    }
+
+    if ($uri === '/admin/api/faqs' && $method === 'GET') {
+        json(['ok' => true, 'faqs' => \Faq\FaqManager::all(), 'page_labels' => \Faq\FaqManager::PAGE_LABELS]);
+    }
+    if ($uri === '/admin/api/faqs' && $method === 'POST') {
+        $result = \Faq\FaqManager::save($body);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+    if (preg_match('#^/admin/api/faqs/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $result = \Faq\FaqManager::save($body, (int)$m[1]);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+    if (preg_match('#^/admin/api/faqs/(\d+)/toggle$#', $uri, $m) && $method === 'POST') {
+        $result = \Faq\FaqManager::toggle((int)$m[1]);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+    if (preg_match('#^/admin/api/faqs/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        $result = \Faq\FaqManager::delete((int)$m[1]);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
 
     $adminProductImages = static function (int $productId): array {
         try {
@@ -406,6 +768,11 @@ if (str_starts_with($uri, '/admin/api/')) {
     if (preg_match('#^/admin/api/orders/(\d+)/status$#', $uri, $m) && $method === 'POST') {
         $ok = \Orders\OrderManager::updateStatus((int)$m[1], $body['status'] ?? '', $body['note'] ?? '');
         json(['ok'=>$ok]);
+    }
+
+    if (preg_match('#^/admin/api/orders/(\d+)/customer-update/clear$#', $uri, $m) && $method === 'POST') {
+        \Orders\OrderManager::clearCustomerUpdate((int)$m[1]);
+        json(['ok' => true]);
     }
 
     if (preg_match('#^/admin/api/orders/(\d+)/shipping$#', $uri, $m) && $method === 'POST') {
@@ -1299,6 +1666,160 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
 
+    if ($uri === '/admin/api/portfolio-categories' && $method === 'GET') {
+        try {
+            $rows = Database::rows("SELECT * FROM portfolio_categories ORDER BY sort_order ASC, name ASC");
+            json(['ok'=>true,'categories'=>$rows]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Portfolio category table unavailable','categories'=>[]], 500);
+        }
+    }
+    if ($uri === '/admin/api/portfolio-categories' && $method === 'POST') {
+        $name = trim((string)($body['name'] ?? ''));
+        if ($name === '') json(['ok'=>false,'msg'=>'Category name is required'], 400);
+        $slug = $slugify(trim((string)($body['slug'] ?? '')) ?: $name);
+        try {
+            Database::insert(
+                "INSERT INTO portfolio_categories (name, slug, icon, description, hero_image, meta_title, meta_description, sort_order, is_active, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,NOW(),NOW())",
+                [$name, $slug, trim((string)($body['icon'] ?? 'fa-border-all')) ?: 'fa-border-all', trim((string)($body['description'] ?? '')), trim((string)($body['hero_image'] ?? '')), trim((string)($body['meta_title'] ?? '')), trim((string)($body['meta_description'] ?? '')), (int)($body['sort_order'] ?? 0), (int)($body['is_active'] ?? 1)]
+            );
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not save category. Slug may already exist.'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/portfolio-categories/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $id = (int)$m[1];
+        $name = trim((string)($body['name'] ?? ''));
+        if ($name === '') json(['ok'=>false,'msg'=>'Category name is required'], 400);
+        $slug = $slugify(trim((string)($body['slug'] ?? '')) ?: $name);
+        try {
+            Database::query(
+                "UPDATE portfolio_categories SET name=?, slug=?, icon=?, description=?, hero_image=?, meta_title=?, meta_description=?, sort_order=?, is_active=?, updated_at=NOW() WHERE id=?",
+                [$name, $slug, trim((string)($body['icon'] ?? 'fa-border-all')) ?: 'fa-border-all', trim((string)($body['description'] ?? '')), trim((string)($body['hero_image'] ?? '')), trim((string)($body['meta_title'] ?? '')), trim((string)($body['meta_description'] ?? '')), (int)($body['sort_order'] ?? 0), (int)($body['is_active'] ?? 1), $id]
+            );
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not update category'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/portfolio-categories/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        try {
+            Database::query("DELETE FROM portfolio_categories WHERE id=?", [(int)$m[1]]);
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not delete category. Remove or reassign portfolio items first.'], 500);
+        }
+    }
+
+    if ($uri === '/admin/api/portfolio' && $method === 'GET') {
+        try {
+            $rows = Database::rows(
+                "SELECT pi.*, pc.name AS category_name, pc.slug AS category_slug, pc.icon AS category_icon
+                 FROM portfolio_items pi
+                 LEFT JOIN portfolio_categories pc ON pc.id = pi.category_id
+                 ORDER BY pi.sort_order ASC, pi.is_featured DESC, pi.created_at DESC, pi.id DESC"
+            );
+            json(['ok'=>true,'items'=>$rows]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Portfolio table unavailable','items'=>[]], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/portfolio/(\d+)$#', $uri, $m) && $method === 'GET') {
+        $item = Database::row("SELECT * FROM portfolio_items WHERE id=?", [(int)$m[1]]);
+        if (!$item) json(['ok'=>false,'msg'=>'Portfolio item not found'], 404);
+        json(['ok'=>true,'item'=>$item]);
+    }
+
+    if ($uri === '/admin/api/portfolio' && $method === 'POST') {
+        $title = trim((string)($body['title'] ?? ''));
+        if ($title === '') json(['ok'=>false,'msg'=>'Portfolio title is required'], 400);
+        try {
+            $slug = $uniquePortfolioSlug(trim((string)($body['slug'] ?? '')) ?: $title);
+            $id = Database::insert(
+                "INSERT INTO portfolio_items (category_id,title,slug,short_description,description,main_image,image_alt,client_name,project_type,project_date,tags,sort_order,is_featured,is_active,created_at,updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",
+                [
+                    (int)($body['category_id'] ?? 0) ?: null,
+                    $title,
+                    $slug,
+                    trim((string)($body['short_description'] ?? '')),
+                    trim((string)($body['description'] ?? '')),
+                    trim((string)($body['main_image'] ?? '')),
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['client_name'] ?? '')),
+                    trim((string)($body['project_type'] ?? '')),
+                    trim((string)($body['project_date'] ?? '')) ?: null,
+                    trim((string)($body['tags'] ?? '')),
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_featured'] ?? 0),
+                    (int)($body['is_active'] ?? 1),
+                ]
+            );
+            json(['ok'=>true,'id'=>$id,'slug'=>$slug]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not create portfolio item'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/portfolio/(\d+)$#', $uri, $m) && $method === 'PUT') {
+        $id = (int)$m[1];
+        $title = trim((string)($body['title'] ?? ''));
+        if ($title === '') json(['ok'=>false,'msg'=>'Portfolio title is required'], 400);
+        try {
+            $slug = $uniquePortfolioSlug(trim((string)($body['slug'] ?? '')) ?: $title, $id);
+            Database::query(
+                "UPDATE portfolio_items SET category_id=?, title=?, slug=?, short_description=?, description=?, main_image=?, image_alt=?, client_name=?, project_type=?, project_date=?, tags=?, sort_order=?, is_featured=?, is_active=?, updated_at=NOW() WHERE id=?",
+                [
+                    (int)($body['category_id'] ?? 0) ?: null,
+                    $title,
+                    $slug,
+                    trim((string)($body['short_description'] ?? '')),
+                    trim((string)($body['description'] ?? '')),
+                    trim((string)($body['main_image'] ?? '')),
+                    trim((string)($body['image_alt'] ?? '')),
+                    trim((string)($body['client_name'] ?? '')),
+                    trim((string)($body['project_type'] ?? '')),
+                    trim((string)($body['project_date'] ?? '')) ?: null,
+                    trim((string)($body['tags'] ?? '')),
+                    (int)($body['sort_order'] ?? 0),
+                    (int)($body['is_featured'] ?? 0),
+                    (int)($body['is_active'] ?? 1),
+                    $id,
+                ]
+            );
+            json(['ok'=>true,'slug'=>$slug]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not update portfolio item'], 500);
+        }
+    }
+    if (preg_match('#^/admin/api/portfolio/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        try {
+            Database::query("DELETE FROM portfolio_items WHERE id=?", [(int)$m[1]]);
+            json(['ok'=>true]);
+        } catch (\Throwable) {
+            json(['ok'=>false,'msg'=>'Could not delete portfolio item'], 500);
+        }
+    }
+    if ($uri === '/admin/api/portfolio/upload' && $method === 'POST') {
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            json(['ok'=>false,'msg'=>'Image file is required'], 400);
+        }
+        $file = $_FILES['image'];
+        if ((int)$file['size'] <= 0) json(['ok'=>false,'msg'=>'Empty upload'], 400);
+        if ((int)$file['size'] > 8 * 1024 * 1024) json(['ok'=>false,'msg'=>'Max file size is 8MB'], 400);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg','jpeg','png','webp'], true)) json(['ok'=>false,'msg'=>'Only jpg, png, webp allowed'], 400);
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($mime, ['image/jpeg','image/png','image/webp'], true)) json(['ok'=>false,'msg'=>'Invalid image type'], 400);
+        $dir = PUBLIC_PATH . '/uploads/portfolio/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'portfolio_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $target = $dir . $name;
+        if (!move_uploaded_file($file['tmp_name'], $target)) json(['ok'=>false,'msg'=>'Upload failed'], 500);
+        json(['ok'=>true,'path'=>'/uploads/portfolio/' . $name]);
+    }
+
+
     if ($uri === '/admin/api/theme' && $method === 'GET') {
         try {
             $theme = \Theme\SiteTheme::load();
@@ -1615,15 +2136,75 @@ if ($uri === '/admin/export/orders') {
     exit;
 }
 
+if (preg_match('#^/admin/orders/(\d+)/invoice$#', $uri, $m) && $method === 'POST') {
+    $token = (string)($_POST['_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
+    if (!hash_equals((string)($_SESSION['csrf_token'] ?? ''), $token)) {
+        redirect('/admin/orders?error=' . urlencode('Security token expired. Please refresh and try again.'));
+    }
+
+    \Orders\OrderManager::ensureInvoiceSchema();
+    $order = \Orders\OrderManager::getOrder((int)$m[1]);
+    if (!$order) {
+        http_response_code(404);
+        exit('Order not found');
+    }
+    if (empty($_FILES['invoice_pdf']) || !is_uploaded_file($_FILES['invoice_pdf']['tmp_name'])) {
+        redirect('/admin/orders?error=' . urlencode('Please choose an invoice PDF to upload.'));
+    }
+
+    $file = $_FILES['invoice_pdf'];
+    $maxSize = 10 * 1024 * 1024;
+    $originalName = (string)($file['name'] ?? 'invoice.pdf');
+    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $mime = (string)(mime_content_type($file['tmp_name']) ?: '');
+    if (($file['size'] ?? 0) <= 0 || ($file['size'] ?? 0) > $maxSize || $ext !== 'pdf' || !in_array($mime, ['application/pdf', 'application/x-pdf', 'application/octet-stream'], true)) {
+        redirect('/admin/orders?error=' . urlencode('Only PDF invoices up to 10MB are allowed.'));
+    }
+
+    $dir = UPLOAD_PATH . '/invoices/order-' . (int)$order['id'] . '/';
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $safeBase = preg_replace('/[^A-Za-z0-9._-]+/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+    $filename = 'invoice-' . date('Ymd-His') . '-' . ($safeBase ?: 'order-' . (int)$order['id']) . '.pdf';
+    $target = $dir . $filename;
+    if (!move_uploaded_file($file['tmp_name'], $target)) {
+        redirect('/admin/orders?error=' . urlencode('Invoice upload failed. Please try again.'));
+    }
+    $relativePath = '/uploads/invoices/order-' . (int)$order['id'] . '/' . $filename;
+
+    $oldPath = trim((string)($order['invoice_file_path'] ?? ''));
+    if ($oldPath !== '' && str_starts_with($oldPath, '/uploads/invoices/') && is_file(PUBLIC_PATH . $oldPath)) {
+        $trashDir = UPLOAD_PATH . '/.trash/invoices/' . date('Ymd-His') . '/';
+        if (!is_dir($trashDir)) @mkdir($trashDir, 0755, true);
+        @rename(PUBLIC_PATH . $oldPath, $trashDir . basename($oldPath));
+    }
+
+    $admin = \Auth\Auth::admin();
+    \Orders\OrderManager::saveUploadedInvoice((int)$order['id'], $relativePath, $originalName, !empty($admin['id']) ? (int)$admin['id'] : null);
+    \Orders\AdminAudit::log('invoice_uploaded', 'Invoice uploaded for order ' . (string)$order['order_id']);
+    redirect('/admin/orders?success=' . urlencode('Invoice PDF uploaded for order #' . (string)$order['order_id']) . '#ord-' . (int)$order['id']);
+}
+
 if (preg_match('#^/admin/invoice/(.+)$#', $uri, $m)) {
     try {
+        \Orders\OrderManager::ensureInvoiceSchema();
         $order = \Orders\OrderManager::getOrderByOrderId($m[1]);
         if (!$order) { http_response_code(404); exit; }
-        \Invoice\InvoiceGenerator::download($order);
+        $path = trim((string)($order['invoice_file_path'] ?? ''));
+        $full = $path !== '' && !str_contains($path, '..') ? PUBLIC_PATH . $path : '';
+        if ($full === '' || !is_file($full)) {
+            http_response_code(404);
+            echo 'Invoice PDF has not been uploaded for this order yet.';
+            exit;
+        }
+        $downloadName = str_replace(['"', "\r", "\n"], '', basename((string)($order['invoice_original_name'] ?: ('Invoice-' . $order['order_id'] . '.pdf'))));
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="' . $downloadName . '"');
+        header('Content-Length: ' . filesize($full));
+        readfile($full);
     } catch (\Throwable $e) {
-        error_log('Admin invoice failed for ' . $m[1] . ': ' . $e->getMessage());
+        error_log('Admin invoice download failed for ' . $m[1] . ': ' . $e->getMessage());
         http_response_code(500);
-        echo 'Invoice generation failed. Please check logs.';
+        echo 'Invoice download failed. Please check logs.';
     }
     exit;
 }
@@ -1649,6 +2230,7 @@ if (str_contains($uri, '/admin/settings') || str_contains($uri, '/admin/integrat
 }
 
 if ($uri === '/admin/orders') {
+    \Orders\OrderManager::ensureInvoiceSchema();
     $search = trim((string)($_GET['search'] ?? ''));
     $status = trim((string)($_GET['status'] ?? 'all'));
     $paymentStatus = trim((string)($_GET['payment_status'] ?? 'all'));
@@ -1728,10 +2310,12 @@ if ($uri === '/admin/orders') {
     foreach ($orders as &$o) {
         $o['items'] = Database::rows(
             "SELECT oi.*,
+                    COALESCE(pi.image_path, pi.url) AS product_image,
                     af.id AS artwork_file_id,
                     af.original_name AS artwork_original_name,
                     af.filename AS artwork_filename,
                     af.file_path AS artwork_file_path,
+                    af.mime_type AS artwork_mime_type,
                     oda.id AS design_approval_id,
                     oda.status AS design_approval_status,
                     oda.admin_note AS design_admin_note,
@@ -1743,6 +2327,7 @@ if ($uri === '/admin/orders') {
                     pf.file_path AS design_proof_file_path,
                     pf.mime_type AS design_proof_mime_type
              FROM order_items oi
+             LEFT JOIN product_images pi ON pi.product_id = oi.product_id AND pi.is_primary = 1
              LEFT JOIN order_design_approvals oda ON oda.order_item_id = oi.id
              LEFT JOIN artwork_files af ON af.id = oda.customer_artwork_file_id
              LEFT JOIN artwork_files pf ON pf.id = oda.proof_file_id
@@ -1774,8 +2359,137 @@ if ($uri === '/admin/orders') {
     exit;
 }
 
+
+if ($uri === '/admin/order-cleanup/delete-all' && $method === 'POST') {
+    \Auth\Auth::requireSuperAdmin();
+    $token = (string)($_POST['_token'] ?? '');
+    if (!hash_equals((string)($_SESSION['csrf_token'] ?? ''), $token)) {
+        redirect('/admin/order-cleanup?error=' . urlencode('Security token expired. Please refresh and try again.'));
+    }
+    $confirm = trim((string)($_POST['confirm_text'] ?? ''));
+    if ($confirm !== 'DELETE ALL ORDERS') {
+        redirect('/admin/order-cleanup?error=' . urlencode('Please type DELETE ALL ORDERS exactly to confirm cleanup.'));
+    }
+
+    $archiveFiles = !empty($_POST['archive_files']);
+    $countsBefore = $orderCleanupCounts();
+    if (($countsBefore['orders'] ?? 0) <= 0) {
+        redirect('/admin/order-cleanup?success=' . urlencode('No orders found to delete.'));
+    }
+
+    $fileRows = [];
+    if ($archiveFiles && $adminTableExists('artwork_files')) {
+        try {
+            $fileRows = Database::rows(
+                "SELECT id, file_path, original_name, filename
+                   FROM artwork_files
+                  WHERE order_item_id IN (SELECT id FROM order_items)"
+            );
+        } catch (\Throwable) { $fileRows = []; }
+    }
+
+    $db = Database::get();
+    $deleted = [];
+    try {
+        $db->beginTransaction();
+        $delete = static function (string $key, string $sql) use (&$deleted): void {
+            $stmt = Database::query($sql);
+            $deleted[$key] = ($deleted[$key] ?? 0) + $stmt->rowCount();
+        };
+        if ($adminTableExists('product_reviews')) {
+            $delete('product_reviews', 'DELETE FROM product_reviews WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)');
+        }
+        if ($adminTableExists('order_design_events')) {
+            $delete('order_design_events', 'DELETE FROM order_design_events WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)');
+        }
+        if ($adminTableExists('order_design_approvals')) {
+            $delete('order_design_approvals', 'DELETE FROM order_design_approvals WHERE order_id IN (SELECT id FROM orders) OR order_item_id IN (SELECT id FROM order_items)');
+        }
+        if ($adminTableExists('artwork_files')) {
+            $delete('artwork_files', 'DELETE FROM artwork_files WHERE order_item_id IN (SELECT id FROM order_items)');
+        }
+        if ($adminTableExists('payments')) {
+            $delete('payments', 'DELETE FROM payments WHERE order_id IN (SELECT id FROM orders)');
+        }
+        if ($adminTableExists('coupon_uses')) {
+            $delete('coupon_uses', 'DELETE FROM coupon_uses WHERE order_id IN (SELECT id FROM orders)');
+        }
+        if ($adminTableExists('order_status_history')) {
+            $delete('order_status_history', 'DELETE FROM order_status_history WHERE order_id IN (SELECT id FROM orders)');
+        }
+        if ($adminTableExists('order_items')) {
+            $delete('order_items', 'DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders)');
+        }
+        if ($adminTableExists('orders')) {
+            $delete('orders', 'DELETE FROM orders');
+        }
+        $db->commit();
+    } catch (\Throwable $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        error_log('Order cleanup failed: ' . $e->getMessage());
+        redirect('/admin/order-cleanup?error=' . urlencode('Cleanup failed: ' . $e->getMessage()));
+    }
+
+    $archived = 0;
+    $archiveFailed = 0;
+    if ($archiveFiles && $fileRows) {
+        $trashDir = UPLOAD_PATH . '/.trash/order-cleanup/' . date('Ymd-His') . '/';
+        if (!is_dir($trashDir)) @mkdir($trashDir, 0755, true);
+        foreach ($fileRows as $file) {
+            $path = trim((string)($file['file_path'] ?? ''));
+            if ($path === '' || str_contains($path, '..')) continue;
+            $full = PUBLIC_PATH . $path;
+            if (!is_file($full)) continue;
+            $safeName = preg_replace('/[^A-Za-z0-9._-]+/', '_', basename((string)($file['original_name'] ?: $file['filename'] ?: basename($path))));
+            $target = $trashDir . ((int)($file['id'] ?? 0)) . '-' . ($safeName ?: basename($path));
+            if (@rename($full, $target)) $archived++;
+            else $archiveFailed++;
+        }
+    }
+
+    \Orders\AdminAudit::log('orders_cleanup', 'Deleted all testing orders: ' . json_encode($deleted));
+    $msg = 'Order cleanup completed. Deleted orders: ' . (int)($deleted['orders'] ?? 0) . '. Archived files: ' . $archived . ($archiveFailed ? ('. File archive failed: ' . $archiveFailed) : '');
+    redirect('/admin/order-cleanup?success=' . urlencode($msg));
+}
+
+if ($uri === '/admin/backup/download' && $method === 'POST') {
+    \Auth\Auth::requireSuperAdmin();
+    $token = (string)($_POST['_token'] ?? '');
+    if (!hash_equals((string)($_SESSION['csrf_token'] ?? ''), $token)) {
+        http_response_code(419);
+        echo 'Security token expired. Please refresh and try again.';
+        exit;
+    }
+    $type = trim((string)($_POST['backup_type'] ?? 'full'));
+    $includeConfig = !empty($_POST['include_config']);
+    try {
+        \Backup\BackupManager::cleanupOld();
+        $backup = \Backup\BackupManager::create($type, $includeConfig);
+        if (!empty($backup['path']) && is_file((string)$backup['path'])) {
+            \Orders\AdminAudit::log('backup_created', 'Backup generated: ' . (string)($backup['name'] ?? $type));
+            while (ob_get_level() > 0) ob_end_clean();
+            header('Content-Type: ' . (string)($backup['mime'] ?? 'application/octet-stream'));
+            header('Content-Disposition: attachment; filename="' . basename((string)$backup['name']) . '"');
+            header('Content-Length: ' . filesize((string)$backup['path']));
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            readfile((string)$backup['path']);
+            @unlink((string)$backup['path']);
+            exit;
+        }
+        throw new RuntimeException('Backup file was not created.');
+    } catch (Throwable $e) {
+        error_log('Backup generation failed: ' . $e->getMessage());
+        redirect('/admin/backup?error=' . urlencode($e->getMessage()));
+    }
+}
+
 if (preg_match('#^/admin/blogs/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     view('admin/blogs-new', ['blogEditId' => (int)$m[1]]);
+    exit;
+}
+
+if (preg_match('#^/admin/portfolio/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
+    view('admin/portfolio-new', ['portfolioEditId' => (int)$m[1]]);
     exit;
 }
 
@@ -1789,7 +2503,7 @@ if (preg_match('#^/admin/coupons/edit/(\d+)$#', $uri, $m) && $method === 'GET') 
     exit;
 }
 
-if (in_array($uri, ['/admin/admins', '/admin/approvals'], true)) {
+if (in_array($uri, ['/admin/admins', '/admin/approvals', '/admin/backup', '/admin/order-cleanup'], true)) {
     \Auth\Auth::requireSuperAdmin();
 }
 
@@ -1798,6 +2512,11 @@ $adminPage = match(true) {
     $uri === '/admin/analytics'  => 'admin/analytics',
     $uri === '/admin/products'   => 'admin/products',
     $uri === '/admin/categories' => 'admin/categories',
+    $uri === '/admin/media'      => 'admin/media',
+    $uri === '/admin/design-history' => 'admin/design-history',
+    $uri === '/admin/portfolio'  => 'admin/portfolio',
+    $uri === '/admin/page-heroes' => 'admin/page-heroes',
+    $uri === '/admin/portfolio/new' => 'admin/portfolio-new',
     $uri === '/admin/products/new' => 'admin/products-new',
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/deals'      => 'admin/deals',
@@ -1808,12 +2527,14 @@ $adminPage = match(true) {
     $uri === '/admin/coupons'    => 'admin/coupons',
     $uri === '/admin/coupons/new' => 'admin/coupons-new',
     $uri === '/admin/reviews'    => 'admin/reviews',
+    $uri === '/admin/faqs'       => 'admin/faqs',
     $uri === '/admin/customers'  => 'admin/customers',
     $uri === '/admin/leads'      => 'admin/leads',
     $uri === '/admin/approvals'  => 'admin/approvals',
     $uri === '/admin/admins'     => 'admin/admins',
+    $uri === '/admin/backup'     => 'admin/backup',
+    $uri === '/admin/order-cleanup' => 'admin/order-cleanup',
     $uri === '/admin/settings'   => 'admin/settings',
-    $uri === '/admin/design'     => 'admin/design',
     $uri === '/admin/integrations' => 'admin/integrations',
     $uri === '/admin/audit-logs' => 'admin/audit-logs',
     default                      => null,

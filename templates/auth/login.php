@@ -101,16 +101,19 @@ if ($supportPhoneDisplay === '') {
 
   <section class="register-trust-section login-trust-section" aria-label="RCS benefits">
     <div class="register-container register-trust-grid">
-      <div class="register-trust-item"><span class="green"><i class="fa-solid fa-crown" aria-hidden="true"></i></span><div><strong>Premium Quality</strong><p>Best quality materials and printing.</p></div></div>
-      <div class="register-trust-item"><span class="orange"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></span><div><strong>Fast Delivery</strong><p>On-time delivery always guaranteed.</p></div></div>
-      <div class="register-trust-item"><span class="purple"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span><div><strong>Secure Payments</strong><p>100% secure payment methods.</p></div></div>
-      <div class="register-trust-item"><span class="green"><i class="fa-solid fa-headset" aria-hidden="true"></i></span><div><strong>Customer Support</strong><p>We're here to help you anytime.</p></div></div>
+      <div class="register-trust-item"><span class="green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span><div><strong>Premium Quality</strong><p>Best quality materials and printing.</p></div></div>
+      <div class="register-trust-item"><span class="orange"><i class="fa-regular fa-thumbs-up" aria-hidden="true"></i></span><div><strong>100% Satisfaction</strong><p>Your happiness matters.</p></div></div>
+      <div class="register-trust-item"><span class="purple"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></span><div><strong>Free Design Support</strong><p>Professional design support at no extra cost.</p></div></div>
+      <div class="register-trust-item"><span class="purple"><i class="fa-solid fa-tags" aria-hidden="true"></i></span><div><strong>Affordable Pricing</strong><p>Low price with the best value.</p></div></div>
+      <div class="register-trust-item"><span class="orange"><i class="fa-solid fa-cube" aria-hidden="true"></i></span><div><strong>Bulk Order Specialist</strong><p>Special prices for bulk requirements.</p></div></div>
     </div>
   </section>
 </main>
 <script>
 const CSRF = '<?= $csrf ?>';
-const LOGIN_NEXT = new URLSearchParams(window.location.search).get('next') || '/';
+const loginParams = new URLSearchParams(window.location.search);
+const requestedNext = loginParams.get('next') || loginParams.get('redirect') || '/profile';
+const LOGIN_NEXT = (requestedNext.startsWith('/') && !requestedNext.startsWith('//')) ? requestedNext : '/profile';
 async function doLogin() {
   const id = document.getElementById('l-id').value.trim();
   const pw = document.getElementById('l-pw').value;
