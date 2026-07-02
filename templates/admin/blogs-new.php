@@ -87,6 +87,7 @@ include __DIR__ . '/layout.php';
           <button type="button" onclick="editorCmd('undo')"><i class="fa-solid fa-rotate-left"></i> Undo</button>
         </div>
         <div id="blog-editor" class="blog-rich-editor blog-rich-editor-pro" contenteditable="true" aria-label="Blog content editor"></div>
+        <button type="button" class="blog-floating-insert" id="blogFloatingInsert" onclick="openBlockPalette('button')"><i class="fa-solid fa-plus"></i><span>Add Block</span></button>
       </main>
       <aside class="blog-block-panel" aria-label="Blog block insert panel">
         <div class="blog-block-panel-head">
@@ -154,6 +155,27 @@ include __DIR__ . '/layout.php';
       <button class="btn btn-outline btn-sm" onclick="resetForm()">Reset</button>
     </div>
     <span id="blogImageSaveHint" style="align-self:center;font-size:11px;color:var(--text3);font-weight:700">Featured image uploads immediately after selection.</span>
+  </div>
+</div>
+
+<div id="blogBlockPalette" class="blog-block-palette" aria-hidden="true">
+  <div class="blog-block-palette-card" role="dialog" aria-label="Insert blog block">
+    <div class="blog-block-palette-head">
+      <strong><i class="fa-solid fa-plus"></i> Add Block</strong>
+      <button type="button" onclick="closeBlockPalette()" aria-label="Close block menu">×</button>
+    </div>
+    <p class="blog-block-palette-help">Select a block. It will be inserted exactly where your cursor is placed.</p>
+    <div class="blog-block-palette-grid">
+      <button type="button" data-block-action="image"><i class="fa-regular fa-image"></i><span>Image</span></button>
+      <button type="button" data-block-action="video"><i class="fa-solid fa-play"></i><span>Video</span></button>
+      <button type="button" data-block-action="cta"><i class="fa-solid fa-bullhorn"></i><span>CTA</span></button>
+      <button type="button" data-block-action="tip"><i class="fa-regular fa-lightbulb"></i><span>Tip Box</span></button>
+      <button type="button" data-block-action="divider"><i class="fa-solid fa-grip-lines"></i><span>Divider</span></button>
+      <button type="button" data-block-action="h2"><i class="fa-solid fa-heading"></i><span>Heading</span></button>
+      <button type="button" data-block-action="quote"><i class="fa-solid fa-quote-left"></i><span>Quote</span></button>
+      <button type="button" data-block-action="list"><i class="fa-solid fa-list-ul"></i><span>List</span></button>
+    </div>
+    <small>Tip: Type <b>/</b> inside the editor to open this menu without using the mouse.</small>
   </div>
 </div>
 
@@ -403,6 +425,73 @@ function insertTipBlock(){
   insertHtmlAtCursor('<div class="blog-tip-block"><strong>Pro Tip</strong><p>Write a practical print/design tip here...</p></div><p><br></p>');
 }
 function insertDivider(){ insertHtmlAtCursor('<hr class="blog-divider"><p><br></p>'); }
+
+let slashPaletteActive = false;
+function ensureEditorRange(){
+  if (savedEditorRange) return;
+  const ed = editor();
+  ed.focus();
+  const range = document.createRange();
+  range.selectNodeContents(ed);
+  range.collapse(false);
+  savedEditorRange = range;
+}
+function openBlockPalette(source = 'button'){
+  ensureEditorRange();
+  slashPaletteActive = source === 'slash';
+  const palette = document.getElementById('blogBlockPalette');
+  palette.classList.add('open');
+  palette.setAttribute('aria-hidden', 'false');
+}
+function closeBlockPalette(){
+  const palette = document.getElementById('blogBlockPalette');
+  palette.classList.remove('open');
+  palette.setAttribute('aria-hidden', 'true');
+  slashPaletteActive = false;
+}
+function removeSlashTrigger(){
+  restoreEditorSelection();
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  if (!range.collapsed || !range.startContainer || range.startContainer.nodeType !== Node.TEXT_NODE) return;
+  const text = range.startContainer.textContent || '';
+  const offset = range.startOffset;
+  if (offset > 0 && text.charAt(offset - 1) === '/') {
+    const slashRange = range.cloneRange();
+    slashRange.setStart(range.startContainer, offset - 1);
+    slashRange.setEnd(range.startContainer, offset);
+    slashRange.deleteContents();
+    const caret = document.createRange();
+    caret.setStart(range.startContainer, Math.max(0, offset - 1));
+    caret.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(caret);
+    savedEditorRange = caret.cloneRange();
+  }
+}
+async function runBlockAction(action){
+  restoreEditorSelection();
+  if (slashPaletteActive) removeSlashTrigger();
+  closeBlockPalette();
+  switch (action) {
+    case 'image': await insertBlogImage(); break;
+    case 'video': insertBlogVideo(); break;
+    case 'cta': insertCtaBlock(); break;
+    case 'tip': insertTipBlock(); break;
+    case 'divider': insertDivider(); break;
+    case 'h2': editorBlock('h2'); break;
+    case 'quote': editorBlock('blockquote'); break;
+    case 'list': editorCmd('insertUnorderedList'); break;
+    default: break;
+  }
+  updateBlogStats();
+}
+function maybeOpenSlashPalette(e){
+  if (e.key !== '/') return;
+  saveEditorSelection();
+  openBlockPalette('slash');
+}
 function updateBlogStats(){
   const text = editor().innerText || '';
   const words = (text.trim().match(/\S+/g) || []).length;
@@ -541,12 +630,18 @@ async function uploadBlogImage(){
 
 editor().addEventListener('input', () => { saveEditorSelection(); updateBlogStats(); });
 editor().addEventListener('paste', handleEditorPaste);
-editor().addEventListener('keyup', saveEditorSelection);
+editor().addEventListener('keyup', (e) => { saveEditorSelection(); maybeOpenSlashPalette(e); });
 editor().addEventListener('mouseup', saveEditorSelection);
-document.querySelectorAll('.blog-block-panel button,.blog-editor-mini-toolbar button').forEach((control) => {
+document.querySelectorAll('.blog-block-panel button,.blog-editor-mini-toolbar button,#blogFloatingInsert,.blog-block-palette-grid button').forEach((control) => {
   control.addEventListener('mousedown', (event) => { event.preventDefault(); restoreEditorSelection(); });
 });
-document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeBlogPreview(); });
+document.querySelectorAll('.blog-block-palette-grid button').forEach((button) => {
+  button.addEventListener('click', () => runBlockAction(button.dataset.blockAction || ''));
+});
+document.getElementById('blogBlockPalette')?.addEventListener('click', (event) => {
+  if (event.target.id === 'blogBlockPalette') closeBlockPalette();
+});
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') { closeBlogPreview(); closeBlockPalette(); } });
 resetForm();
 </script>
     </div></div></div>
