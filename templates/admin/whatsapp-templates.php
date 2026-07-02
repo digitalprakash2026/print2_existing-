@@ -5,20 +5,104 @@ include __DIR__ . '/layout.php';
 $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $templates = [];
 try {
-    $rows = Database::rows("SELECT template_key, title, description, body, is_active FROM whatsapp_message_templates ORDER BY FIELD(template_key,'order_confirmation','proof_ready','design_approved'), template_key ASC");
+    $rows = Database::rows("SELECT template_key, title, description, body, is_active FROM whatsapp_message_templates ORDER BY FIELD(template_key,'order_confirmation','proof_ready','design_approved','customer_reorder','customer_upsell','customer_welcome','lead_followup'), template_key ASC");
     foreach ($rows as $row) $templates[(string)$row['template_key']] = $row;
 } catch (Throwable) {
     $templates = [];
 }
 $defaults = [
-    'order_confirmation' => ['title' => 'Send Order Confirmation', 'description' => 'Sent after a new order is received.', 'body' => "Hello {customer_name}, 👋\n\nThank you for your order. We have received Order #{order_id}.\n\nOrder value: {order_total}\nProducts:\n{products}\n\nOur team will review the details and start processing your order shortly.\n\nYou can login to your account to check order details, current status, design approval status and future updates here:\n{account_order_url}\n\nThank you,\n{business_name}\nFor any query, call or WhatsApp: {business_phone}"],
-    'proof_ready' => ['title' => 'Send Proof Ready Message', 'description' => 'Sent when admin uploads a corrected/proof file for customer review.', 'body' => "Hello {customer_name}, 👋\n\nYour corrected design proof for Order #{order_id} is ready for review.\n\nProduct:\n{products}\n\nPlease login to your account and check My Orders to view the proof. You can approve the design or request a revision here:\n{account_order_url}\n\nThank you,\n{business_name}\nFor any query, call or WhatsApp: {business_phone}"],
-    'design_approved' => ['title' => 'Send Design Approved Message', 'description' => 'Sent after design approval to explain printing/production next steps.', 'body' => "Hello {customer_name}, 👋\n\nYour design for Order #{order_id} has been approved.\n\nProduct:\n{products}\n\nYour order will now move to the next step: Printing / Production.\n\nPlease note: once the design is approved, design changes or order cancellation may not be possible.\n\nYou can login to your account to check order details and further updates here:\n{account_order_url}\n\nThank you,\n{business_name}\nFor any query, call or WhatsApp: {business_phone}"],
+    'order_confirmation' => ['title' => 'Send Order Confirmation', 'description' => 'Sent after a new order is received.', 'body' => "Hello {customer_name}, 👋
+
+Thank you for your order. We have received Order #{order_id}.
+
+Order value: {order_total}
+Products:
+{products}
+
+Our team will review the details and start processing your order shortly.
+
+You can login to your account to check order details, current status, design approval status and future updates here:
+{account_order_url}
+
+Thank you,
+{business_name}
+For any query, call or WhatsApp: {business_phone}"],
+    'proof_ready' => ['title' => 'Send Proof Ready Message', 'description' => 'Sent when admin uploads a corrected/proof file for customer review.', 'body' => "Hello {customer_name}, 👋
+
+Your corrected design proof for Order #{order_id} is ready for review.
+
+Product:
+{products}
+
+Please login to your account and check My Orders to view the proof. You can approve the design or request a revision here:
+{account_order_url}
+
+Thank you,
+{business_name}
+For any query, call or WhatsApp: {business_phone}"],
+    'design_approved' => ['title' => 'Send Design Approved Message', 'description' => 'Sent after design approval to explain printing/production next steps.', 'body' => "Hello {customer_name}, 👋
+
+Your design for Order #{order_id} has been approved.
+
+Product:
+{products}
+
+Your order will now move to the next step: Printing / Production.
+
+Please note: once the design is approved, design changes or order cancellation may not be possible.
+
+You can login to your account to check order details and further updates here:
+{account_order_url}
+
+Thank you,
+{business_name}
+For any query, call or WhatsApp: {business_phone}"],
+    'customer_reorder' => ['title' => 'Customer Reorder Reminder', 'description' => 'Sent from Customers when a repeat order may be useful.', 'body' => "Hello {customer_name}, 👋
+
+If you would like to reorder your previous print items, we can process it quickly using your saved order details.
+
+Last product: {last_product}
+Total orders: {order_count}
+
+Reply here and our team will help you with the reorder.
+
+Thank you,
+{business_name}"],
+    'customer_upsell' => ['title' => 'Customer Upsell Message', 'description' => 'Sent from Customers to suggest related products.', 'body' => "Hello {customer_name}, 👋
+
+Based on your previous print requirement, this may be useful for you:
+{suggestion}
+
+Last product: {last_product}
+
+Reply here and we will share details and pricing.
+
+Thank you,
+{business_name}"],
+    'customer_welcome' => ['title' => 'Customer Welcome Offer', 'description' => 'Sent to customers with no orders yet.', 'body' => "Hello {customer_name}, 👋
+
+Welcome to {business_name}. Please share your print requirement and our team will guide you with suitable options, pricing and artwork support.
+
+Thank you,
+{business_name}"],
+    'lead_followup' => ['title' => 'Lead Follow-up Message', 'description' => 'Sent after a contact form enquiry is received.', 'body' => "Hello {lead_name}, 👋
+
+Thank you for contacting {business_name}. We received your enquiry:
+{lead_subject}
+
+Please share any artwork, size, quantity or reference details here so our team can guide you quickly.
+
+Thank you,
+{business_name}"],
 ];
 $labels = [
     'order_confirmation' => ['badge' => 'Order', 'heading' => 'New Order Confirmation'],
     'proof_ready' => ['badge' => 'Proof', 'heading' => 'Proof File Uploaded'],
     'design_approved' => ['badge' => 'Approval', 'heading' => 'Design Approved Update'],
+    'customer_reorder' => ['badge' => 'Customer', 'heading' => 'Reorder Reminder'],
+    'customer_upsell' => ['badge' => 'Customer', 'heading' => 'Upsell Message'],
+    'customer_welcome' => ['badge' => 'Customer', 'heading' => 'Welcome / First Order'],
+    'lead_followup' => ['badge' => 'Lead', 'heading' => 'Lead Follow-up'],
 ];
 $placeholders = [
     'customer_name' => 'Customer name',
@@ -36,6 +120,15 @@ $placeholders = [
     'business_name' => 'Business name',
     'business_phone' => 'Business phone',
     'business_whatsapp' => 'Business WhatsApp',
+    'customer_code' => 'Customer unique ID',
+    'order_count' => 'Customer order count',
+    'last_product' => 'Customer last product',
+    'suggestion' => 'Suggested product/message',
+    'lead_name' => 'Lead name',
+    'lead_phone' => 'Lead phone',
+    'lead_email' => 'Lead email',
+    'lead_subject' => 'Lead subject',
+    'lead_message' => 'Lead message',
 ];
 ?>
 <div class="wa-template-page">
@@ -43,9 +136,9 @@ $placeholders = [
     <div>
       <span>Customer messaging</span>
       <h1>WhatsApp Templates</h1>
-      <p>Prepare reusable WhatsApp messages for order confirmation, proof review and design approval updates. Use placeholders to auto-fill customer and order details.</p>
+      <p>Prepare reusable WhatsApp messages for orders, customer CRM follow-ups and lead enquiries. Use placeholders to auto-fill customer, order and lead details.</p>
     </div>
-    <strong>3 templates</strong>
+    <strong>7 templates</strong>
   </section>
 
   <section class="wa-placeholder-panel">
@@ -99,7 +192,9 @@ const WA_SAMPLE = {
   order_id: 'RCS-1024', order_total: '₹2,450', order_status: 'Received',
   products: '• Business Cards — 500 qty\n• Brochure — 100 qty', product_name: 'Business Cards', quantity: '500',
   design_status: 'Approved', account_order_url: `${location.origin}/profile#orders-RCS-1024`, proof_url: `${location.origin}/profile#orders-RCS-1024`,
-  business_name: 'RCS Print', business_phone: '+91 8980000024', business_whatsapp: '+91 8980000024'
+  business_name: 'RCS Print', business_phone: '+91 8980000024', business_whatsapp: '+91 8980000024',
+  customer_code: 'PK0001', order_count: '3', last_product: 'Business Cards', suggestion: 'Letterhead + Envelope',
+  lead_name: 'Prakash Karena', lead_phone: '919876543210', lead_email: 'lead@example.com', lead_subject: 'Need brochure printing', lead_message: 'Please share quote for 500 brochures.'
 };
 function fillWaTemplate(body, data = WA_SAMPLE) {
   return String(body || '').replace(/\{([a-z0-9_]+)\}/gi, (_, key) => Object.prototype.hasOwnProperty.call(data, key) ? data[key] : `{${key}}`);

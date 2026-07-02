@@ -65,6 +65,7 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
 \Orders\OrderManager::ensureCustomerUpdateSchema();
 \Approvals\ContentApprovalManager::ensureSchema();
 \Faq\FaqManager::ensureSchema();
+\Auth\Auth::ensureCustomerCodeSchema();
 
 $whatsappTemplateDefaults = [
     'order_confirmation' => [
@@ -81,6 +82,26 @@ $whatsappTemplateDefaults = [
         'title' => 'Send Design Approved Message',
         'description' => 'Sent after design approval to explain printing/production next steps.',
         'body' => "Hello {customer_name}, 👋\n\nYour design for Order #{order_id} has been approved.\n\nProduct:\n{products}\n\nYour order will now move to the next step: Printing / Production.\n\nPlease note: once the design is approved, design changes or order cancellation may not be possible.\n\nYou can login to your account to check order details and further updates here:\n{account_order_url}\n\nThank you,\n{business_name}\nFor any query, call or WhatsApp: {business_phone}",
+    ],
+    'customer_reorder' => [
+        'title' => 'Customer Reorder Reminder',
+        'description' => 'Sent from the Customers module when a customer may want to repeat a previous order.',
+        'body' => "Hello {customer_name}, 👋\n\nIf you would like to reorder your previous print items, we can process it quickly using your saved order details.\n\nLast product: {last_product}\nTotal orders: {order_count}\n\nReply here and our team will help you with the reorder.\n\nThank you,\n{business_name}",
+    ],
+    'customer_upsell' => [
+        'title' => 'Customer Upsell Message',
+        'description' => 'Sent from the Customers module to suggest related print products.',
+        'body' => "Hello {customer_name}, 👋\n\nBased on your previous print requirement, this may be useful for you:\n{suggestion}\n\nLast product: {last_product}\n\nReply here and we will share details and pricing.\n\nThank you,\n{business_name}",
+    ],
+    'customer_welcome' => [
+        'title' => 'Customer Welcome Offer',
+        'description' => 'Sent to customers who have not placed an order yet.',
+        'body' => "Hello {customer_name}, 👋\n\nWelcome to {business_name}. Please share your print requirement and our team will guide you with suitable options, pricing and artwork support.\n\nThank you,\n{business_name}",
+    ],
+    'lead_followup' => [
+        'title' => 'Lead Follow-up Message',
+        'description' => 'Sent from the Leads module after a contact form enquiry is received.',
+        'body' => "Hello {lead_name}, 👋\n\nThank you for contacting {business_name}. We received your enquiry:\n{lead_subject}\n\nPlease share any artwork, size, quantity or reference details here so our team can guide you quickly.\n\nThank you,\n{business_name}",
     ],
 ];
 $ensureWhatsappTemplateSchema = static function () use ($whatsappTemplateDefaults): void {
@@ -406,6 +427,54 @@ if (str_starts_with($uri, '/admin/api/')) {
         json(['ok' => true, 'msg' => 'Media file moved to trash. You can restore it from /uploads/.trash if needed.', 'archived' => true]);
     }
 
+    if ($uri === '/admin/api/media/bulk-delete' && in_array($method, ['POST', 'DELETE'], true)) {
+        $paths = $body['paths'] ?? [];
+        if (!is_array($paths) || !$paths) json(['ok' => false, 'msg' => 'Select at least one media file.'], 422);
+        $uploadsRoot = realpath(PUBLIC_PATH . '/uploads');
+        if (!$uploadsRoot) json(['ok' => false, 'msg' => 'Uploads folder not found.'], 500);
+        $deleted = [];
+        $failed = [];
+        foreach (array_values(array_unique(array_map('strval', $paths))) as $rawPath) {
+            $relative = ltrim(str_replace('\\', '/', trim($rawPath)), '/');
+            if ($relative === '' || str_contains($relative, '..') || str_starts_with($relative, '.trash/')) {
+                $failed[] = ['path' => $rawPath, 'msg' => 'Invalid media path'];
+                continue;
+            }
+            $target = realpath(PUBLIC_PATH . '/uploads/' . $relative);
+            if (!$target || !is_file($target) || !str_starts_with($target, $uploadsRoot . DIRECTORY_SEPARATOR)) {
+                $failed[] = ['path' => $relative, 'msg' => 'File not found'];
+                continue;
+            }
+            $publicPath = '/uploads/' . $relative;
+            try {
+                $linkedApproval = Database::row(
+                    "SELECT oda.id, o.order_id
+                       FROM order_design_approvals oda
+                       INNER JOIN artwork_files af ON af.id IN (oda.customer_artwork_file_id, oda.proof_file_id)
+                       INNER JOIN orders o ON o.id = oda.order_id
+                      WHERE af.file_path = ?
+                      LIMIT 1",
+                    [$publicPath]
+                );
+                if ($linkedApproval) {
+                    $failed[] = ['path' => $relative, 'msg' => 'Linked to order ' . ($linkedApproval['order_id'] ?? '')];
+                    continue;
+                }
+            } catch (\Throwable) {}
+            $trashDir = PUBLIC_PATH . '/uploads/.trash/' . date('Y/m/d') . '/' . trim(dirname($relative), './');
+            if (!is_dir($trashDir)) @mkdir($trashDir, 0755, true);
+            $ext = pathinfo($relative, PATHINFO_EXTENSION);
+            $trashName = pathinfo($relative, PATHINFO_FILENAME) . '-' . date('His') . '-' . bin2hex(random_bytes(3)) . ($ext !== '' ? '.' . $ext : '');
+            $trashPath = rtrim($trashDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $trashName;
+            if (@rename($target, $trashPath)) {
+                $deleted[] = $relative;
+            } else {
+                $failed[] = ['path' => $relative, 'msg' => 'Could not archive file'];
+            }
+        }
+        json(['ok' => count($deleted) > 0, 'deleted' => $deleted, 'failed' => $failed, 'msg' => count($deleted) . ' file(s) moved to trash.']);
+    }
+
     if ($uri === '/admin/api/design-history' && $method === 'GET') {
         \Orders\OrderManager::ensureDesignEventSchema();
         $q = trim((string)($_GET['q'] ?? ''));
@@ -516,7 +585,7 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/whatsapp-templates' && $method === 'GET') {
         try {
-            $rows = Database::rows("SELECT template_key, title, description, body, is_active FROM whatsapp_message_templates ORDER BY FIELD(template_key,'order_confirmation','proof_ready','design_approved'), template_key ASC");
+            $rows = Database::rows("SELECT template_key, title, description, body, is_active FROM whatsapp_message_templates ORDER BY FIELD(template_key,'order_confirmation','proof_ready','design_approved','customer_reorder','customer_upsell','customer_welcome','lead_followup'), template_key ASC");
             json(['ok' => true, 'templates' => $rows, 'defaults' => $whatsappTemplateDefaults]);
         } catch (\Throwable) {
             json(['ok' => false, 'msg' => 'WhatsApp templates are unavailable', 'templates' => [], 'defaults' => $whatsappTemplateDefaults], 500);
@@ -1745,6 +1814,19 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/portfolio-categories' && $method === 'GET') {
         try {
+            try {
+                foreach (\Catalog\ProductCatalog::categories() as $productCat) {
+                    $name = trim((string)($productCat['name'] ?? ''));
+                    if ($name === '') continue;
+                    $slug = $slugify(trim((string)($productCat['slug'] ?? '')) ?: $name);
+                    Database::query(
+                        "INSERT INTO portfolio_categories (name, slug, icon, sort_order, is_active, created_at, updated_at)
+                         VALUES (?,?,?,?,1,NOW(),NOW())
+                         ON DUPLICATE KEY UPDATE name=VALUES(name), sort_order=VALUES(sort_order), updated_at=NOW()",
+                        [$name, $slug, trim((string)($productCat['icon'] ?? 'fa-folder')) ?: 'fa-folder', (int)($productCat['sort_order'] ?? 0)]
+                    );
+                }
+            } catch (\Throwable) {}
             $rows = Database::rows("SELECT * FROM portfolio_categories ORDER BY sort_order ASC, name ASC");
             json(['ok'=>true,'categories'=>$rows]);
         } catch (\Throwable) {
@@ -1968,10 +2050,15 @@ if (str_starts_with($uri, '/admin/api/')) {
         $result = \Leads\ContactLeadManager::update((int)$m[1], $body);
         json($result, ($result['ok'] ?? false) ? 200 : 422);
     }
+    if (preg_match('#^/admin/api/leads/(\d+)/read$#', $uri, $m) && $method === 'POST') {
+        $result = \Leads\ContactLeadManager::markRead((int)$m[1]);
+        json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
 
     if ($uri === '/admin/api/customers' && $method === 'GET') {
+        \Auth\Auth::ensureCustomerCodeSchema();
         $customers = Database::rows(
-            "SELECT u.id, u.name, u.email, u.phone, u.company, u.created_at,
+            "SELECT u.id, u.customer_code, u.name, u.email, u.phone, u.company, u.created_at, u.is_active,
                     COUNT(o.id) AS order_count,
                     COALESCE(SUM(o.total_amount),0) AS total_spent,
                     COALESCE(AVG(o.total_amount),0) AS avg_order_value,
@@ -1987,6 +2074,7 @@ if (str_starts_with($uri, '/admin/api/')) {
                       LIMIT 1) AS last_product
              FROM users u
              LEFT JOIN orders o ON o.user_id = u.id
+             WHERE COALESCE(u.is_active, 1) = 1
              GROUP BY u.id
              ORDER BY total_spent DESC, last_order_at DESC"
         );
@@ -2025,6 +2113,18 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
         unset($customer);
         json(['ok'=>true,'customers'=>$customers,'summary'=>$summary]);
+    }
+    if (preg_match('#^/admin/api/customers/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+        $customerId = (int)$m[1];
+        $customer = Database::row("SELECT id, name FROM users WHERE id = ? LIMIT 1", [$customerId]);
+        if (!$customer) json(['ok' => false, 'msg' => 'Customer not found'], 404);
+        try {
+            Database::query("UPDATE users SET is_active = 0 WHERE id = ?", [$customerId]);
+            \Orders\AdminAudit::log('customer_deactivated', "Customer #{$customerId}: " . ($customer['name'] ?? ''));
+            json(['ok' => true, 'msg' => 'Customer deleted/deactivated.']);
+        } catch (\Throwable) {
+            json(['ok' => false, 'msg' => 'Could not delete customer.'], 500);
+        }
     }
     if ($uri === '/admin/api/approvals' && $method === 'GET') {
         \Approvals\ContentApprovalManager::requireSuperAdmin();

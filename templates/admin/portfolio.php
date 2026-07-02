@@ -3,107 +3,98 @@ $pageTitle = 'Portfolio Manager — Admin';
 $currentAdmPage = 'portfolio';
 include __DIR__ . '/layout.php';
 ?>
-<section class="adm-page-head portfolio-admin-head">
+<section class="adm-page-head portfolio-admin-head portfolio-admin-head--pro">
   <div>
     <p class="adm-kicker">Portfolio CMS</p>
     <h1>Portfolio Manager</h1>
-    <p class="adm-muted">Manage premium portfolio work, categories, ordering, featured status and public visibility.</p>
+    <p class="adm-muted">Add portfolio images against product categories, manage visibility, and keep the public portfolio page fresh.</p>
   </div>
   <div class="adm-head-actions">
-    <a class="btn primary" href="/admin/portfolio/new">+ New Portfolio Item</a>
+    <button class="btn primary" type="button" onclick="openPortfolioForm()">+ Add Portfolio</button>
     <a class="btn" href="/portfolio" target="_blank" rel="noopener">View Public Page</a>
   </div>
 </section>
 
-<div class="portfolio-admin-grid">
+<div class="portfolio-admin-grid portfolio-admin-grid--single">
+  <section class="card portfolio-admin-card portfolio-editor-card portfolio-inline-editor" id="portfolioEditor" hidden>
+    <div class="card-head">
+      <div><h2 id="portfolioFormTitle">Add Portfolio</h2><p>Select a product category, upload an image and save it instantly.</p></div>
+      <button class="btn" type="button" onclick="closePortfolioForm()">Close</button>
+    </div>
+    <form id="portfolioForm" class="portfolio-editor-simple-grid">
+      <input type="hidden" id="portfolioId" value="">
+      <input type="hidden" id="main_image" required>
+      <label>Product Category<select id="category_id" required><option value="">Loading categories...</option></select></label>
+      <label>Portfolio Image<input id="imageFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
+      <label>Sort Order<input id="sort_order" type="number" value="0" min="0"></label>
+      <label>Status<select id="is_active"><option value="1">Published</option><option value="0">Hidden</option></select></label>
+      <label class="switch-row"><input id="is_featured" type="checkbox"> <span>Feature this work</span></label>
+      <div class="portfolio-image-preview"><img id="imagePreview" src="/assets/images/sample-products/business-cards/business-cards-1.svg" alt="Portfolio preview"></div>
+      <div class="form-actions stacked"><button class="btn primary portfolio-save-btn" type="submit">Save Portfolio</button><button class="btn" type="button" onclick="resetPortfolioForm()">Reset</button></div>
+    </form>
+  </section>
+
   <section class="card portfolio-admin-card portfolio-items-card">
     <div class="card-head">
-      <div><h2>Portfolio Items</h2><p>Images are shown on the public portfolio page in this order.</p></div>
-      <button class="btn" type="button" onclick="loadPortfolio()">Refresh</button>
+      <div><h2>Portfolio Items</h2><p>Shown on the public portfolio page using product category order.</p></div>
+      <div class="portfolio-card-toolbar"><button class="btn" type="button" onclick="loadPortfolio()">Refresh</button><button class="btn primary" type="button" onclick="openPortfolioForm()">+ Add Portfolio</button></div>
     </div>
     <div id="portfolioItems" class="portfolio-admin-list"><div class="adm-empty">Loading portfolio items...</div></div>
   </section>
-
-  <aside class="card portfolio-admin-card portfolio-cats-card">
-    <div class="card-head"><div><h2>Categories</h2><p>Used as public filter tabs.</p></div></div>
-    <form id="catForm" class="portfolio-cat-form">
-      <input type="hidden" id="catId" value="">
-      <label>Category Name<input id="catName" required placeholder="Business Cards"></label>
-      <label>Slug<input id="catSlug" placeholder="business-cards"></label>
-      <label>FontAwesome Icon<input id="catIcon" placeholder="fa-id-card-clip"></label>
-      <label>Description<textarea id="catDescription" rows="3" placeholder="Short intro for this category detail page"></textarea></label>
-      <label>Hero Image<input id="catHero" placeholder="/uploads/portfolio/category.webp"></label>
-      <div class="form-row two">
-        <label>Sort Order<input id="catSort" type="number" value="10"></label>
-        <label>Status<select id="catActive"><option value="1">Active</option><option value="0">Hidden</option></select></label>
-      </div>
-      <div class="form-actions"><button class="btn primary" type="submit">Save Category</button><button class="btn" type="button" onclick="resetCatForm()">Reset</button></div>
-    </form>
-    <div id="portfolioCats" class="portfolio-cat-list"><div class="adm-empty">Loading categories...</div></div>
-  </aside>
 </div>
 
 <script>
 const esc = (s) => String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const slugify = (s) => String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 const toast = (msg, ok = true) => window.showToast ? showToast(msg, ok ? 'success' : 'error') : alert(msg);
+let PORTFOLIO_CATS = [];
+let PORTFOLIO_ITEMS = [];
+let currentPortfolioSlug = '';
 
 async function api(url, opts = {}) {
-  const res = await fetch(url, {headers:{'Content-Type':'application/json'}, ...opts});
+  const res = await fetch(url, {headers:{'Content-Type':'application/json'}, credentials:'same-origin', ...opts});
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.ok === false) throw new Error(data.msg || 'Request failed');
   return data;
 }
-
+function selectedCat(){ return PORTFOLIO_CATS.find(c => String(c.id) === String(category_id.value)); }
+function updatePreview(){ imagePreview.src = main_image.value || '/assets/images/sample-products/business-cards/business-cards-1.svg'; }
+function openPortfolioForm(item = null){ portfolioEditor.hidden = false; portfolioEditor.scrollIntoView({behavior:'smooth', block:'start'}); if(item) fillPortfolioForm(item); else resetPortfolioForm(false); }
+function closePortfolioForm(){ portfolioEditor.hidden = true; resetPortfolioForm(false); }
+function resetPortfolioForm(clearImage = true){ portfolioForm.reset(); portfolioId.value=''; currentPortfolioSlug=''; portfolioFormTitle.textContent='Add Portfolio'; sort_order.value='0'; is_active.value='1'; if(clearImage){ main_image.value=''; imageFile.value=''; updatePreview(); } }
+function fillPortfolioForm(item){ portfolioFormTitle.textContent='Edit Portfolio'; portfolioId.value=item.id||''; currentPortfolioSlug=item.slug||''; category_id.value=item.category_id||''; main_image.value=item.main_image||''; sort_order.value=item.sort_order||0; is_active.value=String(item.is_active ?? 1); is_featured.checked=Number(item.is_featured||0)===1; updatePreview(); }
+async function loadCats(){ const data=await api('/admin/api/portfolio-categories'); PORTFOLIO_CATS=data.categories||[]; category_id.innerHTML='<option value="">Select product category</option>'+PORTFOLIO_CATS.map(c=>`<option value="${esc(c.id)}" data-name="${esc(c.name)}">${esc(c.name)}</option>`).join(''); }
+async function uploadPortfolioFile(file){ const fd=new FormData(); fd.append('image',file); const res=await fetch('/admin/api/portfolio/upload',{method:'POST',body:fd,credentials:'same-origin'}); const data=await res.json(); if(!res.ok || data.ok===false) throw new Error(data.msg||'Upload failed'); return data.path; }
+imageFile.addEventListener('change', async e => { const file=e.target.files[0]; if(!file) return; try{ main_image.value=await uploadPortfolioFile(file); updatePreview(); toast('Image uploaded'); }catch(err){ toast(err.message,false); } });
+portfolioForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const cat = selectedCat();
+  const editId = portfolioId.value;
+  if(!cat) return toast('Please select product category', false);
+  if(!main_image.value) return toast('Please upload portfolio image', false);
+  const title = `${cat.name} Portfolio Image`;
+  const body = {category_id:category_id.value,title,slug:editId ? currentPortfolioSlug : slugify(title + '-' + Date.now()),short_description:'',description:'',main_image:main_image.value.trim(),image_alt:title,client_name:'',project_type:cat.name,project_date:null,tags:cat.name,sort_order:Number(sort_order.value||0),is_featured:is_featured.checked,is_active:is_active.value==='1'};
+  try{ await api('/admin/api/portfolio'+(editId?'/'+editId:''),{method:editId?'PUT':'POST',body:JSON.stringify(body)}); toast(editId?'Portfolio updated':'Portfolio added'); closePortfolioForm(); loadPortfolio(); }catch(err){ toast(err.message,false); }
+});
 async function loadPortfolio(){
   const box = document.getElementById('portfolioItems');
   box.innerHTML = '<div class="adm-empty">Loading portfolio items...</div>';
   try {
     const data = await api('/admin/api/portfolio');
-    const items = data.items || [];
-    box.innerHTML = items.length ? items.map(item => `
-      <article class="portfolio-admin-item">
+    PORTFOLIO_ITEMS = data.items || [];
+    box.innerHTML = PORTFOLIO_ITEMS.length ? PORTFOLIO_ITEMS.map(item => `
+      <article class="portfolio-admin-item portfolio-admin-item--pro">
         <img src="${esc(item.main_image || '/assets/images/sample-products/business-cards/business-cards-1.svg')}" alt="${esc(item.image_alt || item.title)}" loading="lazy">
         <div class="portfolio-admin-item-body">
           <div class="portfolio-admin-title-row"><h3>${esc(item.title)}</h3><span class="badge ${item.is_active == 1 ? 'green' : ''}">${item.is_active == 1 ? 'Published' : 'Hidden'}</span></div>
-          <p>${esc(item.short_description || 'No short description added yet.')}</p>
+          <p>${esc(item.category_name || 'Uncategorized')} portfolio image</p>
           <div class="portfolio-admin-meta"><span><i class="fa-regular fa-folder-open"></i> ${esc(item.category_name || 'Uncategorized')}</span><span>Sort: ${esc(item.sort_order)}</span>${item.is_featured == 1 ? '<span>Featured</span>' : ''}</div>
         </div>
-        <div class="portfolio-admin-actions"><a class="btn sm" href="/portfolio?category=${esc(item.category_slug || '')}" target="_blank" rel="noopener">View</a><a class="btn sm primary" href="/admin/portfolio/edit/${item.id}">Edit</a><button class="btn sm danger" onclick="deletePortfolio(${item.id})">Delete</button></div>
-      </article>`).join('') : '<div class="adm-empty">No portfolio items yet. Add your first work.</div>';
+        <div class="portfolio-admin-actions"><a class="btn sm" href="/portfolio?category=${esc(item.category_slug || '')}" target="_blank" rel="noopener">View</a><button class="btn sm primary" type="button" onclick='openPortfolioForm(${JSON.stringify(item).replace(/'/g,"&#39;")})'>Edit</button><button class="btn sm danger" onclick="deletePortfolio(${item.id})">Delete</button></div>
+      </article>`).join('') : '<div class="adm-empty">No portfolio items yet. Click Add Portfolio to upload your first image.</div>';
   } catch (e) { box.innerHTML = `<div class="adm-empty">${esc(e.message)}</div>`; }
 }
-
-async function loadCats(){
-  const box = document.getElementById('portfolioCats');
-  try {
-    const data = await api('/admin/api/portfolio-categories');
-    const cats = data.categories || [];
-    box.innerHTML = cats.length ? cats.map(cat => `
-      <div class="portfolio-cat-row">
-        <span><i class="fa-solid ${esc(cat.icon || 'fa-folder')}"></i></span>
-        <div><strong>${esc(cat.name)}</strong><small>${esc(cat.slug)} · Sort ${esc(cat.sort_order)} · ${cat.is_active == 1 ? 'Active' : 'Hidden'}</small></div>
-        <button class="btn sm" type="button" onclick='editCat(${JSON.stringify(cat).replace(/'/g,'&#39;')})'>Edit</button>
-        <button class="btn sm danger" type="button" onclick="deleteCat(${cat.id})">Delete</button>
-      </div>`).join('') : '<div class="adm-empty">No categories yet.</div>';
-  } catch (e) { box.innerHTML = `<div class="adm-empty">${esc(e.message)}</div>`; }
-}
-
-function resetCatForm(){ document.getElementById('catForm').reset(); document.getElementById('catId').value=''; document.getElementById('catDescription').value=''; document.getElementById('catHero').value=''; document.getElementById('catSort').value='10'; document.getElementById('catActive').value='1'; }
-function editCat(cat){ cat = typeof cat === 'string' ? JSON.parse(cat) : cat; document.getElementById('catId').value=cat.id; document.getElementById('catName').value=cat.name||''; document.getElementById('catSlug').value=cat.slug||''; document.getElementById('catIcon').value=cat.icon||''; document.getElementById('catDescription').value=cat.description||''; document.getElementById('catHero').value=cat.hero_image||''; document.getElementById('catSort').value=cat.sort_order||10; document.getElementById('catActive').value=cat.is_active == 1 ? '1':'0'; }
-async function deleteCat(id){ if(!confirm('Delete this category? Items must be reassigned first.')) return; try{ await api('/admin/api/portfolio-categories/'+id,{method:'DELETE'}); toast('Category deleted'); loadCats(); loadPortfolio(); }catch(e){ toast(e.message,false); } }
 async function deletePortfolio(id){ if(!confirm('Delete this portfolio item?')) return; try{ await api('/admin/api/portfolio/'+id,{method:'DELETE'}); toast('Portfolio item deleted'); loadPortfolio(); }catch(e){ toast(e.message,false); } }
-
-document.getElementById('catName').addEventListener('input', e => { if(!document.getElementById('catSlug').dataset.touched) document.getElementById('catSlug').value = slugify(e.target.value); });
-document.getElementById('catSlug').addEventListener('input', e => { e.target.dataset.touched = '1'; e.target.value = slugify(e.target.value); });
-document.getElementById('catForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const id = document.getElementById('catId').value;
-  const body = {name:catName.value.trim(), slug:catSlug.value.trim(), icon:catIcon.value.trim(), description:catDescription.value.trim(), hero_image:catHero.value.trim(), sort_order:Number(catSort.value||0), is_active:catActive.value === '1'};
-  try{ await api('/admin/api/portfolio-categories'+(id?'/'+id:''), {method:id?'PUT':'POST', body:JSON.stringify(body)}); toast('Category saved'); resetCatForm(); loadCats(); }catch(err){ toast(err.message,false); }
-});
-
-loadCats();
-loadPortfolio();
+(async()=>{ try{ await loadCats(); await loadPortfolio(); }catch(e){ toast(e.message,false); } })();
 </script>
 <?php include __DIR__ . '/layout-end.php'; ?>

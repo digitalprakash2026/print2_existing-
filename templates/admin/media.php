@@ -114,6 +114,13 @@ $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
     <?php if ($search !== ''): ?><a href="/admin/media?category=<?= $h($selectedCategory) ?>">Clear</a><?php endif; ?>
   </form>
 
+  <div class="adm-media-bulkbar" id="mediaBulkBar" hidden>
+    <strong><span id="mediaSelectedCount">0</span> selected</strong>
+    <button type="button" onclick="selectAllMedia(true)">Select all visible</button>
+    <button type="button" onclick="selectAllMedia(false)">Clear</button>
+    <button type="button" class="adm-media-bulk-delete" onclick="deleteSelectedMedia()">Delete selected</button>
+  </div>
+
   <nav class="adm-media-tabs" aria-label="Media categories">
     <?php foreach ($mediaCategories as $key => $cat): ?>
       <a class="<?= $selectedCategory === $key ? 'act' : '' ?>" href="/admin/media?category=<?= $h($key) ?><?= $search !== '' ? '&search=' . urlencode($search) : '' ?>">
@@ -127,7 +134,8 @@ $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
   <?php else: ?>
     <section class="adm-media-grid">
       <?php foreach ($mediaItems as $item): ?>
-        <article class="adm-media-card">
+        <article class="adm-media-card" data-media-card="<?= $h($item['relative']) ?>">
+          <label class="adm-media-select"><input type="checkbox" class="media-select" value="<?= $h($item['relative']) ?>" onchange="updateMediaSelection()"><span>Select</span></label>
           <a class="adm-media-preview adm-media-preview--<?= $h($item['type']) ?>" href="<?= $h($item['url']) ?>" target="_blank" rel="noopener">
             <?php if ($item['type'] === 'image'): ?>
               <img src="<?= $h($item['url']) ?>" alt="<?= $h($item['name']) ?>" loading="lazy">
@@ -167,6 +175,34 @@ function mediaToast(message, type = 'success') {
 }
 function copyMediaUrl(url) {
   navigator.clipboard?.writeText(url).then(() => mediaToast('Media URL copied'));
+}
+function selectedMediaPaths() { return Array.from(document.querySelectorAll('.media-select:checked')).map(cb => cb.value); }
+function updateMediaSelection() {
+  const count = selectedMediaPaths().length;
+  const bar = document.getElementById('mediaBulkBar');
+  document.getElementById('mediaSelectedCount').textContent = String(count);
+  if (bar) bar.hidden = count === 0;
+  document.querySelectorAll('.adm-media-card').forEach(card => {
+    const cb = card.querySelector('.media-select');
+    card.classList.toggle('is-selected', !!cb?.checked);
+  });
+}
+function selectAllMedia(checked) {
+  document.querySelectorAll('.media-select').forEach(cb => { cb.checked = checked; });
+  updateMediaSelection();
+}
+async function deleteSelectedMedia() {
+  const paths = selectedMediaPaths();
+  if (!paths.length) return mediaToast('Select files first', 'error');
+  if (!confirm(`Delete ${paths.length} selected media file(s)? They will be moved to trash.`)) return;
+  try {
+    const res = await fetch('/admin/api/media/bulk-delete', {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify({paths})});
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) throw new Error(data.msg || 'Bulk delete failed');
+    (data.deleted || []).forEach(path => { const card = Array.from(document.querySelectorAll('[data-media-card]')).find(el => el.dataset.mediaCard === path); card?.remove(); });
+    selectAllMedia(false);
+    mediaToast(`${(data.deleted || []).length} file(s) moved to trash${(data.failed || []).length ? `, ${(data.failed || []).length} skipped` : ''}`);
+  } catch (err) { mediaToast(err.message || 'Could not delete selected media', 'error'); }
 }
 async function deleteMediaFile(button, relativePath, fileName) {
   const confirmed = window.confirm(`Delete ${fileName}?\n\nFor safety, the file will be moved to /uploads/.trash so it can be restored if needed.`);
