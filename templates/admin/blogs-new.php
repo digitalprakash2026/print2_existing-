@@ -6,7 +6,7 @@ include __DIR__ . '/layout.php';
 ?>
 <div class="adm-pt"><?= $blogEditId > 0 ? 'Edit Blog' : 'Add Blog' ?></div>
 
-<div class="fsec" style="max-width:1180px">
+<div class="fsec blog-publisher-page">
   <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
     <div style="font-size:13px;color:var(--text2)"><?= $blogEditId > 0 ? 'Update blog content, SEO, image, and status.' : 'Create a rich blog post for the homepage and public blog detail pages.' ?></div>
     <a class="btn btn-outline btn-sm" href="/admin/blogs">← Back to Blogs</a>
