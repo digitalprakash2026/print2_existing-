@@ -42,8 +42,8 @@ include __DIR__ . '/layout.php';
   <div class="f2">
     <div class="fg">
       <label>Featured Image</label>
-      <input type="file" class="fi" id="blog-image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-      <div style="font-size:11px;color:var(--text3);margin-top:5px">Recommended ratio: 16:10 or 900×560.</div>
+      <input type="file" class="fi" id="blog-image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onchange="uploadBlogImage()">
+      <div id="blogImageState" style="font-size:11px;color:var(--text3);margin-top:5px">Recommended ratio: 16:10 or 900×560. Choose image — upload starts automatically.</div>
     </div>
     <div class="fg"><label>Image Path</label><input class="fi" id="blog-image-path" placeholder="/uploads/blogs/..."></div>
   </div>
@@ -79,6 +79,7 @@ include __DIR__ . '/layout.php';
     </div>
     <div class="blog-editor-toolbar blog-editor-toolbar-pro" aria-label="Rich text editor toolbar">
       <button type="button" onclick="editorBlock('p')">Paragraph</button>
+      <button type="button" onclick="editorBlock('h1')">H1</button>
       <button type="button" onclick="editorBlock('h2')">H2</button>
       <button type="button" onclick="editorBlock('h3')">H3</button>
       <button type="button" onclick="editorCmd('bold')"><strong>B</strong></button>
@@ -93,8 +94,30 @@ include __DIR__ . '/layout.php';
       <button type="button" onclick="insertCtaBlock()">CTA</button>
       <button type="button" onclick="insertTipBlock()">Tip Box</button>
       <button type="button" onclick="insertDivider()">Divider</button>
+      <label class="blog-editor-control">Line
+        <select onchange="applyEditorStyle('lineHeight', this.value); this.value='';">
+          <option value="">Spacing</option>
+          <option value="1.2">Tight 1.2</option>
+          <option value="1.5">Normal 1.5</option>
+          <option value="1.75">Relaxed 1.75</option>
+          <option value="2">Large 2.0</option>
+        </select>
+      </label>
+      <label class="blog-editor-control">Letter
+        <select onchange="applyEditorStyle('letterSpacing', this.value); this.value='';">
+          <option value="">Spacing</option>
+          <option value="normal">Normal</option>
+          <option value="-0.25px">-0.25px</option>
+          <option value="0.5px">0.5px</option>
+          <option value="1px">1px</option>
+          <option value="1.5px">1.5px</option>
+        </select>
+      </label>
+      <button type="button" onclick="applySpacingPreset('compact')">Compact Space</button>
+      <button type="button" onclick="applySpacingPreset('normal')">Normal Space</button>
       <button type="button" onclick="editorCmd('undo')">Undo</button>
       <button type="button" onclick="editorCmd('removeFormat')">Clear</button>
+      <button type="button" onclick="cleanCurrentContent()">Clean Content</button>
     </div>
     <div id="blog-editor" class="blog-rich-editor blog-rich-editor-pro" contenteditable="true" aria-label="Blog content editor"></div>
   </div>
@@ -105,7 +128,7 @@ include __DIR__ . '/layout.php';
       <button class="btn btn-outline btn-sm" onclick="previewBlog()">Preview</button>
       <button class="btn btn-outline btn-sm" onclick="resetForm()">Reset</button>
     </div>
-    <button class="btn btn-outline btn-sm" onclick="uploadBlogImage()">Upload Featured Image</button>
+    <span id="blogImageSaveHint" style="align-self:center;font-size:11px;color:var(--text3);font-weight:700">Featured image uploads immediately after selection.</span>
   </div>
 </div>
 
@@ -139,6 +162,152 @@ function editorBlock(tag){ document.execCommand('formatBlock', false, tag); edit
 function editorLink(){ const url = prompt('Enter URL'); if(url) document.execCommand('createLink', false, url); editor().focus(); updateBlogStats(); }
 function insertHtmlAtCursor(html){ editor().focus(); document.execCommand('insertHTML', false, html); updateBlogStats(); }
 function safeAttr(s){ return esc(s).replace(/`/g,'&#96;'); }
+
+function selectedEditableBlocks(){
+  const ed = editor();
+  const sel = window.getSelection();
+  const fallback = () => {
+    const node = sel?.anchorNode;
+    const el = node?.nodeType === 1 ? node : node?.parentElement;
+    const block = el?.closest?.('h1,h2,h3,h4,p,li,blockquote,div');
+    return block && ed.contains(block) ? [block] : [];
+  };
+  if (!sel || !sel.rangeCount || sel.isCollapsed) return fallback();
+  const range = sel.getRangeAt(0);
+  const blocks = Array.from(ed.querySelectorAll('h1,h2,h3,h4,p,li,blockquote,div')).filter((el) => {
+    try { return range.intersectsNode(el); } catch (_) { return false; }
+  });
+  return blocks.length ? blocks : fallback();
+}
+function wrapSelectionWithStyle(prop, value){
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || sel.isCollapsed) return false;
+  const span = document.createElement('span');
+  span.style[prop] = value;
+  try {
+    const range = sel.getRangeAt(0);
+    range.surroundContents(span);
+    sel.removeAllRanges();
+    return true;
+  } catch (_) {
+    document.execCommand('insertHTML', false, `<span style="${prop.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}:${safeAttr(value)}">${esc(sel.toString())}</span>`);
+    return true;
+  }
+}
+function applyEditorStyle(prop, value){
+  if (!value) return;
+  const blocks = selectedEditableBlocks();
+  if (blocks.length) {
+    blocks.forEach((el) => { el.style[prop] = value; });
+  } else {
+    wrapSelectionWithStyle(prop, value);
+  }
+  editor().focus();
+  updateBlogStats();
+}
+function applySpacingPreset(type){
+  const ed = editor();
+  const map = {
+    compact: {p:'8px', h:'14px', li:'4px', line:'1.45'},
+    normal: {p:'14px', h:'20px', li:'7px', line:'1.65'}
+  };
+  const preset = map[type] || map.normal;
+  ed.querySelectorAll('p').forEach(el => { el.style.marginTop = '0'; el.style.marginBottom = preset.p; el.style.lineHeight = preset.line; });
+  ed.querySelectorAll('h1,h2,h3,h4').forEach(el => { el.style.marginTop = preset.h; el.style.marginBottom = '8px'; el.style.lineHeight = '1.2'; });
+  ed.querySelectorAll('li').forEach(el => { el.style.marginBottom = preset.li; el.style.lineHeight = preset.line; });
+  toastMsg(type === 'compact' ? 'Compact spacing applied' : 'Normal spacing applied', 'success');
+  updateBlogStats();
+}
+
+function stripPasteNoise(root){
+  root.querySelectorAll('script,style,meta,link').forEach(n => n.remove());
+  root.querySelectorAll('*').forEach((el) => {
+    [...el.attributes].forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      if (name === 'class') {
+        const safeClasses = String(attr.value || '').split(/\s+/).filter(c => /^blog-(cta-block|tip-block|media-figure|video-figure|divider)$/.test(c));
+        safeClasses.length ? el.setAttribute('class', safeClasses.join(' ')) : el.removeAttribute('class');
+      }
+      if (name.startsWith('on') || name === 'id' || name.startsWith('data-') || name === 'width' || name === 'height') el.removeAttribute(attr.name);
+      if (name === 'style') {
+        const allowed = [];
+        const style = el.getAttribute('style') || '';
+        const line = style.match(/line-height\s*:\s*([^;]+)/i);
+        const letter = style.match(/letter-spacing\s*:\s*([^;]+)/i);
+        if (line) allowed.push(`line-height:${line[1].trim()}`);
+        if (letter) allowed.push(`letter-spacing:${letter[1].trim()}`);
+        allowed.length ? el.setAttribute('style', allowed.join(';')) : el.removeAttribute('style');
+      }
+    });
+  });
+}
+function classifyPlainLine(line, index){
+  const clean = line.trim();
+  if (!clean) return '';
+  if (/^[-*•]\s+/.test(clean)) return `<li>${esc(clean.replace(/^[-*•]\s+/, ''))}</li>`;
+  if (/^\d+[.)]\s+/.test(clean)) return `<li>${esc(clean.replace(/^\d+[.)]\s+/, ''))}</li>`;
+  if (index === 0 && clean.length <= 90) return `<h1>${esc(clean)}</h1>`;
+  if (clean.length <= 70 && !/[.!?]$/.test(clean)) return `<h2>${esc(clean)}</h2>`;
+  return `<p>${esc(clean)}</p>`;
+}
+function smartPlainTextToHtml(text){
+  const lines = String(text || '').replace(/\r/g, '').split('\n').map(l => l.trim()).filter(Boolean);
+  const html = [];
+  let list = [];
+  const flushList = () => { if (list.length) { html.push(`<ul>${list.join('')}</ul>`); list = []; } };
+  lines.forEach((line, index) => {
+    const node = classifyPlainLine(line, index);
+    if (node.startsWith('<li>')) { list.push(node); return; }
+    flushList();
+    html.push(node);
+  });
+  flushList();
+  return html.join('');
+}
+function normalizePastedHtml(html, text){
+  const source = String(html || '').trim();
+  if (!source) return smartPlainTextToHtml(text || '');
+  const box = document.createElement('div');
+  box.innerHTML = source;
+  stripPasteNoise(box);
+  box.querySelectorAll('div').forEach((div) => {
+    if (Array.from(div.classList || []).some(c => /^blog-/.test(c))) return;
+    if (!div.querySelector('figure,img,iframe,video,ul,ol,h1,h2,h3,h4,blockquote') && div.textContent.trim()) {
+      const p = document.createElement('p');
+      p.innerHTML = div.innerHTML;
+      div.replaceWith(p);
+    }
+  });
+  box.querySelectorAll('p,li,h1,h2,h3,h4,blockquote').forEach((el) => {
+    el.innerHTML = el.innerHTML.replace(/(&nbsp;|\s)+$/g, '');
+    if (!el.textContent.trim() && !el.querySelector('img,iframe,video')) el.remove();
+  });
+  const firstTextBlock = box.querySelector('p,h1,h2,h3,h4');
+  if (firstTextBlock && firstTextBlock.tagName === 'P' && firstTextBlock.textContent.trim().length <= 90) {
+    const h = document.createElement('h1');
+    h.innerHTML = firstTextBlock.innerHTML;
+    firstTextBlock.replaceWith(h);
+  }
+  box.querySelectorAll('b').forEach(el => { const strong = document.createElement('strong'); strong.innerHTML = el.innerHTML; el.replaceWith(strong); });
+  box.querySelectorAll('i').forEach(el => { const em = document.createElement('em'); em.innerHTML = el.innerHTML; el.replaceWith(em); });
+  return box.innerHTML || smartPlainTextToHtml(text || '');
+}
+function handleEditorPaste(e){
+  const data = e.clipboardData;
+  if (!data) return;
+  e.preventDefault();
+  const html = data.getData('text/html');
+  const text = data.getData('text/plain');
+  insertHtmlAtCursor(normalizePastedHtml(html, text));
+  applySpacingPreset('normal');
+  toastMsg('Pasted content cleaned and formatted', 'success');
+}
+function cleanCurrentContent(){
+  const ed = editor();
+  ed.innerHTML = normalizePastedHtml(ed.innerHTML, ed.innerText || '');
+  applySpacingPreset('normal');
+  toastMsg('Blog content cleaned', 'success');
+}
 
 async function uploadBlogMedia(file){
   const fd = new FormData();
@@ -281,6 +450,8 @@ async function resetForm(){
   fillForm({category:'Print Tips', badge_theme:'purple', author_name:'RCS Print Team', is_featured:1, is_active:1, content:'<p>Write your blog content here...</p>'});
   slugTouched = false;
   showErr('');
+  const imageState = document.getElementById('blogImageState');
+  if (imageState) { imageState.textContent = 'Recommended ratio: 16:10 or 900×560. Choose image — upload starts automatically.'; imageState.style.color = 'var(--text3)'; }
 }
 
 async function saveBlog() {
@@ -305,18 +476,32 @@ async function saveBlog() {
 }
 
 async function uploadBlogImage(){
-  const file = document.getElementById('blog-image').files?.[0];
+  const input = document.getElementById('blog-image');
+  const state = document.getElementById('blogImageState');
+  const file = input?.files?.[0];
   if (!file) { showErr('Select image first.'); return; }
+  if (input) input.disabled = true;
+  if (state) { state.textContent = 'Uploading featured image…'; state.style.color = 'var(--blue)'; }
   const fd = new FormData();
   fd.append('image', file);
-  const res = await fetch('/admin/api/blogs/upload', {method:'POST', headers:{'X-CSRF-TOKEN':CSRF}, body: fd}).then(r=>r.json());
-  if (!res.ok) { showErr(res.msg || 'Upload failed'); return; }
-  document.getElementById('blog-image-path').value = res.path || '';
-  showErr('');
-  toastMsg('Image uploaded', 'success');
+  try {
+    const res = await fetch('/admin/api/blogs/upload', {method:'POST', headers:{'X-CSRF-TOKEN':CSRF}, body: fd}).then(r=>r.json());
+    if (!res.ok) {
+      showErr(res.msg || 'Upload failed');
+      if (state) { state.textContent = 'Upload failed. Choose image again.'; state.style.color = 'var(--red)'; }
+      return;
+    }
+    document.getElementById('blog-image-path').value = res.path || '';
+    showErr('');
+    if (state) { state.textContent = 'Featured image uploaded automatically.'; state.style.color = 'var(--green)'; }
+    toastMsg('Image uploaded', 'success');
+  } finally {
+    if (input) input.disabled = false;
+  }
 }
 
 editor().addEventListener('input', updateBlogStats);
+editor().addEventListener('paste', handleEditorPaste);
 document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeBlogPreview(); });
 resetForm();
 </script>
