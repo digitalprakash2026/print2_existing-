@@ -69,57 +69,82 @@ include __DIR__ . '/layout.php';
     </div>
   </div>
 
-  <div class="fg blog-composer-shell">
+  <div class="fg blog-composer-shell blog-composer-shell-pro">
     <div class="blog-composer-head">
       <div>
         <label>Blog Content *</label>
-        <p>Use image, video, CTA and tip blocks to create WordPress-style long-form posts.</p>
+        <p>Place the cursor anywhere in the article, then use the side block panel to insert media, CTA and layout elements.</p>
       </div>
       <div class="blog-live-stats"><span id="blogWordCount">0 words</span><span id="blogReadTime">1 min read</span></div>
     </div>
-    <div class="blog-editor-toolbar blog-editor-toolbar-pro" aria-label="Rich text editor toolbar">
-      <button type="button" onclick="editorBlock('p')">Paragraph</button>
-      <button type="button" onclick="editorBlock('h1')">H1</button>
-      <button type="button" onclick="editorBlock('h2')">H2</button>
-      <button type="button" onclick="editorBlock('h3')">H3</button>
-      <button type="button" onclick="editorCmd('bold')"><strong>B</strong></button>
-      <button type="button" onclick="editorCmd('italic')"><em>I</em></button>
-      <button type="button" onclick="editorCmd('underline')"><u>U</u></button>
-      <button type="button" onclick="editorCmd('insertUnorderedList')">• List</button>
-      <button type="button" onclick="editorCmd('insertOrderedList')">1. List</button>
-      <button type="button" onclick="editorBlock('blockquote')">Quote</button>
-      <button type="button" onclick="editorLink()">Link</button>
-      <button type="button" onclick="insertBlogImage()">Image</button>
-      <button type="button" onclick="insertBlogVideo()">Video</button>
-      <button type="button" onclick="insertCtaBlock()">CTA</button>
-      <button type="button" onclick="insertTipBlock()">Tip Box</button>
-      <button type="button" onclick="insertDivider()">Divider</button>
-      <label class="blog-editor-control">Line
-        <select onchange="applyEditorStyle('lineHeight', this.value); this.value='';">
-          <option value="">Spacing</option>
-          <option value="1.2">Tight 1.2</option>
-          <option value="1.5">Normal 1.5</option>
-          <option value="1.75">Relaxed 1.75</option>
-          <option value="2">Large 2.0</option>
-        </select>
-      </label>
-      <label class="blog-editor-control">Letter
-        <select onchange="applyEditorStyle('letterSpacing', this.value); this.value='';">
-          <option value="">Spacing</option>
-          <option value="normal">Normal</option>
-          <option value="-0.25px">-0.25px</option>
-          <option value="0.5px">0.5px</option>
-          <option value="1px">1px</option>
-          <option value="1.5px">1.5px</option>
-        </select>
-      </label>
-      <button type="button" onclick="applySpacingPreset('compact')">Compact Space</button>
-      <button type="button" onclick="applySpacingPreset('normal')">Normal Space</button>
-      <button type="button" onclick="editorCmd('undo')">Undo</button>
-      <button type="button" onclick="editorCmd('removeFormat')">Clear</button>
-      <button type="button" onclick="cleanCurrentContent()">Clean Content</button>
+    <div class="blog-workbench">
+      <main class="blog-editor-canvas">
+        <div class="blog-editor-mini-toolbar" aria-label="Quick formatting toolbar">
+          <button type="button" onclick="editorCmd('bold')"><strong>B</strong></button>
+          <button type="button" onclick="editorCmd('italic')"><em>I</em></button>
+          <button type="button" onclick="editorCmd('underline')"><u>U</u></button>
+          <button type="button" onclick="editorLink()"><i class="fa-solid fa-link"></i> Link</button>
+          <button type="button" onclick="editorCmd('undo')"><i class="fa-solid fa-rotate-left"></i> Undo</button>
+        </div>
+        <div id="blog-editor" class="blog-rich-editor blog-rich-editor-pro" contenteditable="true" aria-label="Blog content editor"></div>
+      </main>
+      <aside class="blog-block-panel" aria-label="Blog block insert panel">
+        <div class="blog-block-panel-head">
+          <strong><i class="fa-solid fa-wand-magic-sparkles"></i> Insert Blocks</strong>
+          <span>Cursor based</span>
+        </div>
+        <div class="blog-tool-group">
+          <p>Text Blocks</p>
+          <div class="blog-tool-grid blog-tool-grid--text">
+            <button type="button" onclick="editorBlock('p')">Paragraph</button>
+            <button type="button" onclick="editorBlock('h1')">H1</button>
+            <button type="button" onclick="editorBlock('h2')">H2</button>
+            <button type="button" onclick="editorBlock('h3')">H3</button>
+            <button type="button" onclick="editorCmd('insertUnorderedList')">• List</button>
+            <button type="button" onclick="editorCmd('insertOrderedList')">1. List</button>
+            <button type="button" onclick="editorBlock('blockquote')">Quote</button>
+          </div>
+        </div>
+        <div class="blog-tool-group">
+          <p>Media & Conversion</p>
+          <div class="blog-tool-grid">
+            <button class="blog-tool-card blog-tool-card--image" type="button" onclick="insertBlogImage()"><i class="fa-regular fa-image"></i><span>Image</span><small>Upload into cursor</small></button>
+            <button class="blog-tool-card blog-tool-card--video" type="button" onclick="insertBlogVideo()"><i class="fa-solid fa-play"></i><span>Video</span><small>YouTube embed</small></button>
+            <button class="blog-tool-card blog-tool-card--cta" type="button" onclick="insertCtaBlock()"><i class="fa-solid fa-bullhorn"></i><span>CTA</span><small>Lead action block</small></button>
+            <button class="blog-tool-card blog-tool-card--tip" type="button" onclick="insertTipBlock()"><i class="fa-regular fa-lightbulb"></i><span>Tip Box</span><small>Helpful note</small></button>
+            <button class="blog-tool-card blog-tool-card--divider" type="button" onclick="insertDivider()"><i class="fa-solid fa-grip-lines"></i><span>Divider</span><small>Section break</small></button>
+          </div>
+        </div>
+        <div class="blog-tool-group">
+          <p>Spacing & Cleanup</p>
+          <label class="blog-editor-control">Line
+            <select onchange="restoreEditorSelection(); applyEditorStyle('lineHeight', this.value); this.value='';">
+              <option value="">Spacing</option>
+              <option value="1.2">Tight 1.2</option>
+              <option value="1.5">Normal 1.5</option>
+              <option value="1.75">Relaxed 1.75</option>
+              <option value="2">Large 2.0</option>
+            </select>
+          </label>
+          <label class="blog-editor-control">Letter
+            <select onchange="restoreEditorSelection(); applyEditorStyle('letterSpacing', this.value); this.value='';">
+              <option value="">Spacing</option>
+              <option value="normal">Normal</option>
+              <option value="-0.25px">-0.25px</option>
+              <option value="0.5px">0.5px</option>
+              <option value="1px">1px</option>
+              <option value="1.5px">1.5px</option>
+            </select>
+          </label>
+          <div class="blog-tool-grid blog-tool-grid--text">
+            <button type="button" onclick="applySpacingPreset('compact')">Compact Space</button>
+            <button type="button" onclick="applySpacingPreset('normal')">Normal Space</button>
+            <button type="button" onclick="editorCmd('removeFormat')">Clear Format</button>
+            <button type="button" onclick="cleanCurrentContent()">Clean Content</button>
+          </div>
+        </div>
+      </aside>
     </div>
-    <div id="blog-editor" class="blog-rich-editor blog-rich-editor-pro" contenteditable="true" aria-label="Blog content editor"></div>
   </div>
 
   <div class="blog-savebar">
@@ -157,10 +182,24 @@ function autoSlug(){ if(!editId && !slugTouched) document.getElementById('blog-s
 document.getElementById('blog-slug').addEventListener('input',()=>{ slugTouched = true; });
 
 function editor(){ return document.getElementById('blog-editor'); }
-function editorCmd(cmd){ document.execCommand(cmd, false, null); editor().focus(); updateBlogStats(); }
-function editorBlock(tag){ document.execCommand('formatBlock', false, tag); editor().focus(); updateBlogStats(); }
-function editorLink(){ const url = prompt('Enter URL'); if(url) document.execCommand('createLink', false, url); editor().focus(); updateBlogStats(); }
-function insertHtmlAtCursor(html){ editor().focus(); document.execCommand('insertHTML', false, html); updateBlogStats(); }
+let savedEditorRange = null;
+function saveEditorSelection(){
+  const sel = window.getSelection();
+  const ed = editor();
+  if (sel && sel.rangeCount && ed.contains(sel.anchorNode)) savedEditorRange = sel.getRangeAt(0).cloneRange();
+}
+function restoreEditorSelection(){
+  const ed = editor();
+  ed.focus();
+  if (!savedEditorRange) return;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(savedEditorRange);
+}
+function editorCmd(cmd){ restoreEditorSelection(); document.execCommand(cmd, false, null); saveEditorSelection(); updateBlogStats(); }
+function editorBlock(tag){ restoreEditorSelection(); document.execCommand('formatBlock', false, tag); saveEditorSelection(); updateBlogStats(); }
+function editorLink(){ restoreEditorSelection(); const url = prompt('Enter URL'); if(url) document.execCommand('createLink', false, url); saveEditorSelection(); updateBlogStats(); }
+function insertHtmlAtCursor(html){ restoreEditorSelection(); document.execCommand('insertHTML', false, html); saveEditorSelection(); updateBlogStats(); }
 function safeAttr(s){ return esc(s).replace(/`/g,'&#96;'); }
 
 function selectedEditableBlocks(){
@@ -500,8 +539,13 @@ async function uploadBlogImage(){
   }
 }
 
-editor().addEventListener('input', updateBlogStats);
+editor().addEventListener('input', () => { saveEditorSelection(); updateBlogStats(); });
 editor().addEventListener('paste', handleEditorPaste);
+editor().addEventListener('keyup', saveEditorSelection);
+editor().addEventListener('mouseup', saveEditorSelection);
+document.querySelectorAll('.blog-block-panel button,.blog-editor-mini-toolbar button').forEach((control) => {
+  control.addEventListener('mousedown', (event) => { event.preventDefault(); restoreEditorSelection(); });
+});
 document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeBlogPreview(); });
 resetForm();
 </script>
