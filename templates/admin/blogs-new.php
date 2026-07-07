@@ -179,6 +179,19 @@ include __DIR__ . '/layout.php';
   </div>
 </div>
 
+<div id="blogImageToolbar" class="blog-image-toolbar" aria-hidden="true">
+  <strong><i class="fa-regular fa-image"></i> Image</strong>
+  <button type="button" data-img-size="sm">Small</button>
+  <button type="button" data-img-size="md">Medium</button>
+  <button type="button" data-img-size="lg">Large</button>
+  <button type="button" data-img-size="full">Full</button>
+  <span></span>
+  <button type="button" data-img-align="left">Left</button>
+  <button type="button" data-img-align="center">Center</button>
+  <button type="button" data-img-align="right">Right</button>
+  <button type="button" data-img-reset="1">Reset</button>
+</div>
+
 <input type="file" id="blog-inline-media" accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,image/jpeg,image/png,image/webp,video/mp4,video/webm" style="display:none">
 <div id="blogPreviewModal" class="blog-preview-modal" aria-hidden="true">
   <div class="blog-preview-card">
@@ -286,7 +299,7 @@ function stripPasteNoise(root){
     [...el.attributes].forEach((attr) => {
       const name = attr.name.toLowerCase();
       if (name === 'class') {
-        const safeClasses = String(attr.value || '').split(/\s+/).filter(c => /^blog-(cta-block|tip-block|media-figure|video-figure|divider)$/.test(c));
+        const safeClasses = String(attr.value || '').split(/\s+/).filter(c => /^blog-(cta-block|tip-block|media-figure|video-figure|divider|img-size-(sm|md|lg|full)|img-align-(left|center|right))$/.test(c));
         safeClasses.length ? el.setAttribute('class', safeClasses.join(' ')) : el.removeAttribute('class');
       }
       if (name.startsWith('on') || name === 'id' || name.startsWith('data-') || name === 'width' || name === 'height') el.removeAttribute(attr.name);
@@ -492,6 +505,50 @@ function maybeOpenSlashPalette(e){
   saveEditorSelection();
   openBlockPalette('slash');
 }
+
+let selectedBlogImageFigure = null;
+function selectedImageFigureFromTarget(target){
+  const img = target?.closest?.('#blog-editor figure.blog-media-figure img');
+  if (!img) return null;
+  const figure = img.closest('figure.blog-media-figure');
+  if (!figure || figure.classList.contains('blog-video-figure')) return null;
+  return figure;
+}
+function positionImageToolbar(){
+  if (!selectedBlogImageFigure) return;
+  const toolbar = document.getElementById('blogImageToolbar');
+  const rect = selectedBlogImageFigure.getBoundingClientRect();
+  toolbar.style.left = `${Math.min(Math.max(16, rect.left), window.innerWidth - toolbar.offsetWidth - 16)}px`;
+  toolbar.style.top = `${Math.max(86, rect.top - toolbar.offsetHeight - 10)}px`;
+}
+function showImageToolbar(figure){
+  selectedBlogImageFigure = figure;
+  const toolbar = document.getElementById('blogImageToolbar');
+  toolbar.classList.add('open');
+  toolbar.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(positionImageToolbar);
+}
+function hideImageToolbar(){
+  selectedBlogImageFigure = null;
+  const toolbar = document.getElementById('blogImageToolbar');
+  toolbar.classList.remove('open');
+  toolbar.setAttribute('aria-hidden', 'true');
+}
+function setImageFigureClass(prefix, value){
+  if (!selectedBlogImageFigure) return;
+  Array.from(selectedBlogImageFigure.classList).forEach(cls => { if (cls.startsWith(prefix)) selectedBlogImageFigure.classList.remove(cls); });
+  if (value) selectedBlogImageFigure.classList.add(prefix + value);
+  positionImageToolbar();
+  updateBlogStats();
+}
+function resetSelectedImageFigure(){
+  if (!selectedBlogImageFigure) return;
+  Array.from(selectedBlogImageFigure.classList).forEach(cls => {
+    if (cls.startsWith('blog-img-size-') || cls.startsWith('blog-img-align-')) selectedBlogImageFigure.classList.remove(cls);
+  });
+  positionImageToolbar();
+  updateBlogStats();
+}
 function updateBlogStats(){
   const text = editor().innerText || '';
   const words = (text.trim().match(/\S+/g) || []).length;
@@ -632,7 +689,11 @@ editor().addEventListener('input', () => { saveEditorSelection(); updateBlogStat
 editor().addEventListener('paste', handleEditorPaste);
 editor().addEventListener('keyup', (e) => { saveEditorSelection(); maybeOpenSlashPalette(e); });
 editor().addEventListener('mouseup', saveEditorSelection);
-document.querySelectorAll('.blog-block-panel button,.blog-editor-mini-toolbar button,#blogFloatingInsert,.blog-block-palette-grid button').forEach((control) => {
+editor().addEventListener('click', (event) => {
+  const figure = selectedImageFigureFromTarget(event.target);
+  figure ? showImageToolbar(figure) : hideImageToolbar();
+});
+document.querySelectorAll('.blog-block-panel button,.blog-editor-mini-toolbar button,#blogFloatingInsert,.blog-block-palette-grid button,.blog-image-toolbar button').forEach((control) => {
   control.addEventListener('mousedown', (event) => { event.preventDefault(); restoreEditorSelection(); });
 });
 document.querySelectorAll('.blog-block-palette-grid button').forEach((button) => {
@@ -641,7 +702,12 @@ document.querySelectorAll('.blog-block-palette-grid button').forEach((button) =>
 document.getElementById('blogBlockPalette')?.addEventListener('click', (event) => {
   if (event.target.id === 'blogBlockPalette') closeBlockPalette();
 });
-document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') { closeBlogPreview(); closeBlockPalette(); } });
+document.querySelectorAll('[data-img-size]').forEach(button => button.addEventListener('click', () => setImageFigureClass('blog-img-size-', button.dataset.imgSize || '')));
+document.querySelectorAll('[data-img-align]').forEach(button => button.addEventListener('click', () => setImageFigureClass('blog-img-align-', button.dataset.imgAlign || '')));
+document.querySelector('[data-img-reset]')?.addEventListener('click', resetSelectedImageFigure);
+window.addEventListener('scroll', positionImageToolbar, true);
+window.addEventListener('resize', positionImageToolbar);
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') { closeBlogPreview(); closeBlockPalette(); hideImageToolbar(); } });
 resetForm();
 </script>
     </div></div></div>
