@@ -4,6 +4,17 @@ $currentPage = 'profile';
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
 
+$pageHero = [
+    'key' => 'profile',
+    'title' => 'My Account',
+    'subtitle' => 'Manage your profile, track orders, review design approvals and download invoices in one place.',
+    'eyebrow' => 'Customer Portal',
+    'fallback_image' => '/assets/images/sample-products/stationery/stationery-1.svg',
+    'breadcrumbs' => [
+        ['label' => 'Home', 'url' => '/'],
+        ['label' => 'My Account', 'url' => null],
+    ],
+];
 $profile = $profile ?? [];
 $billing = $profile['billing'] ?? [];
 $shipping = $profile['shipping'] ?? [];
@@ -62,8 +73,27 @@ $accountBizWa = preg_replace('/\D+/', '', $accountBizWaRaw);
 if ($accountBizWa === '') {
     $accountBizWa = $accountBizPhoneHref;
 }
+$accountShortFileName = static function (?string $name, string $fallback = 'File'): string {
+    $name = trim((string)$name);
+    if ($name === '') return $fallback;
+    if (strlen($name) <= 24) return $name;
+    $ext = pathinfo($name, PATHINFO_EXTENSION);
+    $base = pathinfo($name, PATHINFO_FILENAME);
+    return substr($base !== '' ? $base : $name, 0, 16) . '…' . ($ext !== '' ? '.' . $ext : '');
+};
+$accountNormalizeAssetPath = static function (?string $path): string {
+    $path = trim((string)$path);
+    if ($path === '') return '';
+    return $path[0] === '/' ? $path : '/' . $path;
+};
+$accountIsImageFile = static function (?string $mime, ?string $name, ?string $path = null): bool {
+    $mime = strtolower(trim((string)$mime));
+    $source = trim((string)($name ?: $path));
+    $ext = strtolower(pathinfo($source, PATHINFO_EXTENSION));
+    return str_starts_with($mime, 'image/') || in_array($ext, ['jpg','jpeg','png','gif','webp','svg'], true);
+};
 
-$renderOrders = static function (array $list, bool $compact = false) use ($h, $statusLabels, $designApprovalLabels): void {
+$renderOrders = static function (array $list, bool $compact = false) use ($h, $statusLabels, $designApprovalLabels, $accountShortFileName, $accountNormalizeAssetPath, $accountIsImageFile): void {
     if (empty($list)) {
         ?>
         <div class="account-empty-state">
@@ -87,84 +117,120 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
         $productTitle = implode(', ', array_filter(array_map(static fn($item) => (string)($item['product_name'] ?? ''), $items)));
         $orderPublicId = (string)($order['order_id'] ?? $order['id'] ?? '');
         $isPaid = in_array((string)($order['payment_status'] ?? ''), ['paid'], true);
-        $trackSteps = ['new_order', 'received', 'design_approved', 'printing', 'other_process', 'ready'];
+        $trackSteps = ['received', 'design_approved', 'printing', 'other_process', 'ready'];
         $trackStatus = $status === 'processing' ? 'other_process' : $status;
         $trackIndex = array_search($trackStatus, $trackSteps, true);
         $trackIndex = $trackIndex === false ? -1 : (int)$trackIndex;
         $isCancelled = $status === 'cancelled';
         $isWhatsappPending = $status === 'whatsapp_pending';
       ?>
-        <details class="account-order-detail">
+        <details id="account-order-<?= $h(preg_replace('/[^A-Za-z0-9_-]+/', '-', $orderPublicId)) ?>" class="account-order-detail" data-order-detail="<?= $h($orderPublicId) ?>">
           <summary class="account-order-row" role="row">
             <strong>#<?= $h($order['order_id'] ?? $order['id'] ?? '') ?></strong>
             <span><?= !empty($order['created_at']) ? date('d M, Y', strtotime((string)$order['created_at'])) : '—' ?></span>
-            <span class="account-product-mini" title="<?= $h($productTitle) ?>">
-              <?php foreach (array_slice($items, 0, 3) as $idx => $item): ?>
-                <i style="--mini:<?= (int)$idx ?>"><?= $h(strtoupper(substr((string)($item['product_name'] ?? 'P'), 0, 1))) ?></i>
-              <?php endforeach; ?>
-              <?php if (count($items) > 3): ?><em>+<?= count($items) - 3 ?></em><?php endif; ?>
-              <?php if (empty($items)): ?><em>0</em><?php endif; ?>
-            </span>
+            <span class="account-product-count" title="<?= $h($productTitle) ?>"><?= count($items) ?> item<?= count($items) === 1 ? '' : 's' ?></span>
             <b>₹<?= number_format((float)($order['total_amount'] ?? 0)) ?></b>
             <span class="account-status status-<?= $h($statusClass) ?>"><?= $h($statusLabels[$status] ?? ucfirst($status)) ?></span>
             <span class="account-mini-btn">Actions <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
           </summary>
           <div class="account-order-expanded">
-            <div>
-              <strong>Products</strong>
+            <div class="account-order-items-panel">
+              <div class="account-order-block-title"><strong>Order Items & Files</strong><span>Artwork and proofs are separated item-wise</span></div>
               <?php if (empty($items)): ?>
                 <p>No product items found for this order.</p>
               <?php else: ?>
-                <ul>
-                  <?php foreach ($items as $item): ?>
-                    <li><?= $h($item['product_name'] ?? 'Product') ?> — <?= number_format((float)($item['quantity'] ?? 0)) ?> × <?= $h($item['quality_name'] ?? 'Standard') ?></li>
-                  <?php endforeach; ?>
-                </ul>
-              <?php endif; ?>
-            </div>
-            <div>
-              <strong>Design Approval</strong>
-              <?php if (empty($items)): ?>
-                <p>Design details will appear after order processing starts.</p>
-              <?php else: ?>
-                <ul>
+                <div class="account-order-item-cards">
                   <?php foreach ($items as $item):
                     $designStatus = (string)($item['design_approval_status'] ?? 'pending_review');
+                    $productImg = $accountNormalizeAssetPath($item['product_image'] ?? '');
+                    $artworkName = (string)($item['artwork_original_name'] ?? $item['artwork_filename'] ?? '');
+                    $artworkPath = $accountNormalizeAssetPath($item['artwork_file_path'] ?? '');
+                    $artworkIsImage = $accountIsImageFile($item['artwork_mime_type'] ?? '', $artworkName, $artworkPath);
                     $proofName = (string)($item['design_proof_original_name'] ?? $item['design_proof_filename'] ?? '');
                     $proofPath = trim((string)($item['design_proof_file_path'] ?? ''));
-                    if ($proofPath !== '' && $proofPath[0] !== '/') { $proofPath = '/' . $proofPath; }
+                    $proofPath = $accountNormalizeAssetPath($proofPath);
                     $proofMime = strtolower((string)($item['design_proof_mime_type'] ?? ''));
                     $proofExt = strtolower(pathinfo($proofName !== '' ? $proofName : (string)($item['design_proof_filename'] ?? ''), PATHINFO_EXTENSION));
                     $proofIsImage = str_starts_with($proofMime, 'image/') || in_array($proofExt, ['jpg','jpeg','png','gif','webp','svg'], true);
                     $approvalId = (int)($item['design_approval_id'] ?? 0);
                     $canReviewProof = $approvalId > 0 && !empty($item['design_proof_file_id']) && in_array($designStatus, ['proof_uploaded'], true);
+                    $canInitialArtworkUpload = $approvalId > 0 && (string)($item['design_choice'] ?? '') === 'upload' && empty($item['artwork_file_id']) && empty($item['artwork_filename']) && $designStatus === 'pending_review';
+                    $canUploadArtwork = $approvalId > 0 && ($designStatus === 'issue_found' || $canInitialArtworkUpload);
                   ?>
-                    <li class="account-design-approval-item <?= in_array($designStatus, ['issue_found','revision_requested'], true) ? 'account-design-issue' : '' ?>" data-design-approval-item="<?= $approvalId ?>">
-                      <div class="account-design-approval-main">
-                        <span><?= $h($item['product_name'] ?? 'Product') ?> — <?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
-                        <?php if (!empty($item['design_admin_note'])): ?><small><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
+                    <article class="account-order-item-card <?= in_array($designStatus, ['issue_found','revision_requested'], true) ? 'account-design-issue' : '' ?>" data-design-approval-item="<?= $approvalId ?>" data-design-status="<?= $h($designStatus) ?>">
+                      <div class="account-order-item-thumb">
+                        <?php if ($productImg !== ''): ?><img src="<?= $h($productImg) ?>" alt="<?= $h($item['product_name'] ?? 'Product') ?>" loading="lazy"><?php else: ?><i class="fa-solid fa-box-open"></i><?php endif; ?>
+                      </div>
+                      <div class="account-order-item-main">
+                        <div class="account-order-item-title">
+                          <strong><?= $h($item['product_name'] ?? 'Product') ?></strong>
+                          <span data-design-status-label><?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
+                        </div>
+                        <p><?= number_format((float)($item['quantity'] ?? 0)) ?> qty × <?= $h($item['quality_name'] ?? 'Standard') ?></p>
+                        <?php if (!empty($item['design_admin_note'])): ?><small class="<?= $designStatus === 'issue_found' ? 'account-design-alert-note' : '' ?>"><?= $designStatus === 'issue_found' ? '⚠ Action required: ' : '' ?><?= $h($item['design_admin_note']) ?></small><?php endif; ?>
                         <?php if (!empty($item['design_customer_note'])): ?><small class="account-design-customer-note">Your message: <?= $h($item['design_customer_note']) ?></small><?php endif; ?>
-                        <?php if (!empty($item['design_proof_file_id'])): ?><span class="account-design-file-actions"><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener"><?= $h($proofName !== '' ? 'View corrected file: ' . $proofName : 'View corrected file') ?></a><a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener">Download</a></span><?php endif; ?>
+                      </div>
+                      <div class="account-order-file-grid">
+                        <div class="account-order-file" data-artwork-box>
+                          <b>Your artwork</b>
+                          <div data-artwork-preview>
+                          <?php if (!empty($item['artwork_file_id'])): ?>
+                            <a href="/account/artwork/<?= (int)$item['artwork_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= $h($artworkName ?: 'Artwork File') ?>">
+                              <span><?php if ($artworkIsImage && $artworkPath !== ''): ?><img src="<?= $h($artworkPath) ?>" alt="" loading="lazy"><?php else: ?><i class="fa-regular fa-file-lines"></i><?php endif; ?></span>
+                              <em><?= $h($accountShortFileName($artworkName, 'Artwork File')) ?></em>
+                            </a>
+                            <span class="account-artwork-file-actions">
+                              <a href="/account/artwork/<?= (int)$item['artwork_file_id'] ?>/view" target="_blank" rel="noopener">View</a>
+                              <a href="/account/artwork/<?= (int)$item['artwork_file_id'] ?>/download" target="_blank" rel="noopener">Download</a>
+                            </span>
+                          <?php else: ?>
+                            <small>No artwork uploaded</small>
+                          <?php endif; ?>
+                          </div>
+                          <?php if ($approvalId > 0): ?>
+                            <div class="account-artwork-reupload-form <?= $canUploadArtwork ? 'is-enabled' : '' ?>">
+                              <input type="file" name="artwork" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.psd,.cdr,.svg,.tif,.tiff,.zip" onchange="uploadAccountArtworkRevision(this, <?= $approvalId ?>)" <?= $canUploadArtwork ? '' : 'disabled' ?>>
+                              <button type="button" onclick="chooseAccountArtworkRevision(this)" <?= $canUploadArtwork ? '' : 'disabled' ?>><?= $canInitialArtworkUpload ? 'Upload Design' : 'Reupload Design' ?></button>
+                              <small><?= $canInitialArtworkUpload ? 'You selected upload later. Choose your design file here when ready.' : ($designStatus === 'issue_found' ? 'One click: choose file and upload starts automatically.' : 'Upload is available when a design file is required.') ?></small>
+                            </div>
+                          <?php endif; ?>
+                        </div>
+                        <div class="account-order-file">
+                          <b>Corrected file</b>
+                          <?php if (!empty($item['design_proof_file_id'])): ?>
+                            <a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener" title="<?= $h($proofName ?: 'Proof File') ?>">
+                              <span><?php if ($proofIsImage && $proofPath !== ''): ?><img src="<?= $h($proofPath) ?>" alt="" loading="lazy"><?php else: ?><i class="fa-regular fa-file-lines"></i><?php endif; ?></span>
+                              <em><?= $h($accountShortFileName($proofName, 'Proof File')) ?></em>
+                            </a>
+                            <span class="account-artwork-file-actions">
+                              <a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener">View</a>
+                              <a href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/download" target="_blank" rel="noopener">Download</a>
+                            </span>
+                          <?php else: ?>
+                            <small>No proof uploaded yet</small>
+                          <?php endif; ?>
+                        </div>
+                      </div>
+                      <div class="account-order-item-actions">
                         <?php if ($canReviewProof): ?>
+                          <form class="account-design-revision-form account-design-revision-form--inline" data-design-revision-form="<?= $approvalId ?>" onsubmit="sendDesignRevision(event, <?= $approvalId ?>)">
+                            <textarea name="message" rows="2" minlength="5" required placeholder="Request revision message..."></textarea>
+                            <button type="submit">Submit Revision</button>
+                          </form>
                           <div class="account-design-review-actions">
                             <button type="button" class="account-design-approve-btn" onclick="approveAccountDesign(<?= $approvalId ?>, this)">Approve Design</button>
-                            <button type="button" class="account-design-revision-btn" onclick="toggleDesignRevisionForm(<?= $approvalId ?>)">Request Revision</button>
                           </div>
-                          <form class="account-design-revision-form" data-design-revision-form="<?= $approvalId ?>" onsubmit="sendDesignRevision(event, <?= $approvalId ?>)" hidden>
-                            <textarea name="message" rows="2" minlength="5" required placeholder="What should we change in this design?"></textarea>
-                            <button type="submit">Send Revision Request</button>
-                          </form>
+                        <?php else: ?>
+                          <span data-design-action-status><?= $h($designApprovalLabels[$designStatus] ?? ucfirst(str_replace('_', ' ', $designStatus))) ?></span>
                         <?php endif; ?>
                       </div>
-                      <?php if (!empty($item['design_proof_file_id']) && $proofIsImage && $proofPath !== ''): ?>
-                        <a class="account-design-proof-preview" href="/account/artwork/<?= (int)$item['design_proof_file_id'] ?>/view" target="_blank" rel="noopener" aria-label="Open corrected design"><img src="<?= $h($proofPath) ?>" alt="<?= $h($proofName !== '' ? $proofName : 'Corrected design preview') ?>" loading="lazy"></a>
-                      <?php endif; ?>
-                    </li>
+                      <div class="account-order-live-msg" data-design-live-msg hidden></div>
+                    </article>
                   <?php endforeach; ?>
-                </ul>
+                </div>
               <?php endif; ?>
-            </div>
-            <div>
+            <div class="account-order-bottom-bar">
+            <div class="account-order-info-card">
               <strong>Payment</strong>
               <p><?= $h(ucfirst((string)($order['payment_status'] ?? 'pending'))) ?> · <?= $h(ucfirst((string)($order['payment_method'] ?? ''))) ?></p>
               <?php if (!empty($order['payment_id'])): ?><small>Payment ID: <?= $h($order['payment_id']) ?></small><?php endif; ?>
@@ -172,11 +238,14 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
             <div class="account-order-actions-list" aria-label="Order actions">
               <strong>Actions</strong>
               <button type="button" onclick="openAccountOrder(this)"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Track Order</button>
-              <?php if ($isPaid && $orderPublicId !== ''): ?>
+              <?php if ($isPaid && $orderPublicId !== '' && !empty($order['invoice_file_path'])): ?>
                 <a href="/invoice/<?= rawurlencode($orderPublicId) ?>" target="_blank" rel="noopener"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Download Invoice</a>
+              <?php elseif ($isPaid): ?>
+                <span class="account-order-action-disabled"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Invoice will be available soon</span>
               <?php else: ?>
                 <span class="account-order-action-disabled"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Invoice after payment</span>
               <?php endif; ?>
+            </div>
             </div>
             <div class="account-order-tracking" aria-label="Tracking detail">
               <div class="account-track-head">
@@ -208,29 +277,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
 };
 ?>
 <main class="account-page" data-design-target="account.page">
-  <section class="account-hero" aria-labelledby="accountTitle">
-    <div class="container account-hero-grid">
-      <div class="account-title-block">
-        <nav class="account-breadcrumb" aria-label="Breadcrumb">
-          <a href="/">Home</a><span>›</span><span>My Account</span>
-        </nav>
-        <h1 id="accountTitle">My Account</h1>
-        <p>Manage your profile, track orders and access exclusive print benefits.</p>
-      </div>
-      <a class="account-promo-card" href="/categories" aria-label="Order print products">
-        <div>
-          <strong>Design. Print. Grow.</strong>
-          <span>Premium quality printing for your business success.</span>
-          <em>Order Now</em>
-        </div>
-        <div class="account-promo-visual" aria-hidden="true">
-          <span class="promo-sheet promo-sheet-one"></span>
-          <span class="promo-sheet promo-sheet-two"></span>
-          <span class="promo-box"></span>
-        </div>
-      </a>
-    </div>
-  </section>
+  <?php include INCLUDE_PATH . '/partials/page-hero.php'; ?>
 
   <section class="account-dashboard container" aria-label="Account dashboard">
     <aside class="account-sidebar" aria-label="My account menu">
@@ -499,6 +546,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
             <?php if (!empty($profile['migration_required'])): ?>
             <div class="account-warning">Billing fields are not available yet. Please run the SQL migration shared in the implementation notes.</div>
             <?php endif; ?>
+            <label class="account-same-address"><input type="checkbox" id="pb-same-shipping" onchange="copyShippingToBilling(this.checked)"> <span>Billing address same as delivery address</span></label>
             <div class="fg"><label>Legal Business Name</label><input id="pb-legal" class="fi" value="<?= $h($billing['legal_name'] ?? '') ?>" placeholder="ABC Pvt Ltd"></div>
             <div class="fg"><label>GSTIN</label><input id="pb-gst" class="fi" value="<?= $h($billing['gst_no'] ?? '') ?>" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
             <div class="fg"><label>Billing Address Line 1</label><input id="pb-add1" class="fi" value="<?= $h($billing['address_line1'] ?? '') ?>"></div>
@@ -561,16 +609,16 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
       <h2 class="why-print-heading" id="accountWhyTitle">Why Choose <span>RCS PRINT?</span></h2>
       <div class="why-print-panel" aria-label="Why choose RCS Print">
         <article class="why-print-item">
-          <div class="why-print-icon why-print-purple"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></div>
-          <div class="why-print-copy"><h3>Fast Delivery</h3><p>On-time delivery always guaranteed.</p></div>
-        </article>
-        <article class="why-print-item">
-          <div class="why-print-icon why-print-orange"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div>
-          <div class="why-print-copy"><h3>Free Design Support</h3><p>Professional design support at no extra cost.</p></div>
-        </article>
-        <article class="why-print-item">
           <div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div>
           <div class="why-print-copy"><h3>Premium Quality</h3><p>Best quality materials and printing.</p></div>
+        </article>
+        <article class="why-print-item">
+          <div class="why-print-icon why-print-orange"><i class="fa-regular fa-thumbs-up" aria-hidden="true"></i></div>
+          <div class="why-print-copy"><h3>100% Satisfaction</h3><p>Your happiness matters.</p></div>
+        </article>
+        <article class="why-print-item">
+          <div class="why-print-icon why-print-purple"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div>
+          <div class="why-print-copy"><h3>Free Design Support</h3><p>Professional design support at no extra cost.</p></div>
         </article>
         <article class="why-print-item">
           <div class="why-print-icon why-print-purple"><i class="fa-solid fa-tags" aria-hidden="true"></i></div>
@@ -607,7 +655,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
 <script>
 const ACCOUNT_TABS = ['dashboard','orders','wishlist','designs','reviews','addresses','details','security'];
 
-function setAccountTab(tab, pushHash = true, scrollToPanel = true) {
+function setAccountTab(tab, pushHash = true) {
   const safeTab = ACCOUNT_TABS.includes(tab) ? tab : 'dashboard';
   document.querySelectorAll('[data-account-tab]').forEach(el => {
     const active = el.dataset.accountTab === safeTab;
@@ -620,7 +668,6 @@ function setAccountTab(tab, pushHash = true, scrollToPanel = true) {
     panel.toggleAttribute('hidden', !active);
   });
   if (pushHash) history.replaceState(null, '', safeTab === 'dashboard' ? '/profile' : `/profile#${safeTab}`);
-  if (scrollToPanel) document.querySelector('.account-main')?.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 document.querySelectorAll('[data-account-tab]').forEach(el => {
@@ -661,14 +708,66 @@ async function removeWishlistItem(productId, btn) {
   }
 }
 
-window.addEventListener('hashchange', () => setAccountTab(location.hash.replace('#', ''), false));
-setAccountTab(location.hash.replace('#', ''), false, false);
+const ACCOUNT_OPEN_ORDER_KEY = 'accountOpenOrder';
+const ACCOUNT_OPEN_ORDERS_KEY = 'accountOpenOrders';
+const ACCOUNT_PENDING_OPEN_ORDER_KEY = 'accountPendingOpenOrder';
+const ACCOUNT_OPEN_TAB_KEY = 'accountOpenTab';
+let restoringAccountOrder = false;
+
+function getAccountHashValue() {
+  return decodeURIComponent((location.hash || '').replace(/^#/, ''));
+}
+
+function getOrderKeyFromHash() {
+  const hashValue = getAccountHashValue();
+  return hashValue.startsWith('orders-') ? hashValue.slice('orders-'.length) : '';
+}
+
+function getAccountTabFromHash() {
+  const hashValue = getAccountHashValue();
+  if (hashValue === 'orders' || hashValue.startsWith('orders-')) return 'orders';
+  return hashValue;
+}
+
+window.addEventListener('hashchange', () => {
+  const hashOrder = getOrderKeyFromHash();
+  if (hashOrder) {
+    storeAccountOrderOpen(hashOrder, true);
+  }
+  const tab = getAccountTabFromHash() || (hashOrder ? 'orders' : 'dashboard');
+  setAccountTab(tab, false);
+  restoreOpenAccountOrders(Boolean(hashOrder));
+});
+
+const rememberedOrder = sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) || '';
+const linkedOrder = getOrderKeyFromHash();
+if (linkedOrder) {
+  storeAccountOrderOpen(linkedOrder, true);
+}
+const initialAccountTab = getAccountTabFromHash() || ((linkedOrder || rememberedOrder) ? (sessionStorage.getItem(ACCOUNT_OPEN_TAB_KEY) || 'orders') : 'dashboard');
+setAccountTab(initialAccountTab, false);
+restoreOpenAccountOrders(Boolean(linkedOrder));
+window.addEventListener('load', () => restoreOpenAccountOrders(Boolean(getOrderKeyFromHash())));
+requestAnimationFrame(() => restoreOpenAccountOrders(Boolean(getOrderKeyFromHash())));
+window.setTimeout(() => restoreOpenAccountOrders(Boolean(getOrderKeyFromHash())), 250);
+document.querySelectorAll('.account-order-detail').forEach(detail => {
+  detail.querySelector('summary')?.addEventListener('click', () => {
+    detail.dataset.manualToggle = '1';
+  });
+  detail.addEventListener('toggle', () => {
+    if (restoringAccountOrder) return;
+    const manualClose = !detail.open && detail.dataset.manualToggle === '1';
+    delete detail.dataset.manualToggle;
+    saveAccountOrderState(detail, detail.open, manualClose);
+  });
+});
 
 
 
 async function approveAccountDesign(id, btn) {
   id = parseInt(id || '0', 10);
   if (!id || !confirm('Approve this corrected design for printing?')) return;
+  rememberOpenAccountOrder(btn);
   if (btn) btn.disabled = true;
   try {
     const resp = await fetch(`/api/design-approvals/${id}/approve`, {
@@ -679,7 +778,7 @@ async function approveAccountDesign(id, btn) {
     });
     const data = await resp.json();
     if (!data.ok) { alert(data.msg || 'Could not approve design.'); if (btn) btn.disabled = false; return; }
-    window.location.reload();
+    updateDesignItemState(btn, 'approved', data.msg || 'Design approved successfully.');
   } catch (e) {
     alert('Could not approve design right now.');
     if (btn) btn.disabled = false;
@@ -699,6 +798,7 @@ async function sendDesignRevision(event, id) {
   const message = form.querySelector('textarea')?.value.trim() || '';
   if (message.length < 5) { alert('Please write a clear revision message.'); return; }
   const btn = form.querySelector('button[type="submit"]');
+  rememberOpenAccountOrder(form);
   if (btn) btn.disabled = true;
   try {
     const resp = await fetch(`/api/design-approvals/${id}/revision`, {
@@ -709,17 +809,280 @@ async function sendDesignRevision(event, id) {
     });
     const data = await resp.json();
     if (!data.ok) { alert(data.msg || 'Could not send revision request.'); if (btn) btn.disabled = false; return; }
-    window.location.reload();
+    updateDesignItemState(form, 'revision_requested', data.msg || 'Revision request sent successfully.');
   } catch (e) {
     alert('Could not send revision request right now.');
     if (btn) btn.disabled = false;
   }
 }
 
+function chooseAccountArtworkRevision(trigger) {
+  const form = trigger?.closest?.('.account-artwork-reupload-form');
+  const input = form?.querySelector?.('input[type="file"]');
+  if (!input || input.disabled) { alert('Upload is available when a design file is required.'); return; }
+  input.click();
+}
+
+async function uploadAccountArtworkRevision(input, id) {
+  const form = input?.closest('.account-artwork-reupload-form');
+  const btn = form?.querySelector('button[type="button"]');
+  if (!input || input.disabled) { alert('Upload is available when a design file is required.'); return; }
+  if (!input.files.length) { alert('Please choose a design file to reupload.'); return; }
+  rememberOpenAccountOrder(input);
+  const selectedFile = input.files[0];
+  const card = getAccountOrderDetailFromElement(input)?.querySelector(`[data-design-approval-item="${id}"]`) || input.closest('[data-design-approval-item]');
+  const tempPreviewUrl = selectedFile && String(selectedFile.type || '').toLowerCase().startsWith('image/') ? URL.createObjectURL(selectedFile) : '';
+  setDesignArtworkUploadProgress(input, selectedFile, tempPreviewUrl);
+  const fd = new FormData();
+  fd.append('artwork', selectedFile);
+  const oldText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+  try {
+    const resp = await fetch(`/api/design-approvals/${id}/artwork`, {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': APP.csrfToken },
+      credentials: 'same-origin',
+      body: fd,
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      const errorMsg = data.msg || 'Could not reupload design.';
+      showDesignUploadError(input, errorMsg);
+      alert(errorMsg);
+      if (btn) { btn.disabled = false; btn.textContent = oldText || 'Reupload Design'; }
+      if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
+      input.value = '';
+      return;
+    }
+    if (data.file) {
+      updateDesignItemState(input, data.status || 'pending_review', data.msg || 'Design uploaded successfully.', data.file || null);
+    } else {
+      updateDesignArtworkPreview(card, { name: selectedFile.name, mime: selectedFile.type, path: tempPreviewUrl }, 'uploaded');
+      updateDesignItemState(input, data.status || 'pending_review', data.msg || 'Design uploaded successfully.', null);
+    }
+    if (tempPreviewUrl && data.file) URL.revokeObjectURL(tempPreviewUrl);
+    input.value = '';
+  } catch (e) {
+    const errorMsg = 'Could not reupload design right now.';
+    showDesignUploadError(input, errorMsg);
+    alert(errorMsg);
+    if (btn) { btn.disabled = false; btn.textContent = oldText || 'Reupload Design'; }
+    if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
+    input.value = '';
+  }
+}
+
+const ACCOUNT_DESIGN_LABELS = {
+  pending_review: 'Pending Review',
+  issue_found: 'Issue Found',
+  proof_uploaded: 'Waiting for Your Approval',
+  revision_requested: 'Revision Requested',
+  approved: 'Approved',
+};
+
+function escapeAccountHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  }[ch]));
+}
+
+function shortAccountFileName(name) {
+  const value = String(name || 'Artwork File').trim() || 'Artwork File';
+  if (value.length <= 24) return value;
+  const dot = value.lastIndexOf('.');
+  const ext = dot > 0 ? value.slice(dot) : '';
+  const base = dot > 0 ? value.slice(0, dot) : value;
+  return `${base.slice(0, 16)}…${ext}`;
+}
+
+function showDesignLiveMessage(card, message, type = 'success') {
+  const box = card?.querySelector?.('[data-design-live-msg]');
+  if (!box) return;
+  box.hidden = false;
+  box.className = `account-order-live-msg is-${type}`;
+  box.textContent = message || (type === 'success' ? 'Updated successfully.' : 'Could not update.');
+}
+
+function updateDesignArtworkPreview(card, file, state = 'ready') {
+  if (!card || !file) return;
+  const preview = card.querySelector('[data-artwork-preview]');
+  if (!preview) return;
+  const name = escapeAccountHtml(shortAccountFileName(file.name || 'Artwork File'));
+  const title = escapeAccountHtml(file.name || 'Artwork File');
+  const viewRaw = file.view_url || (file.id ? `/account/artwork/${file.id}/view` : '');
+  const downloadRaw = file.download_url || (file.id ? `/account/artwork/${file.id}/download` : '');
+  const viewUrl = escapeAccountHtml(viewRaw);
+  const downloadUrl = escapeAccountHtml(downloadRaw);
+  const isImage = String(file.mime || '').toLowerCase().startsWith('image/');
+  const imagePath = file.path || file.preview_url || '';
+  const thumb = isImage && imagePath
+    ? `<img src="${escapeAccountHtml(imagePath)}" alt="" loading="lazy">`
+    : '<i class="fa-regular fa-file-lines"></i>';
+  const fileMarkup = viewRaw
+    ? `<a href="${viewUrl}" target="_blank" rel="noopener" title="${title}"><span>${thumb}</span><em>${name}</em></a>`
+    : `<span class="account-artwork-file-preview" title="${title}"><span>${thumb}</span><em>${name}</em></span>`;
+  const statusMarkup = state === 'uploading' ? '<small class="account-artwork-upload-state"><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Uploading design…</small>' : '';
+  const actionsMarkup = viewRaw && downloadRaw ? `<span class="account-artwork-file-actions"><a href="${viewUrl}" target="_blank" rel="noopener">View</a><a href="${downloadUrl}" target="_blank" rel="noopener">Download</a></span>` : '';
+  preview.innerHTML = `${fileMarkup}${statusMarkup}${actionsMarkup}`;
+}
+
+function setDesignArtworkUploadProgress(source, file, previewUrl = '') {
+  const card = source?.closest?.('[data-design-approval-item]');
+  if (!card || !file) return;
+  updateDesignArtworkPreview(card, { name: file.name, mime: file.type, path: previewUrl }, 'uploading');
+  showDesignLiveMessage(card, 'Uploading design… please wait. This can take a moment for large files.', 'info');
+}
+
+function showDesignUploadError(source, message) {
+  const card = source?.closest?.('[data-design-approval-item]');
+  if (!card) return;
+  showDesignLiveMessage(card, message || 'Upload failed. Please try again.', 'error');
+}
+
+function updateDesignItemState(source, status, message, file = null) {
+  const card = source?.closest?.('[data-design-approval-item]');
+  if (!card) return;
+  const normalized = status || 'pending_review';
+  card.dataset.designStatus = normalized;
+  card.classList.toggle('account-design-issue', ['issue_found', 'revision_requested'].includes(normalized));
+  const label = ACCOUNT_DESIGN_LABELS[normalized] || normalized.replace(/_/g, ' ');
+  card.querySelectorAll('[data-design-status-label], [data-design-action-status]').forEach((el) => { el.textContent = label; });
+  if (file) updateDesignArtworkPreview(card, file);
+
+  const uploadForm = card.querySelector('.account-artwork-reupload-form');
+  if (uploadForm) {
+    uploadForm.classList.remove('is-enabled');
+    uploadForm.querySelectorAll('input, button').forEach((el) => { el.disabled = true; });
+    const hint = uploadForm.querySelector('small');
+    if (hint) hint.textContent = 'Design uploaded successfully. Our team will review it.';
+  }
+  if (normalized === 'approved' || normalized === 'revision_requested') {
+    card.querySelectorAll('.account-design-revision-form, .account-design-review-actions').forEach((el) => { el.hidden = true; });
+    if (!card.querySelector('[data-design-action-status]')) {
+      const actions = card.querySelector('.account-order-item-actions');
+      if (actions) actions.innerHTML = `<span data-design-action-status>${escapeAccountHtml(label)}</span>`;
+    }
+  }
+  showDesignLiveMessage(card, message || 'Updated successfully.', 'success');
+  rememberOpenAccountOrder(card);
+}
+
+function saveAccountOrderState(detail, open, manualClose = false) {
+  const key = detail?.dataset?.orderDetail || '';
+  if (!key) return;
+  if (open) {
+    storeAccountOrderOpen(key);
+    return;
+  }
+  const pendingKey = sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '';
+  if (pendingKey === key && !manualClose) {
+    storeAccountOrderOpen(key, true);
+    setAccountOrderOpen(detail, true, false);
+    return;
+  }
+  removeStoredAccountOrder(key, true);
+  if (sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) === key) {
+    sessionStorage.removeItem(ACCOUNT_OPEN_ORDER_KEY);
+  }
+  const detailHash = `#orders-${encodeURIComponent(key)}`;
+  if (location.hash === detailHash) history.replaceState(null, '', '/profile#orders');
+}
+function setAccountOrderOpen(detail, open, persist = true) {
+  if (!detail) return;
+  restoringAccountOrder = true;
+  detail.open = open;
+  if (persist) saveAccountOrderState(detail, open);
+  window.setTimeout(() => { restoringAccountOrder = false; }, 350);
+}
+function getAccountOrderDetailFromElement(el) {
+  const detail = el?.closest?.('.account-order-detail') || el;
+  return detail?.classList?.contains('account-order-detail') ? detail : null;
+}
+function getStoredAccountOrders() {
+  const legacy = sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) || '';
+  let list = [];
+  try { list = JSON.parse(sessionStorage.getItem(ACCOUNT_OPEN_ORDERS_KEY) || '[]'); }
+  catch (e) { list = []; }
+  if (!Array.isArray(list)) list = [];
+  if (legacy && !list.includes(legacy)) list.push(legacy);
+  return list.filter(Boolean);
+}
+function storeAccountOrderOpen(key, keepPending = false) {
+  if (!key) return;
+  const ids = new Set(getStoredAccountOrders());
+  ids.add(key);
+  sessionStorage.setItem(ACCOUNT_OPEN_ORDERS_KEY, JSON.stringify([...ids]));
+  sessionStorage.setItem(ACCOUNT_OPEN_ORDER_KEY, key);
+  if (keepPending) sessionStorage.setItem(ACCOUNT_PENDING_OPEN_ORDER_KEY, key);
+  sessionStorage.setItem(ACCOUNT_OPEN_TAB_KEY, 'orders');
+}
+function removeStoredAccountOrder(key, clearPending = false) {
+  if (!key) return;
+  const ids = getStoredAccountOrders().filter(item => item !== key);
+  sessionStorage.setItem(ACCOUNT_OPEN_ORDERS_KEY, JSON.stringify(ids));
+  if ((sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '') === key) {
+    if (clearPending) sessionStorage.removeItem(ACCOUNT_PENDING_OPEN_ORDER_KEY);
+    else return;
+  }
+  if ((sessionStorage.getItem(ACCOUNT_OPEN_ORDER_KEY) || '') === key) sessionStorage.removeItem(ACCOUNT_OPEN_ORDER_KEY);
+}
+function rememberOpenAccountOrder(el) {
+  const detail = getAccountOrderDetailFromElement(el);
+  const key = detail?.dataset?.orderDetail || '';
+  if (!key) return '';
+  storeAccountOrderOpen(key, true);
+  setAccountOrderOpen(detail, true);
+  const targetHash = `#orders-${encodeURIComponent(key)}`;
+  if (location.hash !== targetHash) history.replaceState(null, '', `/profile${targetHash}`);
+  return key;
+}
+function reloadKeepingAccountOrderOpen(el) {
+  const key = rememberOpenAccountOrder(el);
+  if (key) {
+    storeAccountOrderOpen(key, true);
+    const targetUrl = `/profile#orders-${encodeURIComponent(key)}`;
+    if (window.location.pathname === '/profile' && window.location.hash === `#orders-${encodeURIComponent(key)}`) {
+      window.location.reload();
+    } else {
+      window.location.href = targetUrl;
+    }
+    return;
+  }
+  window.location.reload();
+}
+function restoreOpenAccountOrders(shouldScroll = false) {
+  const hashKey = getOrderKeyFromHash();
+  const pendingKey = sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '';
+  const keys = [...new Set([hashKey, pendingKey, ...getStoredAccountOrders()].filter(Boolean))];
+  if (!keys.length) return;
+  setAccountTab(sessionStorage.getItem(ACCOUNT_OPEN_TAB_KEY) || 'orders', false);
+  let scrollTarget = null;
+  keys.forEach((key) => {
+    const detail = Array.from(document.querySelectorAll('.account-order-detail')).find(item => item.dataset.orderDetail === key);
+    if (detail) {
+      setAccountOrderOpen(detail, true, false);
+      if (!scrollTarget && (key === hashKey || key === pendingKey)) scrollTarget = detail;
+    }
+  });
+  if (scrollTarget) {
+    storeAccountOrderOpen(scrollTarget.dataset.orderDetail || '');
+    window.setTimeout(() => {
+      if ((sessionStorage.getItem(ACCOUNT_PENDING_OPEN_ORDER_KEY) || '') === (scrollTarget.dataset.orderDetail || '')) {
+        sessionStorage.removeItem(ACCOUNT_PENDING_OPEN_ORDER_KEY);
+      }
+    }, 1200);
+    if (shouldScroll) window.setTimeout(() => scrollTarget.scrollIntoView({behavior:'smooth', block:'start'}), 160);
+  }
+}
+function copyShippingToBilling(checked) {
+  if (!checked) return;
+  const map = [['ps-add1','pb-add1'],['ps-add2','pb-add2'],['ps-city','pb-city'],['ps-state','pb-state'],['ps-pin','pb-pin']];
+  map.forEach(([from, to]) => { const src = document.getElementById(from); const dst = document.getElementById(to); if (src && dst) dst.value = src.value; });
+}
 function openAccountOrder(trigger) {
   const detail = trigger?.closest('.account-order-detail');
   if (!detail) return;
-  detail.open = true;
+  setAccountOrderOpen(detail, true);
   const tracking = detail.querySelector('.account-order-tracking');
   const target = tracking || detail;
   tracking?.classList.remove('is-highlighted');

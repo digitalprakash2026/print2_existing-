@@ -15,6 +15,58 @@ include __DIR__ . '/layout.php';
   <div id="blogList"></div>
 </div>
 
+<div class="fsec blog-banner-admin" style="max-width:1180px;margin-top:16px">
+  <div class="blog-banner-admin-head">
+    <div>
+      <div style="font-weight:700;color:var(--text);font-size:15px">Blog Sidebar Banner</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px">This clickable image appears below “Need Printing Help?” and “More Blogs” on blog article pages.</div>
+    </div>
+    <span id="blogBannerStatus" class="blog-banner-status">Loading…</span>
+  </div>
+  <div class="blog-banner-admin-grid">
+    <div class="blog-banner-preview" id="blogBannerPreview">
+      <span>No banner selected</span>
+    </div>
+    <div class="blog-banner-fields">
+      <div class="f2">
+        <div class="fg">
+          <label>Banner Image</label>
+          <input type="file" class="fi" id="blog-banner-file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onchange="uploadBlogBanner()">
+          <div style="font-size:11px;color:var(--text3);margin-top:5px">Choose image — upload starts automatically.</div>
+        </div>
+        <div class="fg">
+          <label>Image Path</label>
+          <input class="fi" id="blog-banner-image" placeholder="/uploads/blogs/...">
+        </div>
+      </div>
+      <div class="f2">
+        <div class="fg">
+          <label>Click URL</label>
+          <input class="fi" id="blog-banner-url" placeholder="/contact or /product/visiting-card">
+        </div>
+        <div class="fg">
+          <label>Alt Text</label>
+          <input class="fi" id="blog-banner-alt" placeholder="RCS Print offer banner">
+        </div>
+      </div>
+      <div class="f2">
+        <div class="fg">
+          <label>Status</label>
+          <select class="fi fi-sel" id="blog-banner-active"><option value="1">Active</option><option value="0">Inactive</option></select>
+        </div>
+        <div class="fg">
+          <label>Open Link</label>
+          <select class="fi fi-sel" id="blog-banner-new-tab"><option value="0">Same tab</option><option value="1">New tab</option></select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-blue btn-sm" type="button" id="blogBannerSaveBtn" onclick="saveBlogBanner()">Save Sidebar Banner</button>
+        <button class="btn btn-outline btn-sm" type="button" onclick="clearBlogBanner()">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 let blogs = [];
 const CSRF = '<?= htmlspecialchars($csrf??'') ?>';
@@ -44,7 +96,7 @@ function renderBlogs() {
       <div style="display:grid;grid-template-columns:98px 1fr auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:#fff">
         ${img}
         <div>
-          <div style="font-weight:800;font-size:13px;margin-bottom:2px">${esc(b.title)}</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:2px">${esc(b.title)}</div>
           <div style="font-size:11px;color:var(--text2)">/${esc(b.slug)} · ${esc(b.category || 'Blog')} · ${Number(b.is_featured) ? 'Featured' : 'Hidden from home'} · ${Number(b.is_active) ? 'Published' : 'Draft'}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:3px">${esc(b.excerpt || '').slice(0,120)}</div>
         </div>
@@ -65,7 +117,90 @@ async function delBlog(id) {
   await loadBlogs();
 }
 
+function setBlogBannerStatus(msg, type='info') {
+  const el = document.getElementById('blogBannerStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.dataset.type = type;
+}
+function renderBlogBannerPreview() {
+  const img = document.getElementById('blog-banner-image')?.value.trim() || '';
+  const alt = document.getElementById('blog-banner-alt')?.value.trim() || 'Blog sidebar banner';
+  const box = document.getElementById('blogBannerPreview');
+  if (!box) return;
+  box.innerHTML = img ? `<img src="${esc(img)}" alt="${esc(alt)}">` : '<span>No banner selected</span>';
+}
+async function loadBlogBanner() {
+  try {
+    const res = await fetch('/admin/api/settings', {credentials:'same-origin'}).then(r=>r.json());
+    const s = res.settings || {};
+    document.getElementById('blog-banner-image').value = s.blog_sidebar_banner_image || '';
+    document.getElementById('blog-banner-url').value = s.blog_sidebar_banner_url || '';
+    document.getElementById('blog-banner-alt').value = s.blog_sidebar_banner_alt || '';
+    document.getElementById('blog-banner-active').value = String(Number(s.blog_sidebar_banner_active ?? 0) ? 1 : 0);
+    document.getElementById('blog-banner-new-tab').value = String(Number(s.blog_sidebar_banner_new_tab ?? 0) ? 1 : 0);
+    renderBlogBannerPreview();
+    setBlogBannerStatus('Ready', 'success');
+  } catch (e) {
+    setBlogBannerStatus('Could not load banner settings', 'error');
+  }
+}
+async function uploadBlogBanner() {
+  const input = document.getElementById('blog-banner-file');
+  const file = input?.files?.[0];
+  if (!file) return;
+  input.disabled = true;
+  setBlogBannerStatus('Uploading…', 'info');
+  const fd = new FormData();
+  fd.append('image', file);
+  try {
+    const res = await fetch('/admin/api/blogs/upload', {method:'POST', headers:{'X-CSRF-TOKEN':CSRF}, body:fd, credentials:'same-origin'}).then(r=>r.json());
+    if (!res.ok) {
+      setBlogBannerStatus(res.msg || 'Upload failed', 'error');
+      return;
+    }
+    document.getElementById('blog-banner-image').value = res.path || '';
+    renderBlogBannerPreview();
+    setBlogBannerStatus('Image uploaded automatically', 'success');
+    toastMsg('Banner image uploaded', 'success');
+  } finally {
+    input.disabled = false;
+  }
+}
+async function saveBlogBanner() {
+  const btn = document.getElementById('blogBannerSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  const payload = {
+    blog_sidebar_banner_image: document.getElementById('blog-banner-image').value.trim(),
+    blog_sidebar_banner_url: document.getElementById('blog-banner-url').value.trim(),
+    blog_sidebar_banner_alt: document.getElementById('blog-banner-alt').value.trim(),
+    blog_sidebar_banner_active: document.getElementById('blog-banner-active').value,
+    blog_sidebar_banner_new_tab: document.getElementById('blog-banner-new-tab').value,
+  };
+  try {
+    const res = await fetch('/admin/api/settings', {method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF}, body:JSON.stringify(payload), credentials:'same-origin'}).then(r=>r.json());
+    if (!res.ok) {
+      setBlogBannerStatus(res.msg || 'Save failed', 'error');
+      return;
+    }
+    setBlogBannerStatus('Saved', 'success');
+    toastMsg('Sidebar banner saved', 'success');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Sidebar Banner';
+  }
+}
+function clearBlogBanner() {
+  document.getElementById('blog-banner-image').value = '';
+  document.getElementById('blog-banner-url').value = '';
+  document.getElementById('blog-banner-alt').value = '';
+  document.getElementById('blog-banner-active').value = '0';
+  renderBlogBannerPreview();
+}
+['blog-banner-image','blog-banner-alt'].forEach(id => document.getElementById(id)?.addEventListener('input', renderBlogBannerPreview));
 loadBlogs();
+loadBlogBanner();
 </script>
     </div></div></div>
 </body></html>
