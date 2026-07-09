@@ -1,8 +1,6 @@
 <?php
 $pageTitle = 'Contact RCS Graphic — Print Order Help & Bulk Quotes';
 $pageDesc = 'Contact RCS Graphic for printing support, bulk quotes, design guidance, order help, WhatsApp support and delivery questions.';
-include INCLUDE_PATH . '/partials/head.php';
-include INCLUDE_PATH . '/partials/header.php';
 
 $settingsMap = is_array($settingsMap ?? null) ? $settingsMap : [];
 $bizName = htmlspecialchars($settingsMap['biz_name'] ?? 'RCS Print', ENT_QUOTES, 'UTF-8');
@@ -11,32 +9,49 @@ $bizPhone = htmlspecialchars($bizPhoneRaw, ENT_QUOTES, 'UTF-8');
 $bizPhoneHref = htmlspecialchars(preg_replace('/\D+/', '', $bizPhoneRaw), ENT_QUOTES, 'UTF-8');
 $bizWa = htmlspecialchars($settingsMap['biz_whatsapp'] ?? '919876543210', ENT_QUOTES, 'UTF-8');
 $bizEmail = htmlspecialchars($settingsMap['biz_email'] ?? 'info@rcsprint.in', ENT_QUOTES, 'UTF-8');
-$bizAddr = htmlspecialchars($settingsMap['biz_address'] ?? '150ft Ring Road, Rajkot - 360005, Gujarat, India', ENT_QUOTES, 'UTF-8');
+$bizAddrRaw = trim((string)($settingsMap['biz_address'] ?? '150ft Ring Road, Rajkot - 360005, Gujarat, India'));
+$bizAddr = htmlspecialchars($bizAddrRaw, ENT_QUOTES, 'UTF-8');
+$mapQuery = trim(($settingsMap['biz_name'] ?? 'RCS Graphic') . ' ' . ($bizAddrRaw ?: 'Rajkot Gujarat'));
+$mapsSearchUrl = 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($mapQuery);
+$mapsEmbedUrl = 'https://maps.google.com/maps?q=' . rawurlencode($mapQuery) . '&output=embed';
 $waText = rawurlencode('Hello RCS Print, I need help with a printing requirement.');
+$contactFaqs = [];
+try { $contactFaqs = \Faq\FaqManager::listByPage('contact'); } catch (\Throwable) { $contactFaqs = []; }
+if (!$contactFaqs) {
+    $contactFaqs = [
+        ['question' => 'What is your minimum order quantity?', 'answer' => 'Minimum quantity depends on the product, material and print process. Share your requirement and our team will guide you.'],
+        ['question' => 'How long does delivery take?', 'answer' => 'Delivery time depends on artwork approval, product type, quantity, finishing and location.'],
+        ['question' => 'Do you offer design support?', 'answer' => 'Yes, we can help with design guidance and artwork preparation for many print products.'],
+        ['question' => 'Can I get a sample before placing a bulk order?', 'answer' => 'For selected products and bulk requirements, sample or proof options can be discussed with our team.'],
+    ];
+}
+$pageSchema = [[
+    '@context' => 'https://schema.org',
+    '@type' => 'FAQPage',
+    'mainEntity' => array_map(static fn($faq) => [
+        '@type' => 'Question',
+        'name' => (string)($faq['question'] ?? ''),
+        'acceptedAnswer' => ['@type' => 'Answer', 'text' => strip_tags((string)($faq['answer'] ?? ''))],
+    ], $contactFaqs),
+]];
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
 ?>
 <main class="contact-showcase-page">
-  <section class="contact-showcase-hero">
-    <div class="contact-showcase-container contact-hero-grid">
-      <div class="contact-hero-copy">
-        <h1>Contact Us</h1>
-        <h2>We’d love to hear from you!</h2>
-        <p>Have a question, need a quote, or want to discuss your printing needs? Our team is here to help you every step of the way.</p>
-        <div class="contact-hero-features" aria-label="Contact support highlights">
-          <div><i class="fa-solid fa-headset" aria-hidden="true"></i><span><strong>Quick Response</strong><small>We reply within 24 hours</small></span></div>
-          <div><i class="fa-solid fa-shield-heart" aria-hidden="true"></i><span><strong>Trusted Support</strong><small>We’re here to help</small></span></div>
-          <div><i class="fa-regular fa-thumbs-up" aria-hidden="true"></i><span><strong>100% Satisfaction</strong><small>Your happiness matters</small></span></div>
-        </div>
-      </div>
-      <div class="contact-hero-visual" aria-label="RCS Print contact visual">
-        <div class="contact-hero-paper">
-          <strong><span class="rcs-word"><span>R</span><span>C</span><span>S</span></span></strong>
-          <small>PRINT</small>
-          <em>Your Brand<br>Our Passion<br>Perfect Impact</em>
-        </div>
-        <div class="contact-hero-plant" aria-hidden="true"><span></span></div>
-      </div>
-    </div>
-  </section>
+  <?php
+  $pageHero = [
+    'key' => 'contact',
+    'title' => 'Contact Us',
+    'subtitle' => 'Have a question, need a quote, or want to discuss your printing needs? Our team is here to help.',
+    'eyebrow' => 'We’d Love to Hear From You',
+    'breadcrumbs' => [
+      ['label' => 'Home', 'url' => '/'],
+      ['label' => 'Contact', 'url' => null],
+    ],
+    'fallback_image' => '/assets/images/sample-products/stationery/stationery-1.svg',
+  ];
+  include INCLUDE_PATH . '/partials/page-hero.php';
+  ?>
 
   <section class="contact-main-section">
     <div class="contact-showcase-container contact-main-grid">
@@ -80,21 +95,25 @@ $waText = rawurlencode('Hello RCS Print, I need help with a printing requirement
     <div class="contact-showcase-container">
       <div class="contact-section-title">
         <h2>Our Location</h2>
-        <a href="https://www.google.com/maps/search/?api=1&query=<?= rawurlencode($settingsMap['biz_address'] ?? 'Rajkot Gujarat') ?>" target="_blank" rel="noopener"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Get Directions</a>
+        <a href="<?= htmlspecialchars($mapsSearchUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Get Directions</a>
       </div>
       <div class="contact-map-card">
+        <iframe class="contact-map-embed"
+                src="<?= htmlspecialchars($mapsEmbedUrl, ENT_QUOTES, 'UTF-8') ?>"
+                title="<?= $bizName ?> location map"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                allowfullscreen></iframe>
         <div class="contact-map-info">
           <h3><?= $bizName ?></h3>
           <p><?= $bizAddr ?></p>
           <ul>
-            <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Landmark: Near Crystal Mall</li>
             <li><i class="fa-solid fa-phone" aria-hidden="true"></i> Phone: <?= $bizPhone ?></li>
             <li><i class="fa-solid fa-envelope" aria-hidden="true"></i> Email: <?= $bizEmail ?></li>
             <li><i class="fa-solid fa-clock" aria-hidden="true"></i> Mon - Sat: 10:00 AM - 7:00 PM</li>
           </ul>
-          <a href="https://www.google.com/maps/search/?api=1&query=<?= rawurlencode($settingsMap['biz_address'] ?? 'Rajkot Gujarat') ?>" target="_blank" rel="noopener">View on Google Maps</a>
+          <a href="<?= htmlspecialchars($mapsSearchUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">View on Google Maps</a>
         </div>
-        <div class="contact-map-pin" aria-hidden="true"><i class="fa-solid fa-location-dot"></i><span>Rajkot</span></div>
       </div>
     </div>
   </section>
@@ -107,10 +126,9 @@ $waText = rawurlencode('Hello RCS Print, I need help with a printing requirement
           <a href="/contact">View All FAQs</a>
         </div>
         <div class="contact-showcase-faqs">
-          <details><summary>What is your minimum order quantity?</summary><p>Minimum quantity depends on the product, material and print process. Share your requirement and our team will guide you.</p></details>
-          <details><summary>How long does delivery take?</summary><p>Delivery time depends on artwork approval, product type, quantity, finishing and location.</p></details>
-          <details><summary>Do you offer design support?</summary><p>Yes, we can help with design guidance and artwork preparation for many print products.</p></details>
-          <details><summary>Can I get a sample before placing a bulk order?</summary><p>For selected products and bulk requirements, sample or proof options can be discussed with our team.</p></details>
+          <?php foreach ($contactFaqs as $idx => $faq): ?>
+            <details <?= $idx === 0 ? 'open' : '' ?>><summary><?= htmlspecialchars((string)($faq['question'] ?? ''), ENT_QUOTES, 'UTF-8') ?></summary><p><?= nl2br(htmlspecialchars((string)($faq['answer'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></p></details>
+          <?php endforeach; ?>
         </div>
       </div>
       <aside class="contact-design-offer">
@@ -144,17 +162,8 @@ $waText = rawurlencode('Hello RCS Print, I need help with a printing requirement
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.msg || 'Could not submit enquiry.');
-      if (msg) { msg.textContent = json.msg || 'Thank you! Our team will contact you soon.'; msg.classList.add('ok'); }
-      const lines = [
-        'Hello <?= $bizName ?>, I want to discuss a print requirement.',
-        'Name: ' + (data.get('name') || '-'),
-        'Email: ' + (data.get('email') || '-'),
-        'Phone: ' + (data.get('phone') || '-'),
-        'Subject: ' + (data.get('subject') || '-'),
-        'Message: ' + (data.get('message') || '-')
-      ];
+      if (msg) { msg.textContent = json.msg || 'Thank you! Your enquiry has been saved. Our team will contact you soon.'; msg.classList.add('ok'); }
       form.reset();
-      window.setTimeout(() => window.open('https://wa.me/<?= $bizWa ?>?text=' + encodeURIComponent(lines.join('\n')), '_blank', 'noopener'), 350);
     } catch (err) {
       if (msg) { msg.textContent = err.message || 'Could not submit enquiry.'; msg.classList.add('bad'); }
     } finally {

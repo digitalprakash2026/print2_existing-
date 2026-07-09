@@ -8,6 +8,7 @@ include __DIR__ . '/layout.php';
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap">
   <div id="prodCount" style="font-size:13px;color:var(--text2)">Loading…</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button type="button" class="btn btn-outline btn-sm" onclick="exportProductsCsv()">⬇ Export CSV</button>
     <a href="/admin/categories" class="btn btn-outline btn-sm">Manage Categories</a>
     <a href="/admin/products/new" class="btn btn-blue btn-sm">+ Add Product</a>
   </div>
@@ -97,6 +98,11 @@ async function deleteProd(id, name) {
   else toast(res.msg || 'Failed', 'error');
 }
 
+function exportProductsCsv() {
+  const rows = [['Product Code','Name','Category','Status','Min Price','Design Fee']].concat(allProds.map(p=>[p.product_code||'',p.name||'',p.category_name||'',p.is_active?'Active':'Inactive',p.min_price||0,p.design_fee||0]));
+  const csv = '\ufeff' + rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'})); a.download = 'products.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
 function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function toast(msg, type='info') {
   const w=document.getElementById('tw'); const t=document.createElement('div');

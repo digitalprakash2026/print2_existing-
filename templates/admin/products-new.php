@@ -25,6 +25,7 @@ $editId = (int)($_GET['id'] ?? 0);
     <div class="fg"><label>Original Price / MRP (₹)</label><input type="number" min="0" step="0.01" class="fi" id="ep-original-price" placeholder="Optional, for discount badge"></div>
   </div>
   <div class="fg"><label>Status</label><select class="fi fi-sel" id="ep-active"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+  <div class="fg"><label>Business / Sector Collections</label><div id="ep-business-needs" class="product-sector-picker"></div><div style="font-size:12px;color:var(--text3);margin-top:6px">Select sectors where this product should appear, e.g. Education, Healthcare, Retail.</div></div>
   <div class="fg"><label>Description</label><textarea class="fi" id="ep-desc" style="height:84px"></textarea></div>
   <div class="fg"><label>Specifications (Label: Value per line)</label><textarea class="fi" id="ep-specs" style="height:96px"></textarea></div>
 
@@ -65,6 +66,7 @@ let currentImages = [];
 let pendingImages = [];
 let autoCodePreview = '';
 let productFilters = {};
+let businessNeeds = [];
 
 function renderPreview(images = currentImages, newImages = pendingImages) {
   const box = document.getElementById('imagePreview');
@@ -86,11 +88,11 @@ function renderPreview(images = currentImages, newImages = pendingImages) {
     const deleteButton = (!img.isNew && img.id > 0)
       ? `<button type="button" class="btn btn-red btn-xs" onclick="deleteProductImage(${img.id})" style="width:100%;justify-content:center">🗑️ Delete image</button>`
       : (img.isNew
-        ? '<div style="font-size:11px;color:var(--green);font-weight:800">Will upload on save</div>'
+        ? '<div style="font-size:11px;color:var(--green);font-weight:700">Will upload on save</div>'
         : '<button type="button" class="btn btn-red btn-xs" onclick="deleteLegacyProductImage()" style="width:100%;justify-content:center">🗑️ Clear main image</button>');
     div.innerHTML = `
       <img src="${escAttr(img.path)}" style="width:100%;height:88px;object-fit:cover;border-radius:8px;border:1px solid var(--border)" onerror="this.style.display='none'">
-      <div style="font-size:11px;color:${img.isPrimary ? 'var(--blue)' : 'var(--text2)'};font-weight:800">${badge}</div>
+      <div style="font-size:11px;color:${img.isPrimary ? 'var(--blue)' : 'var(--text2)'};font-weight:700">${badge}</div>
       ${deleteButton}
     `;
     box.appendChild(div);
@@ -128,7 +130,7 @@ function renderProductFilters(selected = {}) {
   box.innerHTML = groups.map(group => {
     const opts = group.options || [];
     return `<div style="border:1px solid var(--border);border-radius:12px;background:#fff;padding:12px">
-      <div style="font-size:13px;font-weight:900;color:var(--text);margin-bottom:9px">${escH(group.label || group.slug)}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:9px">${escH(group.label || group.slug)}</div>
       <div style="display:grid;gap:8px">
         ${opts.map(opt => {
           const checked = (selected[group.slug] || []).includes(opt.slug) ? 'checked' : '';
@@ -153,12 +155,29 @@ function collectProductFilters() {
   return out;
 }
 
+function renderBusinessNeeds(selected = []) {
+  const box = document.getElementById('ep-business-needs');
+  if (!box) return;
+  const selectedSet = new Set((selected || []).map(Number));
+  if (!businessNeeds.length) {
+    box.innerHTML = '<div style="padding:12px;border:1px dashed var(--border);border-radius:10px;color:var(--text2);background:#fff;font-size:12px">No business sectors yet. Create sectors from Admin → Business Needs.</div>';
+    return;
+  }
+  box.innerHTML = businessNeeds.map(need => `<label class="product-sector-choice"><input type="checkbox" class="ep-business-check" value="${Number(need.id)}" ${selectedSet.has(Number(need.id)) ? 'checked' : ''}><span><b>${escH(need.icon || '🏢')} ${escH(need.name)}</b><small>${escH(need.description || 'Sector collection')}</small></span></label>`).join('');
+}
+function collectBusinessNeeds() {
+  return [...document.querySelectorAll('.ep-business-check:checked')].map(input => Number(input.value)).filter(Boolean);
+}
+
 async function boot() {
   const catsRes = await fetch('/admin/api/categories').then(r=>r.json());
   allCats = catsRes.categories || [];
   const filtersRes = await fetch('/admin/api/product-filters').then(r=>r.json()).catch(()=>({filters:{}}));
   productFilters = filtersRes.filters || {};
+  const needsRes = await fetch('/admin/api/business-needs').then(r=>r.json()).catch(()=>({needs:[]}));
+  businessNeeds = needsRes.needs || [];
   renderProductFilters();
+  renderBusinessNeeds();
   document.getElementById('ep-cat').innerHTML = allCats.map(c=>`<option value="${c.id}">${escH(c.name)}</option>`).join('');
   document.getElementById('ep-cat').addEventListener('change', updateCatPrefixHint);
   document.getElementById('ep-code').addEventListener('input', updateCodeHelp);
@@ -187,6 +206,7 @@ async function boot() {
   document.getElementById('ep-desc').value = p.description || '';
   document.getElementById('ep-specs').value = (p.specs||[]).map(s=>`${s.label}: ${s.value||''}`).join('\n');
   renderProductFilters(p.filter_options || {});
+  renderBusinessNeeds(p.business_need_ids || []);
 
   currentImages = p.images || (p.image_path ? [{image_path:p.image_path, is_primary: 1}] : []);
   pendingImages = [];
@@ -315,6 +335,7 @@ async function saveProd() {
     specs,
     quantity_tiers: tierCheck.tiers,
     filter_options: collectProductFilters(),
+    business_need_ids: collectBusinessNeeds(),
   };
 
   const saveBtn = document.getElementById('saveBtn');

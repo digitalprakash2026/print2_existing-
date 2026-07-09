@@ -6,7 +6,7 @@
  * FIX: design fee from admin settings
  * IMPROVEMENT: larger title, better spacing, related products with CTA
  */
-$pageTitle = htmlspecialchars($product['name']) . ' — RCS Graphic';
+$pageTitle = trim((string)($product['meta_title'] ?? '')) ?: ((string)($product['name'] ?? 'Product') . ' Printing — RCS Graphic');
 $settingsMap = [];
 try {
     $settings    = Database::rows("SELECT `key`, value FROM settings");
@@ -15,10 +15,6 @@ try {
 
 // Design fee from admin settings (Admin → Settings → design_fee)
 $designFee = (float)($product['design_fee'] ?? ($settingsMap['design_fee'] ?? 0));
-
-include INCLUDE_PATH . '/partials/head.php';
-include INCLUDE_PATH . '/partials/header.php';
-// Note: cart-drawer is already included by header.php — do NOT include again
 
 // Gallery
 $imgs       = $product['images'] ?? [];
@@ -81,6 +77,59 @@ if ($reviewCount === 0 && !empty($productReviews)) {
 }
 $reviewStarCount = $reviewCount > 0 ? max(1, min(5, (int)round($reviewAverage))) : 0;
 $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $reviewStarCount);
+$productFaqs = [];
+try { $productFaqs = \Faq\FaqManager::listByPage('product_detail'); } catch (\Throwable) { $productFaqs = []; }
+if (!$productFaqs) {
+    $productFaqs = [
+        ['question' => 'Can I upload my own design?', 'answer' => 'Yes, you can upload PDF, AI, PSD, PNG, JPG and other supported artwork files up to 50MB.'],
+        ['question' => 'Can RCS Graphic create the design for me?', 'answer' => 'Yes, select the free design option and our team will connect with you for the design brief and confirmation.'],
+        ['question' => 'How long does delivery take?', 'answer' => 'Standard delivery usually takes 3 - 5 working days after artwork and order confirmation.'],
+    ];
+}
+$productDescription = trim(strip_tags((string)($product['description'] ?? '')));
+$pageDesc = trim((string)($product['meta_description'] ?? '')) ?: ($productDescription !== '' ? (function_exists('mb_substr') ? mb_substr($productDescription, 0, 155) : substr($productDescription, 0, 155)) : ('Order ' . (string)($product['name'] ?? 'printing products') . ' online from RCS Graphic with premium quality printing and support.'));
+$pageImage = $primaryImg;
+$pageOgType = 'product';
+$productSchema = [
+    '@context' => 'https://schema.org',
+    '@type' => 'Product',
+    'name' => (string)($product['name'] ?? 'Product'),
+    'description' => $pageDesc,
+    'image' => preg_match('#^https?://#i', $primaryImg) ? $primaryImg : ((defined('APP_URL') ? rtrim((string)APP_URL, '/') : '') . '/' . ltrim($primaryImg, '/')),
+    'brand' => ['@type' => 'Brand', 'name' => 'RCS Graphic'],
+    'sku' => $productCode !== '' ? $productCode : (string)($product['id'] ?? ''),
+];
+if ($startingPrice > 0) {
+    $productSchema['offers'] = [
+        '@type' => 'Offer',
+        'url' => (defined('APP_URL') ? rtrim((string)APP_URL, '/') : '') . '/product/' . rawurlencode((string)($product['slug'] ?? '')),
+        'priceCurrency' => 'INR',
+        'price' => number_format($startingPrice, 2, '.', ''),
+        'availability' => 'https://schema.org/InStock',
+    ];
+}
+if ($reviewCount > 0 && $reviewAverage > 0) {
+    $productSchema['aggregateRating'] = [
+        '@type' => 'AggregateRating',
+        'ratingValue' => number_format($reviewAverage, 1, '.', ''),
+        'reviewCount' => $reviewCount,
+    ];
+}
+$pageSchema = [$productSchema];
+if (!empty($productFaqs)) {
+    $pageSchema[] = [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => array_map(static fn($faq) => [
+            '@type' => 'Question',
+            'name' => (string)($faq['question'] ?? ''),
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => strip_tags((string)($faq['answer'] ?? ''))],
+        ], $productFaqs),
+    ];
+}
+include INCLUDE_PATH . '/partials/head.php';
+include INCLUDE_PATH . '/partials/header.php';
+// Note: cart-drawer is already included by header.php — do NOT include again
 ?>
 
 <div class="pd-page-wrap">
@@ -250,6 +299,13 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
                 <div class="design-opt-title">Upload File</div>
                 <div class="design-opt-copy">PDF, AI, PSD, PNG, JPG (Max 50MB)</div>
               </div>
+              <label class="design-later-check" onclick="event.stopPropagation()">
+                <input type="checkbox" id="uploadLaterCheck" onchange="toggleUploadLater(this.checked)">
+                <span>I will Upload Design Later</span>
+              </label>
+              <div class="design-later-note" id="uploadLaterNote" hidden>
+                No problem. Your order will be saved as <strong>Customer Upload</strong>, and you can upload the design later from <strong>My Account &gt; My Orders</strong>.
+              </div>
               <div id="uploadPreview"></div>
             </div>
           </div>
@@ -349,18 +405,12 @@ $reviewStars = str_repeat('★', $reviewStarCount) . str_repeat('☆', 5 - $revi
           <div class="pd-tab-panel" id="pd-panel-faqs" role="tabpanel" aria-labelledby="pd-tab-faqs" data-tab-panel="faqs" hidden>
             <h2>FAQs</h2>
             <div class="pd-faq-list">
-              <details open>
-                <summary>Can I upload my own design?</summary>
-                <p>Yes, you can upload PDF, AI, PSD, PNG, JPG and other supported artwork files up to 50MB.</p>
+              <?php foreach ($productFaqs as $idx => $faq): ?>
+              <details <?= $idx === 0 ? 'open' : '' ?>>
+                <summary><?= htmlspecialchars((string)($faq['question'] ?? ''), ENT_QUOTES, 'UTF-8') ?></summary>
+                <p><?= nl2br(htmlspecialchars((string)($faq['answer'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></p>
               </details>
-              <details>
-                <summary>Can RCS Graphic create the design for me?</summary>
-                <p>Yes, select the free design option and our team will connect with you for the design brief and confirmation.</p>
-              </details>
-              <details>
-                <summary>How long does delivery take?</summary>
-                <p>Standard delivery usually takes 3 - 5 working days after artwork and order confirmation.</p>
-              </details>
+              <?php endforeach; ?>
             </div>
           </div>
         </div>
@@ -454,6 +504,14 @@ const CSRF        = '<?= htmlspecialchars($csrf ?? '') ?>';
 const IS_LOGGED_IN = <?= ($user ?? null) ? 'true' : 'false' ?>;
 const QUALITIES   = <?= json_encode($qualities) ?>;
 const DESIGN_FEE  = <?= (float)$designFee ?>;
+const PRODUCT_SLUG = <?= json_encode((string)($product['slug'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+
+try {
+  const key = 'rcs_recent_products';
+  const current = { id: Number(PRODUCT_ID), slug: PRODUCT_SLUG, name: PRODUCT_NAME, at: Date.now() };
+  const list = JSON.parse(localStorage.getItem(key) || '[]').filter((item) => Number(item?.id) !== current.id);
+  localStorage.setItem(key, JSON.stringify([current, ...list].slice(0, 12)));
+} catch (e) {}
 
 // ── State ──────────────────────────────────────────────────────
 let selectedQualityId  = <?= $qualities ? (int)$qualities[0]['id'] : 1 ?>;
@@ -467,6 +525,7 @@ let selectedQty        = null;
 let artworkId          = null;
 let uploadedFileName   = null;
 let designChoice       = 'upload';
+let uploadDesignLater  = false;
 let currentBasePrice   = 0;
 
 function refreshOrderReadiness() {
@@ -603,6 +662,7 @@ function calcPrice() {
 // Design Option
 function selDesignOpt(choice) {
   designChoice = choice === 'rcs' ? 'rcs' : 'upload';
+  if (designChoice === 'rcs' && uploadDesignLater) toggleUploadLater(false);
   const uploadOpt = document.getElementById('dopt-upload');
   const rcsOpt = document.getElementById('dopt-rcs');
   const uploadPanel = document.getElementById('panel-upload');
@@ -635,6 +695,8 @@ async function processFile(file) {
     toast('File too large. Max 50MB', 'error');
     return;
   }
+
+  if (uploadDesignLater) toggleUploadLater(false);
 
   const fd = new FormData();
   fd.append('artwork', file);
@@ -678,6 +740,24 @@ function removeFile() {
   document.getElementById('artworkFile').value = '';
 }
 
+function toggleUploadLater(checked) {
+  uploadDesignLater = !!checked;
+  const checkbox = document.getElementById('uploadLaterCheck');
+  const note = document.getElementById('uploadLaterNote');
+  const zone = document.getElementById('uploadZone');
+  if (checkbox) checkbox.checked = uploadDesignLater;
+  if (note) note.hidden = !uploadDesignLater;
+  if (zone) zone.classList.toggle('is-muted', uploadDesignLater);
+  if (uploadDesignLater) {
+    selDesignOpt('upload');
+    artworkId = null;
+    uploadedFileName = null;
+    document.getElementById('uploadPreview').innerHTML = '';
+    document.getElementById('artworkFile').value = '';
+    toast('You can upload your design later from My Account after placing the order.', 'info');
+  }
+}
+
 // Add to Cart
 async function addToCart(opts = {}) {
   const v = validateOrder();
@@ -704,9 +784,9 @@ async function addToCart(opts = {}) {
         quantity: selectedQty,
         attribute_selections: {},
         design_choice: designChoice,
-        design_brief: '',
-        notes: '',
-        artwork_id: artworkId
+        design_brief: uploadDesignLater ? 'Customer selected: I will upload design later.' : '',
+        notes: uploadDesignLater ? 'User will upload design later from My Account order detail.' : '',
+        artwork_id: uploadDesignLater ? null : artworkId
       })
     });
 
