@@ -59,6 +59,7 @@ include __DIR__ . '/layout.php';
 <script>
 let CRM_CUSTOMERS = [];
 let CRM_FILTER = 'all';
+let CRM_TEMPLATES = {};
 const CRM_WA = '<?= htmlspecialchars($bizSettings['biz_whatsapp'] ?? '') ?>';
 const money = n => '₹' + Number(n || 0).toLocaleString('en-IN');
 const escH = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -80,6 +81,12 @@ const colorFor = name => {
   return colors[Math.abs(h) % colors.length];
 };
 
+async function loadCustomerTemplates() {
+  try {
+    const res = await fetch('/admin/api/whatsapp-templates', {credentials:'same-origin'}).then(r=>r.json());
+    (res.templates || []).forEach(t => { CRM_TEMPLATES[t.template_key] = t.body || ''; });
+  } catch (e) {}
+}
 async function loadCustomers() {
   const res = await fetch('/admin/api/customers', {credentials:'same-origin'}).then(r=>r.json());
   CRM_CUSTOMERS = res.customers || [];
@@ -148,13 +155,14 @@ function renderCustomers() {
     return `<article class="crm-card crm-card--${tone}">
       <button class="crm-card-main" type="button" onclick="openCustomerDrawer(${Number(c.id)})">
         <span class="crm-avatar" style="background:${colorFor(c.name)}">${escH(initials(c.name))}</span>
-        <span class="crm-info"><strong>${escH(c.name || 'Customer')}</strong><small>${escH(c.company || c.email || 'No company')}</small><em>${escH(c.phone || '-')} ${c.email ? '· ' + escH(c.email) : ''}</em></span>
+        <span class="crm-info"><strong>${escH(c.name || 'Customer')}</strong><small>${escH(c.customer_code || 'Customer ID pending')} · ${escH(c.company || c.email || 'No company')}</small><em>${escH(c.phone || '-')} ${c.email ? '· ' + escH(c.email) : ''}</em></span>
         <span class="crm-value"><b>${money(c.total_spent)}</b><small>${Number(c.order_count||0)} order(s)</small></span>
       </button>
       <div class="crm-card-meta"><span class="crm-pill crm-pill--${tone}">${label}</span><span>${escH(rel(c.last_order_at))}</span><span>${escH(upsellText(c))}</span></div>
       <div class="crm-card-actions">
-        <button type="button" onclick="sendWa(${Number(c.id)}, 'reorder')">💬 WA</button>
+        <button type="button" onclick="openCustomerChat(${Number(c.id)})">💬 WA</button>
         <a href="tel:${phone}">📞 Call</a>
+        <button type="button" class="crm-danger" onclick="deleteCustomer(${Number(c.id)})">🗑 Delete</button>
         <a href="/admin/orders?search=${encodeURIComponent(c.phone || c.email || c.name || '')}">📋 Orders</a>
       </div>
     </article>`;
@@ -166,29 +174,53 @@ function openCustomerDrawer(id) {
   const recent = c.recent_orders || [];
   document.getElementById('crmDrawerBody').innerHTML = `<div class="crm-drawer-head"><span class="crm-avatar crm-avatar--lg" style="background:${colorFor(c.name)}">${escH(initials(c.name))}</span><div><h2>${escH(c.name || 'Customer')}</h2><p>${escH(c.company || 'No company added')}</p></div></div>
   <div class="crm-drawer-grid"><article><span>Total Spent</span><strong>${money(c.total_spent)}</strong></article><article><span>Orders</span><strong>${Number(c.order_count||0)}</strong></article><article><span>Avg Order</span><strong>${money(c.avg_order_value)}</strong></article><article><span>Last Order</span><strong>${escH(rel(c.last_order_at))}</strong></article></div>
-  <section class="crm-drawer-section"><h3>Contact</h3><p>${escH(c.phone || '-')}<br>${escH(c.email || '-')}</p><div class="crm-drawer-actions"><button onclick="sendWa(${Number(c.id)}, 'reorder')">Reorder WhatsApp</button><button onclick="sendWa(${Number(c.id)}, 'upsell')">Upsell Message</button><a href="/admin/orders?search=${encodeURIComponent(c.phone || c.email || c.name || '')}">View Orders</a></div></section>
+  <section class="crm-drawer-section"><h3>Contact</h3><p><b>${escH(c.customer_code || 'Customer ID pending')}</b><br>${escH(c.phone || '-')}<br>${escH(c.email || '-')}</p><div class="crm-drawer-actions"><button onclick="openCustomerChat(${Number(c.id)})">Open WhatsApp</button><button onclick="sendWa(${Number(c.id)}, 'reorder')">Reorder WhatsApp</button><button onclick="sendWa(${Number(c.id)}, 'upsell')">Upsell Message</button><a href="/admin/orders?search=${encodeURIComponent(c.phone || c.email || c.name || '')}">View Orders</a><button class="crm-danger" onclick="deleteCustomer(${Number(c.id)})">Delete Customer</button></div></section>
   <section class="crm-drawer-section"><h3>Sales Insight</h3><p><b>${escH(upsellText(c))}</b><br>Last product: ${escH(c.last_product || 'No product yet')}<br>Joined: ${escH(dt(c.created_at))}</p></section>
   <section class="crm-drawer-section"><h3>Recent Orders</h3>${recent.length ? recent.map(o=>`<a class="crm-order-row" href="/admin/orders?search=${encodeURIComponent(o.order_id)}"><span>#${escH(o.order_id)}</span><b>${money(o.total_amount)}</b><em>${escH(o.status)}</em></a>`).join('') : '<p>No orders yet. Send a first-order offer.</p>'}</section>`;
   document.getElementById('crmDrawer').classList.add('open');
   document.getElementById('crmDrawer').setAttribute('aria-hidden','false');
 }
 function closeCustomerDrawer(){ document.getElementById('crmDrawer').classList.remove('open'); document.getElementById('crmDrawer').setAttribute('aria-hidden','true'); }
+function fillCrmTemplate(body, c, type) {
+  const data = {
+    customer_name: c.name || 'Customer', customer_phone: c.phone || '', customer_email: c.email || '', customer_code: c.customer_code || '',
+    order_count: String(c.order_count || 0), last_product: c.last_product || 'No previous product', suggestion: upsellText(c).replace('Upsell: ', '').replace('Suggest: ', ''),
+    business_name: 'RCS Graphic', business_phone: CRM_WA, business_whatsapp: CRM_WA
+  };
+  return String(body || '').replace(/\{([a-z0-9_]+)\}/gi, (_, key) => Object.prototype.hasOwnProperty.call(data, key) ? data[key] : `{${key}}`);
+}
+function openCustomerChat(id) {
+  const c = CRM_CUSTOMERS.find(x=>Number(x.id)===Number(id)); if (!c) return;
+  const phone = digits(c.phone || CRM_WA); if (!phone) return alert('Phone number not available');
+  window.open(`https://wa.me/${phone}`, '_blank');
+}
 function sendWa(id, type) {
   const c = CRM_CUSTOMERS.find(x=>Number(x.id)===Number(id)); if (!c) return;
   const phone = digits(c.phone || CRM_WA); if (!phone) return alert('Phone number not available');
-  const name = (c.name || 'Customer').split(' ')[0];
-  const msg = type === 'upsell'
-    ? `Hi ${name} ji, aapke previous order ke basis par ${upsellText(c).replace('Upsell: ','')} useful ho sakta hai. Details ke liye reply kare.`
-    : Number(c.order_count||0) ? `Hi ${name} ji, agar aapko previous print order ka reorder chahiye to hum same details se fast process kar sakte hain.` : `Hi ${name} ji, RCS Graphic se welcome offer available hai. Aap apni print requirement share kare.`;
+  const key = type === 'upsell' ? 'customer_upsell' : (Number(c.order_count||0) ? 'customer_reorder' : 'customer_welcome');
+  const fallback = type === 'upsell'
+    ? `Hi ${(c.name || 'Customer').split(' ')[0]} ji, ${upsellText(c).replace('Upsell: ','')} useful ho sakta hai. Details ke liye reply kare.`
+    : `Hi ${(c.name || 'Customer').split(' ')[0]} ji, agar aapko print order/reorder chahiye to hum fast process kar sakte hain.`;
+  const msg = fillCrmTemplate(CRM_TEMPLATES[key] || fallback, c, type);
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
+async function deleteCustomer(id) {
+  const c = CRM_CUSTOMERS.find(x=>Number(x.id)===Number(id));
+  if (!confirm(`Delete/deactivate customer ${c?.name || '#' + id}?`)) return;
+  const res = await fetch(`/admin/api/customers/${id}`, {method:'DELETE', credentials:'same-origin'}).then(r=>r.json());
+  if (!res.ok) return alert(res.msg || 'Could not delete customer');
+  CRM_CUSTOMERS = CRM_CUSTOMERS.filter(x => Number(x.id) !== Number(id));
+  closeCustomerDrawer();
+  renderStats(buildSummary(CRM_CUSTOMERS));
+  renderCustomers();
+}
 function exportCustomerCsv() {
-  const rows = [['Name','Phone','Email','Company','Orders','Total Spent','Last Order']].concat(filteredCustomers().map(c=>[c.name,c.phone,c.email,c.company,c.order_count,c.total_spent,c.last_order_at]));
-  const csv = rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const rows = [['Customer ID','Name','Phone','Email','Company','Orders','Total Spent','Last Order']].concat(filteredCustomers().map(c=>[c.customer_code,c.name,c.phone,c.email,c.company,c.order_count,c.total_spent,c.last_order_at]));
+  const csv = '\ufeff' + rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = 'customers.csv'; a.click(); URL.revokeObjectURL(a.href);
 }
 document.querySelectorAll('.crm-tabs button').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.crm-tabs button').forEach(b=>b.classList.remove('act')); btn.classList.add('act'); CRM_FILTER = btn.dataset.filter || 'all'; renderCustomers(); }));
 document.getElementById('crmSearch').addEventListener('input', renderCustomers);
 document.getElementById('crmSort').addEventListener('change', renderCustomers);
-loadCustomers();
+(async()=>{ await loadCustomerTemplates(); await loadCustomers(); })();
 </script>
