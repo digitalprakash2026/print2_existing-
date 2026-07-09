@@ -79,8 +79,10 @@ $designApprovalLabels = ['pending_review'=>'Pending Review','issue_found'=>'Issu
         <?php endforeach; ?>
       </div>
       <div style="display:flex;gap:7px">
-        <?php if (in_array($order['payment_status'], ['paid'])): ?>
+        <?php if (in_array($order['payment_status'], ['paid']) && !empty($order['invoice_file_path'])): ?>
         <a href="/invoice/<?= htmlspecialchars($order['order_id']) ?>" class="btn btn-outline btn-xs" target="_blank">🧾 Invoice</a>
+        <?php elseif (in_array($order['payment_status'], ['paid'])): ?>
+        <span class="btn btn-outline btn-xs" style="opacity:.65;pointer-events:none">🧾 Invoice Soon</span>
         <?php endif; ?>
         <?php if ($order['payment_id']): ?>
         <button class="btn btn-outline btn-xs" onclick="alert('Payment ID:\n<?= htmlspecialchars($order['payment_id']) ?>')">🆔 PID</button>

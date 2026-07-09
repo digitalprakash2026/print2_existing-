@@ -453,6 +453,7 @@ function initBannerSlider(id = 'bannerSlider') {
 
   let cur = 0;
   let timer = null;
+  const intervalMs = Math.max(2000, Number(wrap.dataset.slideInterval || 3000));
 
   function goTo(n) {
     slides[cur].classList.remove('active');
@@ -467,7 +468,7 @@ function initBannerSlider(id = 'bannerSlider') {
 
   function startTimer() {
     if (timer) clearInterval(timer);
-    if (slides.length > 1) timer = setInterval(next, 3000);
+    if (slides.length > 1) timer = setInterval(next, intervalMs);
   }
 
   // Init

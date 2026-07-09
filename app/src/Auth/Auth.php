@@ -13,6 +13,7 @@ class Auth
 {
     private static ?bool $hasProfileColumns = null;
     private static ?bool $hasShippingColumns = null;
+    private static ?bool $hasCustomerCodeColumn = null;
     // ══════════════════════════════════════════════════════════
     //  USER AUTH
     // ══════════════════════════════════════════════════════════
@@ -55,6 +56,7 @@ class Auth
 
     public static function register(array $data): array
     {
+        self::ensureCustomerCodeSchema();
         $errors = self::validateRegister($data);
         if ($errors) return ['ok' => false, 'msg' => implode(', ', $errors)];
 
@@ -64,6 +66,7 @@ class Auth
         );
         if ($exists) return ['ok' => false, 'msg' => 'Email or phone already registered.'];
 
+        $customerCode = self::generateCustomerCode((string)($data['name'] ?? ''));
         $id = \Database::insert(
             "INSERT INTO users (name, email, phone, company, password, marketing_consent, created_at)
              VALUES (?, ?, ?, ?, ?, ?, NOW())",
@@ -76,6 +79,7 @@ class Auth
                 (int)($data['marketing_consent'] ?? 0),
             ]
         );
+        self::assignCustomerCode((int)$id, $customerCode, (string)($data['name'] ?? ''));
 
         $user = \Database::row("SELECT * FROM users WHERE id = ?", [$id]);
         $_SESSION['user'] = self::publicUser($user);
@@ -302,6 +306,7 @@ class Auth
      */
     public static function ensureCheckoutUser(array $customer): array
     {
+        self::ensureCustomerCodeSchema();
         if (self::check()) {
             return ['ok' => true, 'user' => self::user()];
         }
@@ -335,6 +340,7 @@ class Auth
                 password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT, ['cost' => 10]),
             ]
         );
+        self::assignCustomerCode((int)$id, self::generateCustomerCode($name), $name);
 
         $user = \Database::row("SELECT * FROM users WHERE id = ?", [$id]);
         $_SESSION['user'] = self::publicUser($user);
@@ -429,8 +435,9 @@ class Auth
     public static function admin(): ?array  { return $_SESSION['admin'] ?? null; }
     public static function isSuperAdmin(): bool
     {
-        $role = strtolower((string)($_SESSION['admin']['role'] ?? ''));
-        return in_array($role, ['super','super_admin','super-admin','owner'], true);
+        $role = strtolower(trim((string)($_SESSION['admin']['role'] ?? '')));
+        $normalizedRole = trim((string)preg_replace('/[^a-z0-9]+/', '_', $role), '_');
+        return in_array($normalizedRole, ['super','superadmin','super_admin','owner'], true);
     }
 
     public static function requireSuperAdmin(): void
@@ -596,5 +603,94 @@ class Auth
         }
 
         return self::$hasShippingColumns;
+    }
+
+    public static function ensureCustomerCodeSchema(): bool
+    {
+        if (self::$hasCustomerCodeColumn !== null) return self::$hasCustomerCodeColumn;
+        try {
+            $row = \Database::row(
+                "SELECT 1 AS ok
+                   FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'customer_code'
+                  LIMIT 1",
+                [DB_NAME]
+            );
+            if (!$row) {
+                \Database::query("ALTER TABLE users ADD COLUMN customer_code VARCHAR(20) NULL AFTER id");
+                try { \Database::query("CREATE UNIQUE INDEX idx_users_customer_code ON users (customer_code)"); } catch (\Throwable) {}
+            }
+            self::$hasCustomerCodeColumn = true;
+            self::backfillCustomerCodes();
+        } catch (\Throwable $e) {
+            error_log('Customer code schema unavailable: ' . $e->getMessage());
+            self::$hasCustomerCodeColumn = false;
+        }
+        return self::$hasCustomerCodeColumn;
+    }
+
+    public static function generateCustomerCode(string $name): string
+    {
+        $prefix = self::customerInitialPrefix($name);
+        for ($attempt = 0; $attempt < 12; $attempt++) {
+            $max = 0;
+            try {
+                $row = \Database::row(
+                    "SELECT MAX(CAST(SUBSTRING(customer_code, 3) AS UNSIGNED)) AS max_no
+                       FROM users
+                      WHERE customer_code LIKE ?",
+                    [$prefix . '%']
+                );
+                $max = (int)($row['max_no'] ?? 0);
+            } catch (\Throwable) {}
+            $candidate = $prefix . str_pad((string)($max + 1 + $attempt), 4, '0', STR_PAD_LEFT);
+            try {
+                $exists = \Database::row("SELECT id FROM users WHERE customer_code = ? LIMIT 1", [$candidate]);
+                if (!$exists) return $candidate;
+            } catch (\Throwable) {
+                return $candidate;
+            }
+        }
+        return $prefix . date('His');
+    }
+
+    private static function assignCustomerCode(int $userId, string $code, string $name): void
+    {
+        if ($userId <= 0 || !self::ensureCustomerCodeSchema()) return;
+        $candidate = $code !== '' ? $code : self::generateCustomerCode($name);
+        for ($attempt = 0; $attempt < 6; $attempt++) {
+            try {
+                \Database::query(
+                    "UPDATE users
+                        SET customer_code = ?
+                      WHERE id = ? AND (customer_code IS NULL OR customer_code = '')",
+                    [$candidate, $userId]
+                );
+                return;
+            } catch (\Throwable) {
+                $candidate = self::generateCustomerCode($name);
+            }
+        }
+    }
+
+    public static function backfillCustomerCodes(): void
+    {
+        if (self::$hasCustomerCodeColumn === false) return;
+        try {
+            $rows = \Database::rows("SELECT id, name FROM users WHERE customer_code IS NULL OR customer_code = '' ORDER BY id ASC LIMIT 500");
+            foreach ($rows as $row) {
+                self::assignCustomerCode((int)$row['id'], self::generateCustomerCode((string)($row['name'] ?? '')), (string)($row['name'] ?? ''));
+            }
+        } catch (\Throwable) {}
+    }
+
+    private static function customerInitialPrefix(string $name): string
+    {
+        $parts = preg_split('/\s+/', strtoupper(trim($name))) ?: [];
+        $first = preg_replace('/[^A-Z]/', '', (string)($parts[0] ?? ''));
+        $second = preg_replace('/[^A-Z]/', '', (string)($parts[1] ?? ''));
+        $a = $first !== '' ? $first[0] : 'C';
+        $b = $second !== '' ? $second[0] : ($first[1] ?? 'X');
+        return $a . $b;
     }
 }
