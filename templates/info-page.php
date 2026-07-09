@@ -30,18 +30,30 @@ $phoneRaw = (string)($settingsMap['biz_phone'] ?? '+91 98765 43210');
 $phone = htmlspecialchars($phoneRaw, ENT_QUOTES, 'UTF-8');
 $phoneHref = htmlspecialchars(preg_replace('/\D+/', '', $phoneRaw), ENT_QUOTES, 'UTF-8');
 $wa = htmlspecialchars((string)($settingsMap['biz_whatsapp'] ?? '919876543210'), ENT_QUOTES, 'UTF-8');
+$aboutReviews = is_array($aboutReviews ?? null) ? array_slice($aboutReviews, 0, 3) : [];
 ?>
 <main class="about-showcase-page">
+  <?php
+  $pageHero = [
+    'key' => 'about',
+    'title' => 'About RCS PRINT',
+    'subtitle' => 'Where ideas get printed to perfection with premium quality, design support and value-focused pricing.',
+    'eyebrow' => 'About Us',
+    'breadcrumbs' => [
+      ['label' => 'Home', 'url' => '/'],
+      ['label' => 'About', 'url' => null],
+    ],
+    'fallback_image' => '/assets/images/sample-products/brochures/brochures-2.svg',
+  ];
+  include INCLUDE_PATH . '/partials/page-hero.php';
+  ?>
   <section class="about-showcase-hero">
     <div class="about-showcase-container about-hero-grid">
       <div class="about-hero-copy">
-        <p class="about-kicker">About Us</p>
-        <h1>About <span class="rcs-word"><span>R</span><span>C</span><span>S</span></span> PRINT</h1>
-        <h2>Where Ideas Get <span>Printed</span> to Perfection</h2>
-        <p class="about-lead">At RCS PRINT, we transform your ideas into premium quality prints that speak for your brand. From business cards to brochures and beyond, we deliver quality you can see and feel.</p>
+        <p class="about-lead about-lead-no-repeat">At RCS PRINT, we transform your ideas into premium quality prints that speak for your brand. From business cards to brochures and beyond, we deliver quality you can see and feel. Our team supports every order with careful artwork review, practical material guidance and print-ready finishing suggestions. Whether you need corporate stationery, marketing flyers, packaging labels or bulk promotional prints, we focus on sharp details, consistent colors and a professional final result. We make the complete process simple for businesses by combining design support, reliable print production and value-focused pricing under one roof.</p>
         <div class="about-hero-features" aria-label="RCS PRINT strengths">
           <div><i class="fa-solid fa-gear" aria-hidden="true"></i><strong>Premium<br>Quality</strong></div>
-          <div><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><strong>Fast<br>Delivery</strong></div>
+          <div><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><strong>Custom Print<br>Solutions</strong></div>
           <div><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i><strong>Free Design<br>Support</strong></div>
           <div><i class="fa-solid fa-shield-heart" aria-hidden="true"></i><strong>Affordable<br>Pricing</strong></div>
         </div>
@@ -66,44 +78,42 @@ $wa = htmlspecialchars((string)($settingsMap['biz_whatsapp'] ?? '919876543210'),
   </section>
 
   <section class="about-story-section">
-    <div class="about-showcase-container about-story-grid">
-      <div class="about-story-media">
-        <div class="about-dots about-dots-left" aria-hidden="true"></div>
-        <div class="about-triangle" aria-hidden="true"></div>
-        <figure class="about-story-photo about-story-photo-large">
-          <img src="/assets/img/categories/print-category.svg" alt="Printing press and printed material" loading="lazy" decoding="async">
-        </figure>
-        <figure class="about-story-photo about-story-photo-small">
-          <img src="/assets/images/sample-products/stationery/stationery-3.svg" alt="Design desk with RCS PRINT artwork" loading="lazy" decoding="async">
-        </figure>
+    <div class="about-showcase-container about-story-grid about-story-clean-grid">
+      <div class="about-story-copy about-story-clean-copy">
+        <span class="about-story-mark" aria-hidden="true"></span>
+        <h2>Our Story</h2>
+        <p>RCS PRINT was founded with a simple goal — to deliver premium printing at affordable prices without compromising on quality.</p>
+        <p>What started as a small printing service in Rajkot has grown into a trusted brand known for reliability, creativity, and customer satisfaction.</p>
+        <p>We combine advanced technology, skilled professionals, and dedicated support to make every project a success.</p>
       </div>
-      <div class="about-story-copy">
-        <p class="about-kicker">Our Story</p>
-        <h2>The Story Behind<br><span class="rcs-word"><span>R</span><span>C</span><span>S</span></span> PRINT</h2>
-        <p>RCS PRINT was founded with a simple mission — to deliver high-quality printing solutions that help businesses grow and make a lasting impression.</p>
-        <p>With state-of-the-art technology, a passionate team, and a customer-first approach, we ensure every print we deliver reflects perfection.</p>
-        <div class="about-story-pills">
-          <div><i class="fa-solid fa-rocket" aria-hidden="true"></i><strong>Modern<br>Technology</strong></div>
-          <div><i class="fa-solid fa-people-group" aria-hidden="true"></i><strong>Expert<br>Team</strong></div>
-          <div><i class="fa-regular fa-heart" aria-hidden="true"></i><strong>Customer<br>First</strong></div>
-        </div>
+      <div class="about-story-cards" aria-label="RCS PRINT mission and vision">
+        <article class="about-story-info-card about-story-mission">
+          <i class="fa-solid fa-bullseye" aria-hidden="true"></i>
+          <div>
+            <h3>Our Mission</h3>
+            <p>To empower businesses and individuals through high-quality, innovative, and affordable printing solutions that help their brand stand out.</p>
+          </div>
+        </article>
+        <article class="about-story-info-card about-story-vision">
+          <i class="fa-regular fa-eye" aria-hidden="true"></i>
+          <div>
+            <h3>Our Vision</h3>
+            <p>To be India's most trusted online printing platform, recognized for quality, innovation, and customer delight.</p>
+          </div>
+        </article>
       </div>
     </div>
   </section>
 
-  <section class="about-choose-section">
-    <div class="about-showcase-container">
-      <div class="about-section-head">
-        <p class="about-kicker">Why Choose Us</p>
-        <h2>Quality That <span>Sets Us Apart</span></h2>
-      </div>
-      <div class="about-choose-grid">
-        <article><i class="fa-solid fa-certificate" aria-hidden="true"></i><h3>Premium Quality</h3><p>We use the best materials and latest technology to deliver flawless prints.</p></article>
-        <article><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><h3>Fast Delivery</h3><p>Quick turnaround and on-time delivery you can count on.</p></article>
-        <article><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i><h3>Free Design Support</h3><p>Our expert designers help you create the perfect design.</p></article>
-        <article><i class="fa-solid fa-circle-dollar-to-slot" aria-hidden="true"></i><h3>Affordable Pricing</h3><p>Top-notch quality at prices that fit your budget.</p></article>
-        <article><i class="fa-solid fa-headset" aria-hidden="true"></i><h3>24/7 Support</h3><p>We're always here to assist you at every step.</p></article>
-        <article><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><h3>Secure &amp; Reliable</h3><p>Your data and orders are safe with 100% confidentiality.</p></article>
+  <section class="why-print-section about-choose-section">
+    <div class="why-print-container">
+      <h2 class="why-print-heading">Why Choose <span>RCS PRINT?</span></h2>
+      <div class="why-print-panel" aria-label="Why choose RCS Print">
+        <article class="why-print-item"><div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Premium Quality</h3><p>Best quality materials and printing.</p></div></article>
+        <article class="why-print-item"><div class="why-print-icon why-print-orange"><i class="fa-regular fa-thumbs-up" aria-hidden="true"></i></div><div class="why-print-copy"><h3>100% Satisfaction</h3><p>Your happiness matters.</p></div></article>
+        <article class="why-print-item"><div class="why-print-icon why-print-purple"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Free Design Support</h3><p>Professional design support at no extra cost.</p></div></article>
+        <article class="why-print-item"><div class="why-print-icon why-print-purple"><i class="fa-solid fa-tags" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Affordable Pricing</h3><p>Low price with the best value.</p></div></article>
+        <article class="why-print-item"><div class="why-print-icon why-print-orange"><i class="fa-solid fa-cube" aria-hidden="true"></i></div><div class="why-print-copy"><h3>Bulk Order Specialist</h3><p>Special prices for bulk requirements.</p></div></article>
       </div>
     </div>
   </section>
@@ -131,21 +141,53 @@ $wa = htmlspecialchars((string)($settingsMap['biz_whatsapp'] ?? '919876543210'),
       <div class="about-testimonial-wrap">
         <button class="about-slider-btn about-slider-prev" type="button" aria-label="Previous testimonial"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
         <div class="about-testimonial-grid">
-          <article><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Excellent printing quality and super fast service. Highly recommended!</p><div class="about-stars">★★★★★</div><div class="about-customer"><span>RM</span><strong>Rakesh Mehta<small>Business Owner</small></strong></div></article>
-          <article><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Very professional team, support and premium quality prints.</p><div class="about-stars">★★★★★</div><div class="about-customer"><span>KS</span><strong>Khushbu Shah<small>Marketing Head</small></strong></div></article>
-          <article><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Best experience for bulk printing. Great price and on-time delivery.</p><div class="about-stars">★★★★★</div><div class="about-customer"><span>JP</span><strong>Jigar Patel<small>Event Organizer</small></strong></div></article>
+          <?php if ($aboutReviews): ?>
+            <?php foreach ($aboutReviews as $review):
+              $rating = max(1, min(5, (int)($review['rating'] ?? 5)));
+              $productName = trim((string)($review['product_name'] ?? 'Verified Customer'));
+              $productSlug = trim((string)($review['product_slug'] ?? ''));
+              $productUrl = $productSlug !== '' ? '/product/' . rawurlencode($productSlug) : '/products';
+            ?>
+              <article>
+                <i class="fa-solid fa-quote-left" aria-hidden="true"></i>
+                <p><?= htmlspecialchars((string)($review['comment'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+                <div class="about-stars" aria-label="<?= $rating ?> out of 5 stars">
+                  <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <i class="fa-<?= $i <= $rating ? 'solid' : 'regular' ?> fa-star" aria-hidden="true"></i>
+                  <?php endfor; ?>
+                </div>
+                <div class="about-customer">
+                  <span><?= htmlspecialchars((string)($review['customer_initials'] ?? 'RC'), ENT_QUOTES, 'UTF-8') ?></span>
+                  <strong><?= htmlspecialchars((string)($review['customer_name'] ?? 'RCS Customer'), ENT_QUOTES, 'UTF-8') ?><small><a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?></a></small></strong>
+                </div>
+              </article>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <article class="about-testimonial-empty"><i class="fa-solid fa-quote-left" aria-hidden="true"></i><p>Approved customer reviews will appear here once verified customers share their printing experience.</p><div class="about-stars" aria-label="0 out of 5 stars"><i class="fa-regular fa-star" aria-hidden="true"></i><i class="fa-regular fa-star" aria-hidden="true"></i><i class="fa-regular fa-star" aria-hidden="true"></i><i class="fa-regular fa-star" aria-hidden="true"></i><i class="fa-regular fa-star" aria-hidden="true"></i></div><div class="about-customer"><span>★</span><strong>No approved reviews yet<small>Verified customers only</small></strong></div></article>
+          <?php endif; ?>
         </div>
         <button class="about-slider-btn about-slider-next" type="button" aria-label="Next testimonial"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <div class="about-slider-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      <?php if (count($aboutReviews) > 1): ?><div class="about-slider-dots" aria-hidden="true"><span></span><span></span><span></span></div><?php endif; ?>
     </div>
   </section>
 
-  <section class="about-contact-strip" aria-label="Quick contact actions">
-    <div class="about-showcase-container about-contact-grid">
-      <a href="tel:<?= $phoneHref ?>" class="about-contact-card about-contact-phone"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i><span>Need Help? Call Us<strong><?= $phone ?></strong></span></a>
-      <a href="https://wa.me/<?= $wa ?>" target="_blank" rel="noopener" class="about-contact-card about-contact-whatsapp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i><span>Chat with us on WhatsApp<strong>We are here to help!</strong></span></a>
-      <a href="/contact" class="about-contact-card about-contact-download"><i class="fa-solid fa-download" aria-hidden="true"></i><span>Download Brochure<strong>For Bulk Orders</strong></span></a>
+  <section class="quick-help-section about-quick-help-section" aria-label="Quick help and bulk order actions">
+    <div class="quick-help-container">
+      <div class="quick-help-bar">
+        <a class="quick-help-item quick-help-call" href="tel:<?= $phoneHref ?>">
+          <span class="quick-help-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><span>Need Help? Call Us</span><strong><?= $phone ?></strong></span>
+        </a>
+        <button class="quick-help-item quick-help-whatsapp" type="button" onclick="window.open('https://wa.me/<?= $wa ?>','_blank')">
+          <span class="quick-help-icon"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><strong>Chat with us on WhatsApp</strong><span>We are here to help!</span></span>
+        </button>
+        <a class="quick-help-item quick-help-download" href="/categories" aria-label="Download our brochure for all products">
+          <span class="quick-help-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
+          <span class="quick-help-copy"><strong>Download Our Brochure</strong><span>For All Products</span></span>
+        </a>
+      </div>
     </div>
   </section>
 </main>

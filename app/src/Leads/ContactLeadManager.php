@@ -24,6 +24,8 @@ final class ContactLeadManager
                     priority ENUM('normal','high','urgent') NOT NULL DEFAULT 'normal',
                     source VARCHAR(80) NOT NULL DEFAULT 'contact_page',
                     admin_note TEXT NULL,
+                    is_read TINYINT(1) NOT NULL DEFAULT 0,
+                    read_at DATETIME NULL,
                     ip_address VARCHAR(64) NULL,
                     user_agent VARCHAR(255) NULL,
                     last_followup_at DATETIME NULL,
@@ -69,8 +71,8 @@ final class ContactLeadManager
 
         $priority = self::detectPriority($subject . ' ' . $message);
         $id = \Database::insert(
-            "INSERT INTO contact_leads (name,email,phone,subject,message,status,priority,source,ip_address,user_agent,created_at)
-             VALUES (?,?,?,?,?,'new',?,'contact_page',?,?,NOW())",
+            "INSERT INTO contact_leads (name,email,phone,subject,message,status,priority,source,is_read,ip_address,user_agent,created_at)
+             VALUES (?,?,?,?,?,'new',?,'contact_page',0,?,?,NOW())",
             [$name, $email ?: null, $phone ?: null, $subject, $message, $priority, $ip ?: null, substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255)]
         );
         return ['ok' => true, 'msg' => 'Thank you! Our team will contact you soon.', 'id' => (int)$id];
@@ -80,7 +82,7 @@ final class ContactLeadManager
     {
         if (!self::ensureSchema()) return ['leads' => [], 'summary' => self::emptySummary(), 'msg' => 'Lead system is not ready.'];
         try {
-            $leads = \Database::rows("SELECT * FROM contact_leads ORDER BY FIELD(COALESCE(status,'new'),'new','contacted','quoted','converted','closed','spam'), created_at DESC LIMIT 500");
+            $leads = \Database::rows("SELECT * FROM contact_leads ORDER BY COALESCE(is_read,0) ASC, created_at DESC LIMIT 500");
         } catch (\Throwable $e) {
             error_log('Contact leads list failed: ' . $e->getMessage());
             return ['leads' => [], 'summary' => self::emptySummary(), 'msg' => 'Unable to load contact leads.'];
@@ -123,6 +125,15 @@ final class ContactLeadManager
         return ['ok' => true];
     }
 
+    public static function markRead(int $id): array
+    {
+        if (!self::ensureSchema()) return ['ok' => false, 'msg' => 'Lead system is not ready.'];
+        $lead = \Database::row("SELECT id FROM contact_leads WHERE id = ?", [$id]);
+        if (!$lead) return ['ok' => false, 'msg' => 'Lead not found.'];
+        \Database::query("UPDATE contact_leads SET is_read = 1, read_at = COALESCE(read_at, NOW()), updated_at = NOW() WHERE id = ?", [$id]);
+        return ['ok' => true];
+    }
+
     private static function ensureColumns(): void
     {
         $columns = [];
@@ -134,7 +145,9 @@ final class ContactLeadManager
             'priority' => "ALTER TABLE contact_leads ADD COLUMN priority ENUM('normal','high','urgent') NOT NULL DEFAULT 'normal' AFTER status",
             'source' => "ALTER TABLE contact_leads ADD COLUMN source VARCHAR(80) NOT NULL DEFAULT 'contact_page' AFTER priority",
             'admin_note' => "ALTER TABLE contact_leads ADD COLUMN admin_note TEXT NULL AFTER source",
-            'ip_address' => "ALTER TABLE contact_leads ADD COLUMN ip_address VARCHAR(64) NULL AFTER admin_note",
+            'is_read' => "ALTER TABLE contact_leads ADD COLUMN is_read TINYINT(1) NOT NULL DEFAULT 0 AFTER admin_note",
+            'read_at' => "ALTER TABLE contact_leads ADD COLUMN read_at DATETIME NULL AFTER is_read",
+            'ip_address' => "ALTER TABLE contact_leads ADD COLUMN ip_address VARCHAR(64) NULL AFTER read_at",
             'user_agent' => "ALTER TABLE contact_leads ADD COLUMN user_agent VARCHAR(255) NULL AFTER ip_address",
             'last_followup_at' => "ALTER TABLE contact_leads ADD COLUMN last_followup_at DATETIME NULL AFTER user_agent",
             'created_at' => "ALTER TABLE contact_leads ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER last_followup_at",

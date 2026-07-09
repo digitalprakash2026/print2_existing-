@@ -6,6 +6,17 @@
  */
 $pageTitle = ($settingsMap['biz_name'] ?? 'RCS Graphic') . ' — Premium Print Ordering';
 $pageDesc  = 'Professional printing services in Rajkot — business cards, brochures, banners and more. Fast delivery, GST invoice, secure payment.';
+$pageImage = '/assets/images/rcs-graphic-logo.png';
+if (!empty($homeBanners ?? [])) {
+  foreach ($homeBanners as $bannerSeo) {
+    $bannerSeoImage = trim((string)($bannerSeo['image_path'] ?? ''));
+    if ($bannerSeoImage !== '') {
+      $pageImage = $bannerSeoImage;
+      $pagePreloadImage = $bannerSeoImage;
+      break;
+    }
+  }
+}
 include INCLUDE_PATH . '/partials/head.php';    // outputs <!DOCTYPE><html><head>...</head><body>
 include INCLUDE_PATH . '/partials/header.php';  // outputs header + cart drawer + global JS
 
@@ -23,7 +34,7 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
      render only when filled, so a designed clickable banner image can
      stand on its own across desktop and mobile.
 ═══════════════════════════════════════════════════════════════ -->
-<div class="banner-slider" id="bannerSlider" data-design-target="home.banner">
+<div class="banner-slider" id="bannerSlider" data-design-target="home.banner" data-slide-interval="3000">
   <?php
   $fallbackBanners = [
     [
@@ -75,10 +86,10 @@ $bizAddr  = htmlspecialchars($settingsMap['biz_address'] ?? 'Rajkot, Gujarat');
   <div class="bs-slide <?= $hasContent ? 'has-content' : 'image-only' ?>">
     <?php if ($slideClickUrl !== ''): ?>
       <a class="bs-image-link" href="<?= $slideClickUrl ?>" aria-label="<?= $alt ?>">
-        <img src="<?= $img ?>" alt="<?= $alt ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async">
+        <img src="<?= $img ?>" alt="<?= $alt ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async" fetchpriority="<?= $i === 0 ? 'high' : 'auto' ?>">
       </a>
     <?php else: ?>
-      <img src="<?= $img ?>" alt="<?= $alt ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async">
+      <img src="<?= $img ?>" alt="<?= $alt ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async" fetchpriority="<?= $i === 0 ? 'high' : 'auto' ?>">
     <?php endif; ?>
     <?php if ($hasContent): ?>
       <div class="bs-overlay" aria-hidden="true"></div>
@@ -185,26 +196,26 @@ foreach ($categories as $cat) {
 
     <div class="why-print-panel" aria-label="Why choose RCS Print">
       <article class="why-print-item">
-        <div class="why-print-icon why-print-purple"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></div>
-        <div class="why-print-copy">
-          <h3>Fast Delivery</h3>
-          <p>On-time delivery always guaranteed.</p>
-        </div>
-      </article>
-
-      <article class="why-print-item">
-        <div class="why-print-icon why-print-orange"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div>
-        <div class="why-print-copy">
-          <h3>Free Design Support</h3>
-          <p>Professional design support at no extra cost.</p>
-        </div>
-      </article>
-
-      <article class="why-print-item">
         <div class="why-print-icon why-print-green"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div>
         <div class="why-print-copy">
           <h3>Premium Quality</h3>
           <p>Best quality materials and printing.</p>
+        </div>
+      </article>
+
+      <article class="why-print-item">
+        <div class="why-print-icon why-print-orange"><i class="fa-regular fa-thumbs-up" aria-hidden="true"></i></div>
+        <div class="why-print-copy">
+          <h3>100% Satisfaction</h3>
+          <p>Your happiness matters.</p>
+        </div>
+      </article>
+
+      <article class="why-print-item">
+        <div class="why-print-icon why-print-purple"><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i></div>
+        <div class="why-print-copy">
+          <h3>Free Design Support</h3>
+          <p>Professional design support at no extra cost.</p>
         </div>
       </article>
 
@@ -354,6 +365,59 @@ foreach ($categories as $cat) {
   </div>
 </section>
 
+
+<?php
+$businessNeedCards = [];
+$productById = [];
+foreach ($products as $productRow) {
+  $productById[(int)($productRow['id'] ?? 0)] = $productRow;
+}
+foreach (($businessNeeds ?? []) as $need) {
+  $ids = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', (string)($need['product_ids'] ?? '')) ?: []), static fn($id) => $id > 0));
+  $needProducts = [];
+  foreach ($ids as $pid) {
+    if (isset($productById[$pid])) $needProducts[] = $productById[$pid];
+  }
+  if (!$needProducts) continue;
+  $firstProduct = $needProducts[0];
+  $businessNeedCards[] = ['need' => $need, 'products' => array_slice($needProducts, 0, 3), 'image' => trim((string)($firstProduct['primary_image'] ?? $firstProduct['image_path'] ?? ''))];
+}
+?>
+<?php if ($businessNeedCards): ?>
+<section class="shop-cat-section business-needs-section" aria-labelledby="businessNeedsTitle" data-reveal>
+  <div class="shop-cat-container">
+    <div class="shop-cat-head">
+      <h2 class="shop-cat-title" id="businessNeedsTitle">Shop by <span>Business Needs</span></h2>
+      <a href="/categories" class="shop-cat-all">Browse All Products</a>
+    </div>
+    <div class="shop-cat-track business-needs-track" aria-label="Business need product collections" data-auto-slide="true">
+      <?php foreach ($businessNeedCards as $card):
+        $need = $card['need'];
+        $needName = trim((string)($need['name'] ?? 'Business Need'));
+        $needSlug = trim((string)($need['slug'] ?? ''));
+        $needIcon = trim((string)($need['icon'] ?? '🏢')) ?: '🏢';
+        $needDesc = trim((string)($need['description'] ?? ''));
+        $needUrl = '/business/' . rawurlencode($needSlug);
+      ?>
+      <article class="shop-cat-card business-need-card">
+        <a href="<?= htmlspecialchars($needUrl, ENT_QUOTES, 'UTF-8') ?>" class="shop-cat-link business-need-link">
+          <div class="shop-cat-img business-need-img">
+            <?php if ($card['image'] !== ''): ?><img src="<?= htmlspecialchars($card['image'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($needName, ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php else: ?><div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($needIcon, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+          </div>
+          <div class="shop-cat-body business-need-body">
+            <span class="shop-cat-icon" aria-hidden="true"><?= htmlspecialchars($needIcon, ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="shop-cat-name"><?= htmlspecialchars($needName, ENT_QUOTES, 'UTF-8') ?></span>
+            <?php if ($needDesc !== ''): ?><small><?= htmlspecialchars($needDesc, ENT_QUOTES, 'UTF-8') ?></small><?php endif; ?>
+            <em><?= count($card['products']) ?> product<?= count($card['products']) === 1 ? '' : 's' ?> selected</em>
+          </div>
+        </a>
+      </article>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
+
 <!-- HOW IT WORKS -->
 <section class="how-works-section" aria-labelledby="howWorksTitle" data-reveal>
   <div class="how-works-container">
@@ -458,11 +522,11 @@ foreach ($categories as $cat) {
 </section>
 
 
-<!-- FROM OUR BLOGS -->
+<!-- BLOGS -->
 <section class="blog-section" id="blogs-sec" aria-labelledby="blogTitle" data-reveal>
   <div class="blog-container">
     <div class="blog-head">
-      <h2 class="blog-title" id="blogTitle">From Our <span>Blogs</span></h2>
+      <h2 class="blog-title" id="blogTitle"><span>Blogs</span></h2>
       <a class="blog-view-all" href="/blogs">View All</a>
     </div>
 
@@ -560,16 +624,18 @@ foreach ($categories as $cat) {
       <?php endforeach; ?>
     </div>
 
-    <?php if (count($blogCards) > 1): ?>
-    <div class="blog-dots" aria-label="Blog pagination">
-      <?php foreach ($blogCards as $idx => $_blog): ?>
-        <span class="blog-dot <?= $idx === 0 ? 'blog-dot-active' : '' ?>"></span>
-      <?php endforeach; ?>
-    </div>
-    <?php endif; ?>
+
   </div>
 </section>
 
+
+<section class="ym-section recent-products-section" id="recentProductsSection" aria-labelledby="recentProductsTitle" hidden>
+  <div class="ym-head">
+    <h2 id="recentProductsTitle" class="ym-title">Recently Viewed <span>Products</span></h2>
+    <a href="/categories" class="ym-view-all">View All Products</a>
+  </div>
+  <div class="ym-grid ym-product-grid" id="recentProductsGrid"></div>
+</section>
 
 <!-- QUICK HELP STRIP -->
 <section class="quick-help-section" id="quick-help-sec" aria-label="Quick help and bulk order actions" data-reveal>
@@ -607,6 +673,56 @@ foreach ($categories as $cat) {
 <?php include INCLUDE_PATH . '/partials/site-footer.php'; ?>
 
 <script>
+
+(() => {
+  const track = document.querySelector('.business-needs-track');
+  if (!track) return;
+  let timer = null;
+  const getStep = () => {
+    const card = track.querySelector('.business-need-card');
+    if (!card) return Math.max(180, Math.round(track.clientWidth * 0.7));
+    const gap = parseFloat(getComputedStyle(track).gap || '0');
+    return Math.max(120, card.getBoundingClientRect().width + gap);
+  };
+  const slideNext = () => {
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    if (maxScroll <= 4) return;
+    if (track.scrollLeft >= maxScroll - 8) { track.scrollTo({ left: 0, behavior: 'smooth' }); return; }
+    track.scrollBy({ left: getStep(), behavior: 'smooth' });
+  };
+  const start = () => { stop(); timer = window.setInterval(slideNext, 3500); };
+  const stop = () => { if (timer) window.clearInterval(timer); timer = null; };
+  track.addEventListener('mouseenter', stop); track.addEventListener('mouseleave', start);
+  track.addEventListener('focusin', stop); track.addEventListener('focusout', start);
+  document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) start();
+})();
+
+(() => {
+  const section = document.getElementById('recentProductsSection');
+  const grid = document.getElementById('recentProductsGrid');
+  if (!section || !grid) return;
+  let ids = [];
+  try { ids = JSON.parse(localStorage.getItem('rcs_recent_products') || '[]'); } catch (e) { ids = []; }
+  ids = ids.map(Number).filter(Boolean).slice(0, 10);
+  if (!ids.length) return;
+  const esc = (s) => String(s || '').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  fetch('/api/recent-products?ids=' + encodeURIComponent(ids.join(',')))
+    .then(r => r.json())
+    .then(data => {
+      const items = data.products || [];
+      if (!items.length) return;
+      grid.innerHTML = items.map((p, idx) => {
+        const href = p.slug ? `/product/${encodeURIComponent(p.slug)}` : '/categories';
+        const img = p.primary_image || p.image_path || '';
+        const price = Number(p.min_price || 0);
+        return `<article class="ym-card ym-product-card" data-reveal data-reveal-delay="${(idx % 3) * 60}"><a class="ym-img ym-product-img" href="${href}">${img ? `<img src="${esc(img)}" alt="${esc(p.name)}" loading="lazy" onerror="this.style.display='none';if(this.nextElementSibling){this.nextElementSibling.removeAttribute('hidden');}"><span class="ym-product-fallback" hidden><i class="fa-solid fa-print" aria-hidden="true"></i></span>` : `<span class="ym-product-fallback"><i class="fa-solid fa-print" aria-hidden="true"></i></span>`}</a><div class="ym-body"><div class="ym-cat"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>${esc(p.category_name || 'Print Product')}</div><h3 class="ym-name">${esc(p.name || 'Print Product')}</h3><div class="ym-foot"><div><div class="ym-from">Starting from</div><div class="ym-price">₹${price > 0 ? price.toLocaleString('en-IN') : '—'}</div></div><a href="${href}" class="ym-order">VIEW</a></div></div></article>`;
+      }).join('');
+      section.hidden = false;
+    })
+    .catch(() => {});
+})();
+
 (() => {
   const track = document.getElementById('shopCatTrack');
   if (!track) return;
