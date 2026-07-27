@@ -402,18 +402,30 @@ if (preg_match('#^/category/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 }
 
 
+// ── All Business Sectors Page — /business ─────────────────────
+if (($uri === '/business' || $uri === '/business-needs') && $method === 'GET') {
+    try {
+        $businessNeeds = Database::rows("SELECT bn.*, COUNT(pbn.product_id) AS product_count FROM business_needs bn LEFT JOIN product_business_needs pbn ON pbn.business_need_id = bn.id WHERE bn.is_active=1 GROUP BY bn.id ORDER BY bn.sort_order ASC, bn.id DESC");
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable $e) {
+        error_log('Business sectors page error: ' . $e->getMessage());
+        $businessNeeds = [];
+        $settingsMap = [];
+    }
+    view('business-needs', compact('businessNeeds', 'settingsMap'));
+    exit;
+}
+
 // Business Need / Sector Page — /business/{slug}
 if (preg_match('#^/business/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     try {
         $businessNeed = Database::row("SELECT * FROM business_needs WHERE slug=? AND is_active=1 LIMIT 1", [$m[1]]);
         if (!$businessNeed) { http_response_code(404); view('404'); exit; }
-        $ids = array_values(array_unique(array_filter(array_map('intval', preg_split('/[,\\s]+/', (string)($businessNeed['product_ids'] ?? '')) ?: []), static fn($id) => $id > 0)));
-        $businessProducts = [];
-        if ($ids) {
-            $allProductsById = [];
-            foreach (\Catalog\ProductCatalog::all() as $row) $allProductsById[(int)($row['id'] ?? 0)] = $row;
-            foreach ($ids as $id) if (isset($allProductsById[$id])) $businessProducts[] = $allProductsById[$id];
-        }
+        $selectedFilters = \Catalog\ProductCatalog::normalizeFilterSelections($_GET['filters'] ?? []);
+        $searchQuery = trim((string)($_GET['q'] ?? ''));
+        $filterOptions = \Catalog\ProductCatalog::filterOptions();
+        $businessProducts = \Catalog\ProductCatalog::byBusinessNeed((int)$businessNeed['id'], $selectedFilters, $searchQuery);
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {
@@ -422,7 +434,7 @@ if (preg_match('#^/business/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
         view('404');
         exit;
     }
-    view('business-need', compact('businessNeed', 'businessProducts', 'settingsMap'));
+    view('business-need', compact('businessNeed', 'businessProducts', 'settingsMap', 'filterOptions', 'selectedFilters', 'searchQuery'));
     exit;
 }
 

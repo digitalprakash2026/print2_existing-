@@ -76,11 +76,29 @@ $ensureBusinessNeedsSchema = static function (): void {
             icon VARCHAR(32) NULL,
             description VARCHAR(500) NULL,
             product_ids TEXT NULL,
+            image_path VARCHAR(255) NULL,
             sort_order INT NOT NULL DEFAULT 0,
             is_active TINYINT(1) NOT NULL DEFAULT 1,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        try { Database::query("ALTER TABLE business_needs ADD COLUMN image_path VARCHAR(255) NULL AFTER product_ids"); } catch (\Throwable) {}
+        Database::query("CREATE TABLE IF NOT EXISTS product_business_needs (
+            product_id INT UNSIGNED NOT NULL,
+            business_need_id INT UNSIGNED NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (product_id, business_need_id),
+            KEY idx_pbn_need (business_need_id),
+            KEY idx_pbn_product (product_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $legacyNeeds = Database::rows("SELECT id, product_ids FROM business_needs WHERE product_ids IS NOT NULL AND product_ids <> ''");
+        foreach ($legacyNeeds as $need) {
+            $needId = (int)($need['id'] ?? 0);
+            $ids = array_values(array_unique(array_filter(array_map('intval', preg_split('/[,\s]+/', (string)($need['product_ids'] ?? '')) ?: []), static fn($id) => $id > 0)));
+            foreach ($ids as $pid) {
+                try { Database::query("INSERT IGNORE INTO product_business_needs (product_id, business_need_id) VALUES (?, ?)", [$pid, $needId]); } catch (\Throwable) {}
+            }
+        }
     } catch (\Throwable $e) {
         error_log('Business needs schema unavailable: ' . $e->getMessage());
     }
@@ -100,6 +118,8 @@ $syncProductBusinessNeeds = static function (int $productId, mixed $selectedNeed
     $selected = is_array($selectedNeedIds) ? $selectedNeedIds : preg_split('/[,\s]+/', (string)$selectedNeedIds);
     $selected = array_values(array_unique(array_filter(array_map('intval', $selected ?: []), static fn($id) => $id > 0)));
     try {
+        Database::query("DELETE FROM product_business_needs WHERE product_id=?", [$productId]);
+        foreach ($selected as $needId) Database::query("INSERT IGNORE INTO product_business_needs (product_id, business_need_id) VALUES (?, ?)", [$productId, $needId]);
         $needs = Database::rows("SELECT id, product_ids FROM business_needs");
         foreach ($needs as $need) {
             $needId = (int)($need['id'] ?? 0);
@@ -116,6 +136,8 @@ $syncProductBusinessNeeds = static function (int $productId, mixed $selectedNeed
 };
 $getProductBusinessNeedIds = static function (int $productId): array {
     try {
+        $rows = Database::rows("SELECT business_need_id FROM product_business_needs WHERE product_id=?", [$productId]);
+        if ($rows) return array_values(array_map('intval', array_column($rows, 'business_need_id')));
         $needs = Database::rows("SELECT id, product_ids FROM business_needs WHERE product_ids IS NOT NULL AND product_ids <> ''");
         $out = [];
         foreach ($needs as $need) {
@@ -1763,7 +1785,7 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/business-needs' && $method === 'GET') {
         try {
-            $needs = Database::rows("SELECT * FROM business_needs ORDER BY sort_order ASC, id DESC");
+            $needs = Database::rows("SELECT bn.*, COUNT(pbn.product_id) AS product_count FROM business_needs bn LEFT JOIN product_business_needs pbn ON pbn.business_need_id = bn.id GROUP BY bn.id ORDER BY bn.sort_order ASC, bn.id DESC");
             json(['ok'=>true,'needs'=>$needs]);
         } catch (\Throwable $e) {
             json(['ok'=>false,'msg'=>'Could not load business needs','needs'=>[]], 500);
@@ -1773,11 +1795,10 @@ if (str_starts_with($uri, '/admin/api/')) {
         $name = trim((string)($body['name'] ?? ''));
         if ($name === '') json(['ok'=>false,'msg'=>'Business / sector name is required'], 422);
         $slug = $businessNeedSlug((string)($body['slug'] ?? $name));
-        $productsCsv = $businessNeedProducts($body['product_ids'] ?? []);
         try {
             $id = Database::insert(
-                "INSERT INTO business_needs (name,slug,icon,description,product_ids,sort_order,is_active) VALUES (?,?,?,?,?,?,?)",
-                [$name,$slug,trim((string)($body['icon'] ?? '🏢')) ?: '🏢',trim((string)($body['description'] ?? '')),$productsCsv,(int)($body['sort_order'] ?? 0),(int)((int)($body['is_active'] ?? 1) > 0)]
+                "INSERT INTO business_needs (name,slug,icon,description,product_ids,image_path,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?)",
+                [$name,$slug,trim((string)($body['icon'] ?? '🏢')) ?: '🏢',trim((string)($body['description'] ?? '')),'',trim((string)($body['image_path'] ?? '')),(int)($body['sort_order'] ?? 0),(int)((int)($body['is_active'] ?? 1) > 0)]
             );
             json(['ok'=>true,'id'=>(int)$id]);
         } catch (\Throwable $e) {
@@ -1788,19 +1809,37 @@ if (str_starts_with($uri, '/admin/api/')) {
         $name = trim((string)($body['name'] ?? ''));
         if ($name === '') json(['ok'=>false,'msg'=>'Business / sector name is required'], 422);
         $slug = $businessNeedSlug((string)($body['slug'] ?? $name));
-        $productsCsv = $businessNeedProducts($body['product_ids'] ?? []);
         try {
             Database::query(
-                "UPDATE business_needs SET name=?, slug=?, icon=?, description=?, product_ids=?, sort_order=?, is_active=?, updated_at=NOW() WHERE id=?",
-                [$name,$slug,trim((string)($body['icon'] ?? '🏢')) ?: '🏢',trim((string)($body['description'] ?? '')),$productsCsv,(int)($body['sort_order'] ?? 0),(int)((int)($body['is_active'] ?? 1) > 0),(int)$m[1]]
+                "UPDATE business_needs SET name=?, slug=?, icon=?, description=?, image_path=?, sort_order=?, is_active=?, updated_at=NOW() WHERE id=?",
+                [$name,$slug,trim((string)($body['icon'] ?? '🏢')) ?: '🏢',trim((string)($body['description'] ?? '')),trim((string)($body['image_path'] ?? '')),(int)($body['sort_order'] ?? 0),(int)((int)($body['is_active'] ?? 1) > 0),(int)$m[1]]
             );
             json(['ok'=>true]);
         } catch (\Throwable $e) {
             json(['ok'=>false,'msg'=>'Could not update business need. Slug may already exist.'], 500);
         }
     }
+
+    if (preg_match('#^/admin/api/business-needs/(\d+)/image-upload$#', $uri, $m) && $method === 'POST') {
+        $id = (int)$m[1];
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) json(['ok'=>false,'msg'=>'Image file required'], 422);
+        $file = $_FILES['image'];
+        if (($file['size'] ?? 0) > 5 * 1024 * 1024) json(['ok'=>false,'msg'=>'Image must be 5MB or less'], 422);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        $allowed = ['jpg'=>'image/jpeg','jpeg'=>'image/jpeg','png'=>'image/png','webp'=>'image/webp'];
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!isset($allowed[$ext]) || $allowed[$ext] !== $mime) json(['ok'=>false,'msg'=>'Only JPG, PNG or WEBP images are allowed'], 422);
+        $dir = PUBLIC_PATH . '/uploads/business-needs/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'business-' . $id . '-' . bin2hex(random_bytes(5)) . '.' . $ext;
+        $publicPath = '/uploads/business-needs/' . $name;
+        if (!move_uploaded_file($file['tmp_name'], $dir . $name)) json(['ok'=>false,'msg'=>'Could not upload image'], 500);
+        Database::query("UPDATE business_needs SET image_path=?, updated_at=NOW() WHERE id=?", [$publicPath, $id]);
+        json(['ok'=>true,'image_path'=>$publicPath]);
+    }
+
     if (preg_match('#^/admin/api/business-needs/(\d+)$#', $uri, $m) && $method === 'DELETE') {
-        try { Database::query("DELETE FROM business_needs WHERE id=?", [(int)$m[1]]); json(['ok'=>true]); }
+        try { Database::query("DELETE FROM product_business_needs WHERE business_need_id=?", [(int)$m[1]]); Database::query("DELETE FROM business_needs WHERE id=?", [(int)$m[1]]); json(['ok'=>true]); }
         catch (\Throwable) { json(['ok'=>false,'msg'=>'Could not delete business need'], 500); }
     }
 
@@ -2788,6 +2827,11 @@ if (preg_match('#^/admin/deals/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     exit;
 }
 
+if (preg_match('#^/admin/business-needs/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
+    view('admin/business-needs-new', ['businessNeedEditId' => (int)$m[1]]);
+    exit;
+}
+
 if (preg_match('#^/admin/coupons/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     view('admin/coupons-new', ['couponEditId' => (int)$m[1]]);
     exit;
@@ -2811,6 +2855,7 @@ $adminPage = match(true) {
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/deals'      => 'admin/deals',
     $uri === '/admin/business-needs' => 'admin/business-needs',
+    $uri === '/admin/business-needs/new' => 'admin/business-needs-new',
     $uri === '/admin/deals/new'  => 'admin/deals-new',
     $uri === '/admin/blogs'      => 'admin/blogs',
     $uri === '/admin/blogs/new'  => 'admin/blogs-new',

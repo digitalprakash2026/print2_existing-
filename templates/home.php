@@ -368,19 +368,11 @@ foreach ($categories as $cat) {
 
 <?php
 $businessNeedCards = [];
-$productById = [];
-foreach ($products as $productRow) {
-  $productById[(int)($productRow['id'] ?? 0)] = $productRow;
-}
 foreach (($businessNeeds ?? []) as $need) {
-  $ids = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', (string)($need['product_ids'] ?? '')) ?: []), static fn($id) => $id > 0));
-  $needProducts = [];
-  foreach ($ids as $pid) {
-    if (isset($productById[$pid])) $needProducts[] = $productById[$pid];
-  }
-  if (!$needProducts) continue;
-  $firstProduct = $needProducts[0];
-  $businessNeedCards[] = ['need' => $need, 'products' => array_slice($needProducts, 0, 3), 'image' => trim((string)($firstProduct['primary_image'] ?? $firstProduct['image_path'] ?? ''))];
+  $needName = trim((string)($need['name'] ?? ''));
+  $needSlug = trim((string)($need['slug'] ?? ''));
+  if ($needName === '' || $needSlug === '') continue;
+  $businessNeedCards[] = $need;
 }
 ?>
 <?php if ($businessNeedCards): ?>
@@ -388,27 +380,23 @@ foreach (($businessNeeds ?? []) as $need) {
   <div class="shop-cat-container">
     <div class="shop-cat-head">
       <h2 class="shop-cat-title" id="businessNeedsTitle">Shop by <span>Business Needs</span></h2>
-      <a href="/categories" class="shop-cat-all">Browse All Products</a>
+      <a href="/business" class="shop-cat-all">View All Business</a>
     </div>
-    <div class="shop-cat-track business-needs-track" aria-label="Business need product collections" data-auto-slide="true">
-      <?php foreach ($businessNeedCards as $card):
-        $need = $card['need'];
-        $needName = trim((string)($need['name'] ?? 'Business Need'));
+    <div class="shop-cat-track business-needs-track" aria-label="Business sector collections" data-auto-slide="true">
+      <?php foreach ($businessNeedCards as $need):
+        $needName = trim((string)($need['name'] ?? 'Business Sector'));
         $needSlug = trim((string)($need['slug'] ?? ''));
         $needIcon = trim((string)($need['icon'] ?? '🏢')) ?: '🏢';
-        $needDesc = trim((string)($need['description'] ?? ''));
+        $needImage = trim((string)($need['image_path'] ?? ''));
         $needUrl = '/business/' . rawurlencode($needSlug);
       ?>
       <article class="shop-cat-card business-need-card">
         <a href="<?= htmlspecialchars($needUrl, ENT_QUOTES, 'UTF-8') ?>" class="shop-cat-link business-need-link">
           <div class="shop-cat-img business-need-img">
-            <?php if ($card['image'] !== ''): ?><img src="<?= htmlspecialchars($card['image'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($needName, ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php else: ?><div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($needIcon, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+            <?php if ($needImage !== ''): ?><img src="<?= htmlspecialchars($needImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($needName, ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php else: ?><div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($needIcon, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
           </div>
-          <div class="shop-cat-body business-need-body">
-            <span class="shop-cat-icon" aria-hidden="true"><?= htmlspecialchars($needIcon, ENT_QUOTES, 'UTF-8') ?></span>
+          <div class="shop-cat-body business-need-body compact">
             <span class="shop-cat-name"><?= htmlspecialchars($needName, ENT_QUOTES, 'UTF-8') ?></span>
-            <?php if ($needDesc !== ''): ?><small><?= htmlspecialchars($needDesc, ENT_QUOTES, 'UTF-8') ?></small><?php endif; ?>
-            <em><?= count($card['products']) ?> product<?= count($card['products']) === 1 ? '' : 's' ?> selected</em>
           </div>
         </a>
       </article>
