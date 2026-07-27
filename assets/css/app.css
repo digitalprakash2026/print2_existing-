@@ -14432,3 +14432,21 @@ body.portfolio-lightbox-open { overflow:hidden; }
 @media (max-width:760px) {
   .business-needs-section .shop-cat-track { grid-auto-columns:minmax(180px, 72vw); }
 }
+
+/* Business sector listing/detail pages reuse the all-categories layout. */
+.business-sector-shop .all-cat-side-list a.is-active {
+  background:#fff7ed;
+  color:#ea580c;
+  border-color:#fed7aa;
+}
+.business-sector-shop .all-cat-grid.business-sector-grid {
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:22px;
+}
+.business-sector-card .all-cat-icon {
+  font-family:'Poppins', var(--fn);
+  font-size:15px;
+}
+@media (max-width:1100px) { .business-sector-shop .all-cat-grid.business-sector-grid { grid-template-columns:repeat(3, minmax(0, 1fr)); gap:18px; } }
+@media (max-width:768px) { .business-sector-shop .all-cat-grid.business-sector-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } }
