@@ -151,10 +151,10 @@ foreach ($navProducts as $p) {
         </ul>
       </div>
 
-      <div class="navbar-actions rcs-navbar-actions">
-        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="action-btn rcs-action-btn" aria-label="My Account">
-          <i class="fa-regular fa-user"></i>
-        </a>
+      <div class="navbar-actions rcs-navbar-actions header-cta-actions">
+        <button class="header-cta-btn header-quote-btn" type="button" onclick="openCustomQuoteModal()"><i class="fa-solid fa-calculator" aria-hidden="true"></i><span>Get Custom Quote</span></button>
+        <a href="<?= ($user ?? null) ? '/profile#wishlist' : '/login?redirect=/profile%23wishlist' ?>" class="header-cta-btn header-fav-btn"><i class="fa-regular fa-heart" aria-hidden="true"></i><span>My Favorites</span></a>
+        <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="header-cta-btn header-login-btn"><i class="fa-regular fa-user" aria-hidden="true"></i><span><?= ($user ?? null) ? 'My Account' : 'Login / Signup' ?></span></a>
         <a href="/cart" class="action-btn cart-btn rcs-action-btn rcs-cart-btn" aria-label="Cart">
           <i class="fa-solid fa-cart-shopping"></i>
           <span class="cart-badge rcs-cart-badge" id="cartCount">0</span>
@@ -217,7 +217,9 @@ foreach ($navProducts as $p) {
     <a href="/portfolio" class="md-item" onclick="closeDrawer()">🖼️ Portfolio</a>
     <a href="/blogs" class="md-item" onclick="closeDrawer()">📝 Blog</a>
     <a href="/contact" class="md-item" onclick="closeDrawer()">📞 Contact</a>
-    <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="md-item" onclick="closeDrawer()">👤 My Account</a>
+    <button class="md-item md-action md-quote-action" type="button" onclick="openCustomQuoteModal();closeDrawer()">🧾 Get Custom Quote</button>
+    <a href="<?= ($user ?? null) ? '/profile#wishlist' : '/login?redirect=/profile%23wishlist' ?>" class="md-item" onclick="closeDrawer()">♡ My Favorites</a>
+    <a href="<?= ($user ?? null) ? '/profile' : '/login' ?>" class="md-item" onclick="closeDrawer()">👤 <?= ($user ?? null) ? 'My Account' : 'Login / Signup' ?></a>
     <a href="/cart" class="md-item md-action" onclick="closeDrawer()">
       🛒 Cart <span class="md-cart-badge">0</span>
     </a>
@@ -244,6 +246,33 @@ foreach ($navProducts as $p) {
 <!-- Drawer backdrop -->
 <div class="mob-backdrop" id="mobBack" onclick="closeDrawer()"></div>
 
+
+<!-- Custom Quote Modal -->
+<div class="custom-quote-modal" id="customQuoteModal" aria-hidden="true">
+  <div class="custom-quote-backdrop" onclick="closeCustomQuoteModal()"></div>
+  <section class="custom-quote-dialog" role="dialog" aria-modal="true" aria-labelledby="customQuoteTitle">
+    <button class="custom-quote-close" type="button" onclick="closeCustomQuoteModal()" aria-label="Close custom quote form">×</button>
+    <header class="custom-quote-head">
+      <div class="custom-quote-kicker"><span><i class="fa-solid fa-calculator" aria-hidden="true"></i></span> Request Quote</div>
+      <h2 id="customQuoteTitle">Get a <strong>Custom Price</strong></h2>
+    </header>
+    <form class="custom-quote-form" id="customQuoteForm" onsubmit="submitCustomQuote(event)">
+      <div class="custom-quote-grid">
+        <label>Your Name *<input name="customer_name" placeholder="John Doe" autocomplete="name" required></label>
+        <label>WhatsApp Number *<input name="phone" placeholder="9876543210" autocomplete="tel" required></label>
+        <label>Product Name *<input name="product_name" placeholder="Eg: Business Card" required></label>
+        <label>Size / Dimension<input name="size_dimension" placeholder="Eg: 3.5x2 inches"></label>
+        <label>Material Type<input name="material_type" placeholder="Eg: 300gsm Board"></label>
+        <label>Quantity Needed<input name="quantity" placeholder="Eg: 100"></label>
+      </div>
+      <label>Specific Finish / Instructions<textarea name="instructions" placeholder="Describe lamination, corners, etc..."></textarea></label>
+      <div class="custom-quote-message" id="customQuoteMessage" role="status"></div>
+      <button class="custom-quote-submit" id="customQuoteSubmit" type="submit">Request Quotation <span>→</span></button>
+      <p>Fastest response via WhatsApp Business</p>
+    </form>
+  </section>
+</div>
+
 <!-- ═══════════════════════════════════════════════
      CART DRAWER (included once here only)
 ══════════════════════════════════════════════════ -->
@@ -261,5 +290,22 @@ const APP = {
   user:       <?= json_encode($user ?? null) ?>,
   apiBase:    ''
 };
+
+function openCustomQuoteModal(){const m=document.getElementById('customQuoteModal'); if(!m)return; m.classList.add('open'); m.setAttribute('aria-hidden','false'); document.body.classList.add('quote-modal-open'); setTimeout(()=>m.querySelector('input[name="customer_name"]')?.focus(),80);}
+function closeCustomQuoteModal(){const m=document.getElementById('customQuoteModal'); if(!m)return; m.classList.remove('open'); m.setAttribute('aria-hidden','true'); document.body.classList.remove('quote-modal-open');}
+async function submitCustomQuote(e){
+  e.preventDefault();
+  const form=e.currentTarget; const btn=document.getElementById('customQuoteSubmit'); const msg=document.getElementById('customQuoteMessage');
+  const payload=Object.fromEntries(new FormData(form).entries()); payload.source_page=window.location.pathname;
+  btn.disabled=true; btn.innerHTML='Submitting...'; msg.className='custom-quote-message'; msg.textContent='';
+  try{
+    const res=await fetch('/api/custom-quotes',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':APP.csrfToken},credentials:'same-origin',body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(!data.ok) throw new Error(data.msg||'Could not submit request');
+    msg.classList.add('success'); msg.textContent=data.msg||'Quotation request received.'; form.reset();
+  }catch(err){msg.classList.add('error'); msg.textContent=err.message||'Could not submit request';}
+  finally{btn.disabled=false; btn.innerHTML='Request Quotation <span>→</span>';}
+}
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeCustomQuoteModal(); });
 </script>
 <script src="/assets/js/app.js"></script>

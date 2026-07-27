@@ -191,6 +191,77 @@ if (preg_match('#^/api/design-approvals/(\d+)/artwork$#', $uri, $m) && $method =
     ]);
 }
 
+
+if ($uri === '/api/custom-quotes' && $method === 'POST') {
+    try {
+        Database::query("CREATE TABLE IF NOT EXISTS custom_quote_requests (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            request_code VARCHAR(40) NOT NULL UNIQUE,
+            user_id INT UNSIGNED NULL,
+            customer_name VARCHAR(160) NOT NULL,
+            phone VARCHAR(40) NOT NULL,
+            email VARCHAR(180) NULL,
+            product_name VARCHAR(180) NOT NULL,
+            size_dimension VARCHAR(160) NULL,
+            material_type VARCHAR(160) NULL,
+            quantity VARCHAR(80) NULL,
+            instructions TEXT NULL,
+            status VARCHAR(40) NOT NULL DEFAULT 'new',
+            admin_notes TEXT NULL,
+            quoted_amount DECIMAL(12,2) NULL,
+            currency VARCHAR(10) NOT NULL DEFAULT 'INR',
+            source_page VARCHAR(255) NULL,
+            ip_address VARCHAR(64) NULL,
+            user_agent VARCHAR(255) NULL,
+            order_id INT UNSIGNED NULL,
+            approved_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_custom_quote_status (status, created_at),
+            KEY idx_custom_quote_phone (phone),
+            KEY idx_custom_quote_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (\Throwable $e) {
+        error_log('Custom quote schema unavailable: ' . $e->getMessage());
+        json(['ok' => false, 'msg' => 'Custom quote system unavailable. Please try again later.'], 500);
+    }
+
+    $name = trim((string)($body['customer_name'] ?? $body['name'] ?? ''));
+    $phone = trim((string)($body['phone'] ?? ''));
+    $product = trim((string)($body['product_name'] ?? ''));
+    if ($name === '' || $phone === '' || $product === '') {
+        json(['ok' => false, 'msg' => 'Name, WhatsApp number and product name are required.'], 422);
+    }
+    $user = \Auth\Auth::user();
+    $code = 'CQ-' . date('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+    try {
+        $id = Database::insert(
+            "INSERT INTO custom_quote_requests (request_code,user_id,customer_name,phone,email,product_name,size_dimension,material_type,quantity,instructions,status,source_page,ip_address,user_agent,created_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())",
+            [
+                $code,
+                $user ? (int)($user['id'] ?? 0) : null,
+                $name,
+                $phone,
+                trim((string)($body['email'] ?? '')) ?: null,
+                $product,
+                trim((string)($body['size_dimension'] ?? '')),
+                trim((string)($body['material_type'] ?? '')),
+                trim((string)($body['quantity'] ?? '')),
+                trim((string)($body['instructions'] ?? '')),
+                'new',
+                trim((string)($body['source_page'] ?? ($_SERVER['HTTP_REFERER'] ?? ''))),
+                $_SERVER['REMOTE_ADDR'] ?? null,
+                substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
+            ]
+        );
+        json(['ok' => true, 'id' => (int)$id, 'request_code' => $code, 'msg' => 'Quotation request received. Our team will contact you on WhatsApp shortly.']);
+    } catch (\Throwable $e) {
+        error_log('Custom quote save failed: ' . $e->getMessage());
+        json(['ok' => false, 'msg' => 'Could not submit quotation request.'], 500);
+    }
+}
+
 if ($uri === '/api/contact-leads' && $method === 'POST') {
     $result = \Leads\ContactLeadManager::create($body);
     json($result, ($result['ok'] ?? false) ? 200 : 422);

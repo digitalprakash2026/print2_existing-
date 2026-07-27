@@ -114,6 +114,43 @@ $businessNeedProducts = static function (mixed $value): string {
 };
 $ensureBusinessNeedsSchema();
 
+
+$ensureCustomQuoteSchema = static function (): void {
+    try {
+        Database::query("CREATE TABLE IF NOT EXISTS custom_quote_requests (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            request_code VARCHAR(40) NOT NULL UNIQUE,
+            user_id INT UNSIGNED NULL,
+            customer_name VARCHAR(160) NOT NULL,
+            phone VARCHAR(40) NOT NULL,
+            email VARCHAR(180) NULL,
+            product_name VARCHAR(180) NOT NULL,
+            size_dimension VARCHAR(160) NULL,
+            material_type VARCHAR(160) NULL,
+            quantity VARCHAR(80) NULL,
+            instructions TEXT NULL,
+            status VARCHAR(40) NOT NULL DEFAULT 'new',
+            admin_notes TEXT NULL,
+            quoted_amount DECIMAL(12,2) NULL,
+            currency VARCHAR(10) NOT NULL DEFAULT 'INR',
+            source_page VARCHAR(255) NULL,
+            ip_address VARCHAR(64) NULL,
+            user_agent VARCHAR(255) NULL,
+            order_id INT UNSIGNED NULL,
+            approved_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_custom_quote_status (status, created_at),
+            KEY idx_custom_quote_phone (phone),
+            KEY idx_custom_quote_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (\Throwable $e) {
+        error_log('Custom quote schema unavailable: ' . $e->getMessage());
+    }
+};
+$ensureCustomQuoteSchema();
+
+
 $syncProductBusinessNeeds = static function (int $productId, mixed $selectedNeedIds) use ($businessNeedProducts): void {
     $selected = is_array($selectedNeedIds) ? $selectedNeedIds : preg_split('/[,\s]+/', (string)$selectedNeedIds);
     $selected = array_values(array_unique(array_filter(array_map('intval', $selected ?: []), static fn($id) => $id > 0)));
@@ -1804,6 +1841,32 @@ if (str_starts_with($uri, '/admin/api/')) {
 
 
 
+
+    if ($uri === '/admin/api/custom-orders' && $method === 'GET') {
+        try {
+            $rows = Database::rows("SELECT cqr.*, u.name AS user_name, u.email AS user_email
+                FROM custom_quote_requests cqr
+                LEFT JOIN users u ON u.id = cqr.user_id
+                ORDER BY cqr.created_at DESC, cqr.id DESC
+                LIMIT 300");
+            json(['ok'=>true,'quotes'=>$rows]);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Could not load custom orders','quotes'=>[]], 500);
+        }
+    }
+
+    if (preg_match('#^/admin/api/custom-orders/(\d+)/status$#', $uri, $m) && $method === 'POST') {
+        $allowed = ['new','reviewing','quoted','customer_approved','converted_to_order','rejected','closed'];
+        $status = trim((string)($body['status'] ?? ''));
+        if (!in_array($status, $allowed, true)) json(['ok'=>false,'msg'=>'Invalid status'], 422);
+        try {
+            Database::query("UPDATE custom_quote_requests SET status=?, admin_notes=COALESCE(?, admin_notes), updated_at=NOW() WHERE id=?", [$status, isset($body['admin_notes']) ? trim((string)$body['admin_notes']) : null, (int)$m[1]]);
+            json(['ok'=>true]);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Could not update custom order'], 500);
+        }
+    }
+
     if ($uri === '/admin/api/business-needs' && $method === 'GET') {
         try {
             $needs = Database::rows("SELECT bn.*, COUNT(pbn.product_id) AS product_count FROM business_needs bn LEFT JOIN product_business_needs pbn ON pbn.business_need_id = bn.id GROUP BY bn.id ORDER BY bn.sort_order ASC, bn.id DESC");
@@ -2882,6 +2945,7 @@ $adminPage = match(true) {
     $uri === '/admin/blogs/new'  => 'admin/blogs-new',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
+    $uri === '/admin/custom-orders' => 'admin/custom-orders',
     $uri === '/admin/coupons/new' => 'admin/coupons-new',
     $uri === '/admin/reviews'    => 'admin/reviews',
     $uri === '/admin/faqs'       => 'admin/faqs',
