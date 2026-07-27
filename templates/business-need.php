@@ -2,9 +2,6 @@
 /** Business/Sector product listing page. */
 $businessNeed = is_array($businessNeed ?? null) ? $businessNeed : [];
 $businessProducts = is_array($businessProducts ?? null) ? $businessProducts : [];
-$filterOptions = is_array($filterOptions ?? null) ? $filterOptions : [];
-$selectedFilters = is_array($selectedFilters ?? null) ? $selectedFilters : [];
-$searchQuery = trim((string)($searchQuery ?? ''));
 $settingsMap = is_array($settingsMap ?? null) ? $settingsMap : [];
 $needName = trim((string)($businessNeed['name'] ?? 'Business Need')) ?: 'Business Need';
 $needIcon = trim((string)($businessNeed['icon'] ?? '🏢')) ?: '🏢';
@@ -18,7 +15,7 @@ include INCLUDE_PATH . '/partials/header.php';
 <main class="business-page">
   <?php
   $pageHero = [
-    'key' => 'business-' . preg_replace('/[^a-z0-9-]+/i', '-', (string)($businessNeed['slug'] ?? 'sector')),
+    'key' => 'business_' . trim((preg_replace('/[^a-z0-9_-]+/i', '-', (string)($businessNeed['slug'] ?? 'sector')) ?? 'sector'), '-'),
     'title' => $needIcon . ' ' . $needName,
     'subtitle' => $pageDesc !== '' ? $pageDesc : 'Curated print products for this sector.',
     'eyebrow' => 'Shop by Business Need',
@@ -27,7 +24,7 @@ include INCLUDE_PATH . '/partials/header.php';
       ['label' => 'Business Sectors', 'url' => '/business'],
       ['label' => $needName, 'url' => null],
     ],
-    'fallback_image' => '/assets/img/categories/all-categories-hero.svg',
+    'fallback_image' => trim((string)($businessNeed['image_path'] ?? '')) ?: '/assets/img/categories/print-category.svg',
   ];
   include INCLUDE_PATH . '/partials/page-hero.php';
   ?>
@@ -36,19 +33,6 @@ include INCLUDE_PATH . '/partials/header.php';
       <h2 class="ym-title"><?= htmlspecialchars($needName) ?> <span>Products</span></h2>
       <a href="/business" class="ym-view-all">All Business Sectors</a>
     </div>
-    <form class="business-product-filter" method="get">
-      <label><span>Search products</span><input class="fi" type="search" name="q" value="<?= htmlspecialchars($searchQuery, ENT_QUOTES, 'UTF-8') ?>" placeholder="Search in <?= htmlspecialchars($needName, ENT_QUOTES, 'UTF-8') ?> products"></label>
-      <?php foreach ($filterOptions as $group): $groupSlug = (string)($group['slug'] ?? ''); if ($groupSlug === '') continue; ?>
-        <label><span><?= htmlspecialchars((string)($group['label'] ?? $groupSlug)) ?></span><select class="fi fi-sel" name="filters[<?= htmlspecialchars($groupSlug, ENT_QUOTES, 'UTF-8') ?>][]">
-          <option value="">All</option>
-          <?php foreach (($group['options'] ?? []) as $opt): $val = (string)($opt['slug'] ?? ''); ?>
-            <option value="<?= htmlspecialchars($val, ENT_QUOTES, 'UTF-8') ?>" <?= in_array($val, $selectedFilters[$groupSlug] ?? [], true) ? 'selected' : '' ?>><?= htmlspecialchars((string)($opt['label'] ?? $val)) ?></option>
-          <?php endforeach; ?>
-        </select></label>
-      <?php endforeach; ?>
-      <button class="btn btn-blue btn-sm" type="submit">Filter</button>
-      <?php if ($searchQuery !== '' || $selectedFilters): ?><a class="btn btn-outline btn-sm" href="/business/<?= rawurlencode((string)($businessNeed['slug'] ?? '')) ?>">Clear</a><?php endif; ?>
-    </form>
     <?php if (empty($businessProducts)): ?>
       <div class="business-empty-state"><strong>No products assigned yet</strong><span>Please check back soon or contact us for a custom quote.</span><a href="https://wa.me/<?= htmlspecialchars($bizWa) ?>" class="btn btn-green" target="_blank" rel="noopener">WhatsApp Us</a></div>
     <?php else: ?>

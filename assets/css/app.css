@@ -14398,3 +14398,44 @@ body.portfolio-lightbox-open { overflow:hidden; }
 .business-sector-preview { min-height:120px; border:1px dashed var(--border); border-radius:16px; background:#fff7ed; display:grid; place-items:center; color:var(--text2); font-size:12px; font-weight:700; overflow:hidden; }
 .business-sector-preview img { width:100%; max-height:220px; object-fit:cover; display:block; }
 @media (max-width:760px) { .business-product-filter { grid-template-columns:1fr; } }
+
+/* Business sectors should visually match category cards while staying square and flat. */
+.business-needs-section .shop-cat-track { grid-auto-columns:calc((100% - 88px) / 5); }
+.business-needs-section .shop-cat-link,
+.all-business-section .shop-cat-link {
+  min-height:0;
+  aspect-ratio:1 / 1;
+  border-radius:20px;
+  box-shadow:none;
+  background:linear-gradient(180deg,#fff 0%,#fbfbfc 100%);
+  border-color:#e8eaee;
+}
+.business-needs-section .shop-cat-link:hover,
+.all-business-section .shop-cat-link:hover {
+  transform:translateY(-3px);
+  box-shadow:none;
+  border-color:rgba(234,88,12,.35);
+}
+.business-needs-section .shop-cat-img,
+.all-business-section .shop-cat-img { min-height:0; flex:1 1 auto; }
+.business-needs-section .shop-cat-img img,
+.all-business-section .shop-cat-img img { min-height:0; filter:none; }
+.business-needs-section .shop-cat-body.compact,
+.all-business-section .shop-cat-body.compact { min-height:72px; justify-content:flex-start; text-align:left; border-top:1px solid rgba(15,23,42,.06); }
+.business-needs-section .business-need-img::after { display:none; }
+.business-page .page-hero-banner { min-height:300px; }
+.business-page .page-hero-inner { padding:46px 0; }
+.business-page .page-hero-banner h1 { font-size:clamp(34px,4.2vw,58px); line-height:1.03; letter-spacing:-.045em; }
+.business-page .quick-help-call,
+.business-page .quick-help-call .quick-help-copy span,
+.business-page .quick-help-call .quick-help-copy strong { color:#111827; }
+.business-page .quick-help-whatsapp,
+.business-page .quick-help-whatsapp .quick-help-copy span,
+.business-page .quick-help-whatsapp .quick-help-copy strong { color:#fff; }
+@media (max-width:1100px) { .business-needs-section .shop-cat-track { grid-auto-columns:calc((100% - 40px) / 3); } }
+@media (max-width:760px) {
+  .business-needs-section .shop-cat-track { grid-auto-columns:minmax(180px, 72vw); }
+  .business-page .page-hero-banner { min-height:250px; }
+  .business-page .page-hero-inner { padding:36px 0; }
+  .business-page .page-hero-banner h1 { font-size:clamp(30px,10vw,44px); }
+}

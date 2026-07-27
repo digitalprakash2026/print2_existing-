@@ -268,6 +268,8 @@ $ensurePageHeroesSchema = static function (): void {
             ['contact', 'Contact Us', 'Reach our print experts for quotes, support and custom requirements.', '/assets/images/sample-products/stationery/stationery-1.svg', 20],
             ['blogs', 'Printing Ideas & Guides', 'Explore helpful print tips, business branding ideas and product updates.', '/assets/images/sample-products/flyers/flyers-1.svg', 30],
             ['categories', 'All Product Categories', 'Browse every printing category and find the right product for your business.', '/assets/img/categories/all-categories-hero.svg', 40],
+            ['business_sectors', 'All Sectors', 'Explore business-wise printing solutions for your industry.', '/assets/img/categories/print-category.svg', 45],
+            ['business_detail', 'Business Printing Solutions', 'Explore products curated for this business sector.', '/assets/img/categories/print-category.svg', 46],
             ['category_detail', 'Premium Printing Products', 'Choose the right print product with quality materials and fast support.', '/assets/img/categories/all-categories-hero.svg', 50],
             ['product_detail', 'Product Details', 'Customize your order, upload artwork and get premium printing delivered.', '/assets/images/sample-products/business-cards/business-cards-1.svg', 60],
             ['portfolio', 'Our Portfolio', 'Explore real printing work created for businesses and brands.', '/assets/images/sample-products/brochures/brochures-2.svg', 70],
@@ -620,6 +622,25 @@ if (str_starts_with($uri, '/admin/api/')) {
                 }
             } catch (\Throwable $e) {
                 error_log('Category page hero sync failed: ' . $e->getMessage());
+            }
+            try {
+                $businessNeeds = Database::rows("SELECT slug, name, description, image_path, sort_order FROM business_needs WHERE is_active=1 ORDER BY sort_order ASC, id DESC");
+                foreach ($businessNeeds as $need) {
+                    $slug = strtolower(trim((string)($need['slug'] ?? '')));
+                    if ($slug === '') continue;
+                    $slug = preg_replace('/[^a-z0-9_-]+/', '-', $slug) ?? $slug;
+                    $key = 'business_' . trim($slug, '-');
+                    $name = trim((string)($need['name'] ?? 'Business Sector')) ?: 'Business Sector';
+                    $fallback = trim((string)($need['image_path'] ?? '')) ?: '/assets/img/categories/print-category.svg';
+                    Database::query(
+                        "INSERT INTO page_heroes (page_key, title, description, fallback_image, sort_order, is_active, created_at, updated_at)
+                         SELECT ?,?,?,?,?,1,NOW(),NOW() FROM DUAL
+                         WHERE NOT EXISTS (SELECT 1 FROM page_heroes WHERE page_key=? LIMIT 1)",
+                        [$key, $name . ' Printing Solutions', trim((string)($need['description'] ?? '')) ?: 'Explore products curated for ' . $name . '.', $fallback, 1500 + (int)($need['sort_order'] ?? 0), $key]
+                    );
+                }
+            } catch (\Throwable $e) {
+                error_log('Business page hero sync failed: ' . $e->getMessage());
             }
             $rows = Database::rows("SELECT * FROM page_heroes ORDER BY sort_order ASC, title ASC");
             json(['ok'=>true,'heroes'=>$rows]);

@@ -422,10 +422,7 @@ if (preg_match('#^/business/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     try {
         $businessNeed = Database::row("SELECT * FROM business_needs WHERE slug=? AND is_active=1 LIMIT 1", [$m[1]]);
         if (!$businessNeed) { http_response_code(404); view('404'); exit; }
-        $selectedFilters = \Catalog\ProductCatalog::normalizeFilterSelections($_GET['filters'] ?? []);
-        $searchQuery = trim((string)($_GET['q'] ?? ''));
-        $filterOptions = \Catalog\ProductCatalog::filterOptions();
-        $businessProducts = \Catalog\ProductCatalog::byBusinessNeed((int)$businessNeed['id'], $selectedFilters, $searchQuery);
+        $businessProducts = \Catalog\ProductCatalog::byBusinessNeed((int)$businessNeed['id']);
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {
@@ -434,7 +431,7 @@ if (preg_match('#^/business/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
         view('404');
         exit;
     }
-    view('business-need', compact('businessNeed', 'businessProducts', 'settingsMap', 'filterOptions', 'selectedFilters', 'searchQuery'));
+    view('business-need', compact('businessNeed', 'businessProducts', 'settingsMap'));
     exit;
 }
 

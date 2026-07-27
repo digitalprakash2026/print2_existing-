@@ -387,15 +387,16 @@ foreach (($businessNeeds ?? []) as $need) {
         $needName = trim((string)($need['name'] ?? 'Business Sector'));
         $needSlug = trim((string)($need['slug'] ?? ''));
         $needIcon = trim((string)($need['icon'] ?? '🏢')) ?: '🏢';
-        $needImage = trim((string)($need['image_path'] ?? ''));
+        $needImage = trim((string)($need['image_path'] ?? '')) ?: '/assets/img/categories/print-category.svg';
         $needUrl = '/business/' . rawurlencode($needSlug);
       ?>
       <article class="shop-cat-card business-need-card">
         <a href="<?= htmlspecialchars($needUrl, ENT_QUOTES, 'UTF-8') ?>" class="shop-cat-link business-need-link">
           <div class="shop-cat-img business-need-img">
-            <?php if ($needImage !== ''): ?><img src="<?= htmlspecialchars($needImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($needName, ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php else: ?><div class="shop-cat-fallback" aria-hidden="true"><?= htmlspecialchars($needIcon, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+            <img src="<?= htmlspecialchars($needImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($needName, ENT_QUOTES, 'UTF-8') ?>" loading="lazy" onerror="this.src='/assets/img/categories/print-category.svg'">
           </div>
           <div class="shop-cat-body business-need-body compact">
+            <span class="shop-cat-icon" aria-hidden="true"><?= htmlspecialchars($needIcon, ENT_QUOTES, 'UTF-8') ?></span>
             <span class="shop-cat-name"><?= htmlspecialchars($needName, ENT_QUOTES, 'UTF-8') ?></span>
           </div>
         </a>
