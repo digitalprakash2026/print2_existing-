@@ -14382,7 +14382,6 @@ body.portfolio-lightbox-open { overflow:hidden; }
 .product-sector-choice input { margin-top:3px; }
 .product-sector-choice b { display:block; color:var(--text); font-size:12px; line-height:1.25; }
 .product-sector-choice small { display:block; color:var(--text2); font-size:11px; line-height:1.35; margin-top:2px; }
-.business-page .page-hero { margin-bottom:0; }
 .business-empty-state { display:grid; gap:10px; place-items:center; text-align:center; padding:46px 18px; border:1px dashed #d8b4fe; border-radius:20px; background:#fff; color:#64748b; }
 .business-empty-state strong { color:#111827; font-size:18px; }
 
@@ -14423,9 +14422,6 @@ body.portfolio-lightbox-open { overflow:hidden; }
 .business-needs-section .shop-cat-body.compact,
 .all-business-section .shop-cat-body.compact { min-height:72px; justify-content:flex-start; text-align:left; border-top:1px solid rgba(15,23,42,.06); }
 .business-needs-section .business-need-img::after { display:none; }
-.business-page .page-hero-banner { min-height:300px; }
-.business-page .page-hero-inner { padding:46px 0; }
-.business-page .page-hero-banner h1 { font-size:clamp(34px,4.2vw,58px); line-height:1.03; letter-spacing:-.045em; }
 .business-page .quick-help-call,
 .business-page .quick-help-call .quick-help-copy span,
 .business-page .quick-help-call .quick-help-copy strong { color:#111827; }
@@ -14435,7 +14431,4 @@ body.portfolio-lightbox-open { overflow:hidden; }
 @media (max-width:1100px) { .business-needs-section .shop-cat-track { grid-auto-columns:calc((100% - 40px) / 3); } }
 @media (max-width:760px) {
   .business-needs-section .shop-cat-track { grid-auto-columns:minmax(180px, 72vw); }
-  .business-page .page-hero-banner { min-height:250px; }
-  .business-page .page-hero-inner { padding:36px 0; }
-  .business-page .page-hero-banner h1 { font-size:clamp(30px,10vw,44px); }
 }
