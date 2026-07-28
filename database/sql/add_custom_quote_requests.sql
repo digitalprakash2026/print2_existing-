@@ -39,3 +39,8 @@ ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS quote_note TEXT NULL 
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS estimated_delivery VARCHAR(120) NULL AFTER quote_note;
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER estimated_delivery;
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS sent_at DATETIME NULL AFTER payment_status;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS admin_notes TEXT NULL AFTER status;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS quoted_amount DECIMAL(12,2) NULL AFTER admin_notes;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS currency VARCHAR(10) NOT NULL DEFAULT 'INR' AFTER quoted_amount;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS order_id INT UNSIGNED NULL AFTER user_agent;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS approved_at DATETIME NULL AFTER sent_at;

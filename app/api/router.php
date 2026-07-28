@@ -228,12 +228,17 @@ if ($uri === '/api/custom-quotes' && $method === 'POST') {
             KEY idx_custom_quote_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         foreach ([
+            "ALTER TABLE custom_quote_requests ADD COLUMN admin_notes TEXT NULL AFTER status",
+            "ALTER TABLE custom_quote_requests ADD COLUMN quoted_amount DECIMAL(12,2) NULL AFTER admin_notes",
+            "ALTER TABLE custom_quote_requests ADD COLUMN currency VARCHAR(10) NOT NULL DEFAULT 'INR' AFTER quoted_amount",
+            "ALTER TABLE custom_quote_requests ADD COLUMN order_id INT UNSIGNED NULL AFTER user_agent",
             "ALTER TABLE custom_quote_requests ADD COLUMN customer_type VARCHAR(30) NOT NULL DEFAULT 'guest' AFTER order_id",
             "ALTER TABLE custom_quote_requests ADD COLUMN quote_token VARCHAR(80) NULL AFTER customer_type",
             "ALTER TABLE custom_quote_requests ADD COLUMN quote_note TEXT NULL AFTER quote_token",
             "ALTER TABLE custom_quote_requests ADD COLUMN estimated_delivery VARCHAR(120) NULL AFTER quote_note",
             "ALTER TABLE custom_quote_requests ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER estimated_delivery",
             "ALTER TABLE custom_quote_requests ADD COLUMN sent_at DATETIME NULL AFTER payment_status",
+            "ALTER TABLE custom_quote_requests ADD COLUMN approved_at DATETIME NULL AFTER sent_at",
         ] as $sql) { try { Database::query($sql); } catch (\Throwable) {} }
     } catch (\Throwable $e) {
         error_log('Custom quote schema unavailable: ' . $e->getMessage());

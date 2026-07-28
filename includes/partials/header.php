@@ -267,10 +267,8 @@ foreach ($navProducts as $p) {
         <label>Quantity Needed<input name="quantity" placeholder="Eg: 100"></label>
       </div>
       <label>Specific Finish / Instructions<textarea name="instructions" placeholder="Describe lamination, corners, etc..."></textarea></label>
-      <div class="custom-quote-account-note">If your phone/email matches an existing account, we will link this quote automatically. New customers can create an account later to track approval and payment.</div>
       <div class="custom-quote-message" id="customQuoteMessage" role="status"></div>
       <button class="custom-quote-submit" id="customQuoteSubmit" type="submit">Request Quotation <span>→</span></button>
-      <p>Fastest response via WhatsApp Business</p>
     </form>
   </section>
 </div>
