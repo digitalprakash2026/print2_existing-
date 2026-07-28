@@ -18,10 +18,24 @@ CREATE TABLE IF NOT EXISTS custom_quote_requests (
   ip_address VARCHAR(64) NULL,
   user_agent VARCHAR(255) NULL,
   order_id INT UNSIGNED NULL,
+  customer_type VARCHAR(30) NOT NULL DEFAULT 'guest',
+  quote_token VARCHAR(80) NULL,
+  quote_note TEXT NULL,
+  estimated_delivery VARCHAR(120) NULL,
+  payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required',
+  sent_at DATETIME NULL,
   approved_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_custom_quote_status (status, created_at),
   KEY idx_custom_quote_phone (phone),
-  KEY idx_custom_quote_user (user_id)
+  KEY idx_custom_quote_user (user_id),
+  KEY idx_custom_quote_token (quote_token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS customer_type VARCHAR(30) NOT NULL DEFAULT 'guest' AFTER order_id;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS quote_token VARCHAR(80) NULL AFTER customer_type;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS quote_note TEXT NULL AFTER quote_token;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS estimated_delivery VARCHAR(120) NULL AFTER quote_note;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER estimated_delivery;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS sent_at DATETIME NULL AFTER payment_status;

@@ -254,18 +254,20 @@ foreach ($navProducts as $p) {
     <button class="custom-quote-close" type="button" onclick="closeCustomQuoteModal()" aria-label="Close custom quote form">×</button>
     <header class="custom-quote-head">
       <div class="custom-quote-kicker"><span><i class="fa-solid fa-calculator" aria-hidden="true"></i></span> Request Quote</div>
-      <h2 id="customQuoteTitle">Get a <strong>Custom Price</strong></h2>
+      <h2 id="customQuoteTitle">Get a <strong>Custom Quote</strong></h2>
     </header>
     <form class="custom-quote-form" id="customQuoteForm" onsubmit="submitCustomQuote(event)">
       <div class="custom-quote-grid">
         <label>Your Name *<input name="customer_name" placeholder="John Doe" autocomplete="name" required></label>
         <label>WhatsApp Number *<input name="phone" placeholder="9876543210" autocomplete="tel" required></label>
+        <label>Email (for account matching)<input name="email" placeholder="you@example.com" autocomplete="email"></label>
         <label>Product Name *<input name="product_name" placeholder="Eg: Business Card" required></label>
         <label>Size / Dimension<input name="size_dimension" placeholder="Eg: 3.5x2 inches"></label>
         <label>Material Type<input name="material_type" placeholder="Eg: 300gsm Board"></label>
         <label>Quantity Needed<input name="quantity" placeholder="Eg: 100"></label>
       </div>
       <label>Specific Finish / Instructions<textarea name="instructions" placeholder="Describe lamination, corners, etc..."></textarea></label>
+      <div class="custom-quote-account-note">If your phone/email matches an existing account, we will link this quote automatically. New customers can create an account later to track approval and payment.</div>
       <div class="custom-quote-message" id="customQuoteMessage" role="status"></div>
       <button class="custom-quote-submit" id="customQuoteSubmit" type="submit">Request Quotation <span>→</span></button>
       <p>Fastest response via WhatsApp Business</p>

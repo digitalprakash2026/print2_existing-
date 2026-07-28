@@ -214,6 +214,12 @@ if ($uri === '/api/custom-quotes' && $method === 'POST') {
             ip_address VARCHAR(64) NULL,
             user_agent VARCHAR(255) NULL,
             order_id INT UNSIGNED NULL,
+            customer_type VARCHAR(30) NOT NULL DEFAULT 'guest',
+            quote_token VARCHAR(80) NULL,
+            quote_note TEXT NULL,
+            estimated_delivery VARCHAR(120) NULL,
+            payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required',
+            sent_at DATETIME NULL,
             approved_at DATETIME NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -221,6 +227,14 @@ if ($uri === '/api/custom-quotes' && $method === 'POST') {
             KEY idx_custom_quote_phone (phone),
             KEY idx_custom_quote_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        foreach ([
+            "ALTER TABLE custom_quote_requests ADD COLUMN customer_type VARCHAR(30) NOT NULL DEFAULT 'guest' AFTER order_id",
+            "ALTER TABLE custom_quote_requests ADD COLUMN quote_token VARCHAR(80) NULL AFTER customer_type",
+            "ALTER TABLE custom_quote_requests ADD COLUMN quote_note TEXT NULL AFTER quote_token",
+            "ALTER TABLE custom_quote_requests ADD COLUMN estimated_delivery VARCHAR(120) NULL AFTER quote_note",
+            "ALTER TABLE custom_quote_requests ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER estimated_delivery",
+            "ALTER TABLE custom_quote_requests ADD COLUMN sent_at DATETIME NULL AFTER payment_status",
+        ] as $sql) { try { Database::query($sql); } catch (\Throwable) {} }
     } catch (\Throwable $e) {
         error_log('Custom quote schema unavailable: ' . $e->getMessage());
         json(['ok' => false, 'msg' => 'Custom quote system unavailable. Please try again later.'], 500);
@@ -233,29 +247,43 @@ if ($uri === '/api/custom-quotes' && $method === 'POST') {
         json(['ok' => false, 'msg' => 'Name, WhatsApp number and product name are required.'], 422);
     }
     $user = \Auth\Auth::user();
+    $email = strtolower(trim((string)($body['email'] ?? '')));
+    $matchedUserId = $user ? (int)($user['id'] ?? 0) : 0;
+    if (!$matchedUserId) {
+        try {
+            $matched = $email !== ''
+                ? Database::row("SELECT id FROM users WHERE is_active=1 AND (phone=? OR email=?) LIMIT 1", [$phone, $email])
+                : Database::row("SELECT id FROM users WHERE is_active=1 AND phone=? LIMIT 1", [$phone]);
+            $matchedUserId = (int)($matched['id'] ?? 0);
+        } catch (\Throwable) {}
+    }
+    $customerType = $matchedUserId > 0 ? 'registered' : 'guest';
+    $token = bin2hex(random_bytes(24));
     $code = 'CQ-' . date('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
     try {
         $id = Database::insert(
-            "INSERT INTO custom_quote_requests (request_code,user_id,customer_name,phone,email,product_name,size_dimension,material_type,quantity,instructions,status,source_page,ip_address,user_agent,created_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())",
+            "INSERT INTO custom_quote_requests (request_code,user_id,customer_name,phone,email,product_name,size_dimension,material_type,quantity,instructions,status,customer_type,quote_token,source_page,ip_address,user_agent,created_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())",
             [
                 $code,
-                $user ? (int)($user['id'] ?? 0) : null,
+                $matchedUserId > 0 ? $matchedUserId : null,
                 $name,
                 $phone,
-                trim((string)($body['email'] ?? '')) ?: null,
+                $email ?: null,
                 $product,
                 trim((string)($body['size_dimension'] ?? '')),
                 trim((string)($body['material_type'] ?? '')),
                 trim((string)($body['quantity'] ?? '')),
                 trim((string)($body['instructions'] ?? '')),
                 'new',
+                $customerType,
+                $token,
                 trim((string)($body['source_page'] ?? ($_SERVER['HTTP_REFERER'] ?? ''))),
                 $_SERVER['REMOTE_ADDR'] ?? null,
                 substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
             ]
         );
-        json(['ok' => true, 'id' => (int)$id, 'request_code' => $code, 'msg' => 'Quotation request received. Our team will contact you on WhatsApp shortly.']);
+        json(['ok' => true, 'id' => (int)$id, 'request_code' => $code, 'customer_type' => $customerType, 'msg' => $customerType === 'registered' ? 'Quotation request received and linked to your account.' : 'Quotation request received. Create/login to an account later to track and pay.']);
     } catch (\Throwable $e) {
         error_log('Custom quote save failed: ' . $e->getMessage());
         json(['ok' => false, 'msg' => 'Could not submit quotation request.'], 500);

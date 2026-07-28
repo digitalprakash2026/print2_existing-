@@ -137,6 +137,12 @@ $ensureCustomQuoteSchema = static function (): void {
             ip_address VARCHAR(64) NULL,
             user_agent VARCHAR(255) NULL,
             order_id INT UNSIGNED NULL,
+            customer_type VARCHAR(30) NOT NULL DEFAULT 'guest',
+            quote_token VARCHAR(80) NULL,
+            quote_note TEXT NULL,
+            estimated_delivery VARCHAR(120) NULL,
+            payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required',
+            sent_at DATETIME NULL,
             approved_at DATETIME NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -144,6 +150,14 @@ $ensureCustomQuoteSchema = static function (): void {
             KEY idx_custom_quote_phone (phone),
             KEY idx_custom_quote_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        foreach ([
+            "ALTER TABLE custom_quote_requests ADD COLUMN customer_type VARCHAR(30) NOT NULL DEFAULT 'guest' AFTER order_id",
+            "ALTER TABLE custom_quote_requests ADD COLUMN quote_token VARCHAR(80) NULL AFTER customer_type",
+            "ALTER TABLE custom_quote_requests ADD COLUMN quote_note TEXT NULL AFTER quote_token",
+            "ALTER TABLE custom_quote_requests ADD COLUMN estimated_delivery VARCHAR(120) NULL AFTER quote_note",
+            "ALTER TABLE custom_quote_requests ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER estimated_delivery",
+            "ALTER TABLE custom_quote_requests ADD COLUMN sent_at DATETIME NULL AFTER payment_status",
+        ] as $sql) { try { Database::query($sql); } catch (\Throwable) {} }
     } catch (\Throwable $e) {
         error_log('Custom quote schema unavailable: ' . $e->getMessage());
     }
@@ -1855,12 +1869,42 @@ if (str_starts_with($uri, '/admin/api/')) {
         }
     }
 
+    if (preg_match('#^/admin/api/custom-orders/(\d+)$#', $uri, $m) && in_array($method, ['POST','PUT'], true)) {
+        $allowed = ['new','reviewing','quoted','sent_to_customer','customer_approved','payment_pending','paid','converted_to_order','rejected','closed'];
+        $status = trim((string)($body['status'] ?? 'new'));
+        if (!in_array($status, $allowed, true)) json(['ok'=>false,'msg'=>'Invalid status'], 422);
+        try {
+            Database::query("UPDATE custom_quote_requests SET customer_name=?, phone=?, email=?, product_name=?, size_dimension=?, material_type=?, quantity=?, instructions=?, status=?, admin_notes=?, quoted_amount=?, quote_note=?, estimated_delivery=?, payment_status=?, sent_at=CASE WHEN ?='sent_to_customer' AND sent_at IS NULL THEN NOW() ELSE sent_at END, approved_at=CASE WHEN ?='customer_approved' AND approved_at IS NULL THEN NOW() ELSE approved_at END, updated_at=NOW() WHERE id=?", [
+                trim((string)($body['customer_name'] ?? '')),
+                trim((string)($body['phone'] ?? '')),
+                trim((string)($body['email'] ?? '')) ?: null,
+                trim((string)($body['product_name'] ?? '')),
+                trim((string)($body['size_dimension'] ?? '')),
+                trim((string)($body['material_type'] ?? '')),
+                trim((string)($body['quantity'] ?? '')),
+                trim((string)($body['instructions'] ?? '')),
+                $status,
+                trim((string)($body['admin_notes'] ?? '')),
+                ($body['quoted_amount'] ?? '') !== '' && ($body['quoted_amount'] ?? null) !== null ? (float)$body['quoted_amount'] : null,
+                trim((string)($body['quote_note'] ?? '')),
+                trim((string)($body['estimated_delivery'] ?? '')),
+                trim((string)($body['payment_status'] ?? 'not_required')) ?: 'not_required',
+                $status,
+                $status,
+                (int)$m[1],
+            ]);
+            json(['ok'=>true]);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Could not update custom order'], 500);
+        }
+    }
+
     if (preg_match('#^/admin/api/custom-orders/(\d+)/status$#', $uri, $m) && $method === 'POST') {
-        $allowed = ['new','reviewing','quoted','customer_approved','converted_to_order','rejected','closed'];
+        $allowed = ['new','reviewing','quoted','sent_to_customer','customer_approved','payment_pending','paid','converted_to_order','rejected','closed'];
         $status = trim((string)($body['status'] ?? ''));
         if (!in_array($status, $allowed, true)) json(['ok'=>false,'msg'=>'Invalid status'], 422);
         try {
-            Database::query("UPDATE custom_quote_requests SET status=?, admin_notes=COALESCE(?, admin_notes), updated_at=NOW() WHERE id=?", [$status, isset($body['admin_notes']) ? trim((string)$body['admin_notes']) : null, (int)$m[1]]);
+            Database::query("UPDATE custom_quote_requests SET status=?, admin_notes=COALESCE(?, admin_notes), sent_at=CASE WHEN ?='sent_to_customer' AND sent_at IS NULL THEN NOW() ELSE sent_at END, approved_at=CASE WHEN ?='customer_approved' AND approved_at IS NULL THEN NOW() ELSE approved_at END, updated_at=NOW() WHERE id=?", [$status, isset($body['admin_notes']) ? trim((string)$body['admin_notes']) : null, $status, $status, (int)$m[1]]);
             json(['ok'=>true]);
         } catch (\Throwable $e) {
             json(['ok'=>false,'msg'=>'Could not update custom order'], 500);
