@@ -1879,7 +1879,14 @@ if (str_starts_with($uri, '/admin/api/')) {
         $status = trim((string)($body['status'] ?? 'new'));
         if (!in_array($status, $allowed, true)) json(['ok'=>false,'msg'=>'Invalid status'], 422);
         try {
-            Database::query("UPDATE custom_quote_requests SET customer_name=?, phone=?, email=?, product_name=?, size_dimension=?, material_type=?, quantity=?, instructions=?, status=?, admin_notes=?, quoted_amount=?, quote_note=?, estimated_delivery=?, payment_status=?, sent_at=CASE WHEN ?='sent_to_customer' AND sent_at IS NULL THEN NOW() ELSE sent_at END, approved_at=CASE WHEN ?='customer_approved' AND approved_at IS NULL THEN NOW() ELSE approved_at END, updated_at=NOW() WHERE id=?", [
+            $timestampSql = '';
+            if ($status === 'sent_to_customer') {
+                $timestampSql .= ', sent_at=COALESCE(sent_at, NOW())';
+            }
+            if ($status === 'customer_approved') {
+                $timestampSql .= ', approved_at=COALESCE(approved_at, NOW())';
+            }
+            Database::query("UPDATE custom_quote_requests SET customer_name=?, phone=?, email=?, product_name=?, size_dimension=?, material_type=?, quantity=?, instructions=?, status=?, admin_notes=?, quoted_amount=?, quote_note=?, estimated_delivery=?, payment_status=?{$timestampSql}, updated_at=NOW() WHERE id=?", [
                 trim((string)($body['customer_name'] ?? '')),
                 trim((string)($body['phone'] ?? '')),
                 trim((string)($body['email'] ?? '')) ?: null,
@@ -1894,8 +1901,6 @@ if (str_starts_with($uri, '/admin/api/')) {
                 trim((string)($body['quote_note'] ?? '')),
                 trim((string)($body['estimated_delivery'] ?? '')),
                 trim((string)($body['payment_status'] ?? 'not_required')) ?: 'not_required',
-                $status,
-                $status,
                 (int)$m[1],
             ]);
             json(['ok'=>true]);
@@ -1909,10 +1914,17 @@ if (str_starts_with($uri, '/admin/api/')) {
         $status = trim((string)($body['status'] ?? ''));
         if (!in_array($status, $allowed, true)) json(['ok'=>false,'msg'=>'Invalid status'], 422);
         try {
-            Database::query("UPDATE custom_quote_requests SET status=?, admin_notes=COALESCE(?, admin_notes), sent_at=CASE WHEN ?='sent_to_customer' AND sent_at IS NULL THEN NOW() ELSE sent_at END, approved_at=CASE WHEN ?='customer_approved' AND approved_at IS NULL THEN NOW() ELSE approved_at END, updated_at=NOW() WHERE id=?", [$status, isset($body['admin_notes']) ? trim((string)$body['admin_notes']) : null, $status, $status, (int)$m[1]]);
+            $timestampSql = '';
+            if ($status === 'sent_to_customer') {
+                $timestampSql .= ', sent_at=COALESCE(sent_at, NOW())';
+            }
+            if ($status === 'customer_approved') {
+                $timestampSql .= ', approved_at=COALESCE(approved_at, NOW())';
+            }
+            Database::query("UPDATE custom_quote_requests SET status=?, admin_notes=COALESCE(?, admin_notes){$timestampSql}, updated_at=NOW() WHERE id=?", [$status, isset($body['admin_notes']) ? trim((string)$body['admin_notes']) : null, (int)$m[1]]);
             json(['ok'=>true]);
         } catch (\Throwable $e) {
-            json(['ok'=>false,'msg'=>'Could not update custom order'], 500);
+            json(['ok'=>false,'msg'=>'Could not update custom order: ' . $e->getMessage()], 500);
         }
     }
 
