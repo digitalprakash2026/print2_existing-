@@ -14515,3 +14515,9 @@ body.portfolio-lightbox-open { overflow:hidden; }
 .custom-quote-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 @media (max-width:1180px) { .custom-quote-card .adm-order-card-summary { grid-template-columns:1fr 1fr; } .custom-quote-edit-grid { grid-template-columns:1fr 1fr; } }
 @media (max-width:720px) { .custom-quote-card .adm-order-card-summary,.custom-quote-edit-grid { grid-template-columns:1fr; } }
+.cartp-img-custom { cursor:default; background:#f5f3ff; color:#4a148c; }
+.cartp-img-custom::after { content:'CQ'; font-weight:950; letter-spacing:.08em; }
+.cartp-fixed-qty { display:inline-flex; align-items:center; justify-content:center; min-height:40px; padding:0 14px; border:1px solid var(--border); border-radius:10px; background:#f8fafc; color:var(--text2); font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
+.cart-item-custom .ci-img { background:#f5f3ff; }
+.cart-item-custom .ci-img::after { content:'CQ'; color:#4a148c; font-size:12px; font-weight:950; }
+.cart-item-custom .ci-img img[src=''], .cart-item-custom .ci-img img:not([src]) { display:none; }

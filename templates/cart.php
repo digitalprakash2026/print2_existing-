@@ -42,10 +42,15 @@ $cartTotal = (float)($totals['total'] ?? 0);
           $linePrice = $basePrice;
           $quality = trim((string)($item['quality_name'] ?? ($priceBreakdown['quality_name'] ?? '')));
           $designChoice = (string)($item['design_choice'] ?? ($priceBreakdown['design_choice'] ?? 'upload'));
+          $isCustomQuote = (($item['item_type'] ?? 'product') === 'custom_quote');
           try {
-              $pricingData = \Cart\Pricing::productPricingData((int)($item['product_id'] ?? 0));
-              $qtyOptions = array_values(array_unique(array_map('intval', array_column($pricingData['tiers'] ?? [], 'quantity'))));
-              sort($qtyOptions);
+              if ($isCustomQuote) {
+                  $qtyOptions = [1];
+              } else {
+                  $pricingData = \Cart\Pricing::productPricingData((int)($item['product_id'] ?? 0));
+                  $qtyOptions = array_values(array_unique(array_map('intval', array_column($pricingData['tiers'] ?? [], 'quantity'))));
+                  sort($qtyOptions);
+              }
           } catch (\Throwable) {
               $qtyOptions = [];
           }
@@ -57,16 +62,22 @@ $cartTotal = (float)($totals['total'] ?? 0);
         ?>
         <article class="cartp-row">
           <div class="cartp-prod" data-label="Product">
-            <a class="cartp-img" href="/product/<?= htmlspecialchars($item['slug'] ?? '') ?>">
+            <?php if ($isCustomQuote): ?><span class="cartp-img cartp-img-custom"><?php else: ?><a class="cartp-img" href="/product/<?= htmlspecialchars($item['slug'] ?? '') ?>"><?php endif; ?>
               <img src="<?= htmlspecialchars($item['product_image'] ?? '') ?>" alt="<?= htmlspecialchars($item['product_name'] ?? '') ?>" onerror="this.style.display='none'">
-            </a>
+            <?php if ($isCustomQuote): ?></span><?php else: ?></a><?php endif; ?>
             <div class="cartp-prod-copy">
               <h3><?= htmlspecialchars($item['product_name'] ?? '') ?></h3>
-              <p><?= number_format($itemQty) ?> pcs<?= $quality !== '' ? ', ' . htmlspecialchars($quality) : '' ?></p>
-              <?php if ($designChoice === 'rcs'): ?>
-                <small>Design by RCS Graphic<?= $designFee > 0 ? ' (+₹' . number_format($designFee) . ')' : '' ?></small>
+              <?php if ($isCustomQuote): ?>
+                <p><strong>Custom Quote<?= !empty($item['custom_quote_code']) ? ' #' . htmlspecialchars((string)$item['custom_quote_code']) : '' ?></strong></p>
+                <small><?= !empty($item['custom_requested_quantity']) ? 'Requested Qty: ' . htmlspecialchars((string)$item['custom_requested_quantity']) . ' · ' : '' ?><?= !empty($item['custom_size_dimension']) ? 'Size: ' . htmlspecialchars((string)$item['custom_size_dimension']) . ' · ' : '' ?><?= !empty($item['custom_material_type']) ? 'Material: ' . htmlspecialchars((string)$item['custom_material_type']) : 'Custom print requirement' ?></small>
+                <?php if (!empty($item['custom_estimated_delivery'])): ?><small>Estimated delivery: <?= htmlspecialchars((string)$item['custom_estimated_delivery']) ?></small><?php endif; ?>
               <?php else: ?>
-                <small>Customer artwork upload (No design fee)</small>
+                <p><?= number_format($itemQty) ?> pcs<?= $quality !== '' ? ', ' . htmlspecialchars($quality) : '' ?></p>
+                <?php if ($designChoice === 'rcs'): ?>
+                  <small>Design by RCS Graphic<?= $designFee > 0 ? ' (+₹' . number_format($designFee) . ')' : '' ?></small>
+                <?php else: ?>
+                  <small>Customer artwork upload (No design fee)</small>
+                <?php endif; ?>
               <?php endif; ?>
             </div>
           </div>
@@ -75,11 +86,15 @@ $cartTotal = (float)($totals['total'] ?? 0);
             <small>Base price</small>
           </div>
           <div class="cartp-qty" data-label="Quantity">
-            <select class="cartp-qty-select" onchange="updateCartQty('<?= htmlspecialchars($itemId, ENT_QUOTES) ?>', this.value, this)" aria-label="Select quantity for <?= htmlspecialchars($item['product_name'] ?? '', ENT_QUOTES) ?>">
-              <?php foreach ($qtyOptions as $qty): ?>
-                <option value="<?= (int)$qty ?>" <?= $qty === $itemQty ? 'selected' : '' ?>><?= number_format((int)$qty) ?> pcs</option>
-              <?php endforeach; ?>
-            </select>
+            <?php if ($isCustomQuote): ?>
+              <span class="cartp-fixed-qty">Custom</span>
+            <?php else: ?>
+              <select class="cartp-qty-select" onchange="updateCartQty('<?= htmlspecialchars($itemId, ENT_QUOTES) ?>', this.value, this)" aria-label="Select quantity for <?= htmlspecialchars($item['product_name'] ?? '', ENT_QUOTES) ?>">
+                <?php foreach ($qtyOptions as $qty): ?>
+                  <option value="<?= (int)$qty ?>" <?= $qty === $itemQty ? 'selected' : '' ?>><?= number_format((int)$qty) ?> pcs</option>
+                <?php endforeach; ?>
+              </select>
+            <?php endif; ?>
           </div>
           <div class="cartp-total" data-label="Total">
             <strong>₹<?= number_format($lineTotal) ?></strong>

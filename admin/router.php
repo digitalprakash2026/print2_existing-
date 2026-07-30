@@ -60,6 +60,7 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
     }
 };
 \Orders\OrderManager::ensureWorkflowSchema();
+\Orders\OrderManager::ensureCustomOrderSchema();
 \Orders\OrderManager::ensureDesignApprovalSchema();
 \Orders\OrderManager::ensureDesignEventSchema();
 \Orders\OrderManager::ensureCustomerUpdateSchema();
@@ -143,6 +144,7 @@ $ensureCustomQuoteSchema = static function (): void {
             estimated_delivery VARCHAR(120) NULL,
             payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required',
             sent_at DATETIME NULL,
+            payment_link_generated_at DATETIME NULL,
             approved_at DATETIME NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -161,7 +163,8 @@ $ensureCustomQuoteSchema = static function (): void {
             "ALTER TABLE custom_quote_requests ADD COLUMN estimated_delivery VARCHAR(120) NULL AFTER quote_note",
             "ALTER TABLE custom_quote_requests ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER estimated_delivery",
             "ALTER TABLE custom_quote_requests ADD COLUMN sent_at DATETIME NULL AFTER payment_status",
-            "ALTER TABLE custom_quote_requests ADD COLUMN approved_at DATETIME NULL AFTER sent_at",
+            "ALTER TABLE custom_quote_requests ADD COLUMN payment_link_generated_at DATETIME NULL AFTER sent_at",
+            "ALTER TABLE custom_quote_requests ADD COLUMN approved_at DATETIME NULL AFTER payment_link_generated_at",
         ] as $sql) { try { Database::query($sql); } catch (\Throwable) {} }
     } catch (\Throwable $e) {
         error_log('Custom quote schema unavailable: ' . $e->getMessage());
@@ -1906,6 +1909,27 @@ if (str_starts_with($uri, '/admin/api/')) {
             json(['ok'=>true]);
         } catch (\Throwable $e) {
             json(['ok'=>false,'msg'=>'Could not save custom order: ' . $e->getMessage()], 500);
+        }
+    }
+
+    if (preg_match('#^/admin/api/custom-orders/(\d+)/payment-link$#', $uri, $m) && $method === 'POST') {
+        try {
+            $quote = Database::row("SELECT * FROM custom_quote_requests WHERE id=? LIMIT 1", [(int)$m[1]]);
+            if (!$quote) json(['ok'=>false,'msg'=>'Custom quote not found'], 404);
+            if ((float)($quote['quoted_amount'] ?? 0) <= 0) json(['ok'=>false,'msg'=>'Please save quoted amount before generating payment link.'], 422);
+            if (in_array((string)($quote['status'] ?? ''), ['converted_to_order','closed','rejected'], true)) json(['ok'=>false,'msg'=>'This quote cannot be converted to checkout.'], 422);
+            $token = trim((string)($quote['quote_token'] ?? ''));
+            if ($token === '') $token = bin2hex(random_bytes(24));
+            Database::query("UPDATE custom_quote_requests SET quote_token=?, status='payment_pending', payment_status='payment_pending', payment_link_generated_at=COALESCE(payment_link_generated_at, NOW()), updated_at=NOW() WHERE id=?", [$token, (int)$m[1]]);
+            $base = rtrim((defined('APP_URL') ? (string)APP_URL : ''), '/');
+            if ($base === '') {
+                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $base = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? '');
+            }
+            $link = $base . '/custom-checkout/' . rawurlencode($token);
+            json(['ok'=>true,'link'=>$link,'token'=>$token,'status'=>'payment_pending']);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Could not generate payment link: ' . $e->getMessage()], 500);
         }
     }
 

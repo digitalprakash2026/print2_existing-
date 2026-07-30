@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS custom_quote_requests (
   estimated_delivery VARCHAR(120) NULL,
   payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required',
   sent_at DATETIME NULL,
+  payment_link_generated_at DATETIME NULL,
   approved_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -44,3 +45,4 @@ ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS quoted_amount DECIMAL
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS currency VARCHAR(10) NOT NULL DEFAULT 'INR' AFTER quoted_amount;
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS order_id INT UNSIGNED NULL AFTER user_agent;
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS approved_at DATETIME NULL AFTER sent_at;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS payment_link_generated_at DATETIME NULL AFTER sent_at;

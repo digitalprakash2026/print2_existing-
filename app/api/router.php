@@ -220,6 +220,7 @@ if ($uri === '/api/custom-quotes' && $method === 'POST') {
             estimated_delivery VARCHAR(120) NULL,
             payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required',
             sent_at DATETIME NULL,
+            payment_link_generated_at DATETIME NULL,
             approved_at DATETIME NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -238,7 +239,8 @@ if ($uri === '/api/custom-quotes' && $method === 'POST') {
             "ALTER TABLE custom_quote_requests ADD COLUMN estimated_delivery VARCHAR(120) NULL AFTER quote_note",
             "ALTER TABLE custom_quote_requests ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER estimated_delivery",
             "ALTER TABLE custom_quote_requests ADD COLUMN sent_at DATETIME NULL AFTER payment_status",
-            "ALTER TABLE custom_quote_requests ADD COLUMN approved_at DATETIME NULL AFTER sent_at",
+            "ALTER TABLE custom_quote_requests ADD COLUMN payment_link_generated_at DATETIME NULL AFTER sent_at",
+            "ALTER TABLE custom_quote_requests ADD COLUMN approved_at DATETIME NULL AFTER payment_link_generated_at",
         ] as $sql) { try { Database::query($sql); } catch (\Throwable) {} }
     } catch (\Throwable $e) {
         error_log('Custom quote schema unavailable: ' . $e->getMessage());

@@ -13,6 +13,29 @@ class OrderManager
     private static ?bool $designApprovalSchemaReady = null;
     private static ?bool $designEventSchemaReady = null;
     private static ?bool $invoiceSchemaReady = null;
+    private static ?bool $customOrderSchemaReady = null;
+
+    public static function ensureCustomOrderSchema(): bool
+    {
+        if (self::$customOrderSchemaReady !== null) return self::$customOrderSchemaReady;
+        try {
+            foreach ([
+                "ALTER TABLE orders ADD COLUMN order_type VARCHAR(30) NOT NULL DEFAULT 'normal' AFTER order_id",
+                "ALTER TABLE orders ADD COLUMN custom_quote_id INT UNSIGNED NULL AFTER order_type",
+                "CREATE INDEX idx_orders_order_type ON orders (order_type)",
+                "CREATE INDEX idx_orders_custom_quote ON orders (custom_quote_id)",
+                "ALTER TABLE order_items MODIFY COLUMN product_id INT UNSIGNED NULL",
+                "ALTER TABLE order_items ADD COLUMN item_type VARCHAR(30) NOT NULL DEFAULT 'product' AFTER order_id",
+                "ALTER TABLE order_items ADD COLUMN custom_quote_id INT UNSIGNED NULL AFTER item_type",
+                "CREATE INDEX idx_order_items_custom_quote ON order_items (custom_quote_id)",
+            ] as $sql) { try { \Database::query($sql); } catch (\Throwable) {} }
+            self::$customOrderSchemaReady = true;
+        } catch (\Throwable $e) {
+            error_log('Order custom quote schema unavailable: ' . $e->getMessage());
+            self::$customOrderSchemaReady = false;
+        }
+        return self::$customOrderSchemaReady;
+    }
 
     public static function ensureWorkflowSchema(): bool
     {
@@ -331,6 +354,7 @@ class OrderManager
         // Ensure the additive audit table before checkout starts its DB transaction.
         // MySQL DDL can implicitly commit active transactions, so never create this table mid-order.
         self::ensureDesignEventSchema();
+        self::ensureCustomOrderSchema();
 
         $user = \Auth\Auth::user();
         if (!$user) return ['ok' => false, 'msg' => 'Not authenticated'];
@@ -353,6 +377,8 @@ class OrderManager
         if (!empty($meta)) {
             $storedNotes = json_encode($meta, JSON_UNESCAPED_UNICODE);
         }
+        $customQuoteIds = array_values(array_unique(array_filter(array_map('intval', array_column($cartItems, 'custom_quote_id')), static fn($id) => $id > 0)));
+        $hasCustomQuote = !empty($customQuoteIds);
 
         // Generate readable order ID
         $orderId = self::generateOrderId();
@@ -366,12 +392,14 @@ class OrderManager
 
             // Create order
             $dbOrderId = \Database::insert(
-                "INSERT INTO orders (order_id, user_id, customer_name, customer_email, customer_phone,
+                "INSERT INTO orders (order_id, order_type, custom_quote_id, user_id, customer_name, customer_email, customer_phone,
                     subtotal, discount_amount, gst_amount, gst_percent, total_amount,
                     coupon_code, payment_method, payment_status, status, notes, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new_order', ?, ?)",
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new_order', ?, ?)",
                 [
                     $orderId,
+                    $hasCustomQuote ? 'custom' : 'normal',
+                    $customQuoteIds[0] ?? null,
                     $user['id'],
                     $user['name'],
                     $user['email'],
@@ -392,15 +420,17 @@ class OrderManager
             // Insert order items (snapshot of cart)
             foreach ($cartItems as $item) {
                 $orderItemId = \Database::insert(
-                    "INSERT INTO order_items (order_id, product_id, quality_id, quantity,
+                    "INSERT INTO order_items (order_id, item_type, custom_quote_id, product_id, quality_id, quantity,
                         product_name, quality_name, attribute_selections, design_choice,
                         design_brief, notes, price_breakdown, total_price, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [
                         $dbOrderId,
-                        $item['product_id'],
-                        $item['quality_id'],
-                        $item['quantity'],
+                        ($item['item_type'] ?? 'product') === 'custom_quote' ? 'custom_quote' : 'product',
+                        !empty($item['custom_quote_id']) ? (int)$item['custom_quote_id'] : null,
+                        ($item['item_type'] ?? 'product') === 'custom_quote' ? null : (int)($item['product_id'] ?? 0),
+                        ($item['item_type'] ?? 'product') === 'custom_quote' ? null : (int)($item['quality_id'] ?? 1),
+                        (int)($item['quantity'] ?? 1),
                         $item['product_name'],
                         $item['quality_name'],
                         $item['attribute_selections'],
@@ -412,6 +442,13 @@ class OrderManager
                         $now,
                     ]
                 );
+
+                if (!empty($item['custom_quote_id'])) {
+                    \Database::query(
+                        "UPDATE custom_quote_requests SET payment_status=?, status=?, order_id=?, updated_at=NOW() WHERE id=? AND (order_id IS NULL OR order_id=?)",
+                        [($params['payment_status'] ?? 'pending') === 'paid' ? 'paid' : 'payment_pending', ($params['payment_status'] ?? 'pending') === 'paid' ? 'converted_to_order' : 'payment_pending', $dbOrderId, (int)$item['custom_quote_id'], $dbOrderId]
+                    );
+                }
 
                 // Link artwork files
                 if (!empty($item['id'])) {

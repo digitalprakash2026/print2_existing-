@@ -112,8 +112,12 @@ $checkoutTotal = (float)($totals['total'] ?? 0);
             <article class="checkout-item">
               <div class="checkout-item-img"><img src="<?= htmlspecialchars($item['product_image'] ?? '') ?>" alt="<?= htmlspecialchars($item['product_name'] ?? '') ?>" onerror="this.style.display='none'"></div>
               <div class="checkout-item-copy">
-                <h3><?= htmlspecialchars($item['product_name'] ?? '') ?></h3>
-                <p><?= number_format((int)($item['quantity'] ?? 0)) ?> pcs<?= !empty($item['quality_name']) ? ' | ' . htmlspecialchars((string)$item['quality_name']) : '' ?></p>
+                <h3><?= htmlspecialchars($item['product_name'] ?? '') ?><?= (($item['item_type'] ?? 'product') === 'custom_quote') ? ' — Custom Quote' : '' ?></h3>
+                <?php if (($item['item_type'] ?? 'product') === 'custom_quote'): ?>
+                  <p><?= !empty($item['custom_requested_quantity']) ? 'Requested Qty: ' . htmlspecialchars((string)$item['custom_requested_quantity']) : 'Custom quantity' ?><?= !empty($item['custom_size_dimension']) ? ' | Size: ' . htmlspecialchars((string)$item['custom_size_dimension']) : '' ?></p>
+                <?php else: ?>
+                  <p><?= number_format((int)($item['quantity'] ?? 0)) ?> pcs<?= !empty($item['quality_name']) ? ' | ' . htmlspecialchars((string)$item['quality_name']) : '' ?></p>
+                <?php endif; ?>
                 <strong>₹<?= number_format((float)($item['total_price'] ?? 0)) ?></strong>
               </div>
               <div class="checkout-item-side">
