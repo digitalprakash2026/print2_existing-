@@ -1866,14 +1866,20 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/custom-orders' && $method === 'GET') {
         try {
-            $rows = Database::rows("SELECT cqr.*, u.name AS user_name, u.email AS user_email
+            $rows = Database::rows("SELECT cqr.*, u.name AS user_name, u.email AS user_email, u.phone AS user_phone
                 FROM custom_quote_requests cqr
                 LEFT JOIN users u ON u.id = cqr.user_id
                 ORDER BY cqr.created_at DESC, cqr.id DESC
                 LIMIT 300");
-            json(['ok'=>true,'quotes'=>$rows]);
+            $counts = ['all'=>count($rows),'new'=>0,'reviewing'=>0,'sent_to_customer'=>0,'customer_approved'=>0,'payment_pending'=>0,'converted_to_order'=>0,'rejected'=>0];
+            foreach ($rows as $row) {
+                $st = (string)($row['status'] ?? 'new');
+                if ($st === 'paid') $st = 'converted_to_order';
+                if (array_key_exists($st, $counts)) $counts[$st]++;
+            }
+            json(['ok'=>true,'quotes'=>$rows,'counts'=>$counts]);
         } catch (\Throwable $e) {
-            json(['ok'=>false,'msg'=>'Could not load custom orders','quotes'=>[]], 500);
+            json(['ok'=>false,'msg'=>'Could not load custom orders','quotes'=>[],'counts'=>[]], 500);
         }
     }
 
@@ -1909,6 +1915,42 @@ if (str_starts_with($uri, '/admin/api/')) {
             json(['ok'=>true]);
         } catch (\Throwable $e) {
             json(['ok'=>false,'msg'=>'Could not save custom order: ' . $e->getMessage()], 500);
+        }
+    }
+
+    if (preg_match('#^/admin/api/custom-orders/(\d+)/customer-account$#', $uri, $m) && $method === 'POST') {
+        try {
+            $quote = Database::row("SELECT * FROM custom_quote_requests WHERE id=? LIMIT 1", [(int)$m[1]]);
+            if (!$quote) json(['ok'=>false,'msg'=>'Custom quote not found'], 404);
+            $name = trim((string)($quote['customer_name'] ?? '')) ?: 'RCS Customer';
+            $phone = trim((string)($quote['phone'] ?? ''));
+            $email = strtolower(trim((string)($quote['email'] ?? '')));
+            if ($phone === '' && $email === '') json(['ok'=>false,'msg'=>'Please add customer phone or email before creating account.'], 422);
+            if ($email === '') json(['ok'=>false,'msg'=>'Please add customer email before creating account. Email is required for login and password reset.'], 422);
+            $user = Database::row("SELECT * FROM users WHERE email=? OR phone=? LIMIT 1", [$email, $phone]);
+            $created = false;
+            $tempPassword = '';
+            if (!$user) {
+                $tempPassword = 'RCS@' . random_int(100000, 999999);
+                $userId = Database::insert(
+                    "INSERT INTO users (name, email, phone, company, password, marketing_consent, created_at) VALUES (?, ?, ?, '', ?, 0, NOW())",
+                    [$name, $email, $phone, password_hash($tempPassword, PASSWORD_BCRYPT, ['cost'=>10])]
+                );
+                $user = Database::row("SELECT * FROM users WHERE id=?", [(int)$userId]);
+                $created = true;
+            }
+            Database::query("UPDATE custom_quote_requests SET user_id=?, customer_type='registered', email=COALESCE(NULLIF(email,''), ?), phone=COALESCE(NULLIF(phone,''), ?), updated_at=NOW() WHERE id=?", [(int)$user['id'], (string)($user['email'] ?? $email), (string)($user['phone'] ?? $phone), (int)$m[1]]);
+            $loginUrl = rtrim((defined('APP_URL') ? (string)APP_URL : ''), '/') . '/login?next=/cart';
+            if ($loginUrl === '/login?next=/cart') {
+                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $loginUrl = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? '') . '/login?next=/cart';
+            }
+            $message = $created
+                ? "Hello {$name}, 👋\n\nYour RCS Print account has been created for your custom order.\n\nLogin Email: {$email}\nTemporary Password: {$tempPassword}\n\nLogin here: {$loginUrl}\n\nYou can change your password from account settings after login."
+                : "Hello {$name}, 👋\n\nYour custom quote has been linked with your RCS Print account.\n\nLogin here: {$loginUrl}\n\nAfter opening the payment/cart link, your custom order will be available in cart.";
+            json(['ok'=>true,'created'=>$created,'user'=>['id'=>(int)$user['id'],'name'=>(string)($user['name'] ?? $name),'email'=>(string)($user['email'] ?? $email),'phone'=>(string)($user['phone'] ?? $phone)],'temporary_password'=>$created ? $tempPassword : null,'message'=>$message]);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Could not create/link account: ' . $e->getMessage()], 500);
         }
     }
 

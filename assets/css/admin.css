@@ -996,3 +996,22 @@ body.admin-page-custom-orders .custom-quote-actions { margin:0; }
   body.admin-page-custom-orders .adm-order-card-quick .btn,
   body.admin-page-custom-orders .adm-order-card-quick .fi { width:100%; }
 }
+
+/* Custom Orders status dashboard + focused quote detail layout */
+body.admin-page-custom-orders .custom-quote-status-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:0 0 16px; }
+body.admin-page-custom-orders .custom-quote-status-card { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; min-height:74px; padding:14px; border:1px solid var(--adm-line); border-radius:16px; background:#fff; box-shadow:var(--adm-shadow); color:var(--adm-ink); text-align:left; cursor:pointer; transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease; }
+body.admin-page-custom-orders .custom-quote-status-card:hover,
+body.admin-page-custom-orders .custom-quote-status-card.active { transform:translateY(-1px); border-color:#93c5fd; box-shadow:0 16px 38px rgba(37,99,235,.12); }
+body.admin-page-custom-orders .custom-quote-status-card span { width:38px; height:38px; display:grid; place-items:center; border-radius:12px; background:#eff6ff; font-size:18px; }
+body.admin-page-custom-orders .custom-quote-status-card strong { font-size:13px; font-weight:900; letter-spacing:-.01em; }
+body.admin-page-custom-orders .custom-quote-status-card b { font-size:22px; font-weight:950; color:#1d4ed8; }
+body.admin-page-custom-orders .custom-quote-detail-strip { display:grid; grid-template-columns:1.3fr 1fr 1fr .75fr; gap:10px; padding:10px; border:1px solid var(--adm-line); border-radius:13px; background:#f8fafc; }
+body.admin-page-custom-orders .custom-quote-detail-strip div { min-width:0; padding:10px 12px; border-radius:11px; background:#fff; border:1px solid #e5e7eb; }
+body.admin-page-custom-orders .custom-quote-detail-strip span,
+body.admin-page-custom-orders .custom-quote-instruction span { display:block; margin-bottom:5px; color:#64748b; font-size:10px; font-weight:950; text-transform:uppercase; letter-spacing:.08em; }
+body.admin-page-custom-orders .custom-quote-detail-strip strong { display:block; color:#0f172a; font-size:13px; font-weight:900; line-height:1.35; overflow-wrap:anywhere; }
+body.admin-page-custom-orders .custom-quote-instruction { padding:13px 14px; border:1px solid #dbeafe; border-radius:13px; background:#eff6ff; }
+body.admin-page-custom-orders .custom-quote-instruction p { margin:0; color:#1e3a8a; font-size:13px; line-height:1.55; font-weight:750; white-space:pre-wrap; }
+body.admin-page-custom-orders .custom-quote-price-row { display:grid; grid-template-columns:minmax(180px,.55fr) minmax(220px,1fr); gap:12px; }
+@media (max-width:1100px) { body.admin-page-custom-orders .custom-quote-status-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } body.admin-page-custom-orders .custom-quote-detail-strip { grid-template-columns:1fr 1fr; } }
+@media (max-width:700px) { body.admin-page-custom-orders .custom-quote-status-grid, body.admin-page-custom-orders .custom-quote-detail-strip, body.admin-page-custom-orders .custom-quote-price-row { grid-template-columns:1fr; } }

@@ -13,32 +13,51 @@ include __DIR__ . '/layout.php';
     </div>
   </section>
 
+  <div id="customOrderStatusCards" class="custom-quote-status-grid"></div>
   <div id="customOrderList"><div style="text-align:center;padding:44px;color:var(--text2)"><div class="pay-spin" style="border-top-color:var(--blue);margin:0 auto 12px"></div>Loading custom orders…</div></div>
 </div>
 <script>
 const CSRF = '<?= htmlspecialchars($csrf??'') ?>';
 let quotes=[];
-const statuses=['new','reviewing','quoted','sent_to_customer','customer_approved','payment_pending','paid','converted_to_order','rejected','closed'];
+let counts={};
+let activeFilter='all';
+const statuses=['new','reviewing','sent_to_customer','customer_approved','payment_pending','converted_to_order','rejected'];
+const statusCards=[
+  {key:'all',label:'All Quote',icon:'📋'},
+  {key:'new',label:'New Quote',icon:'🆕'},
+  {key:'reviewing',label:'Reviewing',icon:'🔎'},
+  {key:'sent_to_customer',label:'Send to Client',icon:'📨'},
+  {key:'customer_approved',label:'Approved',icon:'✅'},
+  {key:'payment_pending',label:'Payment Pending',icon:'💳'},
+  {key:'converted_to_order',label:'Order Confirm',icon:'📦'},
+  {key:'rejected',label:'Rejected',icon:'⛔'},
+];
 function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function attr(s){return esc(s).replace(/`/g,'&#96;');}
-function statusLabel(s){return String(s||'new').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+function statusLabel(s){return (statusCards.find(x=>x.key===s)?.label)||String(s||'new').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
 function badgeForStatus(s){return ['customer_approved','paid','converted_to_order'].includes(s)?'b-green':(['rejected','closed'].includes(s)?'b-red':(['sent_to_customer','payment_pending','quoted'].includes(s)?'b-amber':'b-blue'));}
 function waPhone(phone){let p=String(phone||'').replace(/\D+/g,''); if(p.length===10)p='91'+p; return p;}
-async function loadCustomOrders(){const res=await fetch('/admin/api/custom-orders',{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({ok:false,quotes:[]})); quotes=res.quotes||[]; renderCustomOrders();}
+async function loadCustomOrders(){const res=await fetch('/admin/api/custom-orders',{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({ok:false,quotes:[],counts:{}})); quotes=res.quotes||[]; counts=res.counts||{}; renderStatusCards(); renderCustomOrders();}
 function quoteMessage(q){return `Hello ${q.customer_name||'Customer'}, 👋\n\nThank you for your custom quotation request ${q.request_code||''}.\n\nProduct: ${q.product_name||'-'}\nSize: ${q.size_dimension||'-'}\nMaterial: ${q.material_type||'-'}\nQuantity: ${q.quantity||'-'}\nQuoted Amount: ₹${Number(q.quoted_amount||0).toLocaleString('en-IN')}\nDelivery: ${q.estimated_delivery||'-'}\n\n${q.quote_note||'Please reply APPROVE to confirm this custom order. Payment link will be shared after approval.'}\n\nThank you,\nRCS Print`;}
 function paymentMessage(q,link){return `Hello ${q.customer_name||'Customer'}, 👋\n\nYour custom quote ${q.request_code||''} is ready for checkout.\n\nProduct: ${q.product_name||'-'}\nAmount: ₹${Number(q.quoted_amount||0).toLocaleString('en-IN')}\nDelivery: ${q.estimated_delivery||'-'}\n\nPlease open this secure link to add it to your cart and complete payment:\n${link}\n\nThank you,\nRCS Print`;}
+function renderStatusCards(){const box=document.getElementById('customOrderStatusCards'); if(!box)return; box.innerHTML=statusCards.map(card=>`<button type="button" class="custom-quote-status-card ${activeFilter===card.key?'active':''}" onclick="setCustomQuoteFilter('${card.key}')"><span>${card.icon}</span><strong>${esc(card.label)}</strong><b>${Number(counts[card.key]||0).toLocaleString('en-IN')}</b></button>`).join('');}
+function setCustomQuoteFilter(key){activeFilter=key; renderStatusCards(); renderCustomOrders();}
+function filteredQuotes(){return activeFilter==='all'?quotes:quotes.filter(q=>(q.status||'new')===activeFilter || (activeFilter==='converted_to_order' && q.status==='paid'));}
+function detailValue(v,fallback='Not set'){return esc(v||fallback);}
 function renderCustomOrders(){
   const box=document.getElementById('customOrderList');
+  const list=filteredQuotes();
   if(!quotes.length){box.innerHTML='<div class="adm-empty">No custom quote requests yet.</div>';return;}
-  box.innerHTML=`<div class="adm-order-card-list" aria-label="Custom quote requests list">${quotes.map(q=>{
-    const id=Number(q.id||0); const amount=Number(q.quoted_amount||0); const status=q.status||'new'; const pay=q.payment_status||'not_required';
+  if(!list.length){box.innerHTML='<div class="adm-empty">No quotes in this status.</div>';return;}
+  box.innerHTML=`<div class="adm-order-card-list" aria-label="Custom quote requests list">${list.map(q=>{
+    const id=Number(q.id||0); const amount=Number(q.quoted_amount||0); const status=q.status||'new'; const pay=q.payment_status||'not_required'; const linked=Number(q.user_id||0)>0;
     return `<article class="adm-order-card custom-quote-card custom-quote-card--${esc(status)}" id="cq-${id}" data-order-card data-quote-id="${id}">
       <div class="adm-order-card-head">
         <button class="adm-order-card-summary" type="button" aria-expanded="false" data-order-toggle onclick="toggleCustomQuoteCard(this)">
-          <span class="adm-order-card-id"><strong>${esc(q.request_code||'#')}</strong><small>${esc(q.created_at||'')} · ${esc(q.customer_type||'guest')}</small></span>
+          <span class="adm-order-card-id"><strong>${esc(q.request_code||'#')}</strong><small>${esc(q.created_at||'')} · ${linked?'registered':'guest'}</small></span>
           <span class="adm-order-card-customer"><strong>${esc(q.customer_name)}</strong><small>${esc(q.phone)}${q.email?' · '+esc(q.email):''}</small></span>
           <span class="adm-order-card-meta"><b>₹${amount>0?amount.toLocaleString('en-IN'):'—'}</b><small>${esc(q.product_name||'Custom product')}</small></span>
-          <span class="adm-order-card-badges"><span class="badge ${badgeForStatus(status)}">${statusLabel(status)}</span><span class="badge ${pay==='paid'?'b-green':(pay==='payment_pending'?'b-amber':'b-blue')}">${statusLabel(pay)}</span></span>
+          <span class="adm-order-card-badges"><span class="badge ${badgeForStatus(status)}">${statusLabel(status)}</span><span class="badge ${pay==='paid'?'b-green':(pay==='payment_pending'?'b-amber':'b-blue')}">${statusLabel(pay)}</span>${linked?'<span class="badge b-green">Account Linked</span>':'<span class="badge b-amber">Guest</span>'}</span>
         </button>
         <div class="adm-order-card-quick" aria-label="Quick custom quote actions">
           <select class="fi fi-sel" aria-label="Update custom quote status" onchange="quickStatus(${id},this.value)">${statuses.map(s=>`<option value="${s}" ${s===status?'selected':''}>${statusLabel(s)}</option>`).join('')}</select>
@@ -51,23 +70,15 @@ function renderCustomOrders(){
           <section class="adm-order-card-section adm-order-card-section--full">
             <h3>Quote Details</h3>
             <form class="custom-quote-edit" onsubmit="saveCustomQuote(event,${id})">
-              <div class="custom-quote-edit-grid">
-                <label>Name<input class="fi" name="customer_name" value="${attr(q.customer_name)}" required></label>
-                <label>Phone<input class="fi" name="phone" value="${attr(q.phone)}" required></label>
-                <label>Email<input class="fi" name="email" value="${attr(q.email)}"></label>
-                <label>Product<input class="fi" name="product_name" value="${attr(q.product_name)}" required></label>
-                <label>Size / Dimension<input class="fi" name="size_dimension" value="${attr(q.size_dimension)}"></label>
-                <label>Material<input class="fi" name="material_type" value="${attr(q.material_type)}"></label>
-                <label>Quantity<input class="fi" name="quantity" value="${attr(q.quantity)}"></label>
-                <label>Quoted Amount<input class="fi" type="number" step="0.01" name="quoted_amount" value="${attr(q.quoted_amount)}"></label>
-                <label>Status<select class="fi fi-sel" name="status">${statuses.map(s=>`<option value="${s}" ${s===status?'selected':''}>${statusLabel(s)}</option>`).join('')}</select></label>
-                <label>Payment Status<select class="fi fi-sel" name="payment_status">${['not_required','payment_pending','paid','failed','refunded'].map(s=>`<option value="${s}" ${s===pay?'selected':''}>${statusLabel(s)}</option>`).join('')}</select></label>
-                <label>Estimated Delivery<input class="fi" name="estimated_delivery" value="${attr(q.estimated_delivery)}" placeholder="Eg: 4-5 working days"></label>
-              </div>
-              <label>Customer Instructions<textarea class="fi" name="instructions">${esc(q.instructions)}</textarea></label>
-              <label>Admin Quote Note / WhatsApp Terms<textarea class="fi" name="quote_note">${esc(q.quote_note)}</textarea></label>
-              <label>Internal Admin Notes<textarea class="fi" name="admin_notes">${esc(q.admin_notes)}</textarea></label>
-              <div class="adm-order-action-strip custom-quote-actions"><div class="ord-action-strip-copy"><span class="ord-action-strip-label">Next flow</span><small>Save quote → send WhatsApp → mark approved → generate payment/cart link.</small></div><div class="ord-actions ord-actions--compact"><button class="aoc-btn aoc-btn--invoice-upload" type="submit"><span class="aoc-ico">💾</span><span>Save Changes</span></button><button class="aoc-btn aoc-btn--wa" type="button" onclick="sendQuoteWhatsApp(${id})"><span class="aoc-ico">💬</span><span>WhatsApp Quote</span></button><button class="aoc-btn aoc-btn--confirm" type="button" onclick="markApproved(${id})"><span class="aoc-ico">✅</span><span>Mark Approved</span></button><button class="aoc-btn aoc-btn--invoice" type="button" onclick="generatePaymentLink(${id})" title="Generate secure cart/payment link and send on WhatsApp"><span class="aoc-ico">🔗</span><span>Payment Link</span></button></div></div>
+              <input type="hidden" name="customer_name" value="${attr(q.customer_name)}"><input type="hidden" name="phone" value="${attr(q.phone)}"><input type="hidden" name="email" value="${attr(q.email)}">
+              <input type="hidden" name="product_name" value="${attr(q.product_name)}"><input type="hidden" name="size_dimension" value="${attr(q.size_dimension)}"><input type="hidden" name="material_type" value="${attr(q.material_type)}"><input type="hidden" name="quantity" value="${attr(q.quantity)}">
+              <input type="hidden" name="payment_status" value="${attr(pay)}"><input type="hidden" name="status" value="${attr(status)}">
+              <div class="custom-quote-detail-strip"><div><span>Product</span><strong>${detailValue(q.product_name,'Custom product')}</strong></div><div><span>Size / Dimension</span><strong>${detailValue(q.size_dimension)}</strong></div><div><span>Material</span><strong>${detailValue(q.material_type)}</strong></div><div><span>Quantity</span><strong>${detailValue(q.quantity,'—')}</strong></div></div>
+              <div class="custom-quote-instruction"><span>Customer Instructions</span><p>${esc(q.instructions||'No customer instructions provided.')}</p><input type="hidden" name="instructions" value="${attr(q.instructions)}"></div>
+              <div class="custom-quote-price-row"><label>Quoted Amount<input class="fi" type="number" step="0.01" name="quoted_amount" value="${attr(q.quoted_amount)}" placeholder="Enter final price"></label><label>Estimated Delivery<input class="fi" name="estimated_delivery" value="${attr(q.estimated_delivery)}" placeholder="Eg: 4-5 working days"></label></div>
+              <label>Admin Quote Note / WhatsApp Details<textarea class="fi" name="quote_note" placeholder="Add final custom order details, terms and approval note for customer...">${esc(q.quote_note)}</textarea></label>
+              <label>Internal Admin Notes<textarea class="fi" name="admin_notes" placeholder="Internal notes, not sent to customer">${esc(q.admin_notes)}</textarea></label>
+              <div class="adm-order-action-strip custom-quote-actions"><div class="ord-action-strip-copy"><span class="ord-action-strip-label">Next flow</span><small>Save quote → create/link account → send quote → mark approved → payment link.</small></div><div class="ord-actions ord-actions--compact"><button class="aoc-btn aoc-btn--invoice-upload" type="submit"><span class="aoc-ico">💾</span><span>Save Quote</span></button><button class="aoc-btn aoc-btn--address" type="button" onclick="createCustomerAccount(${id})"><span class="aoc-ico">👤</span><span>${linked?'Linked Account':'Create Account'}</span></button><button class="aoc-btn aoc-btn--wa" type="button" onclick="sendQuoteWhatsApp(${id})"><span class="aoc-ico">💬</span><span>WhatsApp Quote</span></button><button class="aoc-btn aoc-btn--confirm" type="button" onclick="markApproved(${id})"><span class="aoc-ico">✅</span><span>Mark Approved</span></button><button class="aoc-btn aoc-btn--invoice" type="button" onclick="generatePaymentLink(${id})"><span class="aoc-ico">🔗</span><span>Payment Link</span></button></div></div>
             </form>
           </section>
         </div>
@@ -79,8 +90,9 @@ function toggleCustomQuoteCard(btn){const card=btn.closest('[data-order-card]');
 function formPayload(form){return Object.fromEntries(new FormData(form).entries());}
 async function saveCustomQuote(e,id){e.preventDefault(); const payload=formPayload(e.currentTarget); const res=await fetch(`/admin/api/custom-orders/${id}`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},credentials:'same-origin',body:JSON.stringify(payload)}).then(r=>r.json()).catch(()=>({ok:false,msg:'Could not save custom order'})); if(!res.ok){alert(res.msg||'Could not save custom order');return;} await loadCustomOrders();}
 async function quickStatus(id,status){const res=await fetch(`/admin/api/custom-orders/${id}/status`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},credentials:'same-origin',body:JSON.stringify({status})}).then(r=>r.json()).catch(()=>({ok:false,msg:'Could not update status'})); if(!res.ok){alert(res.msg||'Could not update status');return;} await loadCustomOrders();}
-async function markApproved(id){const q=quotes.find(x=>Number(x.id)===id); if(!q)return; q.status='customer_approved'; const res=await fetch(`/admin/api/custom-orders/${id}/status`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},credentials:'same-origin',body:JSON.stringify({status:'customer_approved'})}).then(r=>r.json()); if(!res.ok){alert(res.msg||'Could not update status');return;} await loadCustomOrders();}
+async function markApproved(id){const res=await fetch(`/admin/api/custom-orders/${id}/status`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},credentials:'same-origin',body:JSON.stringify({status:'customer_approved'})}).then(r=>r.json()).catch(()=>({ok:false,msg:'Could not update status'})); if(!res.ok){alert(res.msg||'Could not update status');return;} await loadCustomOrders();}
 async function sendQuoteWhatsApp(id){const q=quotes.find(x=>Number(x.id)===id); if(!q)return; window.open(`https://wa.me/${waPhone(q.phone)}?text=${encodeURIComponent(quoteMessage(q))}`,'_blank'); await fetch(`/admin/api/custom-orders/${id}/status`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},credentials:'same-origin',body:JSON.stringify({status:'sent_to_customer'})}).catch(()=>{}); setTimeout(loadCustomOrders,500);}
+async function createCustomerAccount(id){const q=quotes.find(x=>Number(x.id)===id); if(!q)return; const res=await fetch(`/admin/api/custom-orders/${id}/customer-account`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},credentials:'same-origin',body:JSON.stringify({})}).then(r=>r.json()).catch(()=>({ok:false,msg:'Could not create/link account'})); if(!res.ok){alert(res.msg||'Could not create/link account');return;} if(res.message) window.open(`https://wa.me/${waPhone(q.phone||res.user?.phone)}?text=${encodeURIComponent(res.message)}`,'_blank'); await loadCustomOrders();}
 async function generatePaymentLink(id){const q=quotes.find(x=>Number(x.id)===id); if(!q)return; const amount=Number(q.quoted_amount||0); if(amount<=0){alert('Please save quoted amount before generating payment link.');return;} const res=await fetch(`/admin/api/custom-orders/${id}/payment-link`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},credentials:'same-origin',body:JSON.stringify({})}).then(r=>r.json()).catch(()=>({ok:false,msg:'Could not generate payment link'})); if(!res.ok){alert(res.msg||'Could not generate payment link');return;} q.status='payment_pending'; q.payment_status='payment_pending'; const msg=paymentMessage(q,res.link); window.open(`https://wa.me/${waPhone(q.phone)}?text=${encodeURIComponent(msg)}`,'_blank'); await loadCustomOrders();}
 loadCustomOrders();
 </script>
