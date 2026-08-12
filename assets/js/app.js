@@ -268,18 +268,25 @@ function renderCartDrawer() {
     return;
   }
 
-  body.innerHTML = items.map(item => `
-    <div class="cart-item">
+  body.innerHTML = items.map(item => {
+    const isCustom = item.item_type === 'custom_quote';
+    const attrs = isCustom
+      ? `${item.custom_requested_quantity ? 'Qty: ' + _esc(item.custom_requested_quantity) + ' · ' : ''}${item.custom_size_dimension ? 'Size: ' + _esc(item.custom_size_dimension) : 'Custom print requirement'}`
+      : `${Number(item.quantity).toLocaleString('en-IN')} pcs · ${_esc(item.quality_name)}`;
+    return `
+    <div class="cart-item ${isCustom ? 'cart-item-custom' : ''}">
       <div class="ci-img"><img src="${item.product_image || ''}" alt="${_esc(item.product_name)}" onerror="this.style.display='none'"></div>
       <div class="ci-info">
-        <div class="ci-name">${_esc(item.product_name)}</div>
-        <div class="ci-attrs">${Number(item.quantity).toLocaleString('en-IN')} pcs · ${_esc(item.quality_name)}</div>
-        ${item.design_choice === 'rcs' ? `<div style="font-size:11px;color:var(--blue);margin-bottom:2px">🎨 Design by RCS Graphic</div>` : ''}
+        <div class="ci-name">${_esc(item.product_name)}${isCustom ? ' · Custom Quote' : ''}</div>
+        <div class="ci-attrs">${attrs}</div>
+        ${isCustom && item.custom_material_type ? `<div style="font-size:11px;color:var(--blue);margin-bottom:2px">Material: ${_esc(item.custom_material_type)}</div>` : ''}
+        ${!isCustom && item.design_choice === 'rcs' ? `<div style="font-size:11px;color:var(--blue);margin-bottom:2px">🎨 Design by RCS Graphic</div>` : ''}
         ${item.notes ? `<div style="font-size:11px;color:var(--amber)">📝 ${_esc(item.notes)}</div>` : ''}
         <div class="ci-price">${fmt(item.total_price)}</div>
       </div>
       <button onclick="removeFromCart('${item.id}')" style="color:var(--text3);font-size:18px;padding:2px;align-self:flex-start">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   const disc = totals.discount || 0;
   footer.innerHTML = `

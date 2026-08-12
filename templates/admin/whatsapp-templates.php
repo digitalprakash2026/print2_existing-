@@ -5,7 +5,7 @@ include __DIR__ . '/layout.php';
 $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $templates = [];
 try {
-    $rows = Database::rows("SELECT template_key, title, description, body, is_active FROM whatsapp_message_templates ORDER BY FIELD(template_key,'order_confirmation','proof_ready','design_approved','customer_reorder','customer_upsell','customer_welcome','lead_followup'), template_key ASC");
+    $rows = Database::rows("SELECT template_key, title, description, body, is_active FROM whatsapp_message_templates ORDER BY FIELD(template_key,'order_confirmation','proof_ready','design_approved','customer_reorder','customer_upsell','customer_welcome','lead_followup','custom_quote_details','custom_quote_payment_link'), template_key ASC");
     foreach ($rows as $row) $templates[(string)$row['template_key']] = $row;
 } catch (Throwable) {
     $templates = [];
@@ -94,6 +94,42 @@ Please share any artwork, size, quantity or reference details here so our team c
 
 Thank you,
 {business_name}"],
+    'custom_quote_details' => ['title' => 'Custom Quote Details', 'description' => 'Sent from Custom Orders after admin saves quoted amount and customer-facing quote note.', 'body' => "Hello {customer_name}, 👋
+
+Thank you for your custom quotation request {request_code}.
+
+Product: {product_name}
+Size: {size_dimension}
+Material: {material_type}
+Quantity: {quantity}
+Quoted Amount: {quoted_amount}
+
+{quote_note}
+
+Account Login: {login_url}
+Login Email: {login_email}
+Password: {login_password}
+
+Please reply APPROVE to confirm this custom order.
+
+Thank you,
+{business_name}"],
+    'custom_quote_payment_link' => ['title' => 'Custom Quote Payment Link', 'description' => 'Sent after customer approves the quote and admin generates checkout/cart link.', 'body' => "Hello {customer_name}, 👋
+
+Your custom quote {request_code} is ready for checkout.
+
+Product: {product_name}
+Amount: {quoted_amount}
+
+Open this secure link to add it to cart and complete payment:
+{payment_link}
+
+Account Login: {login_url}
+Login Email: {login_email}
+Password: {login_password}
+
+Thank you,
+{business_name}"],
 ];
 $labels = [
     'order_confirmation' => ['badge' => 'Order', 'heading' => 'New Order Confirmation'],
@@ -103,6 +139,8 @@ $labels = [
     'customer_upsell' => ['badge' => 'Customer', 'heading' => 'Upsell Message'],
     'customer_welcome' => ['badge' => 'Customer', 'heading' => 'Welcome / First Order'],
     'lead_followup' => ['badge' => 'Lead', 'heading' => 'Lead Follow-up'],
+    'custom_quote_details' => ['badge' => 'Quote', 'heading' => 'Custom Quote Details'],
+    'custom_quote_payment_link' => ['badge' => 'Payment', 'heading' => 'Custom Quote Payment Link'],
 ];
 $placeholders = [
     'customer_name' => 'Customer name',
@@ -129,6 +167,15 @@ $placeholders = [
     'lead_email' => 'Lead email',
     'lead_subject' => 'Lead subject',
     'lead_message' => 'Lead message',
+    'request_code' => 'Custom quote request code',
+    'size_dimension' => 'Custom quote size/dimension',
+    'material_type' => 'Custom quote material',
+    'quoted_amount' => 'Custom quote final amount',
+    'quote_note' => 'Admin quote note sent to customer',
+    'payment_link' => 'Custom quote checkout/cart link',
+    'login_url' => 'Customer login URL',
+    'login_email' => 'Customer login email',
+    'login_password' => 'Customer default password',
 ];
 ?>
 <div class="wa-template-page">
@@ -138,7 +185,7 @@ $placeholders = [
       <h1>WhatsApp Templates</h1>
       <p>Prepare reusable WhatsApp messages for orders, customer CRM follow-ups and lead enquiries. Use placeholders to auto-fill customer, order and lead details.</p>
     </div>
-    <strong>7 templates</strong>
+    <strong><?= count($templates ?: $defaults) ?> templates</strong>
   </section>
 
   <section class="wa-placeholder-panel">

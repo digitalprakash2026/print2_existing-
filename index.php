@@ -402,18 +402,28 @@ if (preg_match('#^/category/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 }
 
 
+// ── All Business Sectors Page — /business ─────────────────────
+if (($uri === '/business' || $uri === '/business-needs') && $method === 'GET') {
+    try {
+        $businessNeeds = Database::rows("SELECT bn.*, COUNT(pbn.product_id) AS product_count FROM business_needs bn LEFT JOIN product_business_needs pbn ON pbn.business_need_id = bn.id WHERE bn.is_active=1 GROUP BY bn.id ORDER BY bn.sort_order ASC, bn.id DESC");
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable $e) {
+        error_log('Business sectors page error: ' . $e->getMessage());
+        $businessNeeds = [];
+        $settingsMap = [];
+    }
+    view('business-needs', compact('businessNeeds', 'settingsMap'));
+    exit;
+}
+
 // Business Need / Sector Page — /business/{slug}
 if (preg_match('#^/business/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     try {
         $businessNeed = Database::row("SELECT * FROM business_needs WHERE slug=? AND is_active=1 LIMIT 1", [$m[1]]);
         if (!$businessNeed) { http_response_code(404); view('404'); exit; }
-        $ids = array_values(array_unique(array_filter(array_map('intval', preg_split('/[,\\s]+/', (string)($businessNeed['product_ids'] ?? '')) ?: []), static fn($id) => $id > 0)));
-        $businessProducts = [];
-        if ($ids) {
-            $allProductsById = [];
-            foreach (\Catalog\ProductCatalog::all() as $row) $allProductsById[(int)($row['id'] ?? 0)] = $row;
-            foreach ($ids as $id) if (isset($allProductsById[$id])) $businessProducts[] = $allProductsById[$id];
-        }
+        $businessProducts = \Catalog\ProductCatalog::byBusinessNeed((int)$businessNeed['id']);
+        $businessNeeds = Database::rows("SELECT bn.*, COUNT(pbn.product_id) AS product_count FROM business_needs bn LEFT JOIN product_business_needs pbn ON pbn.business_need_id = bn.id WHERE bn.is_active=1 GROUP BY bn.id ORDER BY bn.sort_order ASC, bn.id DESC");
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {
@@ -422,7 +432,7 @@ if (preg_match('#^/business/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
         view('404');
         exit;
     }
-    view('business-need', compact('businessNeed', 'businessProducts', 'settingsMap'));
+    view('business-need', compact('businessNeed', 'businessProducts', 'businessNeeds', 'settingsMap'));
     exit;
 }
 
@@ -663,6 +673,42 @@ if ($uri === '/contact' && $method === 'GET') {
     }
     view('contact', compact('settingsMap'));
     exit;
+}
+
+
+// Custom quote checkout link: validates token, attaches the quoted item to the normal cart, then reuses existing cart/checkout.
+if (preg_match('#^/custom-checkout/([A-Za-z0-9_-]{24,120})$#', $uri, $m) && $method === 'GET') {
+    $token = trim((string)$m[1]);
+    try {
+        $quote = Database::row("SELECT * FROM custom_quote_requests WHERE quote_token=? LIMIT 1", [$token]);
+        if (!$quote) {
+            http_response_code(404);
+            view('info-page', ['page' => ['title' => 'Quote link not found', 'intro' => 'This custom quote checkout link is invalid or expired. Please contact RCS Print for a fresh link.'], 'settingsMap' => []]);
+            exit;
+        }
+        if ((float)($quote['quoted_amount'] ?? 0) <= 0 || in_array((string)($quote['status'] ?? ''), ['converted_to_order','closed','rejected'], true)) {
+            http_response_code(410);
+            view('info-page', ['page' => ['title' => 'Quote not available', 'intro' => 'This custom quote is not available for checkout right now. Please contact RCS Print.'], 'settingsMap' => []]);
+            exit;
+        }
+        $result = \Cart\Cart::addCustomQuote($quote);
+        if (!($result['ok'] ?? false)) {
+            http_response_code(422);
+            view('info-page', ['page' => ['title' => 'Could not add quote to cart', 'intro' => $result['msg'] ?? 'Please contact RCS Print to continue.'], 'settingsMap' => []]);
+            exit;
+        }
+        if ($user = \Auth\Auth::user()) {
+            try { Database::query("UPDATE custom_quote_requests SET user_id=COALESCE(user_id, ?), customer_type='registered', payment_status='payment_pending', status='payment_pending', updated_at=NOW() WHERE id=?", [(int)$user['id'], (int)$quote['id']]); } catch (\Throwable) {}
+        } else {
+            try { Database::query("UPDATE custom_quote_requests SET payment_status='payment_pending', status='payment_pending', updated_at=NOW() WHERE id=?", [(int)$quote['id']]); } catch (\Throwable) {}
+        }
+        redirect('/cart?custom_quote=added');
+    } catch (\Throwable $e) {
+        error_log('Custom checkout link failed: ' . $e->getMessage());
+        http_response_code(500);
+        view('info-page', ['page' => ['title' => 'Quote checkout unavailable', 'intro' => 'We could not open this custom quote link. Please try again or contact RCS Print.'], 'settingsMap' => []]);
+        exit;
+    }
 }
 
 

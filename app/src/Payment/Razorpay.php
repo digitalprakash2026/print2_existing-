@@ -70,6 +70,7 @@ class Razorpay
         string $razorpaySignature
     ): array {
         \Orders\OrderManager::ensureWorkflowSchema();
+        \Orders\OrderManager::ensureCustomOrderSchema();
 
         if (!self::verifyPayment($razorpayOrderId, $razorpayPaymentId, $razorpaySignature)) {
             // Log suspicious activity
@@ -104,6 +105,11 @@ class Razorpay
                     razorpay_order_id = ?, status = 'new_order', updated_at = NOW()
                  WHERE id = ?",
                 [$razorpayPaymentId, $razorpayOrderId, $internalOrderId]
+            );
+
+            \Database::query(
+                "UPDATE custom_quote_requests SET payment_status='paid', status='converted_to_order', order_id=?, updated_at=NOW() WHERE order_id=?",
+                [$internalOrderId, $internalOrderId]
             );
 
             \Database::insert(
