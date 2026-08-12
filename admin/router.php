@@ -141,7 +141,6 @@ $ensureCustomQuoteSchema = static function (): void {
             customer_type VARCHAR(30) NOT NULL DEFAULT 'guest',
             quote_token VARCHAR(80) NULL,
             quote_note TEXT NULL,
-            estimated_delivery VARCHAR(120) NULL,
             payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required',
             sent_at DATETIME NULL,
             payment_link_generated_at DATETIME NULL,
@@ -160,8 +159,8 @@ $ensureCustomQuoteSchema = static function (): void {
             "ALTER TABLE custom_quote_requests ADD COLUMN customer_type VARCHAR(30) NOT NULL DEFAULT 'guest' AFTER order_id",
             "ALTER TABLE custom_quote_requests ADD COLUMN quote_token VARCHAR(80) NULL AFTER customer_type",
             "ALTER TABLE custom_quote_requests ADD COLUMN quote_note TEXT NULL AFTER quote_token",
-            "ALTER TABLE custom_quote_requests ADD COLUMN estimated_delivery VARCHAR(120) NULL AFTER quote_note",
-            "ALTER TABLE custom_quote_requests ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER estimated_delivery",
+            "ALTER TABLE custom_quote_requests ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER quote_note",
+            "ALTER TABLE custom_quote_requests DROP COLUMN estimated_delivery",
             "ALTER TABLE custom_quote_requests ADD COLUMN sent_at DATETIME NULL AFTER payment_status",
             "ALTER TABLE custom_quote_requests ADD COLUMN payment_link_generated_at DATETIME NULL AFTER sent_at",
             "ALTER TABLE custom_quote_requests ADD COLUMN approved_at DATETIME NULL AFTER payment_link_generated_at",
@@ -244,6 +243,16 @@ $whatsappTemplateDefaults = [
         'title' => 'Lead Follow-up Message',
         'description' => 'Sent from the Leads module after a contact form enquiry is received.',
         'body' => "Hello {lead_name}, 👋\n\nThank you for contacting {business_name}. We received your enquiry:\n{lead_subject}\n\nPlease share any artwork, size, quantity or reference details here so our team can guide you quickly.\n\nThank you,\n{business_name}",
+    ],
+    'custom_quote_details' => [
+        'title' => 'Custom Quote Details',
+        'description' => 'Sent from Custom Orders after admin saves quoted amount and customer-facing quote note.',
+        'body' => "Hello {customer_name}, 👋\n\nThank you for your custom quotation request {request_code}.\n\nProduct: {product_name}\nSize: {size_dimension}\nMaterial: {material_type}\nQuantity: {quantity}\nQuoted Amount: {quoted_amount}\n\n{quote_note}\n\nAccount Login: {login_url}\nLogin Email: {login_email}\nPassword: {login_password}\n\nPlease reply APPROVE to confirm this custom order.\n\nThank you,\n{business_name}",
+    ],
+    'custom_quote_payment_link' => [
+        'title' => 'Custom Quote Payment Link',
+        'description' => 'Sent after customer approves the quote and admin generates checkout/cart link.',
+        'body' => "Hello {customer_name}, 👋\n\nYour custom quote {request_code} is ready for checkout.\n\nProduct: {product_name}\nAmount: {quoted_amount}\n\nOpen this secure link to add it to cart and complete payment:\n{payment_link}\n\nAccount Login: {login_url}\nLogin Email: {login_email}\nPassword: {login_password}\n\nThank you,\n{business_name}",
     ],
 ];
 $ensureWhatsappTemplateSchema = static function () use ($whatsappTemplateDefaults): void {
@@ -748,7 +757,7 @@ if (str_starts_with($uri, '/admin/api/')) {
 
     if ($uri === '/admin/api/whatsapp-templates' && $method === 'GET') {
         try {
-            $rows = Database::rows("SELECT template_key, title, description, body, is_active FROM whatsapp_message_templates ORDER BY FIELD(template_key,'order_confirmation','proof_ready','design_approved','customer_reorder','customer_upsell','customer_welcome','lead_followup'), template_key ASC");
+            $rows = Database::rows("SELECT template_key, title, description, body, is_active FROM whatsapp_message_templates ORDER BY FIELD(template_key,'order_confirmation','proof_ready','design_approved','customer_reorder','customer_upsell','customer_welcome','lead_followup','custom_quote_details','custom_quote_payment_link'), template_key ASC");
             json(['ok' => true, 'templates' => $rows, 'defaults' => $whatsappTemplateDefaults]);
         } catch (\Throwable) {
             json(['ok' => false, 'msg' => 'WhatsApp templates are unavailable', 'templates' => [], 'defaults' => $whatsappTemplateDefaults], 500);
@@ -1895,7 +1904,7 @@ if (str_starts_with($uri, '/admin/api/')) {
             if ($status === 'customer_approved') {
                 $timestampSql .= ', approved_at=COALESCE(approved_at, NOW())';
             }
-            Database::query("UPDATE custom_quote_requests SET customer_name=?, phone=?, email=?, product_name=?, size_dimension=?, material_type=?, quantity=?, instructions=?, status=?, admin_notes=?, quoted_amount=?, quote_note=?, estimated_delivery=?, payment_status=?{$timestampSql}, updated_at=NOW() WHERE id=?", [
+            Database::query("UPDATE custom_quote_requests SET customer_name=?, phone=?, email=?, product_name=?, size_dimension=?, material_type=?, quantity=?, instructions=?, status=?, quoted_amount=?, quote_note=?, payment_status=?{$timestampSql}, updated_at=NOW() WHERE id=?", [
                 trim((string)($body['customer_name'] ?? '')),
                 trim((string)($body['phone'] ?? '')),
                 trim((string)($body['email'] ?? '')) ?: null,
@@ -1905,16 +1914,50 @@ if (str_starts_with($uri, '/admin/api/')) {
                 trim((string)($body['quantity'] ?? '')),
                 trim((string)($body['instructions'] ?? '')),
                 $status,
-                trim((string)($body['admin_notes'] ?? '')),
                 ($body['quoted_amount'] ?? '') !== '' && ($body['quoted_amount'] ?? null) !== null ? (float)$body['quoted_amount'] : null,
                 trim((string)($body['quote_note'] ?? '')),
-                trim((string)($body['estimated_delivery'] ?? '')),
                 trim((string)($body['payment_status'] ?? 'not_required')) ?: 'not_required',
                 (int)$m[1],
             ]);
             json(['ok'=>true]);
         } catch (\Throwable $e) {
             json(['ok'=>false,'msg'=>'Could not save custom order: ' . $e->getMessage()], 500);
+        }
+    }
+
+    if (preg_match('#^/admin/api/custom-orders/(\d+)/whatsapp-message$#', $uri, $m) && $method === 'POST') {
+        try {
+            $quote = Database::row("SELECT cqr.*, u.email AS user_email, u.phone AS user_phone FROM custom_quote_requests cqr LEFT JOIN users u ON u.id=cqr.user_id WHERE cqr.id=? LIMIT 1", [(int)$m[1]]);
+            if (!$quote) json(['ok'=>false,'msg'=>'Custom quote not found'], 404);
+            $type = trim((string)($body['type'] ?? 'quote'));
+            $key = $type === 'payment' ? 'custom_quote_payment_link' : 'custom_quote_details';
+            $template = Database::row("SELECT body FROM whatsapp_message_templates WHERE template_key=? AND is_active=1 LIMIT 1", [$key]);
+            $messageBody = (string)($template['body'] ?? ($whatsappTemplateDefaults[$key]['body'] ?? ''));
+            $base = rtrim((defined('APP_URL') ? (string)APP_URL : ''), '/');
+            if ($base === '') {
+                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $base = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? '');
+            }
+            $loginPassword = preg_replace('/\D+/', '', (string)($quote['phone'] ?? '')) ?: (string)($quote['phone'] ?? '');
+            $vars = [
+                '{customer_name}' => (string)($quote['customer_name'] ?? 'Customer'),
+                '{request_code}' => (string)($quote['request_code'] ?? ''),
+                '{product_name}' => (string)($quote['product_name'] ?? '-'),
+                '{size_dimension}' => (string)($quote['size_dimension'] ?? '-'),
+                '{material_type}' => (string)($quote['material_type'] ?? '-'),
+                '{quantity}' => (string)($quote['quantity'] ?? '-'),
+                '{quoted_amount}' => '₹' . number_format((float)($quote['quoted_amount'] ?? 0), 2),
+                '{quote_note}' => trim((string)($quote['quote_note'] ?? '')) ?: 'Please reply APPROVE to confirm this custom order. Payment link will be shared after approval.',
+                '{payment_link}' => trim((string)($body['payment_link'] ?? '')),
+                '{login_url}' => $base . '/login?next=/cart',
+                '{login_email}' => (string)(($quote['user_email'] ?? '') ?: ($quote['email'] ?? '')),
+                '{login_password}' => $loginPassword,
+                '{business_name}' => (string)Database::setting('business_name', 'RCS Print'),
+                '{business_phone}' => (string)Database::setting('business_phone', ''),
+            ];
+            json(['ok'=>true,'message'=>strtr($messageBody, $vars)]);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Could not prepare WhatsApp message: ' . $e->getMessage()], 500);
         }
     }
 
@@ -1929,12 +1972,12 @@ if (str_starts_with($uri, '/admin/api/')) {
             if ($email === '') json(['ok'=>false,'msg'=>'Please add customer email before creating account. Email is required for login and password reset.'], 422);
             $user = Database::row("SELECT * FROM users WHERE email=? OR phone=? LIMIT 1", [$email, $phone]);
             $created = false;
-            $tempPassword = '';
+            $loginPassword = preg_replace('/\D+/', '', $phone) ?: $phone;
+            if ($loginPassword === '') json(['ok'=>false,'msg'=>'Customer mobile number is required to create the default password.'], 422);
             if (!$user) {
-                $tempPassword = 'RCS@' . random_int(100000, 999999);
                 $userId = Database::insert(
                     "INSERT INTO users (name, email, phone, company, password, marketing_consent, created_at) VALUES (?, ?, ?, '', ?, 0, NOW())",
-                    [$name, $email, $phone, password_hash($tempPassword, PASSWORD_BCRYPT, ['cost'=>10])]
+                    [$name, $email, $phone, password_hash($loginPassword, PASSWORD_BCRYPT, ['cost'=>10])]
                 );
                 $user = Database::row("SELECT * FROM users WHERE id=?", [(int)$userId]);
                 $created = true;
@@ -1945,10 +1988,7 @@ if (str_starts_with($uri, '/admin/api/')) {
                 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
                 $loginUrl = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? '') . '/login?next=/cart';
             }
-            $message = $created
-                ? "Hello {$name}, 👋\n\nYour RCS Print account has been created for your custom order.\n\nLogin Email: {$email}\nTemporary Password: {$tempPassword}\n\nLogin here: {$loginUrl}\n\nYou can change your password from account settings after login."
-                : "Hello {$name}, 👋\n\nYour custom quote has been linked with your RCS Print account.\n\nLogin here: {$loginUrl}\n\nAfter opening the payment/cart link, your custom order will be available in cart.";
-            json(['ok'=>true,'created'=>$created,'user'=>['id'=>(int)$user['id'],'name'=>(string)($user['name'] ?? $name),'email'=>(string)($user['email'] ?? $email),'phone'=>(string)($user['phone'] ?? $phone)],'temporary_password'=>$created ? $tempPassword : null,'message'=>$message]);
+            json(['ok'=>true,'created'=>$created,'login_url'=>$loginUrl,'login_password'=>$loginPassword,'user'=>['id'=>(int)$user['id'],'name'=>(string)($user['name'] ?? $name),'email'=>(string)($user['email'] ?? $email),'phone'=>(string)($user['phone'] ?? $phone)]]);
         } catch (\Throwable $e) {
             json(['ok'=>false,'msg'=>'Could not create/link account: ' . $e->getMessage()], 500);
         }
@@ -2665,6 +2705,19 @@ if ($uri === '/admin/settings/save' && $method === 'POST') {
 
     \Orders\AdminAudit::log('settings_updated', 'Settings saved via form');
     redirect('/admin/settings?saved=1');
+}
+
+if ($uri === '/admin/export/custom-orders') {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="custom-orders-' . date('Ymd-His') . '.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Request Code','Created At','Customer Name','Phone','Email','Product','Size / Dimension','Material','Quantity','Instructions','Status','Quoted Amount','Payment Status','Quote Note','Customer Type','Order ID']);
+    $rows = Database::rows("SELECT request_code,created_at,customer_name,phone,email,product_name,size_dimension,material_type,quantity,instructions,status,quoted_amount,payment_status,quote_note,customer_type,order_id FROM custom_quote_requests ORDER BY created_at DESC");
+    foreach ($rows as $row) {
+        fputcsv($out, [$row['request_code'] ?? '', $row['created_at'] ?? '', $row['customer_name'] ?? '', $row['phone'] ?? '', $row['email'] ?? '', $row['product_name'] ?? '', $row['size_dimension'] ?? '', $row['material_type'] ?? '', $row['quantity'] ?? '', $row['instructions'] ?? '', $row['status'] ?? '', $row['quoted_amount'] ?? '', $row['payment_status'] ?? '', $row['quote_note'] ?? '', $row['customer_type'] ?? '', $row['order_id'] ?? '']);
+    }
+    fclose($out);
+    exit;
 }
 
 if ($uri === '/admin/export/orders') {

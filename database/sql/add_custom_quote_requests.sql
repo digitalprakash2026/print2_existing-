@@ -21,7 +21,6 @@ CREATE TABLE IF NOT EXISTS custom_quote_requests (
   customer_type VARCHAR(30) NOT NULL DEFAULT 'guest',
   quote_token VARCHAR(80) NULL,
   quote_note TEXT NULL,
-  estimated_delivery VARCHAR(120) NULL,
   payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required',
   sent_at DATETIME NULL,
   payment_link_generated_at DATETIME NULL,
@@ -37,8 +36,8 @@ CREATE TABLE IF NOT EXISTS custom_quote_requests (
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS customer_type VARCHAR(30) NOT NULL DEFAULT 'guest' AFTER order_id;
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS quote_token VARCHAR(80) NULL AFTER customer_type;
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS quote_note TEXT NULL AFTER quote_token;
-ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS estimated_delivery VARCHAR(120) NULL AFTER quote_note;
-ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER estimated_delivery;
+ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER quote_note;
+ALTER TABLE custom_quote_requests DROP COLUMN IF EXISTS estimated_delivery;
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS sent_at DATETIME NULL AFTER payment_status;
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS admin_notes TEXT NULL AFTER status;
 ALTER TABLE custom_quote_requests ADD COLUMN IF NOT EXISTS quoted_amount DECIMAL(12,2) NULL AFTER admin_notes;

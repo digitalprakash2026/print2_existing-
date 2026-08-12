@@ -128,7 +128,6 @@ class Cart
                 'size_dimension' => (string)($quote['size_dimension'] ?? ''),
                 'material_type' => (string)($quote['material_type'] ?? ''),
                 'requested_quantity' => (string)($quote['quantity'] ?? ''),
-                'estimated_delivery' => (string)($quote['estimated_delivery'] ?? ''),
             ], JSON_UNESCAPED_UNICODE),
             'design_choice' => 'rcs',
             'design_brief' => (string)($quote['instructions'] ?? ''),
@@ -270,8 +269,7 @@ class Cart
                         cqr.request_code AS custom_quote_code,
                         cqr.size_dimension AS custom_size_dimension,
                         cqr.material_type AS custom_material_type,
-                        cqr.quantity AS custom_requested_quantity,
-                        cqr.estimated_delivery AS custom_estimated_delivery
+                        cqr.quantity AS custom_requested_quantity
                  FROM cart_items ci
                  JOIN carts c ON ci.cart_id = c.id
                  LEFT JOIN products p ON ci.product_id = p.id
@@ -418,7 +416,6 @@ class Cart
         $item['custom_size_dimension'] = $item['custom_size_dimension'] ?? ($attrs['size_dimension'] ?? '');
         $item['custom_material_type'] = $item['custom_material_type'] ?? ($attrs['material_type'] ?? '');
         $item['custom_requested_quantity'] = $item['custom_requested_quantity'] ?? ($attrs['requested_quantity'] ?? '');
-        $item['custom_estimated_delivery'] = $item['custom_estimated_delivery'] ?? ($attrs['estimated_delivery'] ?? '');
     }
 
     private static function validateItem(array $d): array

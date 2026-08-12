@@ -70,7 +70,6 @@ $cartTotal = (float)($totals['total'] ?? 0);
               <?php if ($isCustomQuote): ?>
                 <p><strong>Custom Quote<?= !empty($item['custom_quote_code']) ? ' #' . htmlspecialchars((string)$item['custom_quote_code']) : '' ?></strong></p>
                 <small><?= !empty($item['custom_requested_quantity']) ? 'Requested Qty: ' . htmlspecialchars((string)$item['custom_requested_quantity']) . ' · ' : '' ?><?= !empty($item['custom_size_dimension']) ? 'Size: ' . htmlspecialchars((string)$item['custom_size_dimension']) . ' · ' : '' ?><?= !empty($item['custom_material_type']) ? 'Material: ' . htmlspecialchars((string)$item['custom_material_type']) : 'Custom print requirement' ?></small>
-                <?php if (!empty($item['custom_estimated_delivery'])): ?><small>Estimated delivery: <?= htmlspecialchars((string)$item['custom_estimated_delivery']) ?></small><?php endif; ?>
               <?php else: ?>
                 <p><?= number_format($itemQty) ?> pcs<?= $quality !== '' ? ', ' . htmlspecialchars($quality) : '' ?></p>
                 <?php if ($designChoice === 'rcs'): ?>
