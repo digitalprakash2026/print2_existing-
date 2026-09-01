@@ -60,6 +60,7 @@ $ensureOrderSeenColumn = static function () use (&$orderSeenColumnReady, $orderS
     }
 };
 \Orders\OrderManager::ensureWorkflowSchema();
+\Orders\OrderManager::ensureCustomOrderSchema();
 \Orders\OrderManager::ensureDesignApprovalSchema();
 \Orders\OrderManager::ensureDesignEventSchema();
 \Orders\OrderManager::ensureCustomerUpdateSchema();
@@ -76,11 +77,29 @@ $ensureBusinessNeedsSchema = static function (): void {
             icon VARCHAR(32) NULL,
             description VARCHAR(500) NULL,
             product_ids TEXT NULL,
+            image_path VARCHAR(255) NULL,
             sort_order INT NOT NULL DEFAULT 0,
             is_active TINYINT(1) NOT NULL DEFAULT 1,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        try { Database::query("ALTER TABLE business_needs ADD COLUMN image_path VARCHAR(255) NULL AFTER product_ids"); } catch (\Throwable) {}
+        Database::query("CREATE TABLE IF NOT EXISTS product_business_needs (
+            product_id INT UNSIGNED NOT NULL,
+            business_need_id INT UNSIGNED NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (product_id, business_need_id),
+            KEY idx_pbn_need (business_need_id),
+            KEY idx_pbn_product (product_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $legacyNeeds = Database::rows("SELECT id, product_ids FROM business_needs WHERE product_ids IS NOT NULL AND product_ids <> ''");
+        foreach ($legacyNeeds as $need) {
+            $needId = (int)($need['id'] ?? 0);
+            $ids = array_values(array_unique(array_filter(array_map('intval', preg_split('/[,\s]+/', (string)($need['product_ids'] ?? '')) ?: []), static fn($id) => $id > 0)));
+            foreach ($ids as $pid) {
+                try { Database::query("INSERT IGNORE INTO product_business_needs (product_id, business_need_id) VALUES (?, ?)", [$pid, $needId]); } catch (\Throwable) {}
+            }
+        }
     } catch (\Throwable $e) {
         error_log('Business needs schema unavailable: ' . $e->getMessage());
     }
@@ -96,10 +115,73 @@ $businessNeedProducts = static function (mixed $value): string {
 };
 $ensureBusinessNeedsSchema();
 
+
+$ensureCustomQuoteSchema = static function (): void {
+    try {
+        Database::query("CREATE TABLE IF NOT EXISTS custom_quote_requests (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            request_code VARCHAR(40) NOT NULL UNIQUE,
+            user_id INT UNSIGNED NULL,
+            customer_name VARCHAR(160) NOT NULL,
+            phone VARCHAR(40) NOT NULL,
+            email VARCHAR(180) NULL,
+            product_name VARCHAR(180) NOT NULL,
+            size_dimension VARCHAR(160) NULL,
+            material_type VARCHAR(160) NULL,
+            quantity VARCHAR(80) NULL,
+            instructions TEXT NULL,
+            status VARCHAR(40) NOT NULL DEFAULT 'new',
+            admin_notes TEXT NULL,
+            quoted_amount DECIMAL(12,2) NULL,
+            currency VARCHAR(10) NOT NULL DEFAULT 'INR',
+            source_page VARCHAR(255) NULL,
+            ip_address VARCHAR(64) NULL,
+            user_agent VARCHAR(255) NULL,
+            order_id INT UNSIGNED NULL,
+            customer_type VARCHAR(30) NOT NULL DEFAULT 'guest',
+            quote_token VARCHAR(80) NULL,
+            quote_note TEXT NULL,
+            payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required',
+            sent_at DATETIME NULL,
+            payment_link_generated_at DATETIME NULL,
+            approved_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_custom_quote_status (status, created_at),
+            KEY idx_custom_quote_phone (phone),
+            KEY idx_custom_quote_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        foreach ([
+            "ALTER TABLE custom_quote_requests ADD COLUMN admin_notes TEXT NULL AFTER status",
+            "ALTER TABLE custom_quote_requests ADD COLUMN quoted_amount DECIMAL(12,2) NULL AFTER admin_notes",
+            "ALTER TABLE custom_quote_requests ADD COLUMN currency VARCHAR(10) NOT NULL DEFAULT 'INR' AFTER quoted_amount",
+            "ALTER TABLE custom_quote_requests ADD COLUMN order_id INT UNSIGNED NULL AFTER user_agent",
+            "ALTER TABLE custom_quote_requests ADD COLUMN customer_type VARCHAR(30) NOT NULL DEFAULT 'guest' AFTER order_id",
+            "ALTER TABLE custom_quote_requests ADD COLUMN quote_token VARCHAR(80) NULL AFTER customer_type",
+            "ALTER TABLE custom_quote_requests ADD COLUMN quote_note TEXT NULL AFTER quote_token",
+            "ALTER TABLE custom_quote_requests ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'not_required' AFTER quote_note",
+            "ALTER TABLE custom_quote_requests ADD COLUMN sent_at DATETIME NULL AFTER payment_status",
+            "ALTER TABLE custom_quote_requests ADD COLUMN payment_link_generated_at DATETIME NULL AFTER sent_at",
+            "ALTER TABLE custom_quote_requests ADD COLUMN approved_at DATETIME NULL AFTER payment_link_generated_at",
+        ] as $sql) { try { Database::query($sql); } catch (\Throwable) {} }
+        try { Database::query("ALTER TABLE custom_quote_requests DROP COLUMN estimated_delivery"); } catch (\Throwable) {}
+        try {
+            Database::query("UPDATE custom_quote_requests SET request_code=CONCAT('CQ-TMP-', id)");
+            Database::query("UPDATE custom_quote_requests SET request_code=CONCAT('CQ-', LPAD(id, 4, '0'))");
+        } catch (\Throwable) {}
+    } catch (\Throwable $e) {
+        error_log('Custom quote schema unavailable: ' . $e->getMessage());
+    }
+};
+$ensureCustomQuoteSchema();
+
+
 $syncProductBusinessNeeds = static function (int $productId, mixed $selectedNeedIds) use ($businessNeedProducts): void {
     $selected = is_array($selectedNeedIds) ? $selectedNeedIds : preg_split('/[,\s]+/', (string)$selectedNeedIds);
     $selected = array_values(array_unique(array_filter(array_map('intval', $selected ?: []), static fn($id) => $id > 0)));
     try {
+        Database::query("DELETE FROM product_business_needs WHERE product_id=?", [$productId]);
+        foreach ($selected as $needId) Database::query("INSERT IGNORE INTO product_business_needs (product_id, business_need_id) VALUES (?, ?)", [$productId, $needId]);
         $needs = Database::rows("SELECT id, product_ids FROM business_needs");
         foreach ($needs as $need) {
             $needId = (int)($need['id'] ?? 0);
@@ -116,6 +198,8 @@ $syncProductBusinessNeeds = static function (int $productId, mixed $selectedNeed
 };
 $getProductBusinessNeedIds = static function (int $productId): array {
     try {
+        $rows = Database::rows("SELECT business_need_id FROM product_business_needs WHERE product_id=?", [$productId]);
+        if ($rows) return array_values(array_map('intval', array_column($rows, 'business_need_id')));
         $needs = Database::rows("SELECT id, product_ids FROM business_needs WHERE product_ids IS NOT NULL AND product_ids <> ''");
         $out = [];
         foreach ($needs as $need) {
@@ -163,6 +247,16 @@ $whatsappTemplateDefaults = [
         'title' => 'Lead Follow-up Message',
         'description' => 'Sent from the Leads module after a contact form enquiry is received.',
         'body' => "Hello {lead_name}, 👋\n\nThank you for contacting {business_name}. We received your enquiry:\n{lead_subject}\n\nPlease share any artwork, size, quantity or reference details here so our team can guide you quickly.\n\nThank you,\n{business_name}",
+    ],
+    'custom_quote_sent' => [
+        'title' => 'Send Custom Quote',
+        'description' => 'Sent after the quoted amount and quote note are saved.',
+        'body' => "Hello {customer_name}, 👋\n\nThank you for your custom quotation request {quote_id}.\n\nProduct: {product_name}\nSize: {size_dimension}\nMaterial: {material_type}\nQuantity: {quantity}\nQuoted Amount: {quoted_amount}\n\n{quote_note}\n\nPlease reply APPROVE to confirm this quote.\n\nThank you,\n{business_name}",
+    ],
+    'custom_quote_payment' => [
+        'title' => 'Send Custom Order Payment Link',
+        'description' => 'Sent after approval, account linking and payment-link generation.',
+        'body' => "Hello {customer_name}, 👋\n\nYour custom order {quote_id} is ready for payment.\n\nAmount: {quoted_amount}\n\nLogin here: {login_url}\nLogin with: {login_identifier}\nPassword: {login_password}\n\nYour custom order is already added to your cart. Open your secure payment link to continue: {payment_link}\n\nThank you,\n{business_name}",
     ],
 ];
 $ensureWhatsappTemplateSchema = static function () use ($whatsappTemplateDefaults): void {
@@ -246,6 +340,8 @@ $ensurePageHeroesSchema = static function (): void {
             ['contact', 'Contact Us', 'Reach our print experts for quotes, support and custom requirements.', '/assets/images/sample-products/stationery/stationery-1.svg', 20],
             ['blogs', 'Printing Ideas & Guides', 'Explore helpful print tips, business branding ideas and product updates.', '/assets/images/sample-products/flyers/flyers-1.svg', 30],
             ['categories', 'All Product Categories', 'Browse every printing category and find the right product for your business.', '/assets/img/categories/all-categories-hero.svg', 40],
+            ['business_sectors', 'All Sectors', 'Explore business-wise printing solutions for your industry.', '/assets/img/categories/print-category.svg', 45],
+            ['business_detail', 'Business Printing Solutions', 'Explore products curated for this business sector.', '/assets/img/categories/print-category.svg', 46],
             ['category_detail', 'Premium Printing Products', 'Choose the right print product with quality materials and fast support.', '/assets/img/categories/all-categories-hero.svg', 50],
             ['product_detail', 'Product Details', 'Customize your order, upload artwork and get premium printing delivered.', '/assets/images/sample-products/business-cards/business-cards-1.svg', 60],
             ['portfolio', 'Our Portfolio', 'Explore real printing work created for businesses and brands.', '/assets/images/sample-products/brochures/brochures-2.svg', 70],
@@ -598,6 +694,25 @@ if (str_starts_with($uri, '/admin/api/')) {
                 }
             } catch (\Throwable $e) {
                 error_log('Category page hero sync failed: ' . $e->getMessage());
+            }
+            try {
+                $businessNeeds = Database::rows("SELECT slug, name, description, image_path, sort_order FROM business_needs WHERE is_active=1 ORDER BY sort_order ASC, id DESC");
+                foreach ($businessNeeds as $need) {
+                    $slug = strtolower(trim((string)($need['slug'] ?? '')));
+                    if ($slug === '') continue;
+                    $slug = preg_replace('/[^a-z0-9_-]+/', '-', $slug) ?? $slug;
+                    $key = 'business_' . trim($slug, '-');
+                    $name = trim((string)($need['name'] ?? 'Business Sector')) ?: 'Business Sector';
+                    $fallback = trim((string)($need['image_path'] ?? '')) ?: '/assets/img/categories/print-category.svg';
+                    Database::query(
+                        "INSERT INTO page_heroes (page_key, title, description, fallback_image, sort_order, is_active, created_at, updated_at)
+                         SELECT ?,?,?,?,?,1,NOW(),NOW() FROM DUAL
+                         WHERE NOT EXISTS (SELECT 1 FROM page_heroes WHERE page_key=? LIMIT 1)",
+                        [$key, $name . ' Printing Solutions', trim((string)($need['description'] ?? '')) ?: 'Explore products curated for ' . $name . '.', $fallback, 1500 + (int)($need['sort_order'] ?? 0), $key]
+                    );
+                }
+            } catch (\Throwable $e) {
+                error_log('Business page hero sync failed: ' . $e->getMessage());
             }
             $rows = Database::rows("SELECT * FROM page_heroes ORDER BY sort_order ASC, title ASC");
             json(['ok'=>true,'heroes'=>$rows]);
@@ -1761,9 +1876,126 @@ if (str_starts_with($uri, '/admin/api/')) {
 
 
 
+
+    if ($uri === '/admin/api/custom-orders' && $method === 'GET') {
+        try {
+            $rows = Database::rows("SELECT cqr.*, u.name AS user_name, u.email AS user_email, u.phone AS user_phone
+                FROM custom_quote_requests cqr
+                LEFT JOIN users u ON u.id = cqr.user_id
+                ORDER BY cqr.created_at DESC, cqr.id DESC
+                LIMIT 300");
+            $counts = ['all'=>count($rows),'new'=>0,'reviewing'=>0,'sent_to_customer'=>0,'customer_approved'=>0,'payment_pending'=>0,'converted_to_order'=>0,'rejected'=>0];
+            foreach ($rows as $row) {
+                $st = (string)($row['status'] ?? 'new');
+                if ($st === 'paid') $st = 'converted_to_order';
+                if (array_key_exists($st, $counts)) $counts[$st]++;
+            }
+            json(['ok'=>true,'quotes'=>$rows,'counts'=>$counts]);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Could not load custom orders','quotes'=>[],'counts'=>[]], 500);
+        }
+    }
+
+    if (preg_match('#^/admin/api/custom-orders/(\d+)$#', $uri, $m) && in_array($method, ['POST','PUT'], true)) {
+        $allowed = ['new','reviewing','quoted','sent_to_customer','customer_approved','payment_pending','paid','converted_to_order','rejected','closed'];
+        $status = trim((string)($body['status'] ?? 'new'));
+        if (!in_array($status, $allowed, true)) json(['ok'=>false,'msg'=>'Invalid status'], 422);
+        try {
+            $timestampSql = '';
+            if ($status === 'sent_to_customer') {
+                $timestampSql .= ', sent_at=COALESCE(sent_at, NOW())';
+            }
+            if ($status === 'customer_approved') {
+                $timestampSql .= ', approved_at=COALESCE(approved_at, NOW())';
+            }
+            Database::query("UPDATE custom_quote_requests SET customer_name=?, phone=?, email=?, product_name=?, size_dimension=?, material_type=?, quantity=?, instructions=?, status=?, quoted_amount=?, quote_note=?, payment_status=?{$timestampSql}, updated_at=NOW() WHERE id=?", [
+                trim((string)($body['customer_name'] ?? '')),
+                trim((string)($body['phone'] ?? '')),
+                trim((string)($body['email'] ?? '')) ?: null,
+                trim((string)($body['product_name'] ?? '')),
+                trim((string)($body['size_dimension'] ?? '')),
+                trim((string)($body['material_type'] ?? '')),
+                trim((string)($body['quantity'] ?? '')),
+                trim((string)($body['instructions'] ?? '')),
+                $status,
+                ($body['quoted_amount'] ?? '') !== '' && ($body['quoted_amount'] ?? null) !== null ? (float)$body['quoted_amount'] : null,
+                trim((string)($body['quote_note'] ?? '')),
+                trim((string)($body['payment_status'] ?? 'not_required')) ?: 'not_required',
+                (int)$m[1],
+            ]);
+            json(['ok'=>true]);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Could not save custom order: ' . $e->getMessage()], 500);
+        }
+    }
+
+    if (preg_match('#^/admin/api/custom-orders/(\d+)/customer-account$#', $uri, $m) && $method === 'POST') {
+        try {
+            $quote = Database::row("SELECT * FROM custom_quote_requests WHERE id=? LIMIT 1", [(int)$m[1]]);
+            if (!$quote) json(['ok'=>false,'msg'=>'Custom quote not found'], 404);
+            if ((string)($quote['status'] ?? '') !== 'customer_approved') json(['ok'=>false,'msg'=>'Mark this quote approved before creating the customer account.'], 422);
+            $name = trim((string)($quote['customer_name'] ?? '')) ?: 'RCS Customer'; $phone = trim((string)($quote['phone'] ?? '')); $email = strtolower(trim((string)($quote['email'] ?? '')));
+            $loginPassword = preg_replace('/\D+/', '', $phone) ?: '';
+            if ($email === '' || $loginPassword === '') json(['ok'=>false,'msg'=>'Customer email and mobile number are required to create an account.'], 422);
+            $user = Database::row("SELECT * FROM users WHERE email=? OR phone=? LIMIT 1", [$email, $phone]); $created = false;
+            if (!$user) { $userId = Database::insert("INSERT INTO users (name, email, phone, company, password, marketing_consent, created_at) VALUES (?, ?, ?, '', ?, 0, NOW())", [$name, $email, $phone, password_hash($loginPassword, PASSWORD_BCRYPT, ['cost'=>10])]); $user = Database::row("SELECT * FROM users WHERE id=?", [(int)$userId]); $created = true; }
+            Database::query("UPDATE custom_quote_requests SET user_id=?, customer_type='registered', email=COALESCE(NULLIF(email,''), ?), phone=COALESCE(NULLIF(phone,''), ?), updated_at=NOW() WHERE id=?", [(int)$user['id'], (string)($user['email'] ?? $email), (string)($user['phone'] ?? $phone), (int)$m[1]]);
+            $quote = Database::row("SELECT * FROM custom_quote_requests WHERE id=?", [(int)$m[1]]);
+            $cartResult = \Cart\Cart::addCustomQuote($quote ?: [], (int)$user['id']);
+            if (!($cartResult['ok'] ?? false)) json(['ok'=>false,'msg'=>$cartResult['msg'] ?? 'Customer account was created but the custom order could not be added to cart.'], 422);
+            json(['ok'=>true,'created'=>$created,'cart_added'=>true,'user'=>['id'=>(int)$user['id'],'name'=>(string)($user['name'] ?? $name),'email'=>(string)($user['email'] ?? $email),'phone'=>(string)($user['phone'] ?? $phone)],'login_password'=>$created ? $loginPassword : null]);
+        } catch (\Throwable $e) { json(['ok'=>false,'msg'=>'Could not create/link account: ' . $e->getMessage()], 500); }
+    }
+
+    if (preg_match('#^/admin/api/custom-orders/(\d+)/payment-link$#', $uri, $m) && $method === 'POST') {
+        try {
+            $quote = Database::row("SELECT * FROM custom_quote_requests WHERE id=? LIMIT 1", [(int)$m[1]]);
+            if (!$quote) json(['ok'=>false,'msg'=>'Custom quote not found'], 404);
+            if ((string)($quote['status'] ?? '') !== 'customer_approved') json(['ok'=>false,'msg'=>'Mark this quote approved before generating the payment link.'], 422);
+            if (empty($quote['user_id'])) json(['ok'=>false,'msg'=>'Create or link the customer account before generating the payment link.'], 422);
+            if ((float)($quote['quoted_amount'] ?? 0) <= 0) json(['ok'=>false,'msg'=>'Please save quoted amount before generating payment link.'], 422);
+            $token = trim((string)($quote['quote_token'] ?? '')) ?: bin2hex(random_bytes(24));
+            Database::query("UPDATE custom_quote_requests SET quote_token=?, status='payment_pending', payment_status='payment_pending', payment_link_generated_at=COALESCE(payment_link_generated_at, NOW()), updated_at=NOW() WHERE id=?", [$token, (int)$m[1]]);
+            $base = rtrim((defined('APP_URL') ? (string)APP_URL : ''), '/'); if ($base === '') { $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http'; $base = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? ''); }
+            json(['ok'=>true,'link'=>$base . '/custom-checkout/' . rawurlencode($token),'token'=>$token,'status'=>'payment_pending']);
+        } catch (\Throwable $e) { json(['ok'=>false,'msg'=>'Could not generate payment link: ' . $e->getMessage()], 500); }
+    }
+
+    if (preg_match('#^/admin/api/custom-orders/(\d+)/whatsapp-message$#', $uri, $m) && $method === 'POST') {
+        try {
+            $quote = Database::row("SELECT cqr.*,u.email AS account_email,u.phone AS account_phone FROM custom_quote_requests cqr LEFT JOIN users u ON u.id=cqr.user_id WHERE cqr.id=? LIMIT 1", [(int)$m[1]]);
+            if (!$quote) json(['ok'=>false,'msg'=>'Custom quote not found'], 404); $type = (string)($body['type'] ?? 'quote'); $key = $type === 'payment' ? 'custom_quote_payment' : 'custom_quote_sent';
+            if ($type === 'quote' && ((float)($quote['quoted_amount'] ?? 0) <= 0 || trim((string)($quote['quote_note'] ?? '')) === '')) json(['ok'=>false,'msg'=>'Save quoted amount and quote note before sending WhatsApp quote.'], 422);
+            if ($type === 'payment' && (empty($quote['user_id']) || trim((string)($quote['quote_token'] ?? '')) === '')) json(['ok'=>false,'msg'=>'Create the account and generate payment link first.'], 422);
+            $template = Database::row("SELECT body FROM whatsapp_message_templates WHERE template_key=? AND is_active=1 LIMIT 1", [$key]); $text = (string)($template['body'] ?? $whatsappTemplateDefaults[$key]['body']);
+            $base = rtrim((defined('APP_URL') ? (string)APP_URL : ''), '/'); if ($base === '') { $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http'; $base = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? ''); }
+            $data = ['customer_name'=>(string)$quote['customer_name'],'quote_id'=>(string)$quote['request_code'],'product_name'=>(string)$quote['product_name'],'size_dimension'=>(string)$quote['size_dimension'],'material_type'=>(string)$quote['material_type'],'quantity'=>(string)$quote['quantity'],'quoted_amount'=>'₹'.number_format((float)$quote['quoted_amount'],2),'quote_note'=>(string)$quote['quote_note'],'business_name'=>(string)Database::setting('site_name','RCS Print'),'login_url'=>$base.'/login?next=/cart','login_identifier'=>(string)($quote['account_email'] ?: $quote['account_phone'] ?: $quote['email']),'login_password'=>(string)preg_replace('/\D+/', '', (string)($quote['account_phone'] ?: $quote['phone'])),'payment_link'=>$base.'/custom-checkout/'.rawurlencode((string)$quote['quote_token'])];
+            $message = preg_replace_callback('/\{([a-z0-9_]+)\}/i', static fn($x) => $data[$x[1]] ?? $x[0], $text); json(['ok'=>true,'message'=>$message]);
+        } catch (\Throwable $e) { json(['ok'=>false,'msg'=>'Could not prepare WhatsApp message: '.$e->getMessage()],500); }
+    }
+
+    if (preg_match('#^/admin/api/custom-orders/(\d+)/status$#', $uri, $m) && $method === 'POST') {
+        $allowed = ['new','reviewing','quoted','sent_to_customer','customer_approved','payment_pending','paid','converted_to_order','rejected','closed'];
+        $status = trim((string)($body['status'] ?? ''));
+        if (!in_array($status, $allowed, true)) json(['ok'=>false,'msg'=>'Invalid status'], 422);
+        try {
+            $timestampSql = '';
+            if ($status === 'sent_to_customer') {
+                $timestampSql .= ', sent_at=COALESCE(sent_at, NOW())';
+            }
+            if ($status === 'customer_approved') {
+                $timestampSql .= ', approved_at=COALESCE(approved_at, NOW())';
+            }
+            Database::query("UPDATE custom_quote_requests SET status=?{$timestampSql}, updated_at=NOW() WHERE id=?", [$status, (int)$m[1]]);
+            json(['ok'=>true]);
+        } catch (\Throwable $e) {
+            json(['ok'=>false,'msg'=>'Could not update custom order: ' . $e->getMessage()], 500);
+        }
+    }
+
     if ($uri === '/admin/api/business-needs' && $method === 'GET') {
         try {
-            $needs = Database::rows("SELECT * FROM business_needs ORDER BY sort_order ASC, id DESC");
+            $needs = Database::rows("SELECT bn.*, COUNT(pbn.product_id) AS product_count FROM business_needs bn LEFT JOIN product_business_needs pbn ON pbn.business_need_id = bn.id GROUP BY bn.id ORDER BY bn.sort_order ASC, bn.id DESC");
             json(['ok'=>true,'needs'=>$needs]);
         } catch (\Throwable $e) {
             json(['ok'=>false,'msg'=>'Could not load business needs','needs'=>[]], 500);
@@ -1773,11 +2005,10 @@ if (str_starts_with($uri, '/admin/api/')) {
         $name = trim((string)($body['name'] ?? ''));
         if ($name === '') json(['ok'=>false,'msg'=>'Business / sector name is required'], 422);
         $slug = $businessNeedSlug((string)($body['slug'] ?? $name));
-        $productsCsv = $businessNeedProducts($body['product_ids'] ?? []);
         try {
             $id = Database::insert(
-                "INSERT INTO business_needs (name,slug,icon,description,product_ids,sort_order,is_active) VALUES (?,?,?,?,?,?,?)",
-                [$name,$slug,trim((string)($body['icon'] ?? '🏢')) ?: '🏢',trim((string)($body['description'] ?? '')),$productsCsv,(int)($body['sort_order'] ?? 0),(int)((int)($body['is_active'] ?? 1) > 0)]
+                "INSERT INTO business_needs (name,slug,icon,description,product_ids,image_path,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?)",
+                [$name,$slug,trim((string)($body['icon'] ?? '🏢')) ?: '🏢',trim((string)($body['description'] ?? '')),'',trim((string)($body['image_path'] ?? '')),(int)($body['sort_order'] ?? 0),(int)((int)($body['is_active'] ?? 1) > 0)]
             );
             json(['ok'=>true,'id'=>(int)$id]);
         } catch (\Throwable $e) {
@@ -1788,19 +2019,37 @@ if (str_starts_with($uri, '/admin/api/')) {
         $name = trim((string)($body['name'] ?? ''));
         if ($name === '') json(['ok'=>false,'msg'=>'Business / sector name is required'], 422);
         $slug = $businessNeedSlug((string)($body['slug'] ?? $name));
-        $productsCsv = $businessNeedProducts($body['product_ids'] ?? []);
         try {
             Database::query(
-                "UPDATE business_needs SET name=?, slug=?, icon=?, description=?, product_ids=?, sort_order=?, is_active=?, updated_at=NOW() WHERE id=?",
-                [$name,$slug,trim((string)($body['icon'] ?? '🏢')) ?: '🏢',trim((string)($body['description'] ?? '')),$productsCsv,(int)($body['sort_order'] ?? 0),(int)((int)($body['is_active'] ?? 1) > 0),(int)$m[1]]
+                "UPDATE business_needs SET name=?, slug=?, icon=?, description=?, image_path=?, sort_order=?, is_active=?, updated_at=NOW() WHERE id=?",
+                [$name,$slug,trim((string)($body['icon'] ?? '🏢')) ?: '🏢',trim((string)($body['description'] ?? '')),trim((string)($body['image_path'] ?? '')),(int)($body['sort_order'] ?? 0),(int)((int)($body['is_active'] ?? 1) > 0),(int)$m[1]]
             );
             json(['ok'=>true]);
         } catch (\Throwable $e) {
             json(['ok'=>false,'msg'=>'Could not update business need. Slug may already exist.'], 500);
         }
     }
+
+    if (preg_match('#^/admin/api/business-needs/(\d+)/image-upload$#', $uri, $m) && $method === 'POST') {
+        $id = (int)$m[1];
+        if (empty($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) json(['ok'=>false,'msg'=>'Image file required'], 422);
+        $file = $_FILES['image'];
+        if (($file['size'] ?? 0) > 5 * 1024 * 1024) json(['ok'=>false,'msg'=>'Image must be 5MB or less'], 422);
+        $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+        $allowed = ['jpg'=>'image/jpeg','jpeg'=>'image/jpeg','png'=>'image/png','webp'=>'image/webp'];
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!isset($allowed[$ext]) || $allowed[$ext] !== $mime) json(['ok'=>false,'msg'=>'Only JPG, PNG or WEBP images are allowed'], 422);
+        $dir = PUBLIC_PATH . '/uploads/business-needs/';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'business-' . $id . '-' . bin2hex(random_bytes(5)) . '.' . $ext;
+        $publicPath = '/uploads/business-needs/' . $name;
+        if (!move_uploaded_file($file['tmp_name'], $dir . $name)) json(['ok'=>false,'msg'=>'Could not upload image'], 500);
+        Database::query("UPDATE business_needs SET image_path=?, updated_at=NOW() WHERE id=?", [$publicPath, $id]);
+        json(['ok'=>true,'image_path'=>$publicPath]);
+    }
+
     if (preg_match('#^/admin/api/business-needs/(\d+)$#', $uri, $m) && $method === 'DELETE') {
-        try { Database::query("DELETE FROM business_needs WHERE id=?", [(int)$m[1]]); json(['ok'=>true]); }
+        try { Database::query("DELETE FROM product_business_needs WHERE business_need_id=?", [(int)$m[1]]); Database::query("DELETE FROM business_needs WHERE id=?", [(int)$m[1]]); json(['ok'=>true]); }
         catch (\Throwable) { json(['ok'=>false,'msg'=>'Could not delete business need'], 500); }
     }
 
@@ -2426,6 +2675,15 @@ if ($uri === '/admin/export/orders') {
     exit;
 }
 
+if ($uri === '/admin/export/custom-orders') {
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="custom-orders-' . date('Y-m-d') . '.csv"');
+    $quotes = Database::rows("SELECT request_code,created_at,customer_name,phone,email,product_name,size_dimension,material_type,quantity,instructions,quoted_amount,currency,quote_note,status,payment_status FROM custom_quote_requests ORDER BY created_at DESC, id DESC");
+    echo implode(',', ['Quote ID','Date','Customer','Phone','Email','Product','Size / Dimension','Material','Quantity','Customer Instructions','Quoted Amount','Currency','Quote Note','Status','Payment Status']) . "\n";
+    foreach ($quotes as $row) echo implode(',', array_map(fn($v) => '"' . str_replace('"','""',$v??'') . '"', $row)) . "\n";
+    exit;
+}
+
 if (preg_match('#^/admin/orders/(\d+)/invoice$#', $uri, $m) && $method === 'POST') {
     $token = (string)($_POST['_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
     if (!hash_equals((string)($_SESSION['csrf_token'] ?? ''), $token)) {
@@ -2788,6 +3046,11 @@ if (preg_match('#^/admin/deals/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     exit;
 }
 
+if (preg_match('#^/admin/business-needs/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
+    view('admin/business-needs-new', ['businessNeedEditId' => (int)$m[1]]);
+    exit;
+}
+
 if (preg_match('#^/admin/coupons/edit/(\d+)$#', $uri, $m) && $method === 'GET') {
     view('admin/coupons-new', ['couponEditId' => (int)$m[1]]);
     exit;
@@ -2811,11 +3074,13 @@ $adminPage = match(true) {
     $uri === '/admin/banners'    => 'admin/banners',
     $uri === '/admin/deals'      => 'admin/deals',
     $uri === '/admin/business-needs' => 'admin/business-needs',
+    $uri === '/admin/business-needs/new' => 'admin/business-needs-new',
     $uri === '/admin/deals/new'  => 'admin/deals-new',
     $uri === '/admin/blogs'      => 'admin/blogs',
     $uri === '/admin/blogs/new'  => 'admin/blogs-new',
     $uri === '/admin/pricing'    => 'admin/pricing',
     $uri === '/admin/coupons'    => 'admin/coupons',
+    $uri === '/admin/custom-orders' => 'admin/custom-orders',
     $uri === '/admin/coupons/new' => 'admin/coupons-new',
     $uri === '/admin/reviews'    => 'admin/reviews',
     $uri === '/admin/faqs'       => 'admin/faqs',

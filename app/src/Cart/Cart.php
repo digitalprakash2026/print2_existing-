@@ -9,10 +9,32 @@ namespace Cart;
 
 class Cart
 {
+    private static ?bool $customQuoteSchemaReady = null;
+
+    public static function ensureCustomQuoteSchema(): bool
+    {
+        if (self::$customQuoteSchemaReady !== null) return self::$customQuoteSchemaReady;
+        try {
+            foreach ([
+                "ALTER TABLE cart_items MODIFY COLUMN product_id INT UNSIGNED NULL",
+                "ALTER TABLE cart_items ADD COLUMN item_type VARCHAR(30) NOT NULL DEFAULT 'product' AFTER cart_id",
+                "ALTER TABLE cart_items ADD COLUMN custom_quote_id INT UNSIGNED NULL AFTER item_type",
+                "ALTER TABLE cart_items ADD COLUMN custom_quote_token VARCHAR(80) NULL AFTER custom_quote_id",
+                "CREATE INDEX idx_cart_items_custom_quote ON cart_items (custom_quote_id)",
+            ] as $sql) { try { \Database::query($sql); } catch (\Throwable) {} }
+            self::$customQuoteSchemaReady = true;
+        } catch (\Throwable $e) {
+            error_log('Cart custom quote schema unavailable: ' . $e->getMessage());
+            self::$customQuoteSchemaReady = false;
+        }
+        return self::$customQuoteSchemaReady;
+    }
+
     // ── Core ──────────────────────────────────────────────────
 
     public static function add(array $data): array
     {
+        self::ensureCustomQuoteSchema();
         $validation = self::validateItem($data);
         if (!$validation['ok']) return $validation;
 
@@ -84,6 +106,72 @@ class Cart
         return ['ok' => true, 'cart_item_id' => $cartItemId, 'price' => $priceInfo];
     }
 
+    public static function addCustomQuote(array $quote, ?int $targetUserId = null): array
+    {
+        self::ensureCustomQuoteSchema();
+        $quoteId = (int)($quote['id'] ?? 0);
+        $amount = (float)($quote['quoted_amount'] ?? 0);
+        if ($quoteId <= 0) return ['ok' => false, 'msg' => 'Invalid custom quote.'];
+        if ($amount <= 0) return ['ok' => false, 'msg' => 'Quote amount is not ready yet.'];
+        if (in_array((string)($quote['status'] ?? ''), ['converted_to_order','closed','rejected'], true)) {
+            return ['ok' => false, 'msg' => 'This custom quote is no longer available for checkout.'];
+        }
+
+        $item = [
+            'item_type' => 'custom_quote',
+            'custom_quote_id' => $quoteId,
+            'custom_quote_token' => (string)($quote['quote_token'] ?? ''),
+            'product_id' => null,
+            'quality_id' => null,
+            'quantity' => 1,
+            'attribute_selections' => json_encode([
+                'size_dimension' => (string)($quote['size_dimension'] ?? ''),
+                'material_type' => (string)($quote['material_type'] ?? ''),
+                'requested_quantity' => (string)($quote['quantity'] ?? ''),
+            ], JSON_UNESCAPED_UNICODE),
+            'design_choice' => 'rcs',
+            'design_brief' => (string)($quote['instructions'] ?? ''),
+            'notes' => (string)($quote['quote_note'] ?? ''),
+            'price_breakdown' => json_encode([
+                'base_price' => $amount,
+                'custom_quote_id' => $quoteId,
+                'request_code' => (string)($quote['request_code'] ?? ''),
+                'requested_quantity' => (string)($quote['quantity'] ?? ''),
+            ], JSON_UNESCAPED_UNICODE),
+            'total_price' => $amount,
+        ];
+
+        $userId = $targetUserId ?? (\Auth\Auth::user()['id'] ?? null);
+        if ($userId) {
+            $cart = \Database::row("SELECT id FROM carts WHERE user_id = ?", [$userId]);
+            $cartId = $cart ? (int)$cart['id'] : (int)\Database::insert("INSERT INTO carts (user_id, created_at) VALUES (?, NOW())", [$userId]);
+            $existing = \Database::row("SELECT id FROM cart_items WHERE cart_id=? AND custom_quote_id=? LIMIT 1", [$cartId, $quoteId]);
+            if ($existing) {
+                \Database::query("UPDATE cart_items SET item_type='custom_quote', quantity=1, attribute_selections=?, design_choice=?, design_brief=?, notes=?, price_breakdown=?, total_price=?, custom_quote_token=? WHERE id=?", [
+                    $item['attribute_selections'], $item['design_choice'], $item['design_brief'], $item['notes'], $item['price_breakdown'], $item['total_price'], $item['custom_quote_token'], (int)$existing['id']
+                ]);
+                return ['ok' => true, 'cart_item_id' => (int)$existing['id'], 'already_exists' => true];
+            }
+            $cartItemId = \Database::insert(
+                "INSERT INTO cart_items (cart_id, item_type, custom_quote_id, custom_quote_token, product_id, quality_id, quantity, attribute_selections, design_choice, design_brief, notes, price_breakdown, total_price, created_at)
+                 VALUES (?, 'custom_quote', ?, ?, NULL, NULL, 1, ?, ?, ?, ?, ?, ?, NOW())",
+                [$cartId, $quoteId, $item['custom_quote_token'], $item['attribute_selections'], $item['design_choice'], $item['design_brief'], $item['notes'], $item['price_breakdown'], $item['total_price']]
+            );
+            return ['ok' => true, 'cart_item_id' => (int)$cartItemId];
+        }
+
+        if (!isset($_SESSION['cart'])) $_SESSION['cart'] = [];
+        foreach ($_SESSION['cart'] as &$existing) {
+            if ((int)($existing['custom_quote_id'] ?? 0) === $quoteId) {
+                $existing = array_merge($existing, $item, ['id' => (string)($existing['id'] ?? uniqid('ci_', true))]);
+                return ['ok' => true, 'cart_item_id' => $existing['id'], 'already_exists' => true];
+            }
+        }
+        $item['id'] = uniqid('ci_', true);
+        $_SESSION['cart'][] = $item;
+        return ['ok' => true, 'cart_item_id' => $item['id']];
+    }
+
     public static function remove(string $itemId): array
     {
         $userId = \Auth\Auth::user()['id'] ?? null;
@@ -124,6 +212,7 @@ class Cart
                 [$itemId, $userId]
             );
             if (!$item) return ['ok' => false, 'msg' => 'Item not found'];
+            if (($item['item_type'] ?? 'product') === 'custom_quote') return ['ok' => false, 'msg' => 'Custom quote quantity cannot be changed from cart.'];
 
             $priceInfo = Pricing::calculate(
                 (int)$item['product_id'],
@@ -145,6 +234,7 @@ class Cart
         $items = $_SESSION['cart'] ?? [];
         foreach ($items as $idx => $item) {
             if (($item['id'] ?? '') !== $itemId) continue;
+            if (($item['item_type'] ?? 'product') === 'custom_quote') return ['ok' => false, 'msg' => 'Custom quote quantity cannot be changed from cart.'];
 
             $priceInfo = Pricing::calculate(
                 (int)$item['product_id'],
@@ -170,25 +260,37 @@ class Cart
         $userId = \Auth\Auth::user()['id'] ?? null;
 
         if ($userId) {
-            return \Database::rows(
-                "SELECT ci.*, p.name as product_name, p.slug,
+            self::ensureCustomQuoteSchema();
+            $items = \Database::rows(
+                "SELECT ci.*, COALESCE(cqr.product_name, p.name) as product_name, p.slug,
                         p.category_id,
-                        'Standard' as quality_name,
-                        pi.url as product_image
+                        CASE WHEN ci.item_type='custom_quote' THEN 'Custom Quote' ELSE 'Standard' END as quality_name,
+                        pi.url as product_image,
+                        cqr.request_code AS custom_quote_code,
+                        cqr.size_dimension AS custom_size_dimension,
+                        cqr.material_type AS custom_material_type,
+                        cqr.quantity AS custom_requested_quantity
                  FROM cart_items ci
                  JOIN carts c ON ci.cart_id = c.id
-                 JOIN products p ON ci.product_id = p.id
+                 LEFT JOIN products p ON ci.product_id = p.id
+                 LEFT JOIN custom_quote_requests cqr ON cqr.id = ci.custom_quote_id
                  LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
                  LEFT JOIN artwork_files af ON af.cart_item_id = ci.id
                  WHERE c.user_id = ?
                  ORDER BY ci.created_at ASC",
                 [$userId]
             );
+            foreach ($items as &$item) self::normalizeCustomQuoteItem($item);
+            return $items;
         }
 
         // Guest cart — enrich with product data
         $items = $_SESSION['cart'] ?? [];
         foreach ($items as &$item) {
+            if (($item['item_type'] ?? 'product') === 'custom_quote') {
+                self::normalizeCustomQuoteItem($item);
+                continue;
+            }
             $prod = \Database::row(
                 "SELECT p.name as product_name, p.slug, pi.url as product_image,
                         p.category_id,
@@ -265,14 +367,21 @@ class Cart
             $cartId = $cart['id'];
         }
 
+        self::ensureCustomQuoteSchema();
         foreach ($guestItems as $item) {
+            $isCustomQuote = ($item['item_type'] ?? 'product') === 'custom_quote';
             $newCartItemId = \Database::insert(
-                "INSERT INTO cart_items (cart_id, product_id, quality_id, quantity, attribute_selections,
+                "INSERT INTO cart_items (cart_id, item_type, custom_quote_id, custom_quote_token, product_id, quality_id, quantity, attribute_selections,
                   design_choice, design_brief, notes, price_breakdown, total_price, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
                 [
                     $cartId,
-                    $item['product_id'], $item['quality_id'], $item['quantity'],
+                    $isCustomQuote ? 'custom_quote' : 'product',
+                    $isCustomQuote ? (int)($item['custom_quote_id'] ?? 0) : null,
+                    $isCustomQuote ? (string)($item['custom_quote_token'] ?? '') : null,
+                    $isCustomQuote ? null : (int)($item['product_id'] ?? 0),
+                    $isCustomQuote ? null : (int)($item['quality_id'] ?? 1),
+                    $isCustomQuote ? 1 : (int)($item['quantity'] ?? 0),
                     $item['attribute_selections'] ?? '[]',
                     $item['design_choice'] ?? 'upload',
                     $item['design_brief'] ?? '',
@@ -282,7 +391,7 @@ class Cart
                 ]
             );
 
-            if (!empty($item['artwork_id'])) {
+            if (!$isCustomQuote && !empty($item['artwork_id'])) {
                 \Database::query(
                     "UPDATE artwork_files
                      SET cart_item_id = ?, uploaded_by = COALESCE(uploaded_by, ?)
@@ -293,6 +402,20 @@ class Cart
         }
 
         $_SESSION['cart'] = [];
+    }
+
+    private static function normalizeCustomQuoteItem(array &$item): void
+    {
+        if (($item['item_type'] ?? 'product') !== 'custom_quote') return;
+        $attrs = is_array($item['attribute_selections'] ?? null) ? $item['attribute_selections'] : (json_decode((string)($item['attribute_selections'] ?? '{}'), true) ?: []);
+        $item['product_name'] = $item['product_name'] ?: ('Custom Quote ' . ($item['custom_quote_code'] ?? ''));
+        $item['slug'] = '';
+        $item['product_image'] = $item['product_image'] ?: '/assets/images/RCS%20PRINT%20LOGO.png';
+        $item['quality_name'] = 'Custom Quote';
+        $item['quantity'] = 1;
+        $item['custom_size_dimension'] = $item['custom_size_dimension'] ?? ($attrs['size_dimension'] ?? '');
+        $item['custom_material_type'] = $item['custom_material_type'] ?? ($attrs['material_type'] ?? '');
+        $item['custom_requested_quantity'] = $item['custom_requested_quantity'] ?? ($attrs['requested_quantity'] ?? '');
     }
 
     private static function validateItem(array $d): array
