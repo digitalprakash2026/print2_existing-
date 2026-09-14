@@ -17,6 +17,7 @@ class Cart
         try {
             foreach ([
                 "ALTER TABLE cart_items MODIFY COLUMN product_id INT UNSIGNED NULL",
+                "ALTER TABLE cart_items MODIFY COLUMN quality_id INT UNSIGNED NULL",
                 "ALTER TABLE cart_items ADD COLUMN item_type VARCHAR(30) NOT NULL DEFAULT 'product' AFTER cart_id",
                 "ALTER TABLE cart_items ADD COLUMN custom_quote_id INT UNSIGNED NULL AFTER item_type",
                 "ALTER TABLE cart_items ADD COLUMN custom_quote_token VARCHAR(80) NULL AFTER custom_quote_id",

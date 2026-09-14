@@ -1930,20 +1930,35 @@ if (str_starts_with($uri, '/admin/api/')) {
     }
 
     if (preg_match('#^/admin/api/custom-orders/(\d+)/customer-account$#', $uri, $m) && $method === 'POST') {
+        \Cart\Cart::ensureCustomQuoteSchema();
+        $db = Database::get();
         try {
-            $quote = Database::row("SELECT * FROM custom_quote_requests WHERE id=? LIMIT 1", [(int)$m[1]]);
-            if (!$quote) json(['ok'=>false,'msg'=>'Custom quote not found'], 404);
-            $name = trim((string)($quote['customer_name'] ?? '')) ?: 'RCS Customer'; $phone = trim((string)($quote['phone'] ?? '')); $email = strtolower(trim((string)($quote['email'] ?? '')));
+            $db->beginTransaction();
+            $quote = Database::row("SELECT * FROM custom_quote_requests WHERE id=? FOR UPDATE", [(int)$m[1]]);
+            if (!$quote) { $db->rollBack(); json(['ok'=>false,'msg'=>'Custom quote not found'], 404); }
+            $name = trim((string)($quote['customer_name'] ?? '')) ?: 'RCS Customer';
+            $phone = trim((string)($quote['phone'] ?? ''));
+            $email = strtolower(trim((string)($quote['email'] ?? '')));
             $loginPassword = preg_replace('/\D+/', '', $phone) ?: '';
-            if ($email === '' || $loginPassword === '') json(['ok'=>false,'msg'=>'Customer email and mobile number are required to create an account.'], 422);
-            $user = Database::row("SELECT * FROM users WHERE email=? OR phone=? LIMIT 1", [$email, $phone]); $created = false;
-            if (!$user) { $userId = Database::insert("INSERT INTO users (name, email, phone, company, password, marketing_consent, created_at) VALUES (?, ?, ?, '', ?, 0, NOW())", [$name, $email, $phone, password_hash($loginPassword, PASSWORD_BCRYPT, ['cost'=>10])]); $user = Database::row("SELECT * FROM users WHERE id=?", [(int)$userId]); $created = true; }
+            if ($email === '' || $loginPassword === '') { $db->rollBack(); json(['ok'=>false,'msg'=>'Customer email and mobile number are required to create an account.'], 422); }
+            $user = Database::row("SELECT * FROM users WHERE email=? OR phone=? LIMIT 1", [$email, $phone]);
+            $created = false;
+            if (!$user) {
+                $userId = Database::insert("INSERT INTO users (name, email, phone, company, password, marketing_consent, created_at) VALUES (?, ?, ?, '', ?, 0, NOW())", [$name, $email, $phone, password_hash($loginPassword, PASSWORD_BCRYPT, ['cost'=>10])]);
+                $user = Database::row("SELECT * FROM users WHERE id=?", [(int)$userId]);
+                $created = true;
+            }
+            if (!$user) throw new \RuntimeException('Customer account could not be loaded after creation.');
             Database::query("UPDATE custom_quote_requests SET user_id=?, customer_type='registered', email=COALESCE(NULLIF(email,''), ?), phone=COALESCE(NULLIF(phone,''), ?), updated_at=NOW() WHERE id=?", [(int)$user['id'], (string)($user['email'] ?? $email), (string)($user['phone'] ?? $phone), (int)$m[1]]);
             $quote = Database::row("SELECT * FROM custom_quote_requests WHERE id=?", [(int)$m[1]]);
             $cartResult = \Cart\Cart::addCustomQuote($quote ?: [], (int)$user['id']);
-            if (!($cartResult['ok'] ?? false)) json(['ok'=>false,'msg'=>$cartResult['msg'] ?? 'Customer account was created but the custom order could not be added to cart.'], 422);
+            if (!($cartResult['ok'] ?? false)) throw new \RuntimeException($cartResult['msg'] ?? 'Custom order could not be added to customer cart.');
+            $db->commit();
             json(['ok'=>true,'created'=>$created,'cart_added'=>true,'user'=>['id'=>(int)$user['id'],'name'=>(string)($user['name'] ?? $name),'email'=>(string)($user['email'] ?? $email),'phone'=>(string)($user['phone'] ?? $phone)],'login_password'=>$created ? $loginPassword : null]);
-        } catch (\Throwable $e) { json(['ok'=>false,'msg'=>'Could not create/link account: ' . $e->getMessage()], 500); }
+        } catch (\Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            json(['ok'=>false,'msg'=>'Could not create/link account: ' . $e->getMessage()], 500);
+        }
     }
 
     if (preg_match('#^/admin/api/custom-orders/(\d+)/payment-link$#', $uri, $m) && $method === 'POST') {

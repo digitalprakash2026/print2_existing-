@@ -16,3 +16,6 @@ ALTER TABLE order_items MODIFY COLUMN product_id INT UNSIGNED NULL;
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS item_type VARCHAR(30) NOT NULL DEFAULT 'product' AFTER order_id;
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS custom_quote_id INT UNSIGNED NULL AFTER item_type;
 CREATE INDEX IF NOT EXISTS idx_order_items_custom_quote ON order_items (custom_quote_id);
+
+-- Custom quote cart rows do not have a catalogue quality/variant.
+ALTER TABLE cart_items MODIFY COLUMN quality_id INT UNSIGNED NULL;
