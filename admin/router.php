@@ -1933,7 +1933,6 @@ if (str_starts_with($uri, '/admin/api/')) {
         try {
             $quote = Database::row("SELECT * FROM custom_quote_requests WHERE id=? LIMIT 1", [(int)$m[1]]);
             if (!$quote) json(['ok'=>false,'msg'=>'Custom quote not found'], 404);
-            if ((string)($quote['status'] ?? '') !== 'customer_approved') json(['ok'=>false,'msg'=>'Mark this quote approved before creating the customer account.'], 422);
             $name = trim((string)($quote['customer_name'] ?? '')) ?: 'RCS Customer'; $phone = trim((string)($quote['phone'] ?? '')); $email = strtolower(trim((string)($quote['email'] ?? '')));
             $loginPassword = preg_replace('/\D+/', '', $phone) ?: '';
             if ($email === '' || $loginPassword === '') json(['ok'=>false,'msg'=>'Customer email and mobile number are required to create an account.'], 422);
