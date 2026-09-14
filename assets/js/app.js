@@ -313,7 +313,7 @@ function renderCartDrawer() {
 }
 
 // ── Razorpay Checkout ─────────────────────────────────────────
-async function initiateCheckout(couponCode = null, customer = null, billing = null, shipping = null) {
+async function initiateCheckout(couponCode = null, customer = null, billing = null, shipping = null, customQuoteId = null) {
   if (!APP.razorpayKey) {
     toast('Payment not configured. Please contact us via WhatsApp.', 'warn'); return;
   }
@@ -323,7 +323,7 @@ async function initiateCheckout(couponCode = null, customer = null, billing = nu
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
       credentials: 'same-origin',
-      body: JSON.stringify({ coupon_code: couponCode, customer, billing, shipping })
+      body: JSON.stringify({ coupon_code: couponCode, customer, billing, shipping, custom_quote_id: customQuoteId })
     });
     const oData = await oResp.json();
     if (!oData.ok) { hidePayOv(); toast(oData.msg || 'Payment setup failed', 'error'); return; }
@@ -344,7 +344,7 @@ async function initiateCheckout(couponCode = null, customer = null, billing = nu
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': APP.csrfToken },
           credentials: 'same-origin',
-          body: JSON.stringify({ ...resp, coupon_code: couponCode, customer, billing, shipping })
+          body: JSON.stringify({ ...resp, coupon_code: couponCode, customer, billing, shipping, custom_quote_id: customQuoteId })
         });
         const vData = await vResp.json();
         hidePayOv();

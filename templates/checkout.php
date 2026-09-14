@@ -1,5 +1,6 @@
 <?php
-$pageTitle = 'Checkout — RCS Graphic';
+$isCustomCheckout=!empty($isCustomCheckout); $customQuoteId=(int)($quote['id']??0);
+$pageTitle = $isCustomCheckout ? 'Custom Order Checkout — RCS Graphic' : 'Checkout — RCS Graphic';
 $loadRazorpay = true;
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
@@ -19,7 +20,7 @@ $checkoutTotal = (float)($totals['total'] ?? 0);
 <main class="checkout-showcase-page">
   <div class="checkout-showcase-container">
     <header class="checkout-page-head">
-      <h1>Checkout</h1>
+      <h1><?= $isCustomCheckout ? 'Custom Order Checkout' : 'Checkout' ?></h1>
       <nav aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><span>Checkout</span></nav>
     </header>
 
@@ -156,7 +157,7 @@ $checkoutTotal = (float)($totals['total'] ?? 0);
 </main>
 <script>
 const CSRF = '<?= $csrf ?>';
-const BIZ_WA = '<?= htmlspecialchars($bizWa) ?>';
+const BIZ_WA = '<?= htmlspecialchars($bizWa) ?>'; const CUSTOM_QUOTE_ID=<?= $isCustomCheckout?$customQuoteId:0 ?>;
 let checkoutCoupon = null;
 let checkoutProfile = { shipping: null, billing: null };
 
@@ -218,7 +219,7 @@ async function doCheckout() {
   if (shipping === false) return;
   const billing = getCheckoutBilling();
   if (billing === false) return;
-  initiateCheckout(checkoutCoupon, customer, billing, shipping);
+  initiateCheckout(checkoutCoupon, customer, billing, shipping, CUSTOM_QUOTE_ID||null);
 }
 
 async function doWhatsAppOrder() {

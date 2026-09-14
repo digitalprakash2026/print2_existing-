@@ -360,6 +360,8 @@ class OrderManager
         if (!$user) return ['ok' => false, 'msg' => 'Not authenticated'];
 
         $cartItems = \Cart\Cart::get();
+        $onlyCustomQuoteId = (int)($params['custom_quote_id'] ?? 0);
+        if ($onlyCustomQuoteId) $cartItems = array_values(array_filter($cartItems, static fn($item) => (int)($item['custom_quote_id'] ?? 0) === $onlyCustomQuoteId));
         if (empty($cartItems)) return ['ok' => false, 'msg' => 'Cart is empty'];
 
         $couponCode = $params['coupon_code'] ?? null;
@@ -502,7 +504,7 @@ class OrderManager
 
         // Non-critical operations after commit should not fail checkout.
         try {
-            \Cart\Cart::clear();
+            \Cart\Cart::clear($onlyCustomQuoteId ?: null);
         } catch (\Throwable $e) {
             error_log('Order placed but cart clear failed: ' . $e->getMessage());
         }

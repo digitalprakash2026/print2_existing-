@@ -96,7 +96,7 @@ class Cart
 
         } else {
             // Guest cart in session
-            if (!isset($_SESSION['cart'])) $_SESSION['cart'] = [];
+            if (!isset($_SESSION['cart'])) $_SESSION['cart'] = $customQuoteId ? array_values(array_filter($_SESSION['cart'] ?? [], static fn($item) => (int)($item['custom_quote_id'] ?? 0) !== $customQuoteId)) : [];
             $item['id']         = uniqid('ci_', true);
             $item['artwork_id'] = $data['artwork_id'] ?? null;
             $_SESSION['cart'][] = $item;
@@ -305,13 +305,13 @@ class Cart
         return $items;
     }
 
-    public static function clear(): void
+    public static function clear(?int $customQuoteId = null): void
     {
         $userId = \Auth\Auth::user()['id'] ?? null;
         if ($userId) {
             $cart = \Database::row("SELECT id FROM carts WHERE user_id = ?", [$userId]);
             if ($cart) {
-                \Database::query("DELETE FROM cart_items WHERE cart_id = ?", [$cart['id']]);
+                \Database::query($customQuoteId ? "DELETE FROM cart_items WHERE cart_id=? AND custom_quote_id=?" : "DELETE FROM cart_items WHERE cart_id=?", $customQuoteId ? [$cart['id'], $customQuoteId] : [$cart['id']]);
             }
         } else {
             $_SESSION['cart'] = [];

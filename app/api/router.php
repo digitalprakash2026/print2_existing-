@@ -499,6 +499,7 @@ if ($uri === '/api/payment/create-order' && $method === 'POST') {
     $ensure = \Auth\Auth::ensureCheckoutUser($body['customer'] ?? []);
     if (!$ensure['ok']) json($ensure, 400);
     $items  = \Cart\Cart::get();
+    $customQuoteId=(int)($body['custom_quote_id'] ?? 0); if($customQuoteId)$items=array_values(array_filter($items,static fn($item)=>(int)($item['custom_quote_id']??0)===$customQuoteId));
     $coupon = $body['coupon_code'] ?? null;
     $totals = \Cart\Cart::totals($items, $coupon);
 
@@ -538,6 +539,7 @@ if ($uri === '/api/payment/verify' && $method === 'POST') {
         'payment_status' => 'pending',
         'billing'        => $body['billing'] ?? null,
         'shipping'       => $body['shipping'] ?? null,
+        'custom_quote_id' => (int)($body['custom_quote_id'] ?? 0),
     ]);
 
     if (!$placeResult['ok']) json($placeResult);
