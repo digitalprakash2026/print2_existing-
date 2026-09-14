@@ -25,6 +25,7 @@ class OrderManager
                 "CREATE INDEX idx_orders_order_type ON orders (order_type)",
                 "CREATE INDEX idx_orders_custom_quote ON orders (custom_quote_id)",
                 "ALTER TABLE order_items MODIFY COLUMN product_id INT UNSIGNED NULL",
+                "ALTER TABLE order_items MODIFY COLUMN quality_id INT UNSIGNED NULL",
                 "ALTER TABLE order_items ADD COLUMN item_type VARCHAR(30) NOT NULL DEFAULT 'product' AFTER order_id",
                 "ALTER TABLE order_items ADD COLUMN custom_quote_id INT UNSIGNED NULL AFTER item_type",
                 "CREATE INDEX idx_order_items_custom_quote ON order_items (custom_quote_id)",
@@ -887,7 +888,7 @@ class OrderManager
             return null;
         }
 
-        if ($clean['legal_name'] === '' || $clean['gst_no'] === '' || $clean['address_line1'] === '' ||
+        if ($clean['legal_name'] === '' || $clean['address_line1'] === '' ||
             $clean['city'] === '' || $clean['state'] === '' || $clean['pincode'] === '') {
             return null;
         }

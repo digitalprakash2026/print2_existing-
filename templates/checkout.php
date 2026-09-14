@@ -68,7 +68,7 @@ $checkoutTotal = (float)($totals['total'] ?? 0);
           <label class="checkout-checkline"><input type="checkbox" id="bill-same-ship" onchange="syncBillingFromShipping()"> <span>Same as shipping address</span></label>
           <div id="billingFields" class="checkout-form-grid checkout-billing-grid">
             <label>Legal Business Name <b>*</b><input id="b-legal" class="checkout-input" placeholder="ABC Pvt Ltd"></label>
-            <label>GSTIN <b>*</b><input id="b-gst" class="checkout-input" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></label>
+            <label>GSTIN <span>(Optional)</span><input id="b-gst" class="checkout-input" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></label>
             <label>Billing Address Line 1 <b>*</b><input id="b-add1" class="checkout-input" placeholder="Street / Building"></label>
             <label>Billing Address Line 2 <span>(Optional)</span><input id="b-add2" class="checkout-input" placeholder="Area / Landmark"></label>
             <label>City <b>*</b><input id="b-city" class="checkout-input" placeholder="Rajkot"></label>
@@ -100,7 +100,6 @@ $checkoutTotal = (float)($totals['total'] ?? 0);
             <?php else: ?>
             <div class="checkout-pay-warning">⚠️ Online payment not configured. Please use WhatsApp to confirm your order.</div>
             <?php endif; ?>
-            <button class="checkout-whatsapp-btn" onclick="doWhatsAppOrder()"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Share Order on WhatsApp</button>
           </div>
         </section>
       </div>
@@ -369,11 +368,11 @@ function getCheckoutBilling() {
   const gstOk = /^[0-9]{2}[A-Z0-9]{10}[0-9A-Z]{3}$/.test(gst);
   const pinOk = /^[1-9][0-9]{5}$/.test(pin);
 
-  if (!legal || !gst || !add1 || !city || !state || !pin) {
-    if (err) { err.textContent = 'Please fill all required billing fields for GST invoice.'; err.style.display = 'block'; }
+  if (!legal || !add1 || !city || !state || !pin) {
+    if (err) { err.textContent = 'Please fill all required billing address fields.'; err.style.display = 'block'; }
     return false;
   }
-  if (!gstOk) {
+  if (gst && !gstOk) {
     if (err) { err.textContent = 'Please enter a valid GSTIN.'; err.style.display = 'block'; }
     return false;
   }
