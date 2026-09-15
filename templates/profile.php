@@ -283,6 +283,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
     <aside class="account-sidebar" aria-label="My account menu">
       <button class="account-nav-item is-active" type="button" data-account-tab="dashboard"><i class="fa-solid fa-shapes"></i><span>Dashboard</span></button>
       <button class="account-nav-item" type="button" data-account-tab="orders"><i class="fa-regular fa-clipboard"></i><span>My Orders</span></button>
+      <button class="account-nav-item" type="button" data-account-tab="custom-orders"><i class="fa-solid fa-wand-magic-sparkles"></i><span>My Custom Orders</span></button>
       <button class="account-nav-item" type="button" data-account-tab="wishlist"><i class="fa-regular fa-heart"></i><span>My Wishlist</span></button>
       <button class="account-nav-item" type="button" data-account-tab="designs"><i class="fa-regular fa-pen-to-square"></i><span>My Designs</span></button>
       <button class="account-nav-item" type="button" data-account-tab="reviews"><i class="fa-regular fa-star"></i><span>My Reviews</span></button>
@@ -349,6 +350,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
         </section>
       </section>
 
+      <section class="account-tab-panel" data-account-panel="custom-orders"><section class="account-card account-orders-card"><div class="account-section-head"><div><h2>My Custom Orders</h2><p>Approved custom quotes, payment links and updates.</p></div></div><?php if(empty($customOrders)): ?><div class="account-empty-state compact"><strong>No custom orders yet</strong></div><?php else: ?><div class="custom-account-orders"><?php foreach($customOrders as $co): ?><article class="custom-account-order"><div><span class="custom-order-badge"><?= $h(str_replace('_',' ',$co['status'])) ?></span><h3><?= $h($co['request_code']) ?> · <?= $h($co['product_name']) ?></h3><p><?= $h($co['size_dimension']) ?> · <?= $h($co['material_type']) ?> · Qty <?= $h($co['quantity']) ?></p><strong>₹<?= number_format((float)$co['quoted_amount'],2) ?></strong></div><?php if(!empty($co['quote_token']) && in_array($co['status'],['customer_approved','payment_pending'],true)): ?><a class="btn btn-blue btn-sm" href="/custom-cart/<?= rawurlencode($co['quote_token']) ?>">Pay Custom Order</a><?php endif; ?></article><?php endforeach; ?></div><?php endif; ?></section></section>
       <section class="account-tab-panel" data-account-panel="wishlist" aria-labelledby="wishlistPanelTitle">
         <section class="account-card account-wishlist-card">
           <div class="account-section-head">
@@ -653,7 +655,7 @@ $renderOrders = static function (array $list, bool $compact = false) use ($h, $s
 </main>
 
 <script>
-const ACCOUNT_TABS = ['dashboard','orders','wishlist','designs','reviews','addresses','details','security'];
+const ACCOUNT_TABS = ['dashboard','orders','custom-orders','wishlist','designs','reviews','addresses','details','security'];
 
 function setAccountTab(tab, pushHash = true) {
   const safeTab = ACCOUNT_TABS.includes(tab) ? tab : 'dashboard';

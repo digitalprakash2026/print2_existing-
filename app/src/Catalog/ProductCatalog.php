@@ -456,6 +456,52 @@ class ProductCatalog
         return self::fetchProductRows($where, $params);
     }
 
+    public static function byBusinessNeed(int $businessNeedId, array $filters = [], string $search = ''): array
+    {
+        $businessNeedId = max(0, $businessNeedId);
+        if ($businessNeedId <= 0) return [];
+        $filters = self::normalizeFilterSelections($filters);
+        $where = ["p.is_active = 1", "EXISTS (SELECT 1 FROM product_business_needs pbn WHERE pbn.product_id = p.id AND pbn.business_need_id = ?)"];
+        $params = [$businessNeedId];
+        $search = trim($search);
+        if ($search !== '') {
+            $where[] = "(p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?)";
+            $like = '%' . $search . '%';
+            array_push($params, $like, $like, $like);
+        }
+
+        if ($filters) {
+            try { self::ensureFilterSchema(); } catch (\Throwable) {}
+            foreach ($filters as $groupSlug => $slugs) {
+                if (!$slugs) continue;
+                $placeholders = implode(',', array_fill(0, count($slugs), '?'));
+                $where[] = "EXISTS (
+                    SELECT 1 FROM product_filter_map pfm
+                    JOIN product_filter_options pfo ON pfo.id = pfm.option_id
+                    WHERE pfm.product_id = p.id
+                      AND pfo.group_slug = ?
+                      AND pfo.option_slug IN ({$placeholders})
+                      AND pfo.is_active = 1
+                )";
+                $params[] = $groupSlug;
+                array_push($params, ...$slugs);
+            }
+        }
+
+        try {
+            return self::fetchProductRows('WHERE ' . implode(' AND ', $where) . ' ORDER BY c.sort_order ASC, p.sort_order ASC', $params);
+        } catch (\Throwable $e) {
+            error_log('Business need mapped products unavailable: ' . $e->getMessage());
+            $need = \Database::row("SELECT product_ids FROM business_needs WHERE id=? LIMIT 1", [$businessNeedId]);
+            $ids = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', (string)($need['product_ids'] ?? '')) ?: []), static fn($id) => $id > 0));
+            if (!$ids) return [];
+            $all = self::all(true);
+            $byId = []; foreach ($all as $row) $byId[(int)($row['id'] ?? 0)] = $row;
+            $out = []; foreach ($ids as $id) if (isset($byId[$id])) $out[] = $byId[$id];
+            return $out;
+        }
+    }
+
     public static function search(string $q): array
     {
         $like = '%' . $q . '%';

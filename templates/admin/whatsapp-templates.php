@@ -94,6 +94,8 @@ Please share any artwork, size, quantity or reference details here so our team c
 
 Thank you,
 {business_name}"],
+    'custom_quote_sent' => ['title' => 'Send Custom Quote', 'description' => 'Sent after the quoted amount and quote note are saved.', 'body' => "Hello {customer_name}, 👋\n\nThank you for your custom quotation request {quote_id}.\n\nProduct: {product_name}\nSize: {size_dimension}\nMaterial: {material_type}\nQuantity: {quantity}\nQuoted Amount: {quoted_amount}\n\n{quote_note}\n\nPlease reply APPROVE to confirm this quote.\n\nThank you,\n{business_name}"],
+    'custom_quote_payment' => ['title' => 'Send Custom Order Payment Link', 'description' => 'Sent after approval, account linking and payment-link generation.', 'body' => "Hello {customer_name}, 👋\n\nYour custom order {quote_id} is ready for payment.\n\nAmount: {quoted_amount}\n\nLogin here: {login_url}\nLogin with: {login_identifier}\nPassword: {login_password}\n\nYour custom order is already added to your cart. Open your secure payment link to continue: {payment_link}\n\nThank you,\n{business_name}"],
 ];
 $labels = [
     'order_confirmation' => ['badge' => 'Order', 'heading' => 'New Order Confirmation'],
@@ -103,6 +105,8 @@ $labels = [
     'customer_upsell' => ['badge' => 'Customer', 'heading' => 'Upsell Message'],
     'customer_welcome' => ['badge' => 'Customer', 'heading' => 'Welcome / First Order'],
     'lead_followup' => ['badge' => 'Lead', 'heading' => 'Lead Follow-up'],
+    'custom_quote_sent' => ['badge' => 'Custom Quote', 'heading' => 'Quote Sent to Customer'],
+    'custom_quote_payment' => ['badge' => 'Custom Payment', 'heading' => 'Account & Payment Link'],
 ];
 $placeholders = [
     'customer_name' => 'Customer name',
@@ -129,6 +133,15 @@ $placeholders = [
     'lead_email' => 'Lead email',
     'lead_subject' => 'Lead subject',
     'lead_message' => 'Lead message',
+    'quote_id' => 'Custom quote ID',
+    'size_dimension' => 'Requested size / dimension',
+    'material_type' => 'Requested material',
+    'quoted_amount' => 'Final quoted amount',
+    'quote_note' => 'Admin quote note',
+    'login_url' => 'Customer login URL',
+    'login_identifier' => 'Customer login email / mobile',
+    'login_password' => 'Customer login password',
+    'payment_link' => 'Custom order payment link',
 ];
 ?>
 <div class="wa-template-page">
@@ -138,7 +151,7 @@ $placeholders = [
       <h1>WhatsApp Templates</h1>
       <p>Prepare reusable WhatsApp messages for orders, customer CRM follow-ups and lead enquiries. Use placeholders to auto-fill customer, order and lead details.</p>
     </div>
-    <strong>7 templates</strong>
+    <strong>9 templates</strong>
   </section>
 
   <section class="wa-placeholder-panel">
@@ -194,7 +207,7 @@ const WA_SAMPLE = {
   design_status: 'Approved', account_order_url: `${location.origin}/profile#orders-RCS-1024`, proof_url: `${location.origin}/profile#orders-RCS-1024`,
   business_name: 'RCS Print', business_phone: '+91 8980000024', business_whatsapp: '+91 8980000024',
   customer_code: 'PK0001', order_count: '3', last_product: 'Business Cards', suggestion: 'Letterhead + Envelope',
-  lead_name: 'Prakash Karena', lead_phone: '919876543210', lead_email: 'lead@example.com', lead_subject: 'Need brochure printing', lead_message: 'Please share quote for 500 brochures.'
+  lead_name: 'Prakash Karena', lead_phone: '919876543210', lead_email: 'lead@example.com', lead_subject: 'Need brochure printing', lead_message: 'Please share quote for 500 brochures.', quote_id: 'CQ-0001', size_dimension: '500 × 400 mm', material_type: 'Standard', quoted_amount: '₹2,500.00', quote_note: 'Final price includes printing and finishing.', login_url: `${location.origin}/login?next=/cart`, login_identifier: 'customer@example.com', login_password: '9876543210', payment_link: `${location.origin}/custom-checkout/example`
 };
 function fillWaTemplate(body, data = WA_SAMPLE) {
   return String(body || '').replace(/\{([a-z0-9_]+)\}/gi, (_, key) => Object.prototype.hasOwnProperty.call(data, key) ? data[key] : `{${key}}`);

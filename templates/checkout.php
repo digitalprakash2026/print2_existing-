@@ -1,5 +1,6 @@
 <?php
-$pageTitle = 'Checkout — RCS Graphic';
+$isCustomCheckout=!empty($isCustomCheckout); $customQuoteId=(int)($quote['id']??0);
+$pageTitle = $isCustomCheckout ? 'Custom Order Checkout — RCS Graphic' : 'Checkout — RCS Graphic';
 $loadRazorpay = true;
 include INCLUDE_PATH . '/partials/head.php';
 include INCLUDE_PATH . '/partials/header.php';
@@ -19,7 +20,7 @@ $checkoutTotal = (float)($totals['total'] ?? 0);
 <main class="checkout-showcase-page">
   <div class="checkout-showcase-container">
     <header class="checkout-page-head">
-      <h1>Checkout</h1>
+      <h1><?= $isCustomCheckout ? 'Custom Order Checkout' : 'Checkout' ?></h1>
       <nav aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><span>Checkout</span></nav>
     </header>
 
@@ -67,7 +68,7 @@ $checkoutTotal = (float)($totals['total'] ?? 0);
           <label class="checkout-checkline"><input type="checkbox" id="bill-same-ship" onchange="syncBillingFromShipping()"> <span>Same as shipping address</span></label>
           <div id="billingFields" class="checkout-form-grid checkout-billing-grid">
             <label>Legal Business Name <b>*</b><input id="b-legal" class="checkout-input" placeholder="ABC Pvt Ltd"></label>
-            <label>GSTIN <b>*</b><input id="b-gst" class="checkout-input" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></label>
+            <label>GSTIN <span>(Optional)</span><input id="b-gst" class="checkout-input" placeholder="24ABCDE1234F1Z5" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></label>
             <label>Billing Address Line 1 <b>*</b><input id="b-add1" class="checkout-input" placeholder="Street / Building"></label>
             <label>Billing Address Line 2 <span>(Optional)</span><input id="b-add2" class="checkout-input" placeholder="Area / Landmark"></label>
             <label>City <b>*</b><input id="b-city" class="checkout-input" placeholder="Rajkot"></label>
@@ -99,7 +100,6 @@ $checkoutTotal = (float)($totals['total'] ?? 0);
             <?php else: ?>
             <div class="checkout-pay-warning">⚠️ Online payment not configured. Please use WhatsApp to confirm your order.</div>
             <?php endif; ?>
-            <button class="checkout-whatsapp-btn" onclick="doWhatsAppOrder()"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Share Order on WhatsApp</button>
           </div>
         </section>
       </div>
@@ -112,8 +112,12 @@ $checkoutTotal = (float)($totals['total'] ?? 0);
             <article class="checkout-item">
               <div class="checkout-item-img"><img src="<?= htmlspecialchars($item['product_image'] ?? '') ?>" alt="<?= htmlspecialchars($item['product_name'] ?? '') ?>" onerror="this.style.display='none'"></div>
               <div class="checkout-item-copy">
-                <h3><?= htmlspecialchars($item['product_name'] ?? '') ?></h3>
-                <p><?= number_format((int)($item['quantity'] ?? 0)) ?> pcs<?= !empty($item['quality_name']) ? ' | ' . htmlspecialchars((string)$item['quality_name']) : '' ?></p>
+                <h3><?= htmlspecialchars($item['product_name'] ?? '') ?><?= (($item['item_type'] ?? 'product') === 'custom_quote') ? ' — Custom Quote' : '' ?></h3>
+                <?php if (($item['item_type'] ?? 'product') === 'custom_quote'): ?>
+                  <p><?= !empty($item['custom_requested_quantity']) ? 'Requested Qty: ' . htmlspecialchars((string)$item['custom_requested_quantity']) : 'Custom quantity' ?><?= !empty($item['custom_size_dimension']) ? ' | Size: ' . htmlspecialchars((string)$item['custom_size_dimension']) : '' ?></p>
+                <?php else: ?>
+                  <p><?= number_format((int)($item['quantity'] ?? 0)) ?> pcs<?= !empty($item['quality_name']) ? ' | ' . htmlspecialchars((string)$item['quality_name']) : '' ?></p>
+                <?php endif; ?>
                 <strong>₹<?= number_format((float)($item['total_price'] ?? 0)) ?></strong>
               </div>
               <div class="checkout-item-side">
@@ -152,7 +156,7 @@ $checkoutTotal = (float)($totals['total'] ?? 0);
 </main>
 <script>
 const CSRF = '<?= $csrf ?>';
-const BIZ_WA = '<?= htmlspecialchars($bizWa) ?>';
+const BIZ_WA = '<?= htmlspecialchars($bizWa) ?>'; const CUSTOM_QUOTE_ID=<?= $isCustomCheckout?$customQuoteId:0 ?>;
 let checkoutCoupon = null;
 let checkoutProfile = { shipping: null, billing: null };
 
@@ -214,7 +218,7 @@ async function doCheckout() {
   if (shipping === false) return;
   const billing = getCheckoutBilling();
   if (billing === false) return;
-  initiateCheckout(checkoutCoupon, customer, billing, shipping);
+  initiateCheckout(checkoutCoupon, customer, billing, shipping, CUSTOM_QUOTE_ID||null);
 }
 
 async function doWhatsAppOrder() {
@@ -364,11 +368,11 @@ function getCheckoutBilling() {
   const gstOk = /^[0-9]{2}[A-Z0-9]{10}[0-9A-Z]{3}$/.test(gst);
   const pinOk = /^[1-9][0-9]{5}$/.test(pin);
 
-  if (!legal || !gst || !add1 || !city || !state || !pin) {
-    if (err) { err.textContent = 'Please fill all required billing fields for GST invoice.'; err.style.display = 'block'; }
+  if (!legal || !add1 || !city || !state || !pin) {
+    if (err) { err.textContent = 'Please fill all required billing address fields.'; err.style.display = 'block'; }
     return false;
   }
-  if (!gstOk) {
+  if (gst && !gstOk) {
     if (err) { err.textContent = 'Please enter a valid GSTIN.'; err.style.display = 'block'; }
     return false;
   }

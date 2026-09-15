@@ -402,18 +402,28 @@ if (preg_match('#^/category/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
 }
 
 
+// ── All Business Sectors Page — /business ─────────────────────
+if (($uri === '/business' || $uri === '/business-needs') && $method === 'GET') {
+    try {
+        $businessNeeds = Database::rows("SELECT bn.*, COUNT(pbn.product_id) AS product_count FROM business_needs bn LEFT JOIN product_business_needs pbn ON pbn.business_need_id = bn.id WHERE bn.is_active=1 GROUP BY bn.id ORDER BY bn.sort_order ASC, bn.id DESC");
+        $settings = Database::rows("SELECT `key`, value FROM settings");
+        $settingsMap = array_column($settings, 'value', 'key');
+    } catch (\Throwable $e) {
+        error_log('Business sectors page error: ' . $e->getMessage());
+        $businessNeeds = [];
+        $settingsMap = [];
+    }
+    view('business-needs', compact('businessNeeds', 'settingsMap'));
+    exit;
+}
+
 // Business Need / Sector Page — /business/{slug}
 if (preg_match('#^/business/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
     try {
         $businessNeed = Database::row("SELECT * FROM business_needs WHERE slug=? AND is_active=1 LIMIT 1", [$m[1]]);
         if (!$businessNeed) { http_response_code(404); view('404'); exit; }
-        $ids = array_values(array_unique(array_filter(array_map('intval', preg_split('/[,\\s]+/', (string)($businessNeed['product_ids'] ?? '')) ?: []), static fn($id) => $id > 0)));
-        $businessProducts = [];
-        if ($ids) {
-            $allProductsById = [];
-            foreach (\Catalog\ProductCatalog::all() as $row) $allProductsById[(int)($row['id'] ?? 0)] = $row;
-            foreach ($ids as $id) if (isset($allProductsById[$id])) $businessProducts[] = $allProductsById[$id];
-        }
+        $businessProducts = \Catalog\ProductCatalog::byBusinessNeed((int)$businessNeed['id']);
+        $businessNeeds = Database::rows("SELECT bn.*, COUNT(pbn.product_id) AS product_count FROM business_needs bn LEFT JOIN product_business_needs pbn ON pbn.business_need_id = bn.id WHERE bn.is_active=1 GROUP BY bn.id ORDER BY bn.sort_order ASC, bn.id DESC");
         $settings = Database::rows("SELECT `key`, value FROM settings");
         $settingsMap = array_column($settings, 'value', 'key');
     } catch (\Throwable $e) {
@@ -422,7 +432,7 @@ if (preg_match('#^/business/([a-z0-9\-]+)$#', $uri, $m) && $method === 'GET') {
         view('404');
         exit;
     }
-    view('business-need', compact('businessNeed', 'businessProducts', 'settingsMap'));
+    view('business-need', compact('businessNeed', 'businessProducts', 'businessNeeds', 'settingsMap'));
     exit;
 }
 
@@ -513,11 +523,12 @@ if ($uri === '/profile' && $method === 'GET') {
     $profile = \Auth\Auth::getProfile((int)$user['id']);
     try { $orders = \Orders\OrderManager::getUserOrders((int)$user['id']); }
     catch (\Throwable) { $orders = []; }
+    try { $customOrders=Database::rows("SELECT * FROM custom_quote_requests WHERE user_id=? ORDER BY created_at DESC",[(int)$user['id']]); } catch (\Throwable) { $customOrders=[]; }
     $reviewableItems = \Reviews\ProductReview::reviewableItemsForUser((int)$user['id']);
     $myReviews = \Reviews\ProductReview::userReviews((int)$user['id']);
     $wishlistItems = \Wishlist\Wishlist::itemsForUser((int)$user['id']);
     $myDesigns = \Designs\UserDesigns::forUser((int)$user['id']);
-    view('profile', compact('user', 'profile', 'orders', 'reviewableItems', 'myReviews', 'wishlistItems', 'myDesigns'));
+    view('profile', compact('user', 'profile', 'orders', 'customOrders', 'reviewableItems', 'myReviews', 'wishlistItems', 'myDesigns'));
     exit;
 }
 
@@ -666,6 +677,19 @@ if ($uri === '/contact' && $method === 'GET') {
 }
 
 
+// Dedicated custom cart and checkout links. Custom quotes never mix with the normal cart checkout.
+if (preg_match('#^/(custom-cart|custom-checkout)/([A-Za-z0-9_-]{24,120})$#', $uri, $m) && $method === 'GET') {
+    $mode=$m[1]; $token=$m[2];
+    try { $quote=Database::row("SELECT * FROM custom_quote_requests WHERE quote_token=? LIMIT 1",[$token]);
+        if(!$quote || (float)($quote['quoted_amount']??0)<=0 || in_array((string)($quote['status']??''),['converted_to_order','closed','rejected'],true)){http_response_code(404);view('info-page',['page'=>['title'=>'Custom order unavailable','intro'=>'This custom order link is no longer available.'],'settingsMap'=>[]]);exit;}
+        if(!\Auth\Auth::check()) redirect('/login?next=/'.$mode.'/'.rawurlencode($token));
+        $user=\Auth\Auth::user(); if((int)($quote['user_id']??0)!==(int)$user['id']){http_response_code(403);view('info-page',['page'=>['title'=>'Account required','intro'=>'Please login with the account linked to this custom order.'],'settingsMap'=>[]]);exit;}
+        $added=\Cart\Cart::addCustomQuote($quote,(int)$user['id']); if(!($added['ok']??false)){http_response_code(422);view('info-page',['page'=>['title'=>'Custom order unavailable','intro'=>$added['msg']??'Please contact us.'],'settingsMap'=>[]]);exit;}
+        $cartItems=array_values(array_filter(\Cart\Cart::get(),static fn($item)=>(int)($item['custom_quote_id']??0)===(int)$quote['id']));$totals=\Cart\Cart::totals($cartItems);
+        if($mode==='custom-cart'){view('custom-cart',compact('quote','cartItems','totals','user','token'));exit;} $isCustomCheckout=true;view('checkout',compact('quote','cartItems','totals','user','token','isCustomCheckout'));exit;
+    }catch(\Throwable $e){error_log($e->getMessage());http_response_code(500);view('info-page',['page'=>['title'=>'Custom order unavailable','intro'=>'Please try again later.'],'settingsMap'=>[]]);exit;}
+}
+
 // Cart Page
 if ($uri === '/cart' && $method === 'GET') {
     try {
@@ -702,7 +726,7 @@ if (preg_match('#^/order/confirm/([A-Z0-9]+)$#', $uri, $m) && $method === 'GET')
     if (!$order || (int)$order['user_id'] !== (int)\Auth\Auth::user()['id']) {
         http_response_code(404); view('404'); exit;
     }
-    view('confirm', compact('order'));
+    view(($order['order_type'] ?? 'normal') === 'custom' ? 'custom-confirm' : 'confirm', compact('order'));
     exit;
 }
 
